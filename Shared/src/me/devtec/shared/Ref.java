@@ -232,6 +232,23 @@ public class Ref {
 		}
 	}
 
+	public static Field field(Class<?> main, Class<?> returnValue) {
+		try {
+			Class<?> mainClass = main.getClass();
+			while (mainClass != null) {
+				for (Field field : Ref.getDeclaredFields(mainClass))
+					if (field.getType() == returnValue) {
+						field.setAccessible(true);
+						return field;
+					}
+				mainClass = mainClass.getSuperclass();
+			}
+			return null;
+		} catch (Exception es) {
+			return null;
+		}
+	}
+
 	public static Object get(Object main, Field field) {
 		try {
 			field.setAccessible(true);
@@ -288,20 +305,7 @@ public class Ref {
 	}
 
 	public static Object get(Object main, Class<?> returnValue) {
-		try {
-			Class<?> mainClass = main.getClass();
-			while (mainClass != null) {
-				for (Field field : Ref.getDeclaredFields(mainClass))
-					if (field.getType() == returnValue) {
-						field.setAccessible(true);
-						return Ref.get(main, field);
-					}
-				mainClass = mainClass.getSuperclass();
-			}
-			return null;
-		} catch (Exception es) {
-			return null;
-		}
+		return Ref.get(main, field(main.getClass(), returnValue));
 	}
 
 	public static Object invokeNulled(Class<?> classInMethod, String method, Object... bricks) {
@@ -419,20 +423,12 @@ public class Ref {
 		return Ref.newInstance(Ref.findConstructor(clazz, bricks), bricks);
 	}
 
-	public static Class<?> nms(String name) {
-		try {
-			return Class.forName("net.minecraft.server." + Ref.serverVersion() + "." + name);
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
-	public static Class<?> nmsOrOld(String name, String old) {
+	public static Class<?> nms(String modernPackageName, String name) {
 		try {
 			if (Ref.isNewerThan(16))
-				return Class.forName("net.minecraft." + name);
-			return Class.forName("net.minecraft.server." + Ref.serverVersion() + "." + old);
-		} catch (Exception e1) {
+				return Class.forName("net.minecraft." + modernPackageName + "." + name);
+			return Class.forName("net.minecraft.server." + Ref.serverVersion() + "." + name);
+		} catch (Exception e) {
 			return null;
 		}
 	}
