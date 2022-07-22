@@ -4,21 +4,21 @@ public class Pair {
 	Object key;
 	Object value;
 
-	public Pair(Object o, Object o1) {
-		this.key = o;
-		this.value = o1;
+	public Pair(Object key, Object value) {
+		this.key = key;
+		this.value = value;
 	}
 
 	public Object getKey() {
-		return this.key;
+		return key;
 	}
 
 	public Object getValue() {
-		return this.value;
+		return value;
 	}
 
 	@Override
 	public String toString() {
-		return "Pair{" + this.key + "=" + this.value + "}";
+		return "Pair{" + key + "=" + value + "}";
 	}
 }
