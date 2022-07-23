@@ -27,12 +27,15 @@ public class Ref {
 
 	static String ver;
 	static int intVer;
+	static int intRelease;
 	static ServerType type;
 
 	public static void init(ServerType type, String serverVersion) {
 		Ref.ver = serverVersion;
-		if (type == ServerType.BUKKIT || type == ServerType.SPIGOT || type == ServerType.PAPER)
+		if (type == ServerType.BUKKIT || type == ServerType.SPIGOT || type == ServerType.PAPER) {
 			Ref.intVer = StringUtils.getInt(Ref.ver.split("_")[1]);
+			Ref.intRelease = StringUtils.getInt(Ref.ver.split("_")[2]);
+		}
 		Ref.type = type;
 	}
 
@@ -42,6 +45,10 @@ public class Ref {
 
 	public static int serverVersionInt() {
 		return Ref.intVer;
+	}
+
+	public static int serverVersionRelease() {
+		return Ref.intRelease;
 	}
 
 	public static ServerType serverType() {
@@ -181,72 +188,31 @@ public class Ref {
 		}
 	}
 
-	public static Method method(Class<?> main, String name, Class<?>... bricks) {
-		try {
-			Method a = main.getDeclaredMethod(name, bricks);
-			Class<?> d = main;
-			while (d != null && a == null) {
-				for (Method m : Ref.getDeclaredMethods(d))
-					if (m.getName().equals(name) && Ref.areSame(m.getParameterTypes(), bricks)) {
-						a = m;
-						break;
-					}
-				d = d.getSuperclass();
-			}
-			if (a != null)
-				a.setAccessible(true);
-			return a;
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
 	public static Field field(Class<?> main, String name) {
-		try {
-			Field f = main.getDeclaredField(name);
-			f.setAccessible(true);
-			return f;
-		} catch (Exception e) {
+		Class<?> mainClass = main.getClass();
+		while (mainClass != null) {
 			try {
-				Field f = null;
-				Class<?> c = main.getSuperclass();
-				while (c != null) {
-					try {
-						f = c.getDeclaredField(name);
-					} catch (Exception err) {
-					}
-					if (f != null)
-						break;
-					try {
-						c = c.getSuperclass();
-					} catch (Exception err) {
-						break;
-					}
-				}
-				if (f != null)
-					f.setAccessible(true);
-				return f;
-			} catch (Exception er) {
+				Field field = mainClass.getDeclaredField(name);
+				field.setAccessible(true);
+				return field;
+			} catch (Exception | NoSuchFieldError err) {
 			}
-			return null;
+			mainClass = mainClass.getSuperclass();
 		}
+		return null;
 	}
 
 	public static Field field(Class<?> main, Class<?> returnValue) {
-		try {
-			Class<?> mainClass = main.getClass();
-			while (mainClass != null) {
-				for (Field field : Ref.getDeclaredFields(mainClass))
-					if (field.getType() == returnValue) {
-						field.setAccessible(true);
-						return field;
-					}
-				mainClass = mainClass.getSuperclass();
-			}
-			return null;
-		} catch (Exception es) {
-			return null;
+		Class<?> mainClass = main.getClass();
+		while (mainClass != null) {
+			for (Field field : Ref.getDeclaredFields(mainClass))
+				if (field.getType() == returnValue) {
+					field.setAccessible(true);
+					return field;
+				}
+			mainClass = mainClass.getSuperclass();
 		}
+		return null;
 	}
 
 	public static Object get(Object main, Field field) {
@@ -259,28 +225,19 @@ public class Ref {
 	}
 
 	public static Object getNulled(Field field) {
-		try {
-			field.setAccessible(true);
-			return field.get(null);
-		} catch (Exception es) {
-			return null;
-		}
+		return get(null, field);
 	}
 
-	public static Object getNulled(Class<?> clas, String field) {
-		try {
-			return Ref.field(clas, field).get(null);
-		} catch (Exception es) {
-			return null;
-		}
+	public static Object getNulled(Class<?> clazz, String field) {
+		return get(null, Ref.field(clazz, field));
 	}
 
 	public static Object getStatic(Field field) {
-		return Ref.getNulled(field);
+		return get(null, field);
 	}
 
-	public static Object getStatic(Class<?> clas, String field) {
-		return Ref.getNulled(clas, field);
+	public static Object getStatic(Class<?> clazz, String field) {
+		return get(null, Ref.field(clazz, field));
 	}
 
 	public static Object get(Object main, String field) {
@@ -317,11 +274,7 @@ public class Ref {
 	}
 
 	public static Object invokeNulled(Method method, Object... bricks) {
-		try {
-			return method.invoke(null, bricks);
-		} catch (Exception es) {
-			return null;
-		}
+		return invoke(null, method, bricks);
 	}
 
 	public static Object invokeStatic(Class<?> classInMethod, String method, Object... bricks) {
@@ -332,78 +285,115 @@ public class Ref {
 		return Ref.invokeNulled(method, bricks);
 	}
 
-	public static Method findMethod(Object c, String name, Object... bricks) {
-		return Ref.findMethod(c.getClass(), name, bricks);
+	public static Method findMethod(Object clazz, String name, Object... bricks) {
+		return Ref.findMethod(clazz.getClass(), name, bricks);
 	}
 
-	public static Method findMethodByName(Class<?> c, String name) {
-		Method a = null;
-		Class<?> d = c;
-		while (d != null) {
-			for (Method m : Ref.getDeclaredMethods(d))
+	public static Method method(Class<?> clazz, String name, Class<?>... params) {
+		if (params.length == 0) {
+			Class<?> startClass = clazz;
+			while (startClass != null) {
+				for (Method m : Ref.getDeclaredMethods(clazz))
+					if (m.getName().equals(name) && m.getParameterTypes().length == 0) {
+						m.setAccessible(true);
+						return m;
+					}
+				startClass = startClass.getSuperclass();
+			}
+		} else {
+			Class<?> startClass = clazz;
+			while (startClass != null) {
+				for (Method m : Ref.getDeclaredMethods(clazz))
+					if (m.getName().equals(name) && m.getParameterTypes().length == params.length
+							&& areSame(params, m.getParameterTypes())) {
+						m.setAccessible(true);
+						return m;
+					}
+				startClass = startClass.getSuperclass();
+			}
+		}
+		return null;
+	}
+
+	public static Method findMethodByName(Class<?> clazz, String name) {
+		Class<?> startClass = clazz;
+		while (startClass != null) {
+			for (Method m : Ref.getDeclaredMethods(clazz))
 				if (m.getName().equals(name)) {
-					a = m;
-					break;
+					m.setAccessible(true);
+					return m;
 				}
-			if (a != null)
-				break;
-			try {
-				d = d.getSuperclass();
-			} catch (Exception err) {
-				break;
-			}
+			startClass = startClass.getSuperclass();
 		}
-		if (a != null)
-			a.setAccessible(true);
-		return a;
+		return null;
 	}
 
-	public static Method findMethod(Class<?> c, String name, Object... bricks) {
-		Method a = null;
-		Class<?> d = c;
-		Class<?>[] param = new Class<?>[bricks.length];
-		int i = 0;
-		for (Object o : bricks)
-			if (o != null)
-				param[i++] = o instanceof Class ? (Class<?>) o : o.getClass();
-		while (d != null) {
-			for (Method m : Ref.getDeclaredMethods(d))
-				if (m.getName().equals(name) && Ref.areSame(m.getParameterTypes(), param)) {
-					a = m;
-					break;
-				}
-			if (a != null)
-				break;
-			try {
-				d = d.getSuperclass();
-			} catch (Exception err) {
-				break;
+	public static Method findMethod(Class<?> clazz, String name, Object... bricks) {
+		if (bricks.length == 0) {
+			Class<?> startClass = clazz;
+			while (startClass != null) {
+				for (Method m : Ref.getDeclaredMethods(clazz))
+					if (m.getName().equals(name) && m.getParameterTypes().length == 0) {
+						m.setAccessible(true);
+						return m;
+					}
+				startClass = startClass.getSuperclass();
+			}
+		} else {
+			Class<?> startClass = clazz;
+			Class<?>[] params = new Class<?>[bricks.length];
+			for (int i = 0; i < params.length; ++i) {
+				Object brick = bricks[i];
+				params[i] = brick == null ? null : brick instanceof Class ? (Class<?>) brick : brick.getClass();
+			}
+			while (startClass != null) {
+				for (Method m : Ref.getDeclaredMethods(clazz))
+					if (m.getName().equals(name) && m.getParameterTypes().length == params.length
+							&& areSame(params, m.getParameterTypes())) {
+						m.setAccessible(true);
+						return m;
+					}
+				startClass = startClass.getSuperclass();
 			}
 		}
-		if (a != null)
-			a.setAccessible(true);
-		return a;
+		return null;
 	}
 
-	public static Constructor<?> findConstructor(Class<?> c, Object... bricks) {
-		Constructor<?> a = null;
-		Class<?>[] param = new Class<?>[bricks.length];
-		int i = 0;
-		for (Object o : bricks)
-			if (o != null)
-				param[i++] = o instanceof Class ? (Class<?>) o : o.getClass();
-		for (Constructor<?> m : Ref.getDeclaredConstructors(c))
-			if (Ref.areSame(m.getParameterTypes(), param)) {
-				a = m;
-				break;
+	public static Constructor<?> findConstructor(Class<?> clazz, Object... bricks) {
+		if (bricks.length == 0) {
+			Class<?> startClass = clazz;
+			while (startClass != null) {
+				for (Constructor<?> m : Ref.getDeclaredConstructors(clazz))
+					if (m.getParameterTypes().length == 0) {
+						m.setAccessible(true);
+						return m;
+					}
+				startClass = startClass.getSuperclass();
 			}
-		if (a != null)
-			a.setAccessible(true);
-		return a;
+		} else {
+			Class<?> startClass = clazz;
+			Class<?>[] params = new Class<?>[bricks.length];
+			for (int i = 0; i < params.length; ++i) {
+				Object brick = bricks[i];
+				params[i] = brick == null ? null : brick instanceof Class ? (Class<?>) brick : brick.getClass();
+			}
+			while (startClass != null) {
+				for (Constructor<?> m : Ref.getDeclaredConstructors(clazz))
+					if (m.getParameterTypes().length == params.length && areSame(params, m.getParameterTypes())) {
+						m.setAccessible(true);
+						return m;
+					}
+				startClass = startClass.getSuperclass();
+			}
+		}
+		return null;
 	}
 
 	private static boolean areSame(Class<?>[] a, Class<?>[] b) {
-		return Arrays.asList(a).containsAll(Arrays.asList(b));
+		for (int i = 0; i < a.length; ++i)
+			if (a[i] != null && !a[i].isAssignableFrom(b[i]))
+				return false;
+		return true;
 	}
 
 	public static Object newInstance(Constructor<?> constructor, Object... bricks) {
