@@ -45,8 +45,7 @@ public class StringUtils {
 	private static final Pattern normal = Pattern.compile("((^[-])?[ ]*[0-9.]+)[ ]*([+-])[ ]*(-?[ ]*[0-9.]+)");
 
 	public enum TimeFormat {
-		YEARS(31556926, 0), MONTHS(2629743.83, 12), WEEKS(604800, 4.34812141), DAYS(86400, 30.4368499), HOURS(3600, 24),
-		MINUTES(60, 60), SECONDS(1, 60);
+		YEARS(31556926, 0), MONTHS(2629743.83, 12), WEEKS(604800, 4.34812141), DAYS(86400, 30.4368499), HOURS(3600, 24), MINUTES(60, 60), SECONDS(1, 60);
 
 		private double multiplier;
 		private double cast;
@@ -56,11 +55,13 @@ public class StringUtils {
 			this.cast = cast;
 		}
 
-		public double multiplier() {
+		public double multiplier()
+		{
 			return multiplier;
 		}
 
-		public double cast() {
+		public double cast()
+		{
 			return cast;
 		}
 	}
@@ -108,7 +109,8 @@ public class StringUtils {
 		COMPLEX // NORMAL format + balance type
 	}
 
-	public static String formatDouble(FormatType type, double value) {
+	public static String formatDouble(FormatType type, double value)
+	{
 		switch (type) {
 		case BASIC: {
 			String formatted = String.format(Locale.ENGLISH, "%.2f", value);
@@ -186,7 +188,8 @@ public class StringUtils {
 	 * @apiNote Generate random int within limits
 	 * @param max Maximum int (defaulty {@link Integer#MAX_VALUE}
 	 */
-	public static int generateRandomInt(int max) {
+	public static int generateRandomInt(int max)
+	{
 		return StringUtils.generateRandomInt(0, max);
 	}
 
@@ -194,7 +197,8 @@ public class StringUtils {
 	 * @apiNote Generate random double within limits
 	 * @param max Maximum double (defaulty {@link Double#MAX_VALUE}
 	 */
-	public static double generateRandomDouble(double max) {
+	public static double generateRandomDouble(double max)
+	{
 		return StringUtils.generateRandomDouble(0, max);
 	}
 
@@ -204,7 +208,8 @@ public class StringUtils {
 	 * @param max Maximum double (defaulty {@link Double#MAX_VALUE}
 	 * @return double
 	 */
-	public static double generateRandomDouble(double min, double max) {
+	public static double generateRandomDouble(double min, double max)
+	{
 		if (min == max)
 			return min;
 		double result = StringUtils.generateRandomInt((int) min, (int) max) + StringUtils.random.nextDouble();
@@ -219,7 +224,8 @@ public class StringUtils {
 	 * @param max Maximum int (defaulty {@link Integer#MAX_VALUE}
 	 * @return int
 	 */
-	public static int generateRandomInt(int min, int max) {
+	public static int generateRandomInt(int min, int max)
+	{
 		if (min == max)
 			return min;
 		return StringUtils.random.nextInt(max - min) + min;
@@ -228,7 +234,8 @@ public class StringUtils {
 	/**
 	 * @apiNote Split text correctly with colors
 	 */
-	public static List<String> fixedSplit(String text, int lengthOfSplit) {
+	public static List<String> fixedSplit(String text, int lengthOfSplit)
+	{
 		if (text == null)
 			return null;
 		List<String> splitted = new ArrayList<>();
@@ -255,12 +262,11 @@ public class StringUtils {
 	 * @apiNote Copy matches of String from Iterable<String>
 	 * @return List<String>
 	 */
-	public static List<String> copyPartialMatches(String prefix, Iterable<String> originals) {
+	public static List<String> copyPartialMatches(String prefix, Iterable<String> originals)
+	{
 		List<String> collection = new ArrayList<>();
 		for (String string : originals)
-			if (string == null
-					|| string.length() >= prefix.length() && (string.regionMatches(true, 0, prefix, 0, prefix.length())
-							|| string.regionMatches(true, 1, prefix, 0, prefix.length())))
+			if (string == null || string.length() >= prefix.length() && (string.regionMatches(true, 0, prefix, 0, prefix.length()) || string.regionMatches(true, 1, prefix, 0, prefix.length())))
 				collection.add(string);
 		return collection;
 	}
@@ -269,7 +275,8 @@ public class StringUtils {
 	 * @apiNote Copy matches of String from Iterable<String>
 	 * @return List<String>
 	 */
-	public static List<String> copySortedPartialMatches(String prefix, Iterable<String> originals) {
+	public static List<String> copySortedPartialMatches(String prefix, Iterable<String> originals)
+	{
 		List<String> collection = StringUtils.copyPartialMatches(prefix, originals);
 		Collections.sort(collection);
 		return collection;
@@ -282,7 +289,8 @@ public class StringUtils {
 	 * @param args  Arguments
 	 * @return String
 	 */
-	public static String join(Iterable<?> args, String split) {
+	public static String join(Iterable<?> args, String split)
+	{
 		return StringUtils.join(args, split, 0, -1);
 	}
 
@@ -294,7 +302,8 @@ public class StringUtils {
 	 * @param args  Arguments
 	 * @return String
 	 */
-	public static String join(Iterable<?> args, String split, int start) {
+	public static String join(Iterable<?> args, String split, int start)
+	{
 		return StringUtils.join(args, split, start, -1);
 	}
 
@@ -307,7 +316,8 @@ public class StringUtils {
 	 * @param args  Arguments
 	 * @return String
 	 */
-	public static String join(Iterable<?> args, String split, int start, int end) {
+	public static String join(Iterable<?> args, String split, int start, int end)
+	{
 		if (args == null || split == null)
 			return null;
 		StringBuilder msg = new StringBuilder();
@@ -327,7 +337,8 @@ public class StringUtils {
 	 * @param args  Arguments
 	 * @return String
 	 */
-	public static String join(Object[] args, String split) {
+	public static String join(Object[] args, String split)
+	{
 		return StringUtils.join(args, split, 0, args.length);
 	}
 
@@ -339,7 +350,8 @@ public class StringUtils {
 	 * @param args  Arguments
 	 * @return String
 	 */
-	public static String join(Object[] args, String split, int start) {
+	public static String join(Object[] args, String split, int start)
+	{
 		return StringUtils.join(args, split, start, args.length);
 	}
 
@@ -352,7 +364,8 @@ public class StringUtils {
 	 * @param args  Arguments
 	 * @return String
 	 */
-	public static String join(Object[] args, String split, int start, int end) {
+	public static String join(Object[] args, String split, int start, int end)
+	{
 		if (args == null || split == null)
 			return null;
 		StringBuilder msg = new StringBuilder();
@@ -370,7 +383,8 @@ public class StringUtils {
 	 * @param text Input string
 	 * @return String
 	 */
-	public static String getLastColors(String text) {
+	public static String getLastColors(String text)
+	{
 		String[] split = StringUtils.color.getLastColors(text);
 		return split[0] + split[1];
 	}
@@ -380,7 +394,8 @@ public class StringUtils {
 	 * @param text Input string
 	 * @return String[]
 	 */
-	public static String[] getLastColorsSplitFormats(String text) {
+	public static String[] getLastColorsSplitFormats(String text)
+	{
 		return StringUtils.color.getLastColors(text);
 	}
 
@@ -389,7 +404,8 @@ public class StringUtils {
 	 * @param list Input list of strings to colorize
 	 * @return List<String>
 	 */
-	public static List<String> gradient(List<String> list) {
+	public static List<String> gradient(List<String> list)
+	{
 		list.replaceAll(StringUtils::gradient);
 		return list;
 	}
@@ -399,7 +415,8 @@ public class StringUtils {
 	 * @param originalMsg Input string to colorize
 	 * @return String
 	 */
-	public static String gradient(String originalMsg) {
+	public static String gradient(String originalMsg)
+	{
 		if (originalMsg == null || StringUtils.gradientFinder == null)
 			return originalMsg;
 
@@ -429,7 +446,8 @@ public class StringUtils {
 	 * @param list Texts to colorize
 	 * @return List<String>
 	 */
-	public static List<String> colorize(List<String> list) {
+	public static List<String> colorize(List<String> list)
+	{
 		list.replaceAll(StringUtils::colorize);
 		return list;
 	}
@@ -439,7 +457,8 @@ public class StringUtils {
 	 * @param original Text to colorize
 	 * @return String
 	 */
-	public static String colorize(String original) {
+	public static String colorize(String original)
+	{
 		if (original == null || original.trim().isEmpty())
 			return original;
 
@@ -462,12 +481,13 @@ public class StringUtils {
 		return msg;
 	}
 
-	private static boolean has(int c) {
-		return c <= 102 && c >= 97 || c <= 57 && c >= 48 || c <= 70 && c >= 65 || c <= 79 && c >= 75
-				|| c <= 111 && c >= 107 || c == 114 || c == 82 || c == 88 || c == 120;
+	private static boolean has(int c)
+	{
+		return c <= 102 && c >= 97 || c <= 57 && c >= 48 || c <= 70 && c >= 65 || c <= 79 && c >= 75 || c <= 111 && c >= 107 || c == 114 || c == 82 || c == 88 || c == 120;
 	}
 
-	private static char lower(int c) {
+	private static char lower(int c)
+	{
 		switch (c) {
 		case 65:
 		case 66:
@@ -496,7 +516,8 @@ public class StringUtils {
 	 * @return String
 	 *
 	 */
-	public static String buildString(String[] args) {
+	public static String buildString(String[] args)
+	{
 		return StringUtils.join(args, " ", 0, args.length);
 	}
 
@@ -508,7 +529,8 @@ public class StringUtils {
 	 * @return String
 	 *
 	 */
-	public static String buildString(int start, String[] args) {
+	public static String buildString(int start, String[] args)
+	{
 		return StringUtils.join(args, " ", start, args.length);
 	}
 
@@ -521,14 +543,16 @@ public class StringUtils {
 	 * @return String
 	 *
 	 */
-	public static String buildString(int start, int end, String[] args) {
+	public static String buildString(int start, int end, String[] args)
+	{
 		return StringUtils.join(args, " ", start, end);
 	}
 
 	/**
 	 * @apiNote Return random object from list
 	 */
-	public static <T> T getRandomFromList(List<T> list) {
+	public static <T> T getRandomFromList(List<T> list)
+	{
 		if (list == null || list.isEmpty())
 			return null;
 		return list.get(StringUtils.random.nextInt(list.size()));
@@ -538,7 +562,8 @@ public class StringUtils {
 	 * @apiNote Return random object from collection
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T getRandomFromCollection(Collection<T> list) {
+	public static <T> T getRandomFromCollection(Collection<T> list)
+	{
 		if (list == null || list.isEmpty())
 			return null;
 		if (list instanceof List)
@@ -551,7 +576,8 @@ public class StringUtils {
 	 * @param period long Time to convert
 	 * @return String
 	 */
-	public static String timeToString(long period) {
+	public static String timeToString(long period)
+	{
 		return StringUtils.timeToString(period, StringUtils.timeSplit);
 	}
 
@@ -562,15 +588,14 @@ public class StringUtils {
 	 * @param disabled TimeFormat... disabled time formats
 	 * @return String
 	 */
-	public static String timeToString(long period, String split, TimeFormat... disabled) {
+	public static String timeToString(long period, String split, TimeFormat... disabled)
+	{
 		boolean digit = split.equals(":");
 
 		if (period == 0)
 			return digit ? "0" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(0);
 		List<TimeFormat> disabledList = Arrays.asList(disabled);
-		if (disabledList.contains(TimeFormat.YEARS) && disabledList.contains(TimeFormat.MONTHS)
-				&& disabledList.contains(TimeFormat.DAYS) && disabledList.contains(TimeFormat.HOURS)
-				&& disabledList.contains(TimeFormat.MINUTES))
+		if (disabledList.contains(TimeFormat.YEARS) && disabledList.contains(TimeFormat.MONTHS) && disabledList.contains(TimeFormat.DAYS) && disabledList.contains(TimeFormat.HOURS) && disabledList.contains(TimeFormat.MINUTES))
 			return digit ? period + "" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(period); // YOU
 																												// DISABLED
 																												// EVERYTHING??
@@ -631,7 +656,8 @@ public class StringUtils {
 		return builder.toString();
 	}
 
-	private static void addFormat(StringBuilder builder, String split, TimeFormat format, boolean digit, long time) {
+	private static void addFormat(StringBuilder builder, String split, TimeFormat format, boolean digit, long time)
+	{
 		if (time > 0) {
 			boolean notFirst = builder.length() != 0;
 			if (notFirst)
@@ -654,7 +680,8 @@ public class StringUtils {
 	 * @param period String
 	 * @return long
 	 */
-	public static long timeFromString(String original) {
+	public static long timeFromString(String original)
+	{
 		if (original == null || original.isEmpty())
 			return 0;
 
@@ -716,7 +743,8 @@ public class StringUtils {
 	 * @apiNote Get boolean from string
 	 * @return boolean
 	 */
-	public static boolean getBoolean(String fromString) {
+	public static boolean getBoolean(String fromString)
+	{
 		try {
 			return fromString.equalsIgnoreCase("true");
 		} catch (Exception er) {
@@ -728,7 +756,8 @@ public class StringUtils {
 	 * @apiNote Convert String to Math and Calculate exempt
 	 * @return double
 	 */
-	public static double calculate(String original) {
+	public static double calculate(String original)
+	{
 
 		String val = original;
 
@@ -757,7 +786,8 @@ public class StringUtils {
 		return StringUtils.getDouble(val.replaceAll("[^0-9+.-]", ""));
 	}
 
-	private static String splitter(String s) {
+	private static String splitter(String s)
+	{
 		StringBuilder i = new StringBuilder();
 		StringBuilder fix = new StringBuilder();
 
@@ -773,8 +803,7 @@ public class StringUtils {
 				fix.append(c);
 				if (--count == 0) {
 					waiting = 0;
-					i = new StringBuilder(i.toString().replace(fix.toString(),
-							"" + StringUtils.calculate(fix.substring(1, fix.length() - 1))));
+					i = new StringBuilder(i.toString().replace(fix.toString(), "" + StringUtils.calculate(fix.substring(1, fix.length() - 1))));
 					fix.delete(0, fix.length());
 				}
 			} else if (waiting == 1)
@@ -787,7 +816,8 @@ public class StringUtils {
 	 * @apiNote Get double from string
 	 * @return double
 	 */
-	public static double getDouble(String fromString) {
+	public static double getDouble(String fromString)
+	{
 		if (fromString == null)
 			return 0.0D;
 		String a = fromString.replaceAll("[^+0-9E.,-]+", "").replace(",", ".");
@@ -802,7 +832,8 @@ public class StringUtils {
 	 * @apiNote Is string, double ?
 	 * @return boolean
 	 */
-	public static boolean isDouble(String fromString) {
+	public static boolean isDouble(String fromString)
+	{
 		try {
 			Double.parseDouble(fromString);
 			return true;
@@ -815,7 +846,8 @@ public class StringUtils {
 	 * @apiNote Get long from string
 	 * @return long
 	 */
-	public static long getLong(String fromString) {
+	public static long getLong(String fromString)
+	{
 		if (fromString == null)
 			return 0L;
 		String a = fromString.replaceAll("[^+0-9E.,-]+", "").replace(",", ".");
@@ -830,7 +862,8 @@ public class StringUtils {
 	 * @apiNote Is string, long ?
 	 * @return boolean
 	 */
-	public static boolean isLong(String fromString) {
+	public static boolean isLong(String fromString)
+	{
 		try {
 			Long.parseLong(fromString);
 		} catch (NumberFormatException e) {
@@ -843,7 +876,8 @@ public class StringUtils {
 	 * @apiNote Get int from string
 	 * @return int
 	 */
-	public static int getInt(String fromString) {
+	public static int getInt(String fromString)
+	{
 		if (fromString == null)
 			return 0;
 		String a = fromString.replaceAll("[^+0-9E.,-]+", "").replace(",", ".");
@@ -868,7 +902,8 @@ public class StringUtils {
 	 * @apiNote Is string, integer ?
 	 * @return boolean
 	 */
-	public static boolean isInt(String fromString) {
+	public static boolean isInt(String fromString)
+	{
 		try {
 			Integer.parseInt(fromString);
 			return true;
@@ -881,7 +916,8 @@ public class StringUtils {
 	 * @apiNote Is string, float ?
 	 * @return boolean
 	 */
-	public static boolean isFloat(String fromString) {
+	public static boolean isFloat(String fromString)
+	{
 		try {
 			Float.parseFloat(fromString);
 			return true;
@@ -894,7 +930,8 @@ public class StringUtils {
 	 * @apiNote Get float from string
 	 * @return float
 	 */
-	public static float getFloat(String fromString) {
+	public static float getFloat(String fromString)
+	{
 		if (fromString == null)
 			return 0F;
 		String a = fromString.replaceAll("[^+0-9E.,-]+", "").replace(",", ".");
@@ -909,7 +946,8 @@ public class StringUtils {
 	 * @apiNote Is string, float ?
 	 * @return boolean
 	 */
-	public static boolean isByte(String fromString) {
+	public static boolean isByte(String fromString)
+	{
 		try {
 			Byte.parseByte(fromString);
 		} catch (NumberFormatException e) {
@@ -922,7 +960,8 @@ public class StringUtils {
 	 * @apiNote Get float from string
 	 * @return float
 	 */
-	public static byte getByte(String fromString) {
+	public static byte getByte(String fromString)
+	{
 		if (fromString == null)
 			return (byte) 0;
 		String a = fromString.replaceAll("[^+0-9E-]+", "");
@@ -937,7 +976,8 @@ public class StringUtils {
 	 * @apiNote Is string, float ?
 	 * @return boolean
 	 */
-	public static boolean isShort(String fromString) {
+	public static boolean isShort(String fromString)
+	{
 		try {
 			Short.parseShort(fromString);
 		} catch (NumberFormatException e) {
@@ -950,7 +990,8 @@ public class StringUtils {
 	 * @apiNote Get float from string
 	 * @return float
 	 */
-	public static short getShort(String fromString) {
+	public static short getShort(String fromString)
+	{
 		if (fromString == null)
 			return (short) 0;
 		String a = fromString.replaceAll("[^+0-9E-]+", "");
@@ -965,26 +1006,29 @@ public class StringUtils {
 	 * @apiNote Is string, number ?
 	 * @return boolean
 	 */
-	public static boolean isNumber(String fromString) {
-		return StringUtils.isInt(fromString) || StringUtils.isDouble(fromString) || StringUtils.isLong(fromString)
-				|| StringUtils.isByte(fromString) || StringUtils.isShort(fromString) || StringUtils.isFloat(fromString);
+	public static boolean isNumber(String fromString)
+	{
+		return StringUtils.isInt(fromString) || StringUtils.isDouble(fromString) || StringUtils.isLong(fromString) || StringUtils.isByte(fromString) || StringUtils.isShort(fromString) || StringUtils.isFloat(fromString);
 	}
 
 	/**
 	 * @apiNote Is string, boolean ?
 	 * @return boolean
 	 */
-	public static boolean isBoolean(String fromString) {
+	public static boolean isBoolean(String fromString)
+	{
 		if (fromString == null)
 			return false;
 		return fromString.equalsIgnoreCase("true") || fromString.equalsIgnoreCase("false");
 	}
 
-	public static boolean containsSpecial(String value) {
+	public static boolean containsSpecial(String value)
+	{
 		return StringUtils.special.matcher(value).find();
 	}
 
-	public static Number getNumber(String o) {
+	public static Number getNumber(String o)
+	{
 		if (o == null)
 			return null;
 		if (!o.contains(".")) {

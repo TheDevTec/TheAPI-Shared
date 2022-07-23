@@ -13,11 +13,13 @@ public class ServerClientReceiveDataEvent extends Event {
 		this.client = client;
 	}
 
-	public SocketClient getClient() {
+	public SocketClient getClient()
+	{
 		return client;
 	}
 
-	public Config getData() {
+	public Config getData()
+	{
 		return data;
 	}
 }

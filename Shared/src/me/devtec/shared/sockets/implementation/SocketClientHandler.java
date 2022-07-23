@@ -41,37 +41,43 @@ public class SocketClientHandler implements SocketClient {
 	}
 
 	@Override
-	public String serverName() {
+	public String serverName()
+	{
 		return new String(SocketClientHandler.serverName);
 	}
 
 	@Override
-	public String ip() {
+	public String ip()
+	{
 		return ip;
 	}
 
 	@Override
-	public int port() {
+	public int port()
+	{
 		return port;
 	}
 
 	@Override
-	public int ping() {
+	public int ping()
+	{
 		return ping;
 	}
 
 	@Override
-	public boolean isConnected() {
+	public boolean isConnected()
+	{
 		return connected && checkRawConnected();
 	}
 
-	public boolean checkRawConnected() {
-		return socket != null && !socket.isInputShutdown() && !socket.isOutputShutdown() && !socket.isClosed()
-				&& socket.isConnected();
+	public boolean checkRawConnected()
+	{
+		return socket != null && !socket.isInputShutdown() && !socket.isOutputShutdown() && !socket.isClosed() && socket.isConnected();
 	}
 
 	@Override
-	public void start() {
+	public void start()
+	{
 		if (!API.isEnabled())
 			return;
 		try {
@@ -101,8 +107,7 @@ public class SocketClientHandler implements SocketClient {
 				out.writeInt(password.length);
 				out.write(password);
 				int result = in.readInt(); // backwards support
-				ServerClientRespondeEvent respondeEvent = new ServerClientRespondeEvent(SocketClientHandler.this,
-						result);
+				ServerClientRespondeEvent respondeEvent = new ServerClientRespondeEvent(SocketClientHandler.this, result);
 				EventManager.call(respondeEvent);
 				if (result == ClientResponde.REQUEST_NAME.getResponde()) {
 					out.writeInt(SocketClientHandler.serverName.length);
@@ -125,7 +130,8 @@ public class SocketClientHandler implements SocketClient {
 		}
 	}
 
-	private void openConnection() {
+	private void openConnection()
+	{
 		connected = true;
 		manuallyClosed = false;
 		// LOGGED IN, START READER
@@ -152,8 +158,7 @@ public class SocketClientHandler implements SocketClient {
 							}
 							continue;
 						}
-						ServerClientRespondeEvent crespondeEvent = new ServerClientRespondeEvent(
-								SocketClientHandler.this, task);
+						ServerClientRespondeEvent crespondeEvent = new ServerClientRespondeEvent(SocketClientHandler.this, task);
 						EventManager.call(crespondeEvent);
 						SocketUtils.process(this, task);
 					} catch (Exception e) {
@@ -167,7 +172,8 @@ public class SocketClientHandler implements SocketClient {
 		}).start();
 	}
 
-	private Socket tryConnect() {
+	private Socket tryConnect()
+	{
 		try {
 			Socket socket = new Socket(ip, port);
 			socket.setReuseAddress(true);
@@ -178,7 +184,8 @@ public class SocketClientHandler implements SocketClient {
 	}
 
 	@Override
-	public void stop() {
+	public void stop()
+	{
 		manuallyClosed = true;
 		connected = false;
 		try {
@@ -189,37 +196,44 @@ public class SocketClientHandler implements SocketClient {
 	}
 
 	@Override
-	public Socket getSocket() {
+	public Socket getSocket()
+	{
 		return socket;
 	}
 
 	@Override
-	public DataInputStream getInputStream() {
+	public DataInputStream getInputStream()
+	{
 		return in;
 	}
 
 	@Override
-	public DataOutputStream getOutputStream() {
+	public DataOutputStream getOutputStream()
+	{
 		return out;
 	}
 
 	@Override
-	public boolean canReconnect() {
+	public boolean canReconnect()
+	{
 		return true;
 	}
 
 	@Override
-	public void lock() {
+	public void lock()
+	{
 		lock = true;
 	}
 
 	@Override
-	public boolean shouldAddToQueue() {
+	public boolean shouldAddToQueue()
+	{
 		return !isConnected() || isLocked();
 	}
 
 	@Override
-	public void unlock() {
+	public void unlock()
+	{
 		lock = false;
 		while (!actionsAfterUnlock().isEmpty()) {
 			SocketAction value = actionsAfterUnlock().poll();
@@ -231,12 +245,14 @@ public class SocketClientHandler implements SocketClient {
 	}
 
 	@Override
-	public boolean isLocked() {
+	public boolean isLocked()
+	{
 		return lock;
 	}
 
 	@Override
-	public Queue<SocketAction> actionsAfterUnlock() {
+	public Queue<SocketAction> actionsAfterUnlock()
+	{
 		return actions;
 	}
 

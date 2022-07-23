@@ -13,7 +13,8 @@ public class DataValue {
 	public String commentAfterValue;
 	public List<String> comments;
 
-	public static DataValue of(String writtenValue, Object value, String commentAfterValue, List<String> comments) {
+	public static DataValue of(String writtenValue, Object value, String commentAfterValue, List<String> comments)
+	{
 		DataValue data = new DataValue();
 		data.value = value;
 		data.writtenValue = writtenValue;
@@ -22,7 +23,8 @@ public class DataValue {
 		return data;
 	}
 
-	public static DataValue of(String writtenValue, Object value, String commentAfterValue) {
+	public static DataValue of(String writtenValue, Object value, String commentAfterValue)
+	{
 		DataValue data = new DataValue();
 		data.value = value;
 		data.writtenValue = writtenValue;
@@ -30,20 +32,23 @@ public class DataValue {
 		return data;
 	}
 
-	public static DataValue of(String writtenValue, Object value) {
+	public static DataValue of(String writtenValue, Object value)
+	{
 		DataValue data = new DataValue();
 		data.value = value;
 		data.writtenValue = writtenValue;
 		return data;
 	}
 
-	public static DataValue of(Object value) {
+	public static DataValue of(Object value)
+	{
 		DataValue data = new DataValue();
 		data.value = value;
 		return data;
 	}
 
-	public static DataValue empty() {
+	public static DataValue empty()
+	{
 		return new DataValue();
 	}
 
@@ -52,7 +57,8 @@ public class DataValue {
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		Map<String, Object> values = new HashMap<>();
 		values.put("value", this.value + "");
 		if (this.writtenValue != null)

@@ -22,17 +22,20 @@ public class BlockMathIterator implements Iterable<double[]> {
 		this.sizeZ = Math.abs(Math.max(posZ, posZ2) - this.baseZ) + 1;
 	}
 
-	public void reset() {
+	public void reset()
+	{
 		this.x = 0;
 		this.y = 0;
 		this.z = 0;
 	}
 
-	public boolean has() {
+	public boolean has()
+	{
 		return this.x < this.sizeX && this.y < this.sizeY && this.z < this.sizeZ;
 	}
 
-	public double[] get() {
+	public double[] get()
+	{
 		double[] b = { this.baseX + this.x, this.baseY + this.y, this.baseZ + this.z };
 		if (!this.has())
 			return b;
@@ -47,15 +50,18 @@ public class BlockMathIterator implements Iterable<double[]> {
 	}
 
 	@Override
-	public Iterator<double[]> iterator() {
+	public Iterator<double[]> iterator()
+	{
 		return new Iterator<double[]>() {
 			@Override
-			public boolean hasNext() {
+			public boolean hasNext()
+			{
 				return BlockMathIterator.this.has();
 			}
 
 			@Override
-			public double[] next() {
+			public double[] next()
+			{
 				return BlockMathIterator.this.get();
 			}
 		};

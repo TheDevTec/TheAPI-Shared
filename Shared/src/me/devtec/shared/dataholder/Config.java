@@ -39,17 +39,20 @@ public class Config {
 	protected boolean isSaving; // LOCK
 	protected boolean requireSave;
 
-	public static Config loadFromInput(InputStream input) {
+	public static Config loadFromInput(InputStream input)
+	{
 		Config insideJar = new Config();
 		insideJar.reload(StreamUtils.fromStream(input));
 		return insideJar;
 	}
 
-	public static Config loadFromInput(InputStream input, String outputFile) {
+	public static Config loadFromInput(InputStream input, String outputFile)
+	{
 		return Config.loadFromInput(input, new File(outputFile));
 	}
 
-	public static Config loadFromInput(InputStream input, File outputFile) {
+	public static Config loadFromInput(InputStream input, File outputFile)
+	{
 		Config config = new Config(outputFile);
 		Config insideJar = new Config();
 		insideJar.reload(StreamUtils.fromStream(input));
@@ -57,23 +60,28 @@ public class Config {
 		return config;
 	}
 
-	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, File outputFile) {
+	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, File outputFile)
+	{
 		return Config.loadFromInput(mainClass.getClassLoader().getResourceAsStream(pathToFile), outputFile);
 	}
 
-	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, String outputFile) {
+	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, String outputFile)
+	{
 		return Config.loadFromInput(mainClass.getClassLoader().getResourceAsStream(pathToFile), new File(outputFile));
 	}
 
-	public static Config loadFromFile(File file) {
+	public static Config loadFromFile(File file)
+	{
 		return new Config(file);
 	}
 
-	public static Config loadFromFile(String filePath) {
+	public static Config loadFromFile(String filePath)
+	{
 		return new Config(filePath);
 	}
 
-	public static Config loadFromString(String input) {
+	public static Config loadFromString(String input)
+	{
 		return new Config().reload(input);
 	}
 
@@ -132,27 +140,33 @@ public class Config {
 		loader = data.loader;
 	}
 
-	public boolean isModified() {
+	public boolean isModified()
+	{
 		return requireSave;
 	}
 
-	public void markModified() {
+	public void markModified()
+	{
 		requireSave = true;
 	}
 
-	public void markNonModified() {
+	public void markNonModified()
+	{
 		requireSave = false;
 	}
 
-	public boolean exists(String path) {
+	public boolean exists(String path)
+	{
 		return isKey(path);
 	}
 
-	public boolean existsKey(String path) {
+	public boolean existsKey(String path)
+	{
 		return loader.get().containsKey(path);
 	}
 
-	public Config setFile(File file) {
+	public Config setFile(File file)
+	{
 		if (file == this.file)
 			return this;
 		markModified();
@@ -172,7 +186,8 @@ public class Config {
 		return this;
 	}
 
-	public DataValue getOrCreateData(String key) {
+	public DataValue getOrCreateData(String key)
+	{
 		DataValue h = loader.get().get(key);
 		if (h == null) {
 			String ss = Config.splitFirst(key);
@@ -183,12 +198,14 @@ public class Config {
 		return h;
 	}
 
-	private static String splitFirst(String text) {
+	private static String splitFirst(String text)
+	{
 		int next = text.indexOf('.');
 		return next != -1 ? text.substring(0, next) : text;
 	}
 
-	public boolean setIfAbsent(String key, Object value) {
+	public boolean setIfAbsent(String key, Object value)
+	{
 		if (key == null || value == null)
 			return false;
 		if (!existsKey(key)) {
@@ -200,7 +217,8 @@ public class Config {
 		return false;
 	}
 
-	public boolean setIfAbsent(String key, Object value, List<String> comments) {
+	public boolean setIfAbsent(String key, Object value, List<String> comments)
+	{
 		if (key == null || value == null)
 			return false;
 		if (!existsKey(key)) {
@@ -221,7 +239,8 @@ public class Config {
 		return false;
 	}
 
-	public Config set(String key, Object value) {
+	public Config set(String key, Object value)
+	{
 		if (key == null)
 			return this;
 		if (value == null) {
@@ -241,7 +260,8 @@ public class Config {
 		return this;
 	}
 
-	public Config remove(String key) {
+	public Config remove(String key)
+	{
 		if (key == null)
 			return this;
 		boolean removed = false;
@@ -263,7 +283,8 @@ public class Config {
 		return this;
 	}
 
-	public List<String> getComments(String key) {
+	public List<String> getComments(String key)
+	{
 		if (key == null)
 			return null;
 		DataValue h = loader.get().get(key);
@@ -272,7 +293,8 @@ public class Config {
 		return null;
 	}
 
-	public Config setComments(String key, List<String> value) {
+	public Config setComments(String key, List<String> value)
+	{
 		if (key == null)
 			return this;
 		if (value == null) {
@@ -290,7 +312,8 @@ public class Config {
 		return this;
 	}
 
-	public String getCommentAfterValue(String key) {
+	public String getCommentAfterValue(String key)
+	{
 		if (key == null)
 			return null;
 		DataValue h = loader.get().get(key);
@@ -299,7 +322,8 @@ public class Config {
 		return null;
 	}
 
-	public Config setCommentAfterValue(String key, String comment) {
+	public Config setCommentAfterValue(String key, String comment)
+	{
 		if (key == null)
 			return null;
 		DataValue val = getOrCreateData(key);
@@ -309,11 +333,13 @@ public class Config {
 		return this;
 	}
 
-	public File getFile() {
+	public File getFile()
+	{
 		return file;
 	}
 
-	public Config setHeader(Collection<String> lines) {
+	public Config setHeader(Collection<String> lines)
+	{
 		markModified();
 		loader.getHeader().clear();
 		if (lines != null)
@@ -321,7 +347,8 @@ public class Config {
 		return this;
 	}
 
-	public Config setFooter(Collection<String> lines) {
+	public Config setFooter(Collection<String> lines)
+	{
 		markModified();
 		loader.getFooter().clear();
 		if (lines != null)
@@ -329,15 +356,18 @@ public class Config {
 		return this;
 	}
 
-	public Collection<String> getHeader() {
+	public Collection<String> getHeader()
+	{
 		return loader.getHeader();
 	}
 
-	public Collection<String> getFooter() {
+	public Collection<String> getFooter()
+	{
 		return loader.getFooter();
 	}
 
-	public Config reload(String input) {
+	public Config reload(String input)
+	{
 		markModified();
 		keys.clear();
 		loader = DataLoader.findLoaderFor(input); // get & load
@@ -349,11 +379,13 @@ public class Config {
 		return this;
 	}
 
-	public Config reload() {
+	public Config reload()
+	{
 		return this.reload(getFile());
 	}
 
-	public Config reload(File f) {
+	public Config reload(File f)
+	{
 		if (!f.exists()) {
 			markModified();
 			loader = new EmptyLoader();
@@ -371,11 +403,13 @@ public class Config {
 		return this;
 	}
 
-	public Object get(String key) {
+	public Object get(String key)
+	{
 		return get(key, null);
 	}
 
-	public Object get(String key, Object defaultValue) {
+	public Object get(String key, Object defaultValue)
+	{
 		try {
 			return loader.get().get(key).value;
 		} catch (Exception e) {
@@ -383,7 +417,8 @@ public class Config {
 		}
 	}
 
-	public <E> E getAs(String key, Class<? extends E> clazz) {
+	public <E> E getAs(String key, Class<? extends E> clazz)
+	{
 		try {
 			if (clazz == String.class || clazz == CharSequence.class)
 				return clazz.cast(getString(key));
@@ -396,11 +431,13 @@ public class Config {
 		return null;
 	}
 
-	public String getString(String key) {
+	public String getString(String key)
+	{
 		return getString(key, null);
 	}
 
-	public String getString(String key, String defaultValue) {
+	public String getString(String key, String defaultValue)
+	{
 		DataValue a = loader.get().get(key);
 		if (a == null)
 			return defaultValue;
@@ -409,22 +446,24 @@ public class Config {
 		return a.value instanceof String ? (String) a.value : a.value == null ? defaultValue : a.value + "";
 	}
 
-	public boolean isJson(String key) {
+	public boolean isJson(String key)
+	{
 		try {
 			DataValue a = loader.get().get(key);
 			if (a.writtenValue != null)
-				return a.writtenValue.charAt(0) == '[' && a.writtenValue.charAt(a.writtenValue.length() - 1) == ']'
-						|| a.writtenValue.charAt(0) == '{' && a.writtenValue.charAt(a.writtenValue.length() - 1) == '}';
+				return a.writtenValue.charAt(0) == '[' && a.writtenValue.charAt(a.writtenValue.length() - 1) == ']' || a.writtenValue.charAt(0) == '{' && a.writtenValue.charAt(a.writtenValue.length() - 1) == '}';
 		} catch (Exception notNumber) {
 		}
 		return false;
 	}
 
-	public int getInt(String key) {
+	public int getInt(String key)
+	{
 		return getInt(key, 0);
 	}
 
-	public int getInt(String key, int defaultValue) {
+	public int getInt(String key, int defaultValue)
+	{
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -435,11 +474,13 @@ public class Config {
 		}
 	}
 
-	public double getDouble(String key) {
+	public double getDouble(String key)
+	{
 		return getDouble(key, 0);
 	}
 
-	public double getDouble(String key, double defaultValue) {
+	public double getDouble(String key, double defaultValue)
+	{
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -450,11 +491,13 @@ public class Config {
 		}
 	}
 
-	public long getLong(String key) {
+	public long getLong(String key)
+	{
 		return getLong(key, 0);
 	}
 
-	public long getLong(String key, long defaultValue) {
+	public long getLong(String key, long defaultValue)
+	{
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -465,11 +508,13 @@ public class Config {
 		}
 	}
 
-	public float getFloat(String key) {
+	public float getFloat(String key)
+	{
 		return getFloat(key, 0);
 	}
 
-	public float getFloat(String key, float defaultValue) {
+	public float getFloat(String key, float defaultValue)
+	{
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -480,11 +525,13 @@ public class Config {
 		}
 	}
 
-	public byte getByte(String key) {
+	public byte getByte(String key)
+	{
 		return getByte(key, (byte) 0);
 	}
 
-	public byte getByte(String key, byte defaultValue) {
+	public byte getByte(String key, byte defaultValue)
+	{
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -495,11 +542,13 @@ public class Config {
 		}
 	}
 
-	public short getShort(String key) {
+	public short getShort(String key)
+	{
 		return getShort(key, (short) 0);
 	}
 
-	public short getShort(String key, short defaultValue) {
+	public short getShort(String key, short defaultValue)
+	{
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -510,11 +559,13 @@ public class Config {
 		}
 	}
 
-	public boolean getBoolean(String key) {
+	public boolean getBoolean(String key)
+	{
 		return getBoolean(key, false);
 	}
 
-	public boolean getBoolean(String key, boolean defaultValue) {
+	public boolean getBoolean(String key, boolean defaultValue)
+	{
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -525,18 +576,21 @@ public class Config {
 		}
 	}
 
-	public Collection<Object> getList(String key) {
+	public Collection<Object> getList(String key)
+	{
 		return getList(key, null);
 	}
 
-	public Collection<Object> getList(String key, Collection<Object> defaultValue) {
+	public Collection<Object> getList(String key, Collection<Object> defaultValue)
+	{
 		Object value = get(key);
 		if (value == null || !(value instanceof Collection))
 			return defaultValue;
 		return new ArrayList<>((Collection<?>) value);
 	}
 
-	public <E> List<E> getListAs(String key, Class<? extends E> clazz) {
+	public <E> List<E> getListAs(String key, Class<? extends E> clazz)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -549,7 +603,8 @@ public class Config {
 		return list;
 	}
 
-	public List<String> getStringList(String key) {
+	public List<String> getStringList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -562,7 +617,8 @@ public class Config {
 		return list;
 	}
 
-	public List<Boolean> getBooleanList(String key) {
+	public List<Boolean> getBooleanList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -572,7 +628,8 @@ public class Config {
 		return list;
 	}
 
-	public List<Integer> getIntegerList(String key) {
+	public List<Integer> getIntegerList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -582,51 +639,52 @@ public class Config {
 		return list;
 	}
 
-	public List<Double> getDoubleList(String key) {
+	public List<Double> getDoubleList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
 		List<Double> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0.0
-					: o instanceof Number ? ((Number) o).doubleValue() : StringUtils.getDouble(o.toString()));
+			list.add(o == null ? 0.0 : o instanceof Number ? ((Number) o).doubleValue() : StringUtils.getDouble(o.toString()));
 		return list;
 	}
 
-	public List<Short> getShortList(String key) {
+	public List<Short> getShortList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
 		List<Short> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0
-					: o instanceof Number ? ((Number) o).shortValue() : StringUtils.getShort(o.toString()));
+			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).shortValue() : StringUtils.getShort(o.toString()));
 		return list;
 	}
 
-	public List<Byte> getByteList(String key) {
+	public List<Byte> getByteList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
 		List<Byte> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(
-					o == null ? 0 : o instanceof Number ? ((Number) o).byteValue() : StringUtils.getByte(o.toString()));
+			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).byteValue() : StringUtils.getByte(o.toString()));
 		return list;
 	}
 
-	public List<Float> getFloatList(String key) {
+	public List<Float> getFloatList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
 		List<Float> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0
-					: o instanceof Number ? ((Number) o).floatValue() : StringUtils.getFloat(o.toString()));
+			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).floatValue() : StringUtils.getFloat(o.toString()));
 		return list;
 	}
 
-	public List<Long> getLongList(String key) {
+	public List<Long> getLongList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -637,7 +695,8 @@ public class Config {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <K, V> List<Map<K, V>> getMapList(String key) {
+	public <K, V> List<Map<K, V>> getMapList(String key)
+	{
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -654,7 +713,8 @@ public class Config {
 		return list;
 	}
 
-	public Config save(DataType type) {
+	public Config save(DataType type)
+	{
 		if (file == null || isSaving || !isModified())
 			return this;
 		if (!file.exists()) {
@@ -683,23 +743,28 @@ public class Config {
 		return this;
 	}
 
-	public void save() {
+	public void save()
+	{
 		this.save(DataType.YAML);
 	}
 
-	public Set<String> getKeys() {
+	public Set<String> getKeys()
+	{
 		return new HashSet<>(keys);
 	}
 
-	public Set<String> getKeys(boolean subkeys) {
+	public Set<String> getKeys(boolean subkeys)
+	{
 		return subkeys ? loader.getKeys() : getKeys();
 	}
 
-	public Set<String> getKeys(String key) {
+	public Set<String> getKeys(String key)
+	{
 		return this.getKeys(key, false);
 	}
 
-	public boolean isKey(String key) {
+	public boolean isKey(String key)
+	{
 		for (String k : loader.getKeys())
 			if (k.startsWith(key)) {
 				String r = k.substring(key.length());
@@ -709,7 +774,8 @@ public class Config {
 		return false;
 	}
 
-	public Set<String> getKeys(String key, boolean subkeys) {
+	public Set<String> getKeys(String key, boolean subkeys)
+	{
 		Set<String> a = new LinkedHashSet<>();
 		for (String d : loader.getKeys())
 			if (d.startsWith(key)) {
@@ -728,11 +794,13 @@ public class Config {
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return this.toString(DataType.YAML);
 	}
 
-	protected void addKeys(List<Map<String, String>> list, String key) {
+	protected void addKeys(List<Map<String, String>> list, String key)
+	{
 		Object o = get(key);
 		if (o != null) {
 			Map<String, String> a = new ConcurrentHashMap<>();
@@ -743,7 +811,8 @@ public class Config {
 			addKeys(list, key + "." + keyer);
 	}
 
-	public String toString(DataType type) {
+	public String toString(DataType type)
+	{
 		switch (type) {
 		case PROPERTIES: {
 			int size = loader.get().size();
@@ -812,7 +881,8 @@ public class Config {
 		return null;
 	}
 
-	public byte[] toByteArray() {
+	public byte[] toByteArray()
+	{
 		try {
 			ByteArrayDataOutput in = ByteStreams.newDataOutput(loader.get().size());
 			in.writeInt(3);
@@ -863,44 +933,44 @@ public class Config {
 		}
 	}
 
-	public Config clear() {
+	public Config clear()
+	{
 		keys.clear();
 		loader.get().clear();
 		return this;
 	}
 
-	public Config reset() {
+	public Config reset()
+	{
 		keys.clear();
 		loader.reset();
 		return this;
 	}
 
-	public boolean merge(Config configToMergeWith) {
+	public boolean merge(Config configToMergeWith)
+	{
 		return this.merge(configToMergeWith, true, true, true, true);
 	}
 
-	public boolean merge(Config configToMergeWith, boolean addHeader, boolean addFooter) {
+	public boolean merge(Config configToMergeWith, boolean addHeader, boolean addFooter)
+	{
 		return this.merge(configToMergeWith, addHeader, addFooter, true, true);
 	}
 
-	public boolean merge(Config configToMergeWith, boolean addHeader, boolean addFooter, boolean addCommentsAfterValue,
-			boolean addComments) {
+	public boolean merge(Config configToMergeWith, boolean addHeader, boolean addFooter, boolean addCommentsAfterValue, boolean addComments)
+	{
 		boolean change = false;
 
 		// header & footer option
 		try {
 			if (addHeader && loader.getHeader() != null /** Is header supported? **/
-					&& configToMergeWith.loader.getHeader() != null && !configToMergeWith.loader.getHeader().isEmpty()
-					&& (loader.getHeader().isEmpty()
-							|| !loader.getHeader().containsAll(configToMergeWith.loader.getHeader()))) {
+					&& configToMergeWith.loader.getHeader() != null && !configToMergeWith.loader.getHeader().isEmpty() && (loader.getHeader().isEmpty() || !loader.getHeader().containsAll(configToMergeWith.loader.getHeader()))) {
 				loader.getHeader().clear();
 				loader.getHeader().addAll(configToMergeWith.loader.getHeader());
 				change = true;
 			}
 			if (addFooter && loader.getFooter() != null /** Is footer supported? **/
-					&& configToMergeWith.loader.getFooter() != null && !configToMergeWith.loader.getFooter().isEmpty()
-					&& (loader.getFooter().isEmpty()
-							|| !loader.getFooter().containsAll(configToMergeWith.loader.getFooter()))) {
+					&& configToMergeWith.loader.getFooter() != null && !configToMergeWith.loader.getFooter().isEmpty() && (loader.getFooter().isEmpty() || !loader.getFooter().containsAll(configToMergeWith.loader.getFooter()))) {
 				loader.getFooter().clear();
 				loader.getFooter().addAll(configToMergeWith.loader.getFooter());
 				change = true;
@@ -918,16 +988,14 @@ public class Config {
 					value.writtenValue = s.getValue().writtenValue;
 					change = true;
 				}
-				if (addCommentsAfterValue && value.commentAfterValue == null && s.getValue().commentAfterValue != null
-						&& !s.getValue().commentAfterValue.equals(value.commentAfterValue)) {
+				if (addCommentsAfterValue && value.commentAfterValue == null && s.getValue().commentAfterValue != null && !s.getValue().commentAfterValue.equals(value.commentAfterValue)) {
 					value.commentAfterValue = s.getValue().commentAfterValue;
 					change = true;
 				}
 				if (addComments && s.getValue().comments != null && !s.getValue().comments.isEmpty()) {
 					List<String> comments = value.comments;
 					if (comments == null || comments.isEmpty()) {
-						if (first && getHeader() != null && !getHeader().isEmpty()
-								&& getHeader().containsAll(s.getValue().comments))
+						if (first && getHeader() != null && !getHeader().isEmpty() && getHeader().containsAll(s.getValue().comments))
 							continue;
 						value.comments = s.getValue().comments;
 						change = true;
@@ -944,7 +1012,8 @@ public class Config {
 		return change;
 	}
 
-	public static List<String> simple(List<String> list) {
+	public static List<String> simple(List<String> list)
+	{
 		ListIterator<String> s = list.listIterator();
 		while (s.hasNext()) {
 			String next = s.next();
@@ -956,7 +1025,8 @@ public class Config {
 		return list;
 	}
 
-	private static List<String> simple(Collection<String> list) {
+	private static List<String> simple(Collection<String> list)
+	{
 		if (list instanceof ArrayList)
 			return Config.simple((List<String>) list);
 		List<String> fix = new ArrayList<>(list.size());
@@ -971,7 +1041,8 @@ public class Config {
 		return fix;
 	}
 
-	public DataLoader getDataLoader() {
+	public DataLoader getDataLoader()
+	{
 		return loader;
 	}
 }

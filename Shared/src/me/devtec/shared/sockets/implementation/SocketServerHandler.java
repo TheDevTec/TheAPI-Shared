@@ -34,12 +34,14 @@ public class SocketServerHandler implements SocketServer {
 	}
 
 	@Override
-	public String serverName() {
+	public String serverName()
+	{
 		return serverName;
 	}
 
 	@Override
-	public List<SocketClient> connectedClients() {
+	public List<SocketClient> connectedClients()
+	{
 		return connected;
 	}
 
@@ -47,21 +49,25 @@ public class SocketServerHandler implements SocketServer {
 	 * @apiNote Enable fast socket client logins to the server, this can increase
 	 *          CPU usage
 	 */
-	public void setFastConnection(boolean fastConnection) {
+	public void setFastConnection(boolean fastConnection)
+	{
 		this.fastConnection = fastConnection;
 	}
 
-	public boolean getFastConnection() {
+	public boolean getFastConnection()
+	{
 		return fastConnection;
 	}
 
 	@Override
-	public boolean isRunning() {
+	public boolean isRunning()
+	{
 		return serverSocket != null && serverSocket.isBound() && !serverSocket.isClosed();
 	}
 
 	@Override
-	public void notifyDisconnect(SocketClient client) {
+	public void notifyDisconnect(SocketClient client)
+	{
 		if (connected.remove(client)) {
 			ServerClientDisconnectedEvent event = new ServerClientDisconnectedEvent(client);
 			EventManager.call(event);
@@ -69,7 +75,8 @@ public class SocketServerHandler implements SocketServer {
 	}
 
 	@Override
-	public void start() {
+	public void start()
+	{
 		try {
 			serverSocket = new ServerSocket(port);
 			serverSocket.setReuseAddress(true);
@@ -94,7 +101,8 @@ public class SocketServerHandler implements SocketServer {
 		}
 	}
 
-	protected void handleConnection(Socket socket) {
+	protected void handleConnection(Socket socket)
+	{
 		if (getFastConnection())
 			try {
 				if (socket.isInputShutdown() || socket.isOutputShutdown())
@@ -166,8 +174,7 @@ public class SocketServerHandler implements SocketServer {
 							if (event.isCancelled()) {
 								Thread.sleep(100);
 								out.writeInt(ClientResponde.REJECTED_LOGIN_PLUGIN.getResponde());
-								ServerClientRejectedEvent rejectedEvent = new ServerClientRejectedEvent(socket,
-										serverName);
+								ServerClientRejectedEvent rejectedEvent = new ServerClientRejectedEvent(socket, serverName);
 								EventManager.call(rejectedEvent);
 								return;
 							}
@@ -182,7 +189,8 @@ public class SocketServerHandler implements SocketServer {
 			}
 	}
 
-	private boolean isAlreadyConnected(Socket socket) {
+	private boolean isAlreadyConnected(Socket socket)
+	{
 		for (SocketClient c : connected)
 			if (c.getSocket().equals(socket))
 				return true;
@@ -190,7 +198,8 @@ public class SocketServerHandler implements SocketServer {
 	}
 
 	@Override
-	public void stop() {
+	public void stop()
+	{
 		try {
 			serverSocket.close();
 		} catch (Exception e) {

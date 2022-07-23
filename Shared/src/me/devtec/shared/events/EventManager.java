@@ -12,11 +12,13 @@ import me.devtec.shared.sorting.SortingAPI.ComparableObject;
 public class EventManager {
 	static Map<Integer, List<ListenerHolder>> map = new HashMap<>();
 
-	public static ListenerHolder register(EventListener listener) {
+	public static ListenerHolder register(EventListener listener)
+	{
 		return EventManager.register(0, listener);
 	}
 
-	public static ListenerHolder register(int priority, EventListener listener) {
+	public static ListenerHolder register(int priority, EventListener listener)
+	{
 		ListenerHolder e = new ListenerHolder();
 		e.listener = listener;
 		List<ListenerHolder> list = EventManager.map.get(priority);
@@ -26,7 +28,8 @@ public class EventManager {
 		return e;
 	}
 
-	public static void unregister(ListenerHolder handler) {
+	public static void unregister(ListenerHolder handler)
+	{
 		List<Integer> removeId = new ArrayList<>();
 		for (Entry<Integer, List<ListenerHolder>> entry : EventManager.map.entrySet())
 			if (entry.getValue().contains(handler)) {
@@ -38,7 +41,8 @@ public class EventManager {
 			EventManager.map.remove(i);
 	}
 
-	public static void call(Event event) {
+	public static void call(Event event)
+	{
 		for (ComparableObject<Integer, List<ListenerHolder>> cache : SortingAPI.sortByKeyArray(EventManager.map, false))
 			for (ListenerHolder handler : cache.getValue())
 				for (Class<? extends Event> clazz : handler.listen)

@@ -35,8 +35,8 @@ public class CommandStructure<S> {
 	 * @apiNote Creates new {@link CommandStructure}
 	 *
 	 */
-	public static <T> CommandStructure<T> create(Class<T> executorClass, PermissionChecker<T> perm,
-			CommandExecutor<T> executor) {
+	public static <T> CommandStructure<T> create(Class<T> executorClass, PermissionChecker<T> perm, CommandExecutor<T> executor)
+	{
 		CommandStructure<T> structure = new CommandStructure<>(null, executor);
 		structure.permissionChecker = perm;
 		structure.senderClass = executorClass;
@@ -47,7 +47,8 @@ public class CommandStructure<S> {
 	 * @apiNote Add selector argument to current {@link CommandStructure}
 	 *
 	 */
-	public SelectorCommandStructure<S> selector(Selector selector, CommandExecutor<S> ex) {
+	public SelectorCommandStructure<S> selector(Selector selector, CommandExecutor<S> ex)
+	{
 		SelectorCommandStructure<S> sub = new SelectorCommandStructure<>(this, selector, ex);
 		this.selectors.put(sub.selector, sub);
 		return sub;
@@ -58,8 +59,9 @@ public class CommandStructure<S> {
 	 *          structure fail
 	 *
 	 */
-	public CommandStructure<S> fallback(CommandExecutor<S> ex) { // Everything failed? Don't worry! This will be
-																	// executed
+	public CommandStructure<S> fallback(CommandExecutor<S> ex)
+	{ // Everything failed? Don't worry! This will be
+		// executed
 		this.fallback = ex;
 		return this;
 	}
@@ -68,7 +70,8 @@ public class CommandStructure<S> {
 	 * @apiNote Returns fallback executor
 	 *
 	 */
-	public CommandExecutor<S> getFallback() {
+	public CommandExecutor<S> getFallback()
+	{
 		return this.fallback;
 	}
 
@@ -76,7 +79,8 @@ public class CommandStructure<S> {
 	 * @apiNote Returns command executor
 	 *
 	 */
-	public CommandExecutor<S> getExecutor() {
+	public CommandExecutor<S> getExecutor()
+	{
 		return this.executor;
 	}
 
@@ -84,7 +88,8 @@ public class CommandStructure<S> {
 	 * @apiNote Override current command executor
 	 *
 	 */
-	public CommandStructure<S> setExecutor(CommandExecutor<S> executor) {
+	public CommandStructure<S> setExecutor(CommandExecutor<S> executor)
+	{
 		this.executor = executor;
 		return this;
 	}
@@ -93,7 +98,8 @@ public class CommandStructure<S> {
 	 * @apiNote Add string/s argument to current {@link CommandStructure}
 	 *
 	 */
-	public ArgumentCommandStructure<S> argument(String argument, CommandExecutor<S> ex, String... aliases) {
+	public ArgumentCommandStructure<S> argument(String argument, CommandExecutor<S> ex, String... aliases)
+	{
 		return this.argument(argument, 0, ex, aliases);
 	}
 
@@ -101,7 +107,8 @@ public class CommandStructure<S> {
 	 * @apiNote Add string/s argument to current {@link CommandStructure}
 	 *
 	 */
-	public ArgumentCommandStructure<S> argument(String argument, int length, CommandExecutor<S> ex, String... aliases) {
+	public ArgumentCommandStructure<S> argument(String argument, int length, CommandExecutor<S> ex, String... aliases)
+	{
 		ArgumentCommandStructure<S> sub = new ArgumentCommandStructure<>(this, argument, length, ex, aliases);
 		this.arguments.add(sub);
 		return sub;
@@ -111,7 +118,8 @@ public class CommandStructure<S> {
 	 * @apiNote Add string/s argument to current {@link CommandStructure}
 	 *
 	 */
-	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, CommandExecutor<S> ex) {
+	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, CommandExecutor<S> ex)
+	{
 		return this.callableArgument(future, 0, ex);
 	}
 
@@ -119,8 +127,8 @@ public class CommandStructure<S> {
 	 * @apiNote Add string/s argument to current {@link CommandStructure}
 	 *
 	 */
-	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length,
-			CommandExecutor<S> ex) {
+	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length, CommandExecutor<S> ex)
+	{
 		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, future);
 		this.arguments.add(sub);
 		return sub;
@@ -129,7 +137,8 @@ public class CommandStructure<S> {
 	/**
 	 * @apiNote Higher number means higher priority in lookup
 	 */
-	public CommandStructure<S> priority(int level) {
+	public CommandStructure<S> priority(int level)
+	{
 		this.priority = level;
 		return this;
 	}
@@ -137,14 +146,16 @@ public class CommandStructure<S> {
 	/**
 	 * @apiNote Returns priority
 	 */
-	public int getPriority() {
+	public int getPriority()
+	{
 		return this.priority;
 	}
 
 	/**
 	 * @apiNote Permission to use this and other sub-commands
 	 */
-	public CommandStructure<S> permission(String permission) {
+	public CommandStructure<S> permission(String permission)
+	{
 		this.permission = permission;
 		return this;
 	}
@@ -152,14 +163,16 @@ public class CommandStructure<S> {
 	/**
 	 * @apiNote Returns permission
 	 */
-	public String getPermission() {
+	public String getPermission()
+	{
 		return this.permission;
 	}
 
 	/**
 	 * @apiNote Returns original {@link CommandStructure}
 	 */
-	public CommandStructure<S> first() {
+	public CommandStructure<S> first()
+	{
 		return this.getParent() == null ? this : this.getParent().first();
 	}
 
@@ -167,7 +180,8 @@ public class CommandStructure<S> {
 	 * @apiNote @Nullable Returns parent of this {@link CommandStructure}
 	 *
 	 */
-	public CommandStructure<S> getParent() {
+	public CommandStructure<S> getParent()
+	{
 		return this.parent;
 	}
 
@@ -176,7 +190,8 @@ public class CommandStructure<S> {
 	 *          {@link CommandStructure#getParent()}
 	 *
 	 */
-	public CommandStructure<S> parent() {
+	public CommandStructure<S> parent()
+	{
 		return this.getParent();
 	}
 
@@ -184,7 +199,8 @@ public class CommandStructure<S> {
 	 * @apiNote Returns tab completer values of this {@link CommandStructure}
 	 *
 	 */
-	public List<String> tabList(S sender) {
+	public List<String> tabList(S sender)
+	{
 		return Collections.emptyList();
 	}
 
@@ -192,7 +208,8 @@ public class CommandStructure<S> {
 	 * @apiNote Returns executor's class
 	 *
 	 */
-	public Class<S> getSenderClass() {
+	public Class<S> getSenderClass()
+	{
 		return this.first().senderClass;
 	}
 
@@ -200,33 +217,33 @@ public class CommandStructure<S> {
 	 * @apiNote Build and convert to {@link CommandHolder}
 	 *
 	 */
-	public CommandHolder<S> build() {
+	public CommandHolder<S> build()
+	{
 		return new CommandHolder<>(this.first());
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return this.getClass().getCanonicalName() + ":" + this.tabList(null);
 	}
 
 	// Special utils to make this structure working!
 
-	public final CommandStructure<S> findStructure(S s, String arg, String[] args, boolean tablist) {
+	public final CommandStructure<S> findStructure(S s, String arg, String[] args, boolean tablist)
+	{
 		CommandStructure<S> result = null;
 		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg)
-					&& (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, tablist))
-					&& (result == null || result != null && result.priority <= sub.priority))
+			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg) && (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, tablist)) && (result == null || result != null && result.priority <= sub.priority))
 				result = sub;
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (API.selectorUtils.check(sub.getSelector(), arg)
-					&& (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, tablist))
-					&& (result == null || result != null && result.priority <= sub.priority))
+			if (API.selectorUtils.check(sub.getSelector(), arg) && (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, tablist)) && (result == null || result != null && result.priority <= sub.priority))
 				result = sub;
 		return result == null ? null : result;
 	}
 
-	public final List<CommandStructure<S>> getNextStructures(S s) {
+	public final List<CommandStructure<S>> getNextStructures(S s)
+	{
 		List<CommandStructure<S>> structures = new ArrayList<>();
 		for (ArgumentCommandStructure<S> sub : this.arguments)
 			if (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, true))
@@ -237,7 +254,8 @@ public class CommandStructure<S> {
 		return structures;
 	}
 
-	private static boolean contains(ArgumentCommandStructure<?> sub, List<String> list, String arg) {
+	private static boolean contains(ArgumentCommandStructure<?> sub, List<String> list, String arg)
+	{
 		if (!(sub instanceof CallableArgumentCommandStructure) && list.isEmpty())
 			return true;
 		for (String value : list)

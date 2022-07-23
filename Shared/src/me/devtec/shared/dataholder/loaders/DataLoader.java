@@ -17,8 +17,7 @@ public abstract class DataLoader {
 
 	// Data loaders hierarchy
 	public static Map<LoaderPriority, Set<DataLoaderConstructor>> dataLoaders = new ConcurrentHashMap<>();
-	static final LoaderPriority[] priorities = { LoaderPriority.LOWEST, LoaderPriority.LOW, LoaderPriority.NORMAL,
-			LoaderPriority.HIGH, LoaderPriority.HIGHEST };
+	static final LoaderPriority[] priorities = { LoaderPriority.LOWEST, LoaderPriority.LOW, LoaderPriority.NORMAL, LoaderPriority.HIGH, LoaderPriority.HIGHEST };
 	static {
 		for (LoaderPriority priority : DataLoader.priorities)
 			DataLoader.dataLoaders.put(priority, new HashSet<>());
@@ -31,11 +30,13 @@ public abstract class DataLoader {
 		DataLoader.dataLoaders.get(LoaderPriority.HIGHEST).add(EmptyLoader::new);
 	}
 
-	public static void register(LoaderPriority priority, DataLoaderConstructor constructor) {
+	public static void register(LoaderPriority priority, DataLoaderConstructor constructor)
+	{
 		DataLoader.dataLoaders.get(priority).add(constructor);
 	}
 
-	public void unregister(DataLoaderConstructor constructor) {
+	public void unregister(DataLoaderConstructor constructor)
+	{
 		LoaderPriority priority = null;
 		for (Entry<LoaderPriority, Set<DataLoaderConstructor>> entry : DataLoader.dataLoaders.entrySet())
 			if (entry.getValue().contains(constructor)) {
@@ -67,13 +68,15 @@ public abstract class DataLoader {
 
 	public abstract boolean isLoaded();
 
-	public void load(File file) {
+	public void load(File file)
+	{
 		if (file == null || !file.exists())
 			return;
 		this.load(StreamUtils.fromStream(file));
 	}
 
-	public static DataLoader findLoaderFor(File input) {
+	public static DataLoader findLoaderFor(File input)
+	{
 		String inputString = null;
 		for (LoaderPriority priority : DataLoader.priorities)
 			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
@@ -91,7 +94,8 @@ public abstract class DataLoader {
 		return null;
 	}
 
-	public static DataLoader findLoaderFor(String inputString) {
+	public static DataLoader findLoaderFor(String inputString)
+	{
 		for (LoaderPriority priority : DataLoader.priorities)
 			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
 				DataLoader loader = constructor.construct();

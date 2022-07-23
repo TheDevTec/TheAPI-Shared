@@ -10,7 +10,8 @@ public class ServerClientConnectedEvent extends Event {
 		this.client = client;
 	}
 
-	public SocketClient getClient() {
+	public SocketClient getClient()
+	{
 		return client;
 	}
 }

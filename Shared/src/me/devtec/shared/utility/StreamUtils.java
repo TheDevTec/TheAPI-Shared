@@ -18,7 +18,8 @@ public class StreamUtils {
 	 *          {@link System#lineSeparator()} as separator of lines
 	 * @return String
 	 */
-	public static String fromStream(File file) {
+	public static String fromStream(File file)
+	{
 		try {
 			FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ);
 			StringBuilder out = new StringBuilder();
@@ -43,7 +44,8 @@ public class StreamUtils {
 	 *          {@link System#lineSeparator()} as separator of lines
 	 * @return String
 	 */
-	public static String fromStream(InputStream stream) {
+	public static String fromStream(InputStream stream)
+	{
 		try {
 			ReadableByteChannel channel = Channels.newChannel(stream);
 			StringBuilder out = new StringBuilder();
@@ -66,7 +68,8 @@ public class StreamUtils {
 	 *          lines
 	 * @return List<String>
 	 */
-	public static List<String> fromStreamToList(InputStream stream) {
+	public static List<String> fromStreamToList(InputStream stream)
+	{
 		String readen = fromStream(stream);
 		String[] splitLines = readen.split(System.lineSeparator());
 		List<String> lines = new ArrayList<>();

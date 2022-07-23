@@ -10,11 +10,11 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
 public class YamlLoader extends EmptyLoader {
-	private static final Pattern pattern = Pattern
-			.compile("([ ]*)(['\\\"][^'\\\"]+['\\\"]|[^\\\"']?\\\\w+[^\\\"']?|.*?):[ ]*(.*)");
+	private static final Pattern pattern = Pattern.compile("([ ]*)(['\\\"][^'\\\"]+['\\\"]|[^\\\"']?\\\\w+[^\\\"']?|.*?):[ ]*(.*)");
 
 	@Override
-	public void load(String input) {
+	public void load(String input)
+	{
 		reset();
 		if (input == null)
 			return;
@@ -62,13 +62,11 @@ public class YamlLoader extends EmptyLoader {
 				if (match.find()) {
 					if (type != null) {
 						if (type == BuilderType.LIST) {
-							data.put(key, DataValue.of(null, new LinkedList<>(items), null,
-									comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+							data.put(key, DataValue.of(null, new LinkedList<>(items), null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 							comments.clear();
 							items = null;
 						} else {
-							data.put(key, DataValue.of(null, builder.toString(), null,
-									comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+							data.put(key, DataValue.of(null, builder.toString(), null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 							comments.clear();
 							builder = null;
 						}
@@ -105,8 +103,7 @@ public class YamlLoader extends EmptyLoader {
 					String[] valueSplit = YamlLoader.splitFromComment(value);
 					if (valueSplit[0].trim().isEmpty() && !value.contains("\"") && !value.contains("'")) {
 						value = null;
-						data.put(key, DataValue.of(null, null, null,
-								comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+						data.put(key, DataValue.of(null, null, null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 						comments.clear();
 						continue;
 					}
@@ -124,17 +121,11 @@ public class YamlLoader extends EmptyLoader {
 						continue;
 					}
 					if (value.equals("[]")) {
-						data.put(key,
-								DataValue.of("[]", Collections.emptyList(),
-										valueSplit.length == 2 ? valueSplit[1] : null,
-										comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+						data.put(key, DataValue.of("[]", Collections.emptyList(), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 						comments.clear();
 						continue;
 					}
-					data.put(key,
-							DataValue.of(value, Json.reader().read(value),
-									valueSplit.length == 2 ? valueSplit[1] : null,
-									comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+					data.put(key, DataValue.of(value, Json.reader().read(value), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 					comments.clear();
 				} else if (type != null)
 					if (type == BuilderType.LIST)
@@ -147,8 +138,7 @@ public class YamlLoader extends EmptyLoader {
 				if (type == BuilderType.LIST)
 					data.put(key, DataValue.of(null, items, null, comments.isEmpty() ? null : Config.simple(comments)));
 				else
-					data.put(key, DataValue.of(builder.toString(), builder.toString(), null,
-							comments.isEmpty() ? null : Config.simple(comments)));
+					data.put(key, DataValue.of(builder.toString(), builder.toString(), null, comments.isEmpty() ? null : Config.simple(comments)));
 				return;
 			}
 			if (items != null) {
@@ -169,7 +159,8 @@ public class YamlLoader extends EmptyLoader {
 		STRING, LIST
 	}
 
-	public static int removeSpaces(String s) {
+	public static int removeSpaces(String s)
+	{
 		int i = 0;
 		for (int d = 0; d < s.length(); ++d) {
 			if (s.charAt(d) != ' ')
@@ -179,14 +170,14 @@ public class YamlLoader extends EmptyLoader {
 		return i;
 	}
 
-	protected static String r(String key) {
+	protected static String r(String key)
+	{
 		String k = key.trim();
-		return k.length() > 1 && (k.startsWith("\"") && k.endsWith("\"") || k.startsWith("'") && k.endsWith("'"))
-				? key.substring(1, key.length() - 1 - YamlLoader.removeLastSpaces(key))
-				: key;
+		return k.length() > 1 && (k.startsWith("\"") && k.endsWith("\"") || k.startsWith("'") && k.endsWith("'")) ? key.substring(1, key.length() - 1 - YamlLoader.removeLastSpaces(key)) : key;
 	}
 
-	public static int removeLastSpaces(String s) {
+	public static int removeLastSpaces(String s)
+	{
 		int i = 0;
 		for (int d = s.length() - 1; d > 0; --d) {
 			if (s.charAt(d) != ' ')
@@ -196,7 +187,8 @@ public class YamlLoader extends EmptyLoader {
 		return i;
 	}
 
-	public static String[] splitFromComment(String group) {
+	public static String[] splitFromComment(String group)
+	{
 		if (group.isEmpty() || group.length() == 1)
 			return new String[] { group };
 		String[] values = null;

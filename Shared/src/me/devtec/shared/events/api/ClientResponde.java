@@ -23,11 +23,13 @@ public enum ClientResponde {
 		this.id = id;
 	}
 
-	public int getResponde() {
+	public int getResponde()
+	{
 		return id;
 	}
 
-	public static ClientResponde fromResponde(int responde) {
+	public static ClientResponde fromResponde(int responde)
+	{
 		for (ClientResponde clientResponde : ClientResponde.values())
 			if (clientResponde.getResponde() == responde)
 				return clientResponde;

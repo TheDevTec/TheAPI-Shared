@@ -9,14 +9,14 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	static String[] EMPTY_STRING = {};
 	CallableArgument<S> futureArgs;
 
-	CallableArgumentCommandStructure(CommandStructure<S> parent, int length, CommandExecutor<S> ex,
-			CallableArgument<S> future) {
+	CallableArgumentCommandStructure(CommandStructure<S> parent, int length, CommandExecutor<S> ex, CallableArgument<S> future) {
 		super(parent, null, length, ex, CallableArgumentCommandStructure.EMPTY_STRING);
 		this.futureArgs = future;
 	}
 
 	@Override
-	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
+	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments)
+	{
 		return this.getArgs(sender, structure, arguments);
 	}
 
@@ -24,7 +24,8 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	 * @apiNote Returns arguments of this {@link ArgumentCommandStructure}
 	 */
 	@Override
-	public List<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments) {
+	public List<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments)
+	{
 		try {
 			return this.futureArgs.call(sender, structure, arguments);
 		} catch (Exception e) {

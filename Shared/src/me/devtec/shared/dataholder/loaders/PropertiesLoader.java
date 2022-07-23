@@ -13,7 +13,8 @@ public class PropertiesLoader extends EmptyLoader {
 	private final Pattern pattern = Pattern.compile("(.*?)=(.*)");
 
 	@Override
-	public void load(String input) {
+	public void load(String input)
+	{
 		reset();
 		if (input == null)
 			return;
@@ -39,8 +40,7 @@ public class PropertiesLoader extends EmptyLoader {
 			Matcher m = pattern.matcher(s);
 			if (m.find()) {
 				String[] value = YamlLoader.splitFromComment(m.group(2));
-				data.put(m.group(1), DataValue.of(m.group(2), Json.reader().read(value[0]),
-						value.length == 2 ? value[1] : null, Config.simple(new LinkedList<>(comments))));
+				data.put(m.group(1), DataValue.of(m.group(2), Json.reader().read(value[0]), value.length == 2 ? value[1] : null, Config.simple(new LinkedList<>(comments))));
 				comments.clear();
 				continue;
 			}

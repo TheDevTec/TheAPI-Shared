@@ -11,8 +11,7 @@ public class ArgumentCommandStructure<S> extends CommandStructure<S> {
 	List<String> args = new ArrayList<>();
 	int length;
 
-	ArgumentCommandStructure(CommandStructure<S> parent, String argument, int length, CommandExecutor<S> ex,
-			String[] aliases) {
+	ArgumentCommandStructure(CommandStructure<S> parent, String argument, int length, CommandExecutor<S> ex, String[] aliases) {
 		super(parent, ex);
 		if (argument != null)
 			this.args.add(argument);
@@ -20,21 +19,24 @@ public class ArgumentCommandStructure<S> extends CommandStructure<S> {
 		this.length = length;
 	}
 
-	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
+	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments)
+	{
 		return this.args.isEmpty() ? Arrays.asList("<args>") : this.args;
 	}
 
 	/**
 	 * @apiNote Returns arguments of this {@link ArgumentCommandStructure}
 	 */
-	public List<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments) {
+	public List<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments)
+	{
 		return this.args;
 	}
 
 	/**
 	 * @apiNote Returns maximum length of arguments (-1 means unlimited)
 	 */
-	public int length() {
+	public int length()
+	{
 		return this.length;
 	}
 }

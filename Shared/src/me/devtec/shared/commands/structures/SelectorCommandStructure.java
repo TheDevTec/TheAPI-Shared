@@ -14,14 +14,16 @@ public class SelectorCommandStructure<S> extends CommandStructure<S> {
 		this.selector = selector;
 	}
 
-	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
+	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments)
+	{
 		return API.selectorUtils.build(this.selector);
 	}
 
 	/**
 	 * @apiNote Returns selector of this {@link SelectorCommandStructure}
 	 */
-	public Selector getSelector() {
+	public Selector getSelector()
+	{
 		return this.selector;
 	}
 }

@@ -11,7 +11,8 @@ import me.devtec.shared.json.Json;
 
 public class ByteLoader extends EmptyLoader {
 
-	private static void byteBuilderV3(ByteArrayDataInput bos, Map<String, DataValue> map) {
+	private static void byteBuilderV3(ByteArrayDataInput bos, Map<String, DataValue> map)
+	{
 		try {
 			String key = bos.readUTF();
 			String value = null;
@@ -40,7 +41,8 @@ public class ByteLoader extends EmptyLoader {
 	}
 
 	@Override
-	public void load(String input) {
+	public void load(String input)
+	{
 		reset();
 		if (input == null)
 			return;
@@ -59,7 +61,8 @@ public class ByteLoader extends EmptyLoader {
 		}
 	}
 
-	public void load(byte[] byteData) {
+	public void load(byte[] byteData)
+	{
 		reset();
 		if (byteData == null)
 			return;
@@ -77,7 +80,8 @@ public class ByteLoader extends EmptyLoader {
 		}
 	}
 
-	public static ByteLoader fromBytes(byte[] byteData) {
+	public static ByteLoader fromBytes(byte[] byteData)
+	{
 		if (byteData == null)
 			return null;
 		ByteLoader loader = new ByteLoader();

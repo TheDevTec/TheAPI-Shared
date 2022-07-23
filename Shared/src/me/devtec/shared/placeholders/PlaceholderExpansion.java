@@ -9,21 +9,25 @@ public abstract class PlaceholderExpansion {
 		this.name = name;
 	}
 
-	public final String getName() {
+	public final String getName()
+	{
 		return name;
 	}
 
-	public PlaceholderExpansion register() {
+	public PlaceholderExpansion register()
+	{
 		PlaceholderAPI.register(this);
 		return this;
 	}
 
-	public PlaceholderExpansion unregister() {
+	public PlaceholderExpansion unregister()
+	{
 		PlaceholderAPI.unregister(this);
 		return this;
 	}
 
-	public boolean isRegistered() {
+	public boolean isRegistered()
+	{
 		return PlaceholderAPI.isRegistered(getName());
 	}
 
@@ -31,7 +35,8 @@ public abstract class PlaceholderExpansion {
 	public abstract String apply(String text, UUID player);
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		return "PlaceholderExpansion[" + getName() + "]";
 	}
 }

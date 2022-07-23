@@ -7,9 +7,9 @@ public class VersionUtils {
 		OLDER_VERSION, NEWER_VERSION, SAME_VERSION, UKNOWN;
 	}
 
-	public static Version getVersion(String currentVersion, String version) {
-		if (currentVersion == null || version == null || currentVersion.replaceAll("[^0-9.]+", "").trim().isEmpty()
-				|| version.replaceAll("[^0-9.]+", "").trim().isEmpty())
+	public static Version getVersion(String currentVersion, String version)
+	{
+		if (currentVersion == null || version == null || currentVersion.replaceAll("[^0-9.]+", "").trim().isEmpty() || version.replaceAll("[^0-9.]+", "").trim().isEmpty())
 			return Version.UKNOWN;
 		int count = 0;
 		String[] cver = currentVersion.replaceAll("[^0-9.]+", "").split("\\.");

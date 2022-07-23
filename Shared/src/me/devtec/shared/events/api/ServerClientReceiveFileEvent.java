@@ -17,11 +17,13 @@ public class ServerClientReceiveFileEvent extends Event {
 		this.client = client;
 	}
 
-	public SocketClient getClient() {
+	public SocketClient getClient()
+	{
 		return client;
 	}
 
-	public File getFile() {
+	public File getFile()
+	{
 		return file;
 	}
 
@@ -29,7 +31,8 @@ public class ServerClientReceiveFileEvent extends Event {
 	 *
 	 * @apiNote Nullable
 	 */
-	public Config getData() {
+	public Config getData()
+	{
 		return data;
 	}
 }

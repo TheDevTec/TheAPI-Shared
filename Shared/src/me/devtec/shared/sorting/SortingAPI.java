@@ -7,14 +7,16 @@ import java.util.Map.Entry;
 
 public class SortingAPI {
 
-	public static <K, V> Map<K, V> sortByKey(Map<K, V> map, boolean asc) {
+	public static <K, V> Map<K, V> sortByKey(Map<K, V> map, boolean asc)
+	{
 		Map<K, V> result = new LinkedHashMap<>(map.size());
 		for (ComparableObject<K, V> o : SortingAPI.sortByKeyArray(map, asc))
 			result.put(o.getKey(), o.getValue());
 		return result;
 	}
 
-	public static <K, V> Map<K, V> sortByValue(Map<K, V> map, boolean asc) {
+	public static <K, V> Map<K, V> sortByValue(Map<K, V> map, boolean asc)
+	{
 		Map<K, V> result = new LinkedHashMap<>(map.size());
 		for (ComparableObject<K, V> o : SortingAPI.sortByValueArray(map, asc))
 			result.put(o.getKey(), o.getValue());
@@ -22,7 +24,8 @@ public class SortingAPI {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <K, V> ComparableObject<K, V>[] sortByKeyArray(Map<K, V> map, boolean asc) {
+	public static <K, V> ComparableObject<K, V>[] sortByKeyArray(Map<K, V> map, boolean asc)
+	{
 		ComparableObject<K, V>[] sort = new ComparKey[map.size()];
 		int i = 0;
 		for (Entry<K, V> d : map.entrySet())
@@ -32,7 +35,8 @@ public class SortingAPI {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <K, V> ComparableObject<K, V>[] sortByValueArray(Map<K, V> map, boolean asc) {
+	public static <K, V> ComparableObject<K, V>[] sortByValueArray(Map<K, V> map, boolean asc)
+	{
 		ComparableObject<K, V>[] sort = new ComparValue[map.size()];
 		int i = 0;
 		for (Entry<K, V> d : map.entrySet())
@@ -57,7 +61,8 @@ public class SortingAPI {
 
 		@Override
 		@SuppressWarnings({ "rawtypes" })
-		public int compareTo(ComparableObject o) {
+		public int compareTo(ComparableObject o)
+		{
 			return SortingAPI.compare(asc, o.getKey(), key);
 		}
 
@@ -69,12 +74,14 @@ public class SortingAPI {
 		}
 
 		@Override
-		public K getKey() {
+		public K getKey()
+		{
 			return this.key;
 		}
 
 		@Override
-		public V getValue() {
+		public V getValue()
+		{
 			return this.value;
 		}
 	}
@@ -86,7 +93,8 @@ public class SortingAPI {
 
 		@Override
 		@SuppressWarnings({ "rawtypes" })
-		public int compareTo(ComparableObject o) {
+		public int compareTo(ComparableObject o)
+		{
 			return SortingAPI.compare(asc, o.getValue(), value);
 		}
 
@@ -98,20 +106,21 @@ public class SortingAPI {
 		}
 
 		@Override
-		public K getKey() {
+		public K getKey()
+		{
 			return this.key;
 		}
 
 		@Override
-		public V getValue() {
+		public V getValue()
+		{
 			return this.value;
 		}
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static int compare(boolean asc, Object a, Object b) {
-		return asc ? a instanceof Comparable ? ((Comparable) a).compareTo(b) : a.toString().compareTo(b.toString())
-				: b instanceof Comparable ? ((Comparable) (b instanceof Comparable ? b : b.toString())).compareTo(a)
-						: b.toString().compareTo(a.toString());
+	private static int compare(boolean asc, Object a, Object b)
+	{
+		return asc ? a instanceof Comparable ? ((Comparable) a).compareTo(b) : a.toString().compareTo(b.toString()) : b instanceof Comparable ? ((Comparable) (b instanceof Comparable ? b : b.toString())).compareTo(a) : b.toString().compareTo(a.toString());
 	}
 }

@@ -15,21 +15,25 @@ public class ServerClientPreConnectEvent extends Event implements Cancellable {
 		this.serverName = serverName;
 	}
 
-	public Socket getSocket() {
+	public Socket getSocket()
+	{
 		return socket;
 	}
 
-	public String getServerName() {
+	public String getServerName()
+	{
 		return serverName;
 	}
 
 	@Override
-	public boolean isCancelled() {
+	public boolean isCancelled()
+	{
 		return cancelled;
 	}
 
 	@Override
-	public void setCancelled(boolean cancel) {
+	public void setCancelled(boolean cancel)
+	{
 		cancelled = cancel;
 	}
 }

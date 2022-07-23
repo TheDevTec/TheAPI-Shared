@@ -13,14 +13,16 @@ public class ServerClientRejectedEvent extends Event {
 		this.serverName = serverName;
 	}
 
-	public Socket getSocket() {
+	public Socket getSocket()
+	{
 		return socket;
 	}
 
 	/**
 	 * @apiNote Server name is nullable
 	 */
-	public String getServerName() {
+	public String getServerName()
+	{
 		return serverName;
 	}
 }

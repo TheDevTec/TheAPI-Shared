@@ -20,7 +20,8 @@ public class Ref {
 			this.bukkit = bukkit;
 		}
 
-		public boolean isBukkit() {
+		public boolean isBukkit()
+		{
 			return bukkit;
 		}
 	}
@@ -30,7 +31,8 @@ public class Ref {
 	static int intRelease;
 	static ServerType type;
 
-	public static void init(ServerType type, String serverVersion) {
+	public static void init(ServerType type, String serverVersion)
+	{
 		Ref.ver = serverVersion;
 		if (type == ServerType.BUKKIT || type == ServerType.SPIGOT || type == ServerType.PAPER) {
 			Ref.intVer = StringUtils.getInt(Ref.ver.split("_")[1]);
@@ -39,31 +41,38 @@ public class Ref {
 		Ref.type = type;
 	}
 
-	public static String serverVersion() {
+	public static String serverVersion()
+	{
 		return Ref.ver;
 	}
 
-	public static int serverVersionInt() {
+	public static int serverVersionInt()
+	{
 		return Ref.intVer;
 	}
 
-	public static int serverVersionRelease() {
+	public static int serverVersionRelease()
+	{
 		return Ref.intRelease;
 	}
 
-	public static ServerType serverType() {
+	public static ServerType serverType()
+	{
 		return Ref.type;
 	}
 
-	public static boolean isNewerThan(int i) {
+	public static boolean isNewerThan(int i)
+	{
 		return Ref.intVer > i;
 	}
 
-	public static boolean isOlderThan(int i) {
+	public static boolean isOlderThan(int i)
+	{
 		return Ref.intVer < i;
 	}
 
-	public static void set(Object main, Field f, Object o) {
+	public static void set(Object main, Field f, Object o)
+	{
 		try {
 			f.setAccessible(true);
 			f.set(main, o);
@@ -71,7 +80,8 @@ public class Ref {
 		}
 	}
 
-	public static void set(Object main, String field, Object o) {
+	public static void set(Object main, String field, Object o)
+	{
 		try {
 			Field f = Ref.field(main.getClass(), field);
 			f.setAccessible(true);
@@ -80,7 +90,8 @@ public class Ref {
 		}
 	}
 
-	public static Class<?> getClass(String name) {
+	public static Class<?> getClass(String name)
+	{
 		try {
 			return Class.forName(name);
 		} catch (Exception e) {
@@ -88,7 +99,8 @@ public class Ref {
 		}
 	}
 
-	public static boolean existsMethod(Class<?> c, String name) {
+	public static boolean existsMethod(Class<?> c, String name)
+	{
 		boolean a = false;
 		for (Method d : Ref.getMethods(c))
 			if (d.getName().equals(name)) {
@@ -98,7 +110,8 @@ public class Ref {
 		return a;
 	}
 
-	public static Object cast(Class<?> c, Object item) {
+	public static Object cast(Class<?> c, Object item)
+	{
 		try {
 			return c.cast(item);
 		} catch (Exception e) {
@@ -106,7 +119,8 @@ public class Ref {
 		}
 	}
 
-	public static Constructor<?> constructor(Class<?> main, Class<?>... bricks) {
+	public static Constructor<?> constructor(Class<?> main, Class<?>... bricks)
+	{
 		try {
 			return main.getDeclaredConstructor(bricks);
 		} catch (Exception es) {
@@ -114,7 +128,8 @@ public class Ref {
 		}
 	}
 
-	public static Class<?>[] getClasses(Class<?> main) {
+	public static Class<?>[] getClasses(Class<?> main)
+	{
 		try {
 			return main.getClasses();
 		} catch (Exception es) {
@@ -122,7 +137,8 @@ public class Ref {
 		}
 	}
 
-	public static Class<?>[] getDeclaredClasses(Class<?> main) {
+	public static Class<?>[] getDeclaredClasses(Class<?> main)
+	{
 		try {
 			return main.getDeclaredClasses();
 		} catch (Exception es) {
@@ -130,7 +146,8 @@ public class Ref {
 		}
 	}
 
-	public static Field[] getFields(Class<?> main) {
+	public static Field[] getFields(Class<?> main)
+	{
 		try {
 			return main.getFields();
 		} catch (Exception es) {
@@ -138,7 +155,8 @@ public class Ref {
 		}
 	}
 
-	public static List<Field> getAllFields(Class<?> main) {
+	public static List<Field> getAllFields(Class<?> main)
+	{
 		List<Field> f = new ArrayList<>();
 		Class<?> superclass = main;
 		while (superclass != null) {
@@ -148,7 +166,8 @@ public class Ref {
 		return f;
 	}
 
-	public static Field[] getDeclaredFields(Class<?> main) {
+	public static Field[] getDeclaredFields(Class<?> main)
+	{
 		try {
 			return main.getDeclaredFields();
 		} catch (Exception es) {
@@ -156,7 +175,8 @@ public class Ref {
 		}
 	}
 
-	public static Method[] getMethods(Class<?> main) {
+	public static Method[] getMethods(Class<?> main)
+	{
 		try {
 			return main.getMethods();
 		} catch (Exception es) {
@@ -164,7 +184,8 @@ public class Ref {
 		}
 	}
 
-	public static Method[] getDeclaredMethods(Class<?> main) {
+	public static Method[] getDeclaredMethods(Class<?> main)
+	{
 		try {
 			return main.getDeclaredMethods();
 		} catch (Exception es) {
@@ -172,7 +193,8 @@ public class Ref {
 		}
 	}
 
-	public static Constructor<?>[] getConstructors(Class<?> main) {
+	public static Constructor<?>[] getConstructors(Class<?> main)
+	{
 		try {
 			return main.getConstructors();
 		} catch (Exception es) {
@@ -180,7 +202,8 @@ public class Ref {
 		}
 	}
 
-	public static Constructor<?>[] getDeclaredConstructors(Class<?> main) {
+	public static Constructor<?>[] getDeclaredConstructors(Class<?> main)
+	{
 		try {
 			return main.getDeclaredConstructors();
 		} catch (Exception es) {
@@ -188,7 +211,8 @@ public class Ref {
 		}
 	}
 
-	public static Field field(Class<?> main, String name) {
+	public static Field field(Class<?> main, String name)
+	{
 		Class<?> mainClass = main.getClass();
 		while (mainClass != null) {
 			try {
@@ -202,7 +226,8 @@ public class Ref {
 		return null;
 	}
 
-	public static Field field(Class<?> main, Class<?> returnValue) {
+	public static Field field(Class<?> main, Class<?> returnValue)
+	{
 		Class<?> mainClass = main.getClass();
 		while (mainClass != null) {
 			for (Field field : Ref.getDeclaredFields(mainClass))
@@ -215,7 +240,8 @@ public class Ref {
 		return null;
 	}
 
-	public static Object get(Object main, Field field) {
+	public static Object get(Object main, Field field)
+	{
 		try {
 			field.setAccessible(true);
 			return field.get(main);
@@ -224,27 +250,33 @@ public class Ref {
 		}
 	}
 
-	public static Object getNulled(Field field) {
+	public static Object getNulled(Field field)
+	{
 		return get(null, field);
 	}
 
-	public static Object getNulled(Class<?> clazz, String field) {
+	public static Object getNulled(Class<?> clazz, String field)
+	{
 		return get(null, Ref.field(clazz, field));
 	}
 
-	public static Object getStatic(Field field) {
+	public static Object getStatic(Field field)
+	{
 		return get(null, field);
 	}
 
-	public static Object getStatic(Class<?> clazz, String field) {
+	public static Object getStatic(Class<?> clazz, String field)
+	{
 		return get(null, Ref.field(clazz, field));
 	}
 
-	public static Object get(Object main, String field) {
+	public static Object get(Object main, String field)
+	{
 		return Ref.get(main, Ref.field(main.getClass(), field));
 	}
 
-	public static Object invoke(Object main, Method method, Object... bricks) {
+	public static Object invoke(Object main, Method method, Object... bricks)
+	{
 		try {
 			method.setAccessible(true);
 			return method.invoke(main, bricks);
@@ -253,7 +285,8 @@ public class Ref {
 		}
 	}
 
-	public static Object invoke(Object main, String method, Object... bricks) {
+	public static Object invoke(Object main, String method, Object... bricks)
+	{
 		try {
 			return Ref.findMethod(main.getClass(), method, bricks).invoke(main, bricks);
 		} catch (Exception es) {
@@ -261,11 +294,13 @@ public class Ref {
 		}
 	}
 
-	public static Object get(Object main, Class<?> returnValue) {
+	public static Object get(Object main, Class<?> returnValue)
+	{
 		return Ref.get(main, field(main.getClass(), returnValue));
 	}
 
-	public static Object invokeNulled(Class<?> classInMethod, String method, Object... bricks) {
+	public static Object invokeNulled(Class<?> classInMethod, String method, Object... bricks)
+	{
 		try {
 			return Ref.findMethod(classInMethod, method, bricks).invoke(null, bricks);
 		} catch (Exception es) {
@@ -273,23 +308,28 @@ public class Ref {
 		}
 	}
 
-	public static Object invokeNulled(Method method, Object... bricks) {
+	public static Object invokeNulled(Method method, Object... bricks)
+	{
 		return invoke(null, method, bricks);
 	}
 
-	public static Object invokeStatic(Class<?> classInMethod, String method, Object... bricks) {
+	public static Object invokeStatic(Class<?> classInMethod, String method, Object... bricks)
+	{
 		return Ref.invokeNulled(classInMethod, method, bricks);
 	}
 
-	public static Object invokeStatic(Method method, Object... bricks) {
+	public static Object invokeStatic(Method method, Object... bricks)
+	{
 		return Ref.invokeNulled(method, bricks);
 	}
 
-	public static Method findMethod(Object clazz, String name, Object... bricks) {
+	public static Method findMethod(Object clazz, String name, Object... bricks)
+	{
 		return Ref.findMethod(clazz.getClass(), name, bricks);
 	}
 
-	public static Method method(Class<?> clazz, String name, Class<?>... params) {
+	public static Method method(Class<?> clazz, String name, Class<?>... params)
+	{
 		if (params.length == 0) {
 			Class<?> startClass = clazz;
 			while (startClass != null) {
@@ -304,8 +344,7 @@ public class Ref {
 			Class<?> startClass = clazz;
 			while (startClass != null) {
 				for (Method m : Ref.getDeclaredMethods(clazz))
-					if (m.getName().equals(name) && m.getParameterTypes().length == params.length
-							&& areSame(params, m.getParameterTypes())) {
+					if (m.getName().equals(name) && m.getParameterTypes().length == params.length && areSame(params, m.getParameterTypes())) {
 						m.setAccessible(true);
 						return m;
 					}
@@ -315,7 +354,8 @@ public class Ref {
 		return null;
 	}
 
-	public static Method findMethodByName(Class<?> clazz, String name) {
+	public static Method findMethodByName(Class<?> clazz, String name)
+	{
 		Class<?> startClass = clazz;
 		while (startClass != null) {
 			for (Method m : Ref.getDeclaredMethods(clazz))
@@ -328,7 +368,8 @@ public class Ref {
 		return null;
 	}
 
-	public static Method findMethod(Class<?> clazz, String name, Object... bricks) {
+	public static Method findMethod(Class<?> clazz, String name, Object... bricks)
+	{
 		if (bricks.length == 0) {
 			Class<?> startClass = clazz;
 			while (startClass != null) {
@@ -348,8 +389,7 @@ public class Ref {
 			}
 			while (startClass != null) {
 				for (Method m : Ref.getDeclaredMethods(clazz))
-					if (m.getName().equals(name) && m.getParameterTypes().length == params.length
-							&& areSame(params, m.getParameterTypes())) {
+					if (m.getName().equals(name) && m.getParameterTypes().length == params.length && areSame(params, m.getParameterTypes())) {
 						m.setAccessible(true);
 						return m;
 					}
@@ -359,7 +399,8 @@ public class Ref {
 		return null;
 	}
 
-	public static Constructor<?> findConstructor(Class<?> clazz, Object... bricks) {
+	public static Constructor<?> findConstructor(Class<?> clazz, Object... bricks)
+	{
 		if (bricks.length == 0) {
 			Class<?> startClass = clazz;
 			while (startClass != null) {
@@ -389,14 +430,16 @@ public class Ref {
 		return null;
 	}
 
-	private static boolean areSame(Class<?>[] a, Class<?>[] b) {
+	private static boolean areSame(Class<?>[] a, Class<?>[] b)
+	{
 		for (int i = 0; i < a.length; ++i)
 			if (a[i] != null && !a[i].isAssignableFrom(b[i]))
 				return false;
 		return true;
 	}
 
-	public static Object newInstance(Constructor<?> constructor, Object... bricks) {
+	public static Object newInstance(Constructor<?> constructor, Object... bricks)
+	{
 		try {
 			constructor.setAccessible(true);
 			return constructor.newInstance(bricks);
@@ -405,15 +448,18 @@ public class Ref {
 		}
 	}
 
-	public static Object newInstanceByClass(String className, Object... bricks) {
+	public static Object newInstanceByClass(String className, Object... bricks)
+	{
 		return Ref.newInstance(Ref.findConstructor(Ref.getClass(className), bricks), bricks);
 	}
 
-	public static Object newInstanceByClass(Class<?> clazz, Object... bricks) {
+	public static Object newInstanceByClass(Class<?> clazz, Object... bricks)
+	{
 		return Ref.newInstance(Ref.findConstructor(clazz, bricks), bricks);
 	}
 
-	public static Class<?> nms(String modernPackageName, String name) {
+	public static Class<?> nms(String modernPackageName, String name)
+	{
 		try {
 			if (Ref.isNewerThan(16))
 				return Class.forName("net.minecraft." + modernPackageName + "." + name);
@@ -423,7 +469,8 @@ public class Ref {
 		}
 	}
 
-	public static Class<?> craft(String name) {
+	public static Class<?> craft(String name)
+	{
 		try {
 			return Class.forName("org.bukkit.craftbukkit." + Ref.serverVersion() + "." + name);
 		} catch (Exception e) {

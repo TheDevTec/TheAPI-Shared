@@ -30,105 +30,128 @@ public class Component {
 		this.text = text;
 	}
 
-	public Component setText(String value) {
+	public Component setText(String value)
+	{
 		this.text = value;
 		return this;
 	}
 
-	public String getText() {
+	public String getText()
+	{
 		return this.text;
 	}
 
-	public boolean isBold() {
+	public boolean isBold()
+	{
 		return this.bold;
 	}
 
-	public boolean isItalic() {
+	public boolean isItalic()
+	{
 		return this.italic;
 	}
 
-	public boolean isObfuscated() {
+	public boolean isObfuscated()
+	{
 		return this.obfuscated;
 	}
 
-	public boolean isUnderlined() {
+	public boolean isUnderlined()
+	{
 		return this.underlined;
 	}
 
-	public boolean isStrikethrough() {
+	public boolean isStrikethrough()
+	{
 		return this.strikethrough;
 	}
 
-	public Component setBold(boolean status) {
+	public Component setBold(boolean status)
+	{
 		this.bold = status;
 		return this;
 	}
 
-	public Component setItalic(boolean status) {
+	public Component setItalic(boolean status)
+	{
 		this.italic = status;
 		return this;
 	}
 
-	public Component setObfuscated(boolean status) {
+	public Component setObfuscated(boolean status)
+	{
 		this.obfuscated = status;
 		return this;
 	}
 
-	public Component setUnderlined(boolean status) {
+	public Component setUnderlined(boolean status)
+	{
 		this.underlined = status;
 		return this;
 	}
 
-	public Component setStrikethrough(boolean status) {
+	public Component setStrikethrough(boolean status)
+	{
 		this.strikethrough = status;
 		return this;
 	}
 
-	public String getFont() {
+	public String getFont()
+	{
 		return this.font;
 	}
 
-	public Component setFont(String font) {
+	public Component setFont(String font)
+	{
 		this.font = font;
 		return this;
 	}
 
-	public HoverEvent getHoverEvent() {
+	public HoverEvent getHoverEvent()
+	{
 		return this.hoverEvent;
 	}
 
-	public Component setHoverEvent(HoverEvent hoverEvent) {
+	public Component setHoverEvent(HoverEvent hoverEvent)
+	{
 		this.hoverEvent = hoverEvent;
 		return this;
 	}
 
-	public ClickEvent getClickEvent() {
+	public ClickEvent getClickEvent()
+	{
 		return this.clickEvent;
 	}
 
-	public Component setClickEvent(ClickEvent clickEvent) {
+	public Component setClickEvent(ClickEvent clickEvent)
+	{
 		this.clickEvent = clickEvent;
 		return this;
 	}
 
-	public String getInsertion() {
+	public String getInsertion()
+	{
 		return this.insertion;
 	}
 
-	public Component setInsertion(String insertion) {
+	public Component setInsertion(String insertion)
+	{
 		this.insertion = insertion;
 		return this;
 	}
 
-	public List<Component> getExtra() {
+	public List<Component> getExtra()
+	{
 		return this.extra;
 	}
 
-	public void setExtra(List<Component> extra) {
+	public void setExtra(List<Component> extra)
+	{
 		this.extra = extra;
 	}
 
-	public String getFormats() {
+	public String getFormats()
+	{
 		StringBuilder builder = new StringBuilder();
 		if (this.bold)
 			builder.append('§').append('l');
@@ -144,7 +167,8 @@ public class Component {
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		StringBuilder builder = new StringBuilder();
 
 		String colorBefore = null;
@@ -171,7 +195,8 @@ public class Component {
 	}
 
 	// Deeper toString with "anti" copying of colors & formats
-	protected String toString(String parentColorBefore, String parentFormatsBefore) {
+	protected String toString(String parentColorBefore, String parentFormatsBefore)
+	{
 		StringBuilder builder = new StringBuilder();
 
 		String colorBefore = parentColorBefore;
@@ -200,20 +225,24 @@ public class Component {
 		return builder.toString();
 	}
 
-	public Component setColor(String nameOrHex) {
+	public Component setColor(String nameOrHex)
+	{
 		this.color = nameOrHex;
 		return this;
 	}
 
-	public String getColor() {
+	public String getColor()
+	{
 		return this.color;
 	}
 
-	public char colorToChar() {
+	public char colorToChar()
+	{
 		return Component.colorToChar(this.color);
 	}
 
-	protected static char colorToChar(String color) {
+	protected static char colorToChar(String color)
+	{
 		if (color != null)
 			switch (color) {
 			// a - f
@@ -256,7 +285,8 @@ public class Component {
 		return 0;
 	}
 
-	public Component setColorFromChar(char character) {
+	public Component setColorFromChar(char character)
+	{
 		switch (character) {
 		// a - f
 		case 97:
@@ -315,7 +345,8 @@ public class Component {
 		return this;
 	}
 
-	public Component setFormatFromChar(char character, boolean status) {
+	public Component setFormatFromChar(char character, boolean status)
+	{
 		switch (character) {
 		case 107:
 			this.obfuscated = status;
@@ -348,7 +379,8 @@ public class Component {
 	 * @param selectedComp Component
 	 * @return Component
 	 */
-	public Component copyOf(Component selectedComp) {
+	public Component copyOf(Component selectedComp)
+	{
 		this.bold = selectedComp.bold;
 		this.italic = selectedComp.italic;
 		this.obfuscated = selectedComp.obfuscated;
@@ -360,7 +392,8 @@ public class Component {
 		return this;
 	}
 
-	public Map<String, Object> toJsonMap() {
+	public Map<String, Object> toJsonMap()
+	{
 		Map<String, Object> map = new LinkedHashMap<>();
 		String color = this.color;
 		map.put("text", this.getText());

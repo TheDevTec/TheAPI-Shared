@@ -24,7 +24,8 @@ public class JsonUtils {
 		}
 	}
 
-	public static Object writeWithoutParseStatic(Object s) {
+	public static Object writeWithoutParseStatic(Object s)
+	{
 		try {
 			if (s == null)
 				return null;
@@ -38,8 +39,7 @@ public class JsonUtils {
 				object.put("t", "enum");
 				return object;
 			}
-			if (s instanceof String || s instanceof CharSequence || s instanceof Boolean || s instanceof Number
-					|| s instanceof Character)
+			if (s instanceof String || s instanceof CharSequence || s instanceof Boolean || s instanceof Number || s instanceof Character)
 				return s;
 			if (s instanceof Map) {
 				Map<String, Object> object = new ConcurrentHashMap<>();
@@ -109,7 +109,8 @@ public class JsonUtils {
 		return null;
 	}
 
-	public static Object cast(Object value, Class<?> type) {
+	public static Object cast(Object value, Class<?> type)
+	{
 		if (value == null)
 			return null;
 		if (type.isArray()) {
@@ -137,7 +138,8 @@ public class JsonUtils {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Object read(Object s) {
+	public static Object read(Object s)
+	{
 		if (s == null || s.equals("null"))
 			return null;
 		try {
@@ -227,7 +229,8 @@ public class JsonUtils {
 		return s;
 	}
 
-	public static Class<?> tryCastPrimiteClass(String className) throws ClassNotFoundException {
+	public static Class<?> tryCastPrimiteClass(String className) throws ClassNotFoundException
+	{
 		switch (className) {
 		case "int":
 			return int.class;
