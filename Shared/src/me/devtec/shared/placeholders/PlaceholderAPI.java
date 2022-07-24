@@ -15,19 +15,16 @@ public class PlaceholderAPI {
 	private static List<PlaceholderExpansion> extensions = new ArrayList<>();
 	public static PlaceholderExpansion PAPI_BRIDGE;
 
-	public static List<PlaceholderExpansion> getPlaceholders()
-	{
+	public static List<PlaceholderExpansion> getPlaceholders() {
 		return Collections.unmodifiableList(PlaceholderAPI.extensions);
 	}
 
-	public static void register(PlaceholderExpansion ext)
-	{
+	public static void register(PlaceholderExpansion ext) {
 		PlaceholderAPI.unregister(ext); // Unregister placeholders with same name
 		PlaceholderAPI.extensions.add(ext);
 	}
 
-	public static void unregister(PlaceholderExpansion ext)
-	{
+	public static void unregister(PlaceholderExpansion ext) {
 		PlaceholderAPI.extensions.remove(ext);
 		// Lookup for same names
 		Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
@@ -38,8 +35,7 @@ public class PlaceholderAPI {
 		}
 	}
 
-	public static String apply(String original, UUID player)
-	{
+	public static String apply(String original, UUID player) {
 		String text = original;
 		Matcher match = PlaceholderAPI.placeholderLookup.matcher(text);
 		while (match.find()) {
@@ -67,8 +63,7 @@ public class PlaceholderAPI {
 		return text;
 	}
 
-	public static List<String> apply(List<String> text, UUID player)
-	{
+	public static List<String> apply(List<String> text, UUID player) {
 		ListIterator<String> list = text.listIterator();
 		while (list.hasNext()) {
 			String val = list.next();
@@ -77,8 +72,7 @@ public class PlaceholderAPI {
 		return text;
 	}
 
-	public static PlaceholderExpansion getExpansion(String extensionName)
-	{
+	public static PlaceholderExpansion getExpansion(String extensionName) {
 		Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
 		while (iterator.hasNext()) {
 			PlaceholderExpansion reg = iterator.next();
@@ -88,8 +82,7 @@ public class PlaceholderAPI {
 		return null;
 	}
 
-	public static boolean isRegistered(String extensionName)
-	{
+	public static boolean isRegistered(String extensionName) {
 		Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
 		while (iterator.hasNext()) {
 			PlaceholderExpansion reg = iterator.next();
@@ -99,8 +92,7 @@ public class PlaceholderAPI {
 		return false;
 	}
 
-	public static void unregister(String extensionName)
-	{
+	public static void unregister(String extensionName) {
 		Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
 		while (iterator.hasNext()) {
 			PlaceholderExpansion reg = iterator.next();

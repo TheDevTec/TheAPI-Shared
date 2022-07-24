@@ -15,8 +15,7 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	}
 
 	@Override
-	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments)
-	{
+	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return this.getArgs(sender, structure, arguments);
 	}
 
@@ -24,8 +23,7 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	 * @apiNote Returns arguments of this {@link ArgumentCommandStructure}
 	 */
 	@Override
-	public List<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments)
-	{
+	public List<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments) {
 		try {
 			return this.futureArgs.call(sender, structure, arguments);
 		} catch (Exception e) {

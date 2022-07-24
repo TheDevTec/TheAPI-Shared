@@ -26,8 +26,7 @@ public class SqlHandler implements DatabaseHandler {
 		new Tasker() {
 
 			@Override
-			public void run()
-			{
+			public void run() {
 				try {
 					if (SqlHandler.this.isConnected())
 						sql.prepareStatement("select 1").executeQuery().next();
@@ -42,8 +41,7 @@ public class SqlHandler implements DatabaseHandler {
 		}.runRepeating(0, 20 * 60 * 3);
 	}
 
-	public String buildSelectCommand(SelectQuery query)
-	{
+	public String buildSelectCommand(SelectQuery query) {
 		StringBuilder builder = new StringBuilder("select ");
 		boolean first = true;
 		for (String search : query.getSearch()) {
@@ -72,8 +70,7 @@ public class SqlHandler implements DatabaseHandler {
 		return builder.toString();
 	}
 
-	public String buildInsertCommand(InsertQuery query)
-	{
+	public String buildInsertCommand(InsertQuery query) {
 		StringBuilder builder = new StringBuilder("insert into ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		builder.append("values").append('(');
@@ -88,8 +85,7 @@ public class SqlHandler implements DatabaseHandler {
 		return builder.append(')').toString();
 	}
 
-	public String buildUpdateCommand(UpdateQuery query)
-	{
+	public String buildUpdateCommand(UpdateQuery query) {
 		StringBuilder builder = new StringBuilder("update ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		builder.append("set");
@@ -117,8 +113,7 @@ public class SqlHandler implements DatabaseHandler {
 		return builder.toString();
 	}
 
-	public String buildRemoveCommand(RemoveQuery query)
-	{
+	public String buildRemoveCommand(RemoveQuery query) {
 		StringBuilder builder = new StringBuilder("delete from ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		boolean first = true;
@@ -137,14 +132,12 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	@Override
-	public boolean isConnected() throws SQLException
-	{
+	public boolean isConnected() throws SQLException {
 		return sql != null && !sql.isClosed() && sql.isValid(0);
 	}
 
 	@Override
-	public void open() throws SQLException
-	{
+	public void open() throws SQLException {
 		if (sql != null)
 			try {
 				sql.close();
@@ -155,15 +148,13 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	@Override
-	public void close() throws SQLException
-	{
+	public void close() throws SQLException {
 		sql.close();
 		sql = null;
 	}
 
 	@Override
-	public boolean exists(SelectQuery query) throws SQLException
-	{
+	public boolean exists(SelectQuery query) throws SQLException {
 		ResultSet set = prepareStatement(buildSelectCommand(query)).executeQuery();
 		if (set == null)
 			return false;
@@ -171,13 +162,11 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	@Override
-	public boolean createTable(String name, Row[] values) throws SQLException
-	{
+	public boolean createTable(String name, Row[] values) throws SQLException {
 		return prepareStatement("CREATE TABLE IF NOT EXISTS `" + name + "`(" + buildTableValues(values) + ")").execute();
 	}
 
-	public String buildTableValues(Row[] values)
-	{
+	public String buildTableValues(Row[] values) {
 		StringBuilder builder = new StringBuilder();
 		boolean first = true;
 		for (Row row : values) {
@@ -190,14 +179,12 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	@Override
-	public boolean deleteTable(String name) throws SQLException
-	{
+	public boolean deleteTable(String name) throws SQLException {
 		return prepareStatement("DROP TABLE " + name).execute();
 	}
 
 	@Override
-	public Result get(SelectQuery query) throws SQLException
-	{
+	public Result get(SelectQuery query) throws SQLException {
 		ResultSet set = prepareStatement(buildSelectCommand(query)).executeQuery();
 		String[] lookup = query.getSearch();
 		if (set != null && set.next()) {
@@ -241,19 +228,16 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	@Override
-	public boolean insert(InsertQuery query) throws SQLException
-	{
+	public boolean insert(InsertQuery query) throws SQLException {
 		return prepareStatement(buildInsertCommand(query)).executeUpdate() != 0;
 	}
 
 	@Override
-	public boolean update(UpdateQuery query) throws SQLException
-	{
+	public boolean update(UpdateQuery query) throws SQLException {
 		return prepareStatement(buildUpdateCommand(query)).executeUpdate() != 0;
 	}
 
-	private PreparedStatement prepareStatement(String sqlCommand) throws SQLException
-	{
+	private PreparedStatement prepareStatement(String sqlCommand) throws SQLException {
 		try {
 			if (!isConnected())
 				open();
@@ -268,14 +252,12 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	@Override
-	public boolean remove(RemoveQuery query) throws SQLException
-	{
+	public boolean remove(RemoveQuery query) throws SQLException {
 		return prepareStatement(buildRemoveCommand(query)).executeUpdate() != 0;
 	}
 
 	@Override
-	public List<String> getTables() throws SQLException
-	{
+	public List<String> getTables() throws SQLException {
 		ResultSet set = prepareStatement("SHOW TABLES").executeQuery();
 		if (set != null && set.next()) {
 			List<String> tables = new ArrayList<>();
@@ -288,8 +270,7 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	@Override
-	public Row[] getTableValues(String name) throws SQLException
-	{
+	public Row[] getTableValues(String name) throws SQLException {
 		ResultSet set = prepareStatement("DESCRIBE `" + name + "`").executeQuery();
 		if (set == null || !set.next())
 			return null;
@@ -300,8 +281,7 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	@Override
-	public DatabaseType getType()
-	{
+	public DatabaseType getType() {
 		return DatabaseType.MYSQL;
 	}
 

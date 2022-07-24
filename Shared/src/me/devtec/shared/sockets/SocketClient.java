@@ -40,13 +40,11 @@ public interface SocketClient {
 
 	public boolean shouldAddToQueue();
 
-	public default void write(String fileName, File file)
-	{
+	public default void write(String fileName, File file) {
 		writeWithData(null, fileName, file);
 	}
 
-	public default ClientResponde readUntilFind(ClientResponde... specified) throws IOException
-	{
+	public default ClientResponde readUntilFind(ClientResponde... specified) throws IOException {
 		int task = getInputStream().readInt();
 		ClientResponde responde = ClientResponde.fromResponde(task);
 		for (ClientResponde lookingFor : specified)
@@ -56,8 +54,7 @@ public interface SocketClient {
 		return readUntilFind(specified);
 	}
 
-	public default void writeWithData(Config data, String fileName, File file)
-	{
+	public default void writeWithData(Config data, String fileName, File file) {
 		if (fileName == null || file == null)
 			return;
 		if (shouldAddToQueue()) {
@@ -120,8 +117,7 @@ public interface SocketClient {
 		}
 	}
 
-	public default void write(Config data)
-	{
+	public default void write(Config data) {
 		if (data == null)
 			return;
 		if (shouldAddToQueue()) {
@@ -146,15 +142,13 @@ public interface SocketClient {
 		}
 	}
 
-	public default void write(File file)
-	{
+	public default void write(File file) {
 		if (file == null)
 			return;
 		writeWithData(null, file.getName(), file);
 	}
 
-	public default void writeWithData(Config data, File file)
-	{
+	public default void writeWithData(Config data, File file) {
 		if (data == null || file == null)
 			return;
 		writeWithData(data, file.getName(), file);
@@ -170,13 +164,11 @@ public interface SocketClient {
 
 	public Socket getSocket();
 
-	public static void setServerName(String serverName)
-	{
+	public static void setServerName(String serverName) {
 		SocketClientHandler.serverName = serverName.getBytes();
 	}
 
-	public static SocketClientHandler openConnection(String ip, int port, String password)
-	{
+	public static SocketClientHandler openConnection(String ip, int port, String password) {
 		SocketClientHandler client = new SocketClientHandler(ip, port, password);
 		client.start();
 		return client;

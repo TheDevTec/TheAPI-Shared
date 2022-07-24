@@ -31,48 +31,40 @@ public interface DatabaseHandler {
 			this.search = value == null || value.length == 0 ? new String[] { "*" } : value;
 		}
 
-		public static SelectQuery table(String table, String... search)
-		{
+		public static SelectQuery table(String table, String... search) {
 			return new SelectQuery(table, search);
 		}
 
-		public SelectQuery where(String key, String value)
-		{
+		public SelectQuery where(String key, String value) {
 			this.where.add(new String[] { key, value });
 			return this;
 		}
 
-		public SelectQuery sortType(Sorting type)
-		{
+		public SelectQuery sortType(Sorting type) {
 			this.sorting = type;
 			return this;
 		}
 
-		public SelectQuery sortBy(String key)
-		{
+		public SelectQuery sortBy(String key) {
 			this.sortingKey.add(key);
 			return this;
 		}
 
-		public SelectQuery limit(int limit)
-		{
+		public SelectQuery limit(int limit) {
 			this.limit = limit == 0 ? null : "" + limit;
 			return this;
 		}
 
-		public SelectQuery limit(int limitFrom, int limitTo)
-		{
+		public SelectQuery limit(int limitFrom, int limitTo) {
 			this.limit = limitFrom + "," + limitTo;
 			return this;
 		}
 
-		public String getTable()
-		{
+		public String getTable() {
 			return this.table;
 		}
 
-		public String[] getSearch()
-		{
+		public String[] getSearch() {
 			return this.search;
 		}
 	}
@@ -86,15 +78,13 @@ public interface DatabaseHandler {
 			this.table = table;
 		}
 
-		public static InsertQuery table(String table, String... values)
-		{
+		public static InsertQuery table(String table, String... values) {
 			InsertQuery query = new InsertQuery(table);
 			Collections.addAll(query.values, values);
 			return query;
 		}
 
-		public String getTable()
-		{
+		public String getTable() {
 			return this.table;
 		}
 	}
@@ -114,37 +104,31 @@ public interface DatabaseHandler {
 			this.table = table;
 		}
 
-		public static UpdateQuery table(String table)
-		{
+		public static UpdateQuery table(String table) {
 			return new UpdateQuery(table);
 		}
 
-		public UpdateQuery where(String key, String value)
-		{
+		public UpdateQuery where(String key, String value) {
 			this.where.add(new String[] { key, value });
 			return this;
 		}
 
-		public UpdateQuery value(String key, String value)
-		{
+		public UpdateQuery value(String key, String value) {
 			this.values.add(new String[] { key, value });
 			return this;
 		}
 
-		public UpdateQuery limit(int limit)
-		{
+		public UpdateQuery limit(int limit) {
 			this.limit = limit == 0 ? null : "" + limit;
 			return this;
 		}
 
-		public UpdateQuery limit(int limitFrom, int limitTo)
-		{
+		public UpdateQuery limit(int limitFrom, int limitTo) {
 			this.limit = limitFrom + "," + limitTo;
 			return this;
 		}
 
-		public String getTable()
-		{
+		public String getTable() {
 			return this.table;
 		}
 	}
@@ -159,31 +143,26 @@ public interface DatabaseHandler {
 			this.table = table;
 		}
 
-		public static RemoveQuery table(String table)
-		{
+		public static RemoveQuery table(String table) {
 			return new RemoveQuery(table);
 		}
 
-		public RemoveQuery where(String key, String value)
-		{
+		public RemoveQuery where(String key, String value) {
 			this.values.add(new String[] { key, value });
 			return this;
 		}
 
-		public RemoveQuery limit(int limit)
-		{
+		public RemoveQuery limit(int limit) {
 			this.limit = limit == 0 ? null : "" + limit;
 			return this;
 		}
 
-		public RemoveQuery limit(int limitFrom, int limitTo)
-		{
+		public RemoveQuery limit(int limitFrom, int limitTo) {
 			this.limit = limitFrom + "," + limitTo;
 			return this;
 		}
 
-		public String getTable()
-		{
+		public String getTable() {
 			return this.table;
 		}
 	}
@@ -214,33 +193,27 @@ public interface DatabaseHandler {
 			this.extra = "";
 		}
 
-		public String getFieldName()
-		{
+		public String getFieldName() {
 			return this.field;
 		}
 
-		public String getFieldType()
-		{
+		public String getFieldType() {
 			return this.type;
 		}
 
-		public boolean isNulled()
-		{
+		public boolean isNulled() {
 			return this.nulled;
 		}
 
-		public String getKey()
-		{
+		public String getKey() {
 			return this.key;
 		}
 
-		public String getDefaultValue()
-		{
+		public String getDefaultValue() {
 			return this.defaultVal;
 		}
 
-		public String getExtra()
-		{
+		public String getExtra() {
 			return this.extra;
 		}
 	}
@@ -253,26 +226,22 @@ public interface DatabaseHandler {
 			this.values = value;
 		}
 
-		protected void nextResult(Result next)
-		{
+		protected void nextResult(Result next) {
 			if (next != null)
 				this.next = next;
 		}
 
 		@Override
-		public Result next()
-		{
+		public Result next() {
 			return this.next;
 		}
 
 		@Override
-		public boolean hasNext()
-		{
+		public boolean hasNext() {
 			return this.next != null;
 		}
 
-		public String[] getValue()
-		{
+		public String[] getValue() {
 			return this.values;
 		}
 	}
@@ -291,8 +260,7 @@ public interface DatabaseHandler {
 
 	public boolean deleteTable(String name) throws SQLException;
 
-	public default Result select(SelectQuery query) throws SQLException
-	{
+	public default Result select(SelectQuery query) throws SQLException {
 		return this.get(query);
 	}
 
@@ -300,8 +268,7 @@ public interface DatabaseHandler {
 
 	public boolean insert(InsertQuery query) throws SQLException;
 
-	public default boolean set(UpdateQuery query) throws SQLException
-	{
+	public default boolean set(UpdateQuery query) throws SQLException {
 		return this.set(query);
 	}
 

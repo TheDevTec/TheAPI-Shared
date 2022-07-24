@@ -18,8 +18,7 @@ public class OfflineCache {
 		this.onlineMode = onlineMode;
 	}
 
-	public UUID lookupId(String name)
-	{
+	public UUID lookupId(String name) {
 		Query o = this.values.get(name.toLowerCase());
 		if (o == null) {
 			UUID uuid = this.onlineMode ? this.lookupIdFromMojang(name) : UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
@@ -30,8 +29,7 @@ public class OfflineCache {
 	}
 
 	@SuppressWarnings("unchecked")
-	public String lookupNameFromMojang(String name)
-	{
+	public String lookupNameFromMojang(String name) {
 		try {
 			return (String) ((Map<String, Object>) Json.reader().simpleRead(StreamUtils.fromStream(new URL(String.format(this.USER_FORMAT, name)).openStream()))).get("username");
 		} catch (Exception error) {
@@ -40,8 +38,7 @@ public class OfflineCache {
 	}
 
 	@SuppressWarnings("unchecked")
-	public UUID lookupIdFromMojang(String name)
-	{
+	public UUID lookupIdFromMojang(String name) {
 		try {
 			return UUID.fromString((String) ((Map<String, Object>) Json.reader().simpleRead(StreamUtils.fromStream(new URL(String.format(this.USER_FORMAT, name)).openStream()))).get("uuid"));
 		} catch (Exception error) {
@@ -49,29 +46,25 @@ public class OfflineCache {
 		return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
 	}
 
-	public String lookupNameById(UUID id)
-	{
+	public String lookupNameById(UUID id) {
 		for (Query i : this.values.values())
 			if (id.equals(i.uuid))
 				return i.name;
 		return null;
 	}
 
-	public Query lookupQuery(String name)
-	{
+	public Query lookupQuery(String name) {
 		return this.values.get(name.toLowerCase());
 	}
 
-	public Query lookupQuery(UUID id)
-	{
+	public Query lookupQuery(UUID id) {
 		for (Query i : this.values.values())
 			if (id.equals(i.uuid))
 				return i;
 		return null;
 	}
 
-	public String lookupName(String name)
-	{
+	public String lookupName(String name) {
 		Query get = this.values.get(name.toLowerCase());
 		String result = name;
 		if (get == null) {
@@ -82,8 +75,7 @@ public class OfflineCache {
 		return result;
 	}
 
-	public void setLookup(UUID uuid, String name)
-	{
+	public void setLookup(UUID uuid, String name) {
 		if (uuid == null || name == null)
 			return;
 		Query get = this.values.get(name.toLowerCase());
@@ -97,8 +89,7 @@ public class OfflineCache {
 		}
 	}
 
-	public Config saveToConfig()
-	{
+	public Config saveToConfig() {
 		Config data = new Config();
 		for (Query i : this.values.values())
 			data.set(i.uuid.toString(), i.name);
@@ -114,23 +105,19 @@ public class OfflineCache {
 			this.uuid = uuid;
 		}
 
-		public String getName()
-		{
+		public String getName() {
 			return this.name;
 		}
 
-		public UUID getUUID()
-		{
+		public UUID getUUID() {
 			return this.uuid;
 		}
 
-		public void setName(String name)
-		{
+		public void setName(String name) {
 			this.name = name;
 		}
 
-		public void setUUID(UUID uuid)
-		{
+		public void setUUID(UUID uuid) {
 			this.uuid = uuid;
 		}
 	}

@@ -4,15 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface ComponentTransformer<T> {
-	public default T fromString(String string)
-	{
+	public default T fromString(String string) {
 		return this.fromComponent(ComponentAPI.fromString(string));
 	}
 
 	public Component toComponent(T value);
 
-	public default Component toComponent(T[] value)
-	{
+	public default Component toComponent(T[] value) {
 		Component comp = new Component("");
 		List<Component> extra = new ArrayList<>();
 		for (T t : value)

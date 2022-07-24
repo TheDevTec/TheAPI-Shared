@@ -18,35 +18,29 @@ public class HoverEvent {
 		this(action, ComponentAPI.fromString(value));
 	}
 
-	public HoverEvent setAction(Action action)
-	{
+	public HoverEvent setAction(Action action) {
 		this.action = action;
 		return this;
 	}
 
-	public HoverEvent setValue(Component value)
-	{
+	public HoverEvent setValue(Component value) {
 		this.value = value;
 		return this;
 	}
 
-	public Action getAction()
-	{
+	public Action getAction() {
 		return this.action;
 	}
 
-	public Component getValue()
-	{
+	public Component getValue() {
 		return this.value;
 	}
 
-	public String toJson()
-	{
+	public String toJson() {
 		return "{\"action\":\"" + this.action.name().toLowerCase() + "\",\"value\":\"" + Json.writer().simpleWrite(ComponentAPI.toJsonList(this.value)) + "\"}";
 	}
 
-	public Map<String, Object> toJsonMap()
-	{
+	public Map<String, Object> toJsonMap() {
 		Map<String, Object> map = new LinkedHashMap<>();
 		map.put("action", this.action.name().toLowerCase());
 		map.put("value", ComponentAPI.toJsonList(this.value));

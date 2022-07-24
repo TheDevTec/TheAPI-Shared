@@ -13,20 +13,17 @@ public class Animation {
 		this.ticks = ticks;
 	}
 
-	public long getTicks()
-	{
+	public long getTicks() {
 		return this.ticks;
 	}
 
-	public String get()
-	{
+	public String get() {
 		if (this.lines.isEmpty())
 			return null;
 		return this.lines.get(this.pos);
 	}
 
-	public void next()
-	{
+	public void next() {
 		if (this.last - System.currentTimeMillis() / 50 + this.ticks <= 0) {
 			this.last = System.currentTimeMillis() / 50;
 			if (++this.pos >= this.lines.size())
@@ -34,8 +31,7 @@ public class Animation {
 		}
 	}
 
-	public List<String> getLines()
-	{
+	public List<String> getLines() {
 		return this.lines;
 	}
 }

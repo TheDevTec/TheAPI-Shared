@@ -4,13 +4,11 @@ public abstract class Tasker implements Runnable {
 	private boolean cancel;
 	private int task = -1;
 
-	public final synchronized boolean isCancelled()
-	{
+	public final synchronized boolean isCancelled() {
 		return this.cancel;
 	}
 
-	public final synchronized void cancel()
-	{
+	public final synchronized void cancel() {
 		if (this.task == -1)
 			return;
 		this.cancel = true;
@@ -18,8 +16,7 @@ public abstract class Tasker implements Runnable {
 		this.task = -1;
 	}
 
-	public final synchronized int getId()
-	{
+	public final synchronized int getId() {
 		return this.task;
 	}
 
@@ -27,39 +24,33 @@ public abstract class Tasker implements Runnable {
 	 * ASYNCHRONOUOS PART
 	 */
 
-	public final int runTask()
-	{
+	public final int runTask() {
 		if (this.task == -1)
 			return this.task = Scheduler.run(this);
 		return this.task;
 	}
 
-	public final int runRepeating(long delay, long period)
-	{
+	public final int runRepeating(long delay, long period) {
 		if (this.task == -1)
 			return this.task = Scheduler.repeating(delay, period, this);
 		return this.task;
 	}
 
-	public final int runTimer(long delay, long period, long times)
-	{
+	public final int runTimer(long delay, long period, long times) {
 		return this.runRepeatingTimes(delay, period, times, null);
 	}
 
-	public final int runRepeatingTimes(long delay, long period, long times)
-	{
+	public final int runRepeatingTimes(long delay, long period, long times) {
 		return this.runRepeatingTimes(delay, period, times, null);
 	}
 
-	public final int runRepeatingTimes(long delay, long period, long times, Runnable onFinish)
-	{
+	public final int runRepeatingTimes(long delay, long period, long times, Runnable onFinish) {
 		if (this.task == -1)
 			return this.task = Scheduler.repeatingTimes(delay, period, times, this, onFinish);
 		return this.task;
 	}
 
-	public final int runLater(long delay)
-	{
+	public final int runLater(long delay) {
 		if (this.task == -1)
 			return this.task = Scheduler.later(delay, this);
 		return this.task;

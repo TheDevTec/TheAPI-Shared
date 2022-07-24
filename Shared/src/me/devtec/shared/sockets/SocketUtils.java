@@ -14,22 +14,19 @@ import me.devtec.shared.events.api.ServerClientReceiveDataEvent;
 import me.devtec.shared.events.api.ServerClientReceiveFileEvent;
 
 public class SocketUtils {
-	public static Config readConfig(DataInputStream in) throws IOException
-	{
+	public static Config readConfig(DataInputStream in) throws IOException {
 		byte[] path = new byte[in.readInt()];
 		in.read(path);
 		return new Config(ByteLoader.fromBytes(path));
 	}
 
-	public static String readText(DataInputStream in) throws IOException
-	{
+	public static String readText(DataInputStream in) throws IOException {
 		byte[] path = new byte[in.readInt()];
 		in.read(path);
 		return new String(path);
 	}
 
-	public static boolean readFile(DataInputStream in, FileOutputStream out, File file)
-	{
+	public static boolean readFile(DataInputStream in, FileOutputStream out, File file) {
 		int bytes;
 		long origin;
 		try {
@@ -49,8 +46,7 @@ public class SocketUtils {
 		return origin == file.length();
 	}
 
-	public static boolean process(SocketClient client, int taskId) throws IOException
-	{
+	public static boolean process(SocketClient client, int taskId) throws IOException {
 		DataInputStream in = client.getInputStream();
 		Config data = null;
 		switch (ClientResponde.fromResponde(taskId)) {
@@ -98,8 +94,7 @@ public class SocketUtils {
 		return false;
 	}
 
-	private static File findUsableName(String fileName)
-	{
+	private static File findUsableName(String fileName) {
 		File file = new File(fileName);
 		if (file.exists()) {
 			String end = fileName.split("\\.")[fileName.split("\\.").length - 1];

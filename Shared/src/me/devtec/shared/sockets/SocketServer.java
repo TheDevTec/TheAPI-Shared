@@ -17,8 +17,7 @@ public interface SocketServer {
 
 	public void notifyDisconnect(SocketClient client);
 
-	public static SocketServerHandler startServer(String serverName, int port, String password)
-	{
+	public static SocketServerHandler startServer(String serverName, int port, String password) {
 		SocketServerHandler server = new SocketServerHandler(serverName, port, password);
 		server.start();
 		return server;

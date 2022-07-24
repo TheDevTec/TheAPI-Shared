@@ -16,18 +16,15 @@ public class SpigotUpdateChecker {
 		this.pluginVersion = pluginVersion;
 	}
 
-	public static SpigotUpdateChecker createUpdateChecker(String pluginVersion, int id)
-	{
+	public static SpigotUpdateChecker createUpdateChecker(String pluginVersion, int id) {
 		return new SpigotUpdateChecker(pluginVersion, id);
 	}
 
-	public int getId()
-	{
+	public int getId() {
 		return this.id;
 	}
 
-	public SpigotUpdateChecker reconnect()
-	{
+	public SpigotUpdateChecker reconnect() {
 		try {
 			this.checkURL = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + this.id);
 		} catch (Exception e) {
@@ -38,8 +35,7 @@ public class SpigotUpdateChecker {
 	// 0 == SAME VERSION
 	// 1 == NEW VERSION
 	// 2 == BETA VERSION
-	public VersionUtils.Version checkForUpdates()
-	{
+	public VersionUtils.Version checkForUpdates() {
 		if (this.checkURL == null)
 			this.reconnect();
 		String[] readerr = null;

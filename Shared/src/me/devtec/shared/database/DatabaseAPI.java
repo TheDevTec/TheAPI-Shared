@@ -35,27 +35,23 @@ public class DatabaseAPI {
 		}
 
 		@Override
-		public DatabaseSettings attributes(String attributes)
-		{
+		public DatabaseSettings attributes(String attributes) {
 			this.attributes = attributes;
 			return this;
 		}
 
 		@Override
-		public String getUser()
-		{
+		public String getUser() {
 			return this.username;
 		}
 
 		@Override
-		public String getPassword()
-		{
+		public String getPassword() {
 			return this.password;
 		}
 
 		@Override
-		public String getConnectionString()
-		{
+		public String getConnectionString() {
 			if (this.sqlType.equals("sqlserver"))
 				return "jdbc:sqlserver://" + this.ip + ":" + this.port + ";user=" + this.username + ";password=" + this.password + ";databaseName=" + this.database + ";integratedSecurity=true;" + (this.attributes == null ? "" : this.attributes);
 			return "jdbc:" + this.sqlType + "://" + this.ip + ":" + this.port + "/" + this.database + (this.attributes == null ? "" : this.attributes);
@@ -77,27 +73,23 @@ public class DatabaseAPI {
 		}
 
 		@Override
-		public SqliteDatabaseSettings attributes(String attributes)
-		{
+		public SqliteDatabaseSettings attributes(String attributes) {
 			this.attributes = attributes;
 			return this;
 		}
 
 		@Override
-		public String getUser()
-		{
+		public String getUser() {
 			return this.username;
 		}
 
 		@Override
-		public String getPassword()
-		{
+		public String getPassword() {
 			return this.password;
 		}
 
 		@Override
-		public String getConnectionString()
-		{
+		public String getConnectionString() {
 			return "jdbc:" + this.sqlType + "://" + this.file + (this.attributes == null ? "" : this.attributes);
 		}
 	}
@@ -113,19 +105,16 @@ public class DatabaseAPI {
 			this.fileBased = fileBased;
 		}
 
-		public String getName()
-		{
+		public String getName() {
 			return this.name;
 		}
 
-		public boolean isFileBased()
-		{
+		public boolean isFileBased() {
 			return this.fileBased;
 		}
 	}
 
-	public static DatabaseHandler openConnection(DatabaseType type, DatabaseSettings settings) throws SQLException
-	{
+	public static DatabaseHandler openConnection(DatabaseType type, DatabaseSettings settings) throws SQLException {
 		switch (type) {
 		case H2:
 			DatabaseAPI.checkOrDownloadIfNeeded("h2");
@@ -180,8 +169,7 @@ public class DatabaseAPI {
 		throw new SQLException("Connection DatabaseSettings are not based on specified DatabaseType.");
 	}
 
-	private static void checkOrDownloadIfNeeded(String string)
-	{
+	private static void checkOrDownloadIfNeeded(String string) {
 		File file = new File("plugins/TheAPI/libraries/" + string + ".jar");
 		if (!file.exists())
 			API.library.downloadFileFromUrl("https://github.com/TheDevTec/TheAPI/raw/master/" + string + ".jar", file);

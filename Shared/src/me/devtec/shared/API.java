@@ -40,8 +40,7 @@ public class API {
 	private static final Basics basics = new Basics();
 	private static boolean enabled = true;
 
-	public static void initOfflineCache(boolean onlineMode, Config rawData)
-	{
+	public static void initOfflineCache(boolean onlineMode, Config rawData) {
 		API.cache = new OfflineCache(onlineMode);
 		for (String uuid : rawData.getKeys())
 			try {
@@ -50,13 +49,11 @@ public class API {
 			}
 	}
 
-	public static OfflineCache offlineCache()
-	{
+	public static OfflineCache offlineCache() {
 		return API.cache;
 	}
 
-	public static Config getUser(String playerName)
-	{
+	public static Config getUser(String playerName) {
 		if (API.cache == null)
 			return null;
 		UUID id = API.cache.lookupId(playerName);
@@ -66,8 +63,7 @@ public class API {
 		return cached;
 	}
 
-	public static Config getUser(UUID id)
-	{
+	public static Config getUser(UUID id) {
 		if (API.cache == null)
 			return null;
 		Config cached = API.users.get(id);
@@ -76,25 +72,21 @@ public class API {
 		return cached;
 	}
 
-	public static Config removeCache(UUID id)
-	{
+	public static Config removeCache(UUID id) {
 		return API.users.remove(id);
 	}
 
-	public static void setEnabled(boolean status)
-	{
+	public static void setEnabled(boolean status) {
 		API.enabled = status;
 	}
 
-	public static boolean isEnabled()
-	{
+	public static boolean isEnabled() {
 		return API.enabled;
 	}
 
 	public static class Basics {
 
-		public void load()
-		{
+		public void load() {
 			String path = Ref.serverType().isBukkit() || Ref.serverType() == ServerType.BUNGEECORD || Ref.serverType() == ServerType.VELOCITY ? "plugins/TheAPI/" : "TheAPI/";
 
 			Config tags = new Config(path + "tags.yml");
@@ -167,14 +159,12 @@ public class API {
 				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.seconds.matcher") + ")");
 
 				@Override
-				public Matcher matcher(String text)
-				{
+				public Matcher matcher(String text) {
 					return pattern.matcher(text);
 				}
 
 				@Override
-				public String toString(long value)
-				{
+				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.seconds.convertor"))
 						if (matchAction(action, value))
 							return value + StringUtils.buildString(1, action.split(" "));
@@ -185,14 +175,12 @@ public class API {
 				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.minutes.matcher") + ")");
 
 				@Override
-				public Matcher matcher(String text)
-				{
+				public Matcher matcher(String text) {
 					return pattern.matcher(text);
 				}
 
 				@Override
-				public String toString(long value)
-				{
+				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.minutes.convertor"))
 						if (matchAction(action, value))
 							return value + StringUtils.buildString(1, action.split(" "));
@@ -203,14 +191,12 @@ public class API {
 				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.hours.matcher") + ")");
 
 				@Override
-				public Matcher matcher(String text)
-				{
+				public Matcher matcher(String text) {
 					return pattern.matcher(text);
 				}
 
 				@Override
-				public String toString(long value)
-				{
+				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.hours.convertor"))
 						if (matchAction(action, value))
 							return value + StringUtils.buildString(1, action.split(" "));
@@ -221,14 +207,12 @@ public class API {
 				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.days.matcher") + ")");
 
 				@Override
-				public Matcher matcher(String text)
-				{
+				public Matcher matcher(String text) {
 					return pattern.matcher(text);
 				}
 
 				@Override
-				public String toString(long value)
-				{
+				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.days.convertor"))
 						if (matchAction(action, value))
 							return value + StringUtils.buildString(1, action.split(" "));
@@ -239,14 +223,12 @@ public class API {
 				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.weeks.matcher") + ")");
 
 				@Override
-				public Matcher matcher(String text)
-				{
+				public Matcher matcher(String text) {
 					return pattern.matcher(text);
 				}
 
 				@Override
-				public String toString(long value)
-				{
+				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.weeks.convertor"))
 						if (matchAction(action, value))
 							return value + StringUtils.buildString(1, action.split(" "));
@@ -257,14 +239,12 @@ public class API {
 				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.months.matcher") + ")");
 
 				@Override
-				public Matcher matcher(String text)
-				{
+				public Matcher matcher(String text) {
 					return pattern.matcher(text);
 				}
 
 				@Override
-				public String toString(long value)
-				{
+				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.months.convertor"))
 						if (matchAction(action, value))
 							return value + StringUtils.buildString(1, action.split(" "));
@@ -275,14 +255,12 @@ public class API {
 				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.years.matcher") + ")");
 
 				@Override
-				public Matcher matcher(String text)
-				{
+				public Matcher matcher(String text) {
 					return pattern.matcher(text);
 				}
 
 				@Override
-				public String toString(long value)
-				{
+				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.years.convertor"))
 						if (matchAction(action, value))
 							return value + StringUtils.buildString(1, action.split(" "));
@@ -291,8 +269,7 @@ public class API {
 			});
 		}
 
-		private boolean matchAction(String action, long value)
-		{
+		private boolean matchAction(String action, long value) {
 			String[] split = action.split(" ");
 			if (action.startsWith("=="))
 				return value == StringUtils.getLong(split[0]);
@@ -309,8 +286,7 @@ public class API {
 			return false; // invalid
 		}
 
-		public String[] getLastColors(Pattern pattern, String text)
-		{
+		public String[] getLastColors(Pattern pattern, String text) {
 			Matcher m = pattern.matcher(text);
 			String color = null;
 			StringBuilder formats = new StringBuilder();
@@ -330,32 +306,27 @@ public class API {
 			return new String[] { color, formats.toString() };
 		}
 
-		public String rainbow(String msg, String fromHex, String toHex)
-		{
+		public String rainbow(String msg, String fromHex, String toHex) {
 			if (msg == null || fromHex == null || toHex == null)
 				return msg;
 			return rawGradient(msg, fromHex, toHex, false);
 		}
 
-		public String gradient(String msg, String fromHex, String toHex)
-		{
+		public String gradient(String msg, String fromHex, String toHex) {
 			if (msg == null || fromHex == null || toHex == null)
 				return msg;
 			return rawGradient(msg, fromHex, toHex, true);
 		}
 
-		private boolean isColor(int charAt)
-		{
+		private boolean isColor(int charAt) {
 			return charAt >= 97 && charAt <= 102 || charAt >= 65 && charAt <= 70 || charAt >= 48 && charAt <= 57;
 		}
 
-		private boolean isFormat(int charAt)
-		{
+		private boolean isFormat(int charAt) {
 			return charAt >= 107 && charAt <= 111 || charAt == 114;
 		}
 
-		private String rawGradient(String msg, String from, String to, boolean defaultRainbow)
-		{
+		private String rawGradient(String msg, String from, String to, boolean defaultRainbow) {
 			String split = msg.replace("", "<>");
 			String formats = "";
 
@@ -441,13 +412,11 @@ public class API {
 
 	}
 
-	public static Basics basics()
-	{
+	public static Basics basics() {
 		return API.basics;
 	}
 
-	public static double getProcessCpuLoad()
-	{
+	public static double getProcessCpuLoad() {
 		try {
 			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 			ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
@@ -468,8 +437,7 @@ public class API {
 	 * @see see Server up time in long
 	 * @return long
 	 */
-	public static long getServerUpTime()
-	{
+	public static long getServerUpTime() {
 		return ManagementFactory.getRuntimeMXBean().getUptime();
 	}
 }

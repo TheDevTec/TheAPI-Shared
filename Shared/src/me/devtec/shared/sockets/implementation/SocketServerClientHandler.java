@@ -91,49 +91,41 @@ public class SocketServerClientHandler implements SocketClient {
 	}
 
 	@Override
-	public String serverName()
-	{
+	public String serverName() {
 		return serverName;
 	}
 
 	@Override
-	public String ip()
-	{
+	public String ip() {
 		return socket.getInetAddress().getHostName();
 	}
 
 	@Override
-	public int port()
-	{
+	public int port() {
 		return socket.getPort();
 	}
 
 	@Override
-	public int ping()
-	{
+	public int ping() {
 		return ping;
 	}
 
 	@Override
-	public boolean isConnected()
-	{
+	public boolean isConnected() {
 		return connected && socket != null && !socket.isInputShutdown() && !socket.isOutputShutdown() && !socket.isClosed() && socket.isConnected();
 	}
 
 	@Override
-	public void start()
-	{
+	public void start() {
 		throw new RuntimeException("Can't connect a socket that is not from the server side");
 	}
 
-	public SocketServer getSocketServer()
-	{
+	public SocketServer getSocketServer() {
 		return socketServer;
 	}
 
 	@Override
-	public void stop()
-	{
+	public void stop() {
 		manuallyClosed = true;
 		connected = false;
 		try {
@@ -144,38 +136,32 @@ public class SocketServerClientHandler implements SocketClient {
 	}
 
 	@Override
-	public Socket getSocket()
-	{
+	public Socket getSocket() {
 		return socket;
 	}
 
 	@Override
-	public DataInputStream getInputStream()
-	{
+	public DataInputStream getInputStream() {
 		return in;
 	}
 
 	@Override
-	public DataOutputStream getOutputStream()
-	{
+	public DataOutputStream getOutputStream() {
 		return out;
 	}
 
 	@Override
-	public boolean canReconnect()
-	{
+	public boolean canReconnect() {
 		return false;
 	}
 
 	@Override
-	public void lock()
-	{
+	public void lock() {
 		lock = true;
 	}
 
 	@Override
-	public void unlock()
-	{
+	public void unlock() {
 		lock = false;
 		while (!actionsAfterUnlock().isEmpty()) {
 			SocketAction value = actionsAfterUnlock().poll();
@@ -187,20 +173,17 @@ public class SocketServerClientHandler implements SocketClient {
 	}
 
 	@Override
-	public boolean isLocked()
-	{
+	public boolean isLocked() {
 		return lock;
 	}
 
 	@Override
-	public boolean shouldAddToQueue()
-	{
+	public boolean shouldAddToQueue() {
 		return isLocked();
 	}
 
 	@Override
-	public Queue<SocketAction> actionsAfterUnlock()
-	{
+	public Queue<SocketAction> actionsAfterUnlock() {
 		return actions;
 	}
 

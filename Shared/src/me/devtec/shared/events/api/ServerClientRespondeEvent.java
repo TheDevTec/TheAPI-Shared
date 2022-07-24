@@ -12,18 +12,15 @@ public class ServerClientRespondeEvent extends Event {
 		this.responde = responde;
 	}
 
-	public SocketClient getClient()
-	{
+	public SocketClient getClient() {
 		return client;
 	}
 
-	public int getResponde()
-	{
+	public int getResponde() {
 		return responde;
 	}
 
-	public ClientResponde getClientResponde()
-	{
+	public ClientResponde getClientResponde() {
 		return ClientResponde.fromResponde(responde);
 	}
 }

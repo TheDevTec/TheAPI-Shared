@@ -17,56 +17,47 @@ public class ComponentAPI {
 	static Pattern url = Pattern.compile("(w{3}\\\\.|[a-zA-Z0-9+&@#/%?=~_|!:,.;-]+:\\/\\/)?[a-zA-Z0-9+&@#/%?=~_|!:,.;-]+\\w\\.[a-zA-Z0-9+&@#/%?=~_|!:,.;-]{1,}\\w");
 	static Map<String, ComponentTransformer<?>> transformers = new HashMap<>();
 
-	public static ComponentTransformer<?> transformer(String name)
-	{
+	public static ComponentTransformer<?> transformer(String name) {
 		return ComponentAPI.transformers.get(name.toUpperCase());
 	}
 
-	public static ComponentTransformer<?> registerTransformer(String name, ComponentTransformer<?> transformer)
-	{
+	public static ComponentTransformer<?> registerTransformer(String name, ComponentTransformer<?> transformer) {
 		if (ComponentAPI.transformers.put(name.toUpperCase(), transformer) != null)
 			System.out.println("[TheAPI] Overriding " + name.toUpperCase() + " transformer.");
 		return transformer;
 	}
 
-	public static ComponentTransformer<?> unregisterTransformer(String name)
-	{
+	public static ComponentTransformer<?> unregisterTransformer(String name) {
 		return ComponentAPI.transformers.remove(name.toUpperCase());
 	}
 
-	public static ComponentTransformer<?> bungee()
-	{
+	public static ComponentTransformer<?> bungee() {
 		return ComponentAPI.transformer("BUNGEECORD");
 	}
 
-	public static ComponentTransformer<?> adventure()
-	{
+	public static ComponentTransformer<?> adventure() {
 		return ComponentAPI.transformer("ADVENTURE");
 	}
 
-	public static String toString(Component input)
-	{
+	public static String toString(Component input) {
 		if (input == null)
 			return null;
 		return input.toString(); // Are you lazy or stupid?
 	}
 
-	public static Component fromString(String input)
-	{
+	public static Component fromString(String input) {
 		if (input == null)
 			return null;
 		return ComponentAPI.fromString(input, /* Depends on version & software */ Ref.serverType().isBukkit() && Ref.isNewerThan(15), input.contains("http"));
 	}
 
-	public static Component fromString(String input, boolean hexMode)
-	{
+	public static Component fromString(String input, boolean hexMode) {
 		if (input == null)
 			return null;
 		return ComponentAPI.fromString(input, hexMode ? Ref.serverType().isBukkit() && Ref.isNewerThan(15) : false, input.contains("http"));
 	}
 
-	public static Component fromString(String input, boolean hexMode, boolean urlMode)
-	{
+	public static Component fromString(String input, boolean hexMode, boolean urlMode) {
 		if (input == null)
 			return null;
 		final Component start = new Component("");
@@ -179,13 +170,11 @@ public class ComponentAPI {
 		return start;
 	}
 
-	private static boolean checkHttp(String text)
-	{
+	private static boolean checkHttp(String text) {
 		return ComponentAPI.url.matcher(text).find();
 	}
 
-	public static List<Map<String, Object>> toJsonList(Component component)
-	{
+	public static List<Map<String, Object>> toJsonList(Component component) {
 		List<Map<String, Object>> list = new LinkedList<>();
 		list.add(component.toJsonMap());
 		if (component.getExtra() != null)
@@ -193,8 +182,7 @@ public class ComponentAPI {
 		return list;
 	}
 
-	private static void toJsonListAll(List<Map<String, Object>> list, List<Component> extra)
-	{
+	private static void toJsonListAll(List<Map<String, Object>> list, List<Component> extra) {
 		for (Component c : extra) {
 			list.add(c.toJsonMap());
 			if (c.getExtra() != null)
@@ -202,14 +190,12 @@ public class ComponentAPI {
 		}
 	}
 
-	public static List<Map<String, Object>> toJsonList(String text)
-	{
+	public static List<Map<String, Object>> toJsonList(String text) {
 		return ComponentAPI.toJsonList(ComponentAPI.fromString(text));
 	}
 
 	@SuppressWarnings("unchecked")
-	public static List<Map<String, Object>> fixJsonList(List<Map<String, Object>> lists)
-	{ // usable for ex. chat format
+	public static List<Map<String, Object>> fixJsonList(List<Map<String, Object>> lists) { // usable for ex. chat format
 		if (lists == null)
 			return null;
 		ListIterator<Map<String, Object>> it = lists.listIterator();
@@ -259,8 +245,7 @@ public class ComponentAPI {
 		return lists;
 	}
 
-	private static void fixJsonListAll(ListIterator<Map<String, Object>> list, List<Component> extra)
-	{
+	private static void fixJsonListAll(ListIterator<Map<String, Object>> list, List<Component> extra) {
 		for (Component c : extra) {
 			list.add(c.toJsonMap());
 			if (c.getExtra() != null)
@@ -269,8 +254,7 @@ public class ComponentAPI {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static String listToString(List<?> list)
-	{
+	public static String listToString(List<?> list) {
 		StringBuilder string = new StringBuilder(list.size() * 16);
 		for (Object text : list)
 			if (text instanceof Map)
@@ -280,8 +264,7 @@ public class ComponentAPI {
 		return string.toString();
 	}
 
-	private static String getColor(Object color)
-	{
+	private static String getColor(Object color) {
 		if (color == null)
 			return "";
 		if (color.toString().startsWith("#"))
@@ -289,8 +272,7 @@ public class ComponentAPI {
 		return "§" + Component.colorToChar(color.toString());
 	}
 
-	private static Map<String, Object> convertMapValues(String key, Map<String, Object> hover)
-	{
+	private static Map<String, Object> convertMapValues(String key, Map<String, Object> hover) {
 		Object val = hover.getOrDefault("value", hover.getOrDefault("content", hover.getOrDefault("contents", null)));
 		if (val == null)
 			hover.put("value", "");

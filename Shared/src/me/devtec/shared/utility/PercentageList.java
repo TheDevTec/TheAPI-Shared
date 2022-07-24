@@ -11,50 +11,41 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PercentageList<T> {
 	private final ConcurrentHashMap<T, Double> a = new ConcurrentHashMap<>();
 
-	public boolean add(T t, double percent)
-	{
+	public boolean add(T t, double percent) {
 		this.a.put(t, percent);
 		return true;
 	}
 
-	public boolean remove(T t)
-	{
+	public boolean remove(T t) {
 		this.a.remove(t);
 		return true;
 	}
 
-	public boolean contains(T t)
-	{
+	public boolean contains(T t) {
 		return this.a.containsKey(t);
 	}
 
-	public double getChance(T t)
-	{
+	public double getChance(T t) {
 		return this.a.get(t);
 	}
 
-	public boolean isEmpty()
-	{
+	public boolean isEmpty() {
 		return this.a.isEmpty();
 	}
 
-	public Set<Entry<T, Double>> entrySet()
-	{
+	public Set<Entry<T, Double>> entrySet() {
 		return this.a.entrySet();
 	}
 
-	public Set<T> keySet()
-	{
+	public Set<T> keySet() {
 		return this.a.keySet();
 	}
 
-	public Collection<Double> values()
-	{
+	public Collection<Double> values() {
 		return this.a.values();
 	}
 
-	public T getRandom()
-	{
+	public T getRandom() {
 		if (this.a.isEmpty())
 			return null;
 
@@ -66,8 +57,7 @@ public class PercentageList<T> {
 		return PercentageList.select(this.a, chance);
 	}
 
-	private static <K> K select(Map<K, Double> keys, double chance)
-	{
+	private static <K> K select(Map<K, Double> keys, double chance) {
 		@SuppressWarnings("unchecked")
 		Entry<K, Double>[] aw = keys.entrySet().toArray(new Entry[0]);
 		Entry<K, Double> found = aw[keys.size() - 1];
@@ -88,16 +78,14 @@ public class PercentageList<T> {
 		return found.getKey();
 	}
 
-	public double getTotalChance()
-	{
+	public double getTotalChance() {
 		double d = 0.0;
 		for (double as : this.a.values())
 			d += as < 0 ? 0 : as;
 		return d;
 	}
 
-	public List<T> toList()
-	{
+	public List<T> toList() {
 		return new ArrayList<>(this.a.keySet());
 	}
 }

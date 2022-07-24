@@ -9,14 +9,12 @@ public class ModernJsonReader implements JReader {
 	private static final Gson parser = new GsonBuilder().create();
 
 	@Override
-	public Object fromGson(String json, Class<?> clazz)
-	{
+	public Object fromGson(String json, Class<?> clazz) {
 		return ModernJsonReader.parser.fromJson(json, clazz);
 	}
 
 	@Override
-	public String toString()
-	{
+	public String toString() {
 		return "ModernJsonReader";
 	}
 }

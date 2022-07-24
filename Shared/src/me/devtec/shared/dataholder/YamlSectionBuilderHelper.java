@@ -14,8 +14,7 @@ import me.devtec.shared.json.Json;
 
 class YamlSectionBuilderHelper {
 
-	public static void write(StringBuilder builder, List<String> keys, Map<String, DataValue> map)
-	{
+	public static void write(StringBuilder builder, List<String> keys, Map<String, DataValue> map) {
 		Map<String, SectionHolder> secs = new LinkedHashMap<>(map.size()); // correct size of map
 
 		// Prepare sections in map
@@ -54,8 +53,7 @@ class YamlSectionBuilderHelper {
 			YamlSectionBuilderHelper.start(section, builder);
 	}
 
-	private static List<String> split(String text, int startPos)
-	{
+	private static List<String> split(String text, int startPos) {
 		if (startPos == -1)
 			return Collections.singletonList(text);
 
@@ -77,8 +75,7 @@ class YamlSectionBuilderHelper {
 		return list;
 	}
 
-	public synchronized static void start(SectionHolder section, StringBuilder b)
-	{
+	public synchronized static void start(SectionHolder section, StringBuilder b) {
 		StringBuilder sectionLine = new StringBuilder(section.name.length() + section.space.length() + 2);
 		// write lines before section
 		sectionLine.append(section.space);
@@ -176,15 +173,13 @@ class YamlSectionBuilderHelper {
 				YamlSectionBuilderHelper.start(d, b);
 	}
 
-	private static StringBuilder addCommentIfAvailable(StringBuilder append, String commentAfterValue)
-	{
+	private static StringBuilder addCommentIfAvailable(StringBuilder append, String commentAfterValue) {
 		if (commentAfterValue == null)
 			return append;
 		return append.append(' ').append(commentAfterValue);
 	}
 
-	protected static StringBuilder addQuotesSplit(StringBuilder b, CharSequence split, String value)
-	{
+	protected static StringBuilder addQuotesSplit(StringBuilder b, CharSequence split, String value) {
 		b.append(split);
 		b.append('"');
 		b.append(value);
@@ -193,16 +188,14 @@ class YamlSectionBuilderHelper {
 		return b;
 	}
 
-	protected static StringBuilder addQuotesSplit(StringBuilder b, CharSequence split, Object value)
-	{
+	protected static StringBuilder addQuotesSplit(StringBuilder b, CharSequence split, Object value) {
 		b.append(split);
 		b.append(Json.writer().write(value));
 		b.append(System.lineSeparator());
 		return b;
 	}
 
-	protected static StringBuilder addQuotes(StringBuilder b, CharSequence pathName, String value, char add)
-	{
+	protected static StringBuilder addQuotes(StringBuilder b, CharSequence pathName, String value, char add) {
 		b.append(pathName).append(' ');
 		if (add == 0)
 			b.append(value);
@@ -214,8 +207,7 @@ class YamlSectionBuilderHelper {
 		return b;
 	}
 
-	protected static StringBuilder addQuotes(StringBuilder b, CharSequence pathName, Object value)
-	{
+	protected static StringBuilder addQuotes(StringBuilder b, CharSequence pathName, Object value) {
 		b.append(pathName).append(' ');
 		b.append(Json.writer().write(value));
 		return b;
@@ -232,8 +224,7 @@ class YamlSectionBuilderHelper {
 			name = d;
 		}
 
-		public SectionHolder find(String name)
-		{
+		public SectionHolder find(String name) {
 			if (holders != null)
 				for (SectionHolder section : holders)
 					if (section.name.equals(name))
@@ -241,8 +232,7 @@ class YamlSectionBuilderHelper {
 			return null;
 		}
 
-		public SectionHolder create(String name)
-		{
+		public SectionHolder create(String name) {
 			SectionHolder sec = new SectionHolder(name);
 			sec.space = space + "  ";
 			if (holders == null)

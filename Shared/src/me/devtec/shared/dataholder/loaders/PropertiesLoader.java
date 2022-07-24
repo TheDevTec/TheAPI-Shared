@@ -13,8 +13,7 @@ public class PropertiesLoader extends EmptyLoader {
 	private final Pattern pattern = Pattern.compile("(.*?)=(.*)");
 
 	@Override
-	public void load(String input)
-	{
+	public void load(String input) {
 		reset();
 		if (input == null)
 			return;

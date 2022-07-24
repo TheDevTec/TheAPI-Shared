@@ -19,28 +19,23 @@ public class ServerClientPreReceiveFileEvent extends Event implements Cancellabl
 		this.data = data;
 	}
 
-	public SocketClient getClient()
-	{
+	public SocketClient getClient() {
 		return client;
 	}
 
-	public String getFileName()
-	{
+	public String getFileName() {
 		return fileName;
 	}
 
-	public void setFileName(String name)
-	{
+	public void setFileName(String name) {
 		fileName = name;
 	}
 
-	public String getFileDirectory()
-	{
+	public String getFileDirectory() {
 		return fileDirectory;
 	}
 
-	public void setFileDirectory(String directory)
-	{
+	public void setFileDirectory(String directory) {
 		fileDirectory = directory == null ? "" : directory;
 	}
 
@@ -48,20 +43,17 @@ public class ServerClientPreReceiveFileEvent extends Event implements Cancellabl
 	 *
 	 * @apiNote Nullable
 	 */
-	public Config getData()
-	{
+	public Config getData() {
 		return data;
 	}
 
 	@Override
-	public boolean isCancelled()
-	{
+	public boolean isCancelled() {
 		return cancelled;
 	}
 
 	@Override
-	public void setCancelled(boolean cancel)
-	{
+	public void setCancelled(boolean cancel) {
 		cancelled = cancel;
 	}
 }

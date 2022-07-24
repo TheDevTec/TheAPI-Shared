@@ -11,8 +11,7 @@ public class JsonLoader extends EmptyLoader {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void load(String input)
-	{
+	public void load(String input) {
 		this.reset();
 		if (input == null || !input.startsWith("[") && !input.endsWith("]") && !input.startsWith("{") && !input.endsWith("}"))
 			return;

@@ -10,8 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 public interface LibraryLoader {
-	public default void downloadFileFromUrl(String fileUrl, String pathFile)
-	{
+	public default void downloadFileFromUrl(String fileUrl, String pathFile) {
 		try {
 			this.downloadFileFromUrl(new URL(fileUrl), new File(pathFile));
 		} catch (MalformedURLException e) {
@@ -19,8 +18,7 @@ public interface LibraryLoader {
 		}
 	}
 
-	public default void downloadFileFromUrl(String fileUrl, File file)
-	{
+	public default void downloadFileFromUrl(String fileUrl, File file) {
 		try {
 			this.downloadFileFromUrl(new URL(fileUrl), file);
 		} catch (MalformedURLException e) {
@@ -28,8 +26,7 @@ public interface LibraryLoader {
 		}
 	}
 
-	public default void downloadFileFromUrl(URL url, File file)
-	{
+	public default void downloadFileFromUrl(URL url, File file) {
 		try {
 			if (file.exists() && !file.delete())
 				return;

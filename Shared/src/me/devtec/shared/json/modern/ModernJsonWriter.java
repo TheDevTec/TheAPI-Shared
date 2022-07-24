@@ -9,14 +9,12 @@ public class ModernJsonWriter implements JWriter {
 	private static final Gson parser = new GsonBuilder().create();
 
 	@Override
-	public String toGson(Object object)
-	{
+	public String toGson(Object object) {
 		return ModernJsonWriter.parser.toJson(object);
 	}
 
 	@Override
-	public String toString()
-	{
+	public String toString() {
 		return "ModernJsonWriter";
 	}
 }

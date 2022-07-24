@@ -9,19 +9,16 @@ public class Pair {
 		this.value = value;
 	}
 
-	public Object getKey()
-	{
+	public Object getKey() {
 		return key;
 	}
 
-	public Object getValue()
-	{
+	public Object getValue() {
 		return value;
 	}
 
 	@Override
-	public String toString()
-	{
+	public String toString() {
 		return "Pair{" + key + "=" + value + "}";
 	}
 }

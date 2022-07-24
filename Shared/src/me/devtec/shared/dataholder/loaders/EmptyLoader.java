@@ -16,26 +16,22 @@ public class EmptyLoader extends DataLoader {
 	protected boolean loaded = true;
 
 	@Override
-	public boolean loadingFromFile()
-	{
+	public boolean loadingFromFile() {
 		return false;
 	}
 
 	@Override
-	public Map<String, DataValue> get()
-	{
+	public Map<String, DataValue> get() {
 		return this.data;
 	}
 
 	@Override
-	public Set<String> getKeys()
-	{
+	public Set<String> getKeys() {
 		return this.data.keySet();
 	}
 
 	@Override
-	public void set(String key, DataValue holder)
-	{
+	public void set(String key, DataValue holder) {
 		if (key == null)
 			return;
 		if (holder == null) {
@@ -46,16 +42,14 @@ public class EmptyLoader extends DataLoader {
 	}
 
 	@Override
-	public boolean remove(String key)
-	{
+	public boolean remove(String key) {
 		if (key == null)
 			return false;
 		return this.data.remove(key) != null;
 	}
 
 	@Override
-	public void reset()
-	{
+	public void reset() {
 		this.data.clear();
 		this.header.clear();
 		this.footer.clear();
@@ -63,27 +57,23 @@ public class EmptyLoader extends DataLoader {
 	}
 
 	@Override
-	public void load(String input)
-	{
+	public void load(String input) {
 		this.reset();
 		this.loaded = true;
 	}
 
 	@Override
-	public Collection<String> getHeader()
-	{
+	public Collection<String> getHeader() {
 		return this.header;
 	}
 
 	@Override
-	public Collection<String> getFooter()
-	{
+	public Collection<String> getFooter() {
 		return this.footer;
 	}
 
 	@Override
-	public boolean isLoaded()
-	{
+	public boolean isLoaded() {
 		return this.loaded;
 	}
 }

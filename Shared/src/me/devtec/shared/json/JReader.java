@@ -7,8 +7,7 @@ import me.devtec.shared.utility.StringUtils;
 
 public interface JReader {
 	// For complex objects
-	public default Object read(String json)
-	{
+	public default Object read(String json) {
 		if (json == null || json.trim().isEmpty())
 			return json;
 		Object simpleRead = simpleRead(json);
@@ -18,8 +17,7 @@ public interface JReader {
 	}
 
 	// For lists or maps
-	public default Object simpleRead(String json)
-	{
+	public default Object simpleRead(String json) {
 		if (json == null || json.trim().isEmpty())
 			return json;
 		if (json.equals("null"))

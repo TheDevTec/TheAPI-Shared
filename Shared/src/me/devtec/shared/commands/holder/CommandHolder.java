@@ -17,8 +17,7 @@ public class CommandHolder<S> {
 		this.structure = structure;
 	}
 
-	public List<String> tablist(Object obj, String[] args)
-	{
+	public List<String> tablist(Object obj, String[] args) {
 		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
 			return Collections.emptyList();
 		@SuppressWarnings("unchecked")
@@ -37,16 +36,14 @@ public class CommandHolder<S> {
 		return StringUtils.copyPartialMatches(args[args.length - 1], this.toList(s, cmd.getParent().getNextStructures(s)));
 	}
 
-	private List<String> toList(S sender, List<CommandStructure<S>> nextStructures)
-	{
+	private List<String> toList(S sender, List<CommandStructure<S>> nextStructures) {
 		List<String> args = new ArrayList<>();
 		for (CommandStructure<S> structure : nextStructures)
 			args.addAll(structure.tabList(sender));
 		return args;
 	}
 
-	public void execute(Object obj, String[] args)
-	{
+	public void execute(Object obj, String[] args) {
 		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
 			return;
 		@SuppressWarnings("unchecked")
@@ -68,18 +65,15 @@ public class CommandHolder<S> {
 		cmd.getExecutor().execute(s, cmd, args);
 	}
 
-	public void register(String command, String... aliases)
-	{
+	public void register(String command, String... aliases) {
 		API.commandsRegister.register(this, command, aliases);
 	}
 
-	public CommandStructure<S> getStructure()
-	{
+	public CommandStructure<S> getStructure() {
 		return this.structure;
 	}
 
-	private boolean maybeArgs(S sender, CommandStructure<S> cmd, String[] args, int i)
-	{
+	private boolean maybeArgs(S sender, CommandStructure<S> cmd, String[] args, int i) {
 		if (cmd instanceof CallableArgumentCommandStructure)
 			return !((CallableArgumentCommandStructure<S>) cmd).getArgs(sender, cmd, args).isEmpty() && i == 0;
 		if (cmd instanceof ArgumentCommandStructure && !(cmd instanceof CallableArgumentCommandStructure))
