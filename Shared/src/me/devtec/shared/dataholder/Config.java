@@ -201,6 +201,10 @@ public class Config {
 		return h;
 	}
 
+	public DataValue getData(String key) {
+		return loader.get().get(key);
+	}
+
 	private static String splitFirst(String text) {
 		int next = text.indexOf('.');
 		return next != -1 ? text.substring(0, next) : text;

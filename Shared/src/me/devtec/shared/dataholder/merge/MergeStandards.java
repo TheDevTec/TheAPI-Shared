@@ -49,7 +49,9 @@ public class MergeStandards {
 			try {
 				boolean first = true;
 				for (Entry<String, DataValue> s : merge.getDataLoader().get().entrySet()) {
-					DataValue value = config.getOrCreateData(s.getKey());
+					DataValue value = config.getData(s.getKey());
+					if (value == null)
+						continue;
 					if (value.commentAfterValue == null && s.getValue().commentAfterValue != null && !s.getValue().commentAfterValue.equals(value.commentAfterValue)) {
 						value.commentAfterValue = s.getValue().commentAfterValue;
 						change = true;
