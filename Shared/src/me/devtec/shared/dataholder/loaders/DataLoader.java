@@ -13,7 +13,7 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.dataholder.loaders.constructor.LoaderPriority;
 import me.devtec.shared.utility.StreamUtils;
 
-public abstract class DataLoader {
+public abstract class DataLoader implements Cloneable {
 
 	// Data loaders hierarchy
 	public static Map<LoaderPriority, Set<DataLoaderConstructor>> dataLoaders = new ConcurrentHashMap<>();
@@ -100,4 +100,7 @@ public abstract class DataLoader {
 			}
 		return null;
 	}
+
+	@Override
+	public abstract DataLoader clone();
 }

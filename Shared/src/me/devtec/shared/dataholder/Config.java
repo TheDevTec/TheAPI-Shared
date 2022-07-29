@@ -146,8 +146,8 @@ public class Config {
 	// CLONE
 	public Config(Config data) {
 		file = data.file;
-		keys = data.keys;
-		loader = data.loader;
+		keys = new LinkedList<>(data.keys);
+		loader = data.loader.clone();
 	}
 
 	public boolean isModified() {

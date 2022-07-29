@@ -10,9 +10,9 @@ import java.util.Set;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
 public class EmptyLoader extends DataLoader {
-	protected final Map<String, DataValue> data = new LinkedHashMap<>();
-	protected final List<String> header = new LinkedList<>();
-	protected final List<String> footer = new LinkedList<>();
+	protected Map<String, DataValue> data = new LinkedHashMap<>();
+	protected List<String> header = new LinkedList<>();
+	protected List<String> footer = new LinkedList<>();
 	protected boolean loaded = true;
 
 	@Override
@@ -22,12 +22,12 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public Map<String, DataValue> get() {
-		return this.data;
+		return data;
 	}
 
 	@Override
 	public Set<String> getKeys() {
-		return this.data.keySet();
+		return data.keySet();
 	}
 
 	@Override
@@ -35,45 +35,59 @@ public class EmptyLoader extends DataLoader {
 		if (key == null)
 			return;
 		if (holder == null) {
-			this.data.remove(key);
+			data.remove(key);
 			return;
 		}
-		this.data.put(key, holder);
+		data.put(key, holder);
 	}
 
 	@Override
 	public boolean remove(String key) {
 		if (key == null)
 			return false;
-		return this.data.remove(key) != null;
+		return data.remove(key) != null;
 	}
 
 	@Override
 	public void reset() {
-		this.data.clear();
-		this.header.clear();
-		this.footer.clear();
-		this.loaded = false;
+		data.clear();
+		header.clear();
+		footer.clear();
+		loaded = false;
 	}
 
 	@Override
 	public void load(String input) {
-		this.reset();
-		this.loaded = true;
+		reset();
+		loaded = true;
 	}
 
 	@Override
 	public Collection<String> getHeader() {
-		return this.header;
+		return header;
 	}
 
 	@Override
 	public Collection<String> getFooter() {
-		return this.footer;
+		return footer;
 	}
 
 	@Override
 	public boolean isLoaded() {
-		return this.loaded;
+		return loaded;
+	}
+
+	@Override
+	public DataLoader clone() {
+		try {
+			EmptyLoader clone = getClass().newInstance();
+			clone.data = new LinkedHashMap<>(data);
+			clone.footer = new LinkedList<>(footer);
+			clone.header = new LinkedList<>(header);
+			clone.loaded = loaded;
+			return clone;
+		} catch (Exception e) {
+		}
+		return null;
 	}
 }
