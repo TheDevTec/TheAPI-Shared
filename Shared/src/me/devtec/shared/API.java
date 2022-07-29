@@ -352,7 +352,7 @@ public class API {
 					continue;
 				char c = s.charAt(0);
 				if (prev == '&' || prev == '§') {
-					char inLower = Character.toLowerCase(s.charAt(0));
+					char inLower = Character.toLowerCase(c);
 					if (prev == '&' && inLower == 'u') {
 						builder.deleteCharAt(builder.length() - 1); // remove & char
 						inRainbow = true;

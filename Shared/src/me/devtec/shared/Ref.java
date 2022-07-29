@@ -189,7 +189,7 @@ public class Ref {
 	}
 
 	public static Field field(Class<?> main, String name) {
-		Class<?> mainClass = main.getClass();
+		Class<?> mainClass = main;
 		while (mainClass != null) {
 			try {
 				Field field = mainClass.getDeclaredField(name);
@@ -203,7 +203,7 @@ public class Ref {
 	}
 
 	public static Field field(Class<?> main, Class<?> returnValue) {
-		Class<?> mainClass = main.getClass();
+		Class<?> mainClass = main;
 		while (mainClass != null) {
 			for (Field field : Ref.getDeclaredFields(mainClass))
 				if (field.getType() == returnValue) {
