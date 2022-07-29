@@ -21,9 +21,20 @@ public class SocketUtils {
 	}
 
 	public static String readText(DataInputStream in) throws IOException {
-		byte[] path = new byte[in.readInt()];
-		in.read(path);
-		return new String(path);
+		int size = in.readInt();
+		StringBuilder builder = new StringBuilder();
+		while (size > 1024 * 16) {
+			size -= 1024 * 16;
+			byte[] path = new byte[1024 * 16];
+			in.read(path);
+			builder.append(new String(path));
+		}
+		if (size > 0) {
+			byte[] path = new byte[size];
+			in.read(path);
+			builder.append(new String(path));
+		}
+		return builder.toString();
 	}
 
 	public static boolean readFile(DataInputStream in, FileOutputStream out, File file) {
