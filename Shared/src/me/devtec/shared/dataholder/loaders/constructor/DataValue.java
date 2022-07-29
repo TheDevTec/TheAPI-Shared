@@ -17,7 +17,7 @@ public class DataValue {
 		DataValue data = new DataValue();
 		data.value = value;
 		data.writtenValue = writtenValue;
-		data.commentAfterValue = commentAfterValue;
+		data.commentAfterValue = commentAfterValue != null && !commentAfterValue.isEmpty() ? commentAfterValue : null;
 		data.comments = comments;
 		return data;
 	}
@@ -26,7 +26,7 @@ public class DataValue {
 		DataValue data = new DataValue();
 		data.value = value;
 		data.writtenValue = writtenValue;
-		data.commentAfterValue = commentAfterValue;
+		data.commentAfterValue = commentAfterValue != null && !commentAfterValue.isEmpty() ? commentAfterValue : null;
 		return data;
 	}
 
@@ -54,13 +54,13 @@ public class DataValue {
 	@Override
 	public String toString() {
 		Map<String, Object> values = new HashMap<>();
-		values.put("value", this.value + "");
-		if (this.writtenValue != null)
-			values.put("writtenValue", this.writtenValue);
-		if (this.commentAfterValue != null)
-			values.put("commentAfterValue", this.commentAfterValue);
-		if (this.comments != null)
-			values.put("comments", this.comments);
+		values.put("value", value + "");
+		if (writtenValue != null)
+			values.put("writtenValue", writtenValue);
+		if (commentAfterValue != null)
+			values.put("commentAfterValue", commentAfterValue);
+		if (comments != null)
+			values.put("comments", comments);
 		return Json.writer().simpleWrite(values);
 	}
 }
