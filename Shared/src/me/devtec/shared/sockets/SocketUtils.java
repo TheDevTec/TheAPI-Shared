@@ -23,9 +23,9 @@ public class SocketUtils {
 	public static String readText(DataInputStream in) throws IOException {
 		int size = in.readInt();
 		StringBuilder builder = new StringBuilder();
-		while (size > 1024 * 16) {
-			size -= 1024 * 16;
-			byte[] path = new byte[1024 * 16];
+		while (size > 1024) {
+			size -= 1024;
+			byte[] path = new byte[1024];
 			in.read(path);
 			builder.append(new String(path));
 		}
