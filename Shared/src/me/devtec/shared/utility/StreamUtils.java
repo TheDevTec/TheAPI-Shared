@@ -10,9 +10,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class StreamUtils {
 
@@ -78,18 +75,5 @@ public class StreamUtils {
 		} catch (Exception err) {
 			return null;
 		}
-	}
-
-	/**
-	 * @apiNote Read InputStream and convert into List<String> without seperator of
-	 *          lines
-	 * @return List<String>
-	 */
-	public static List<String> fromStreamToList(InputStream stream) {
-		String readen = fromStream(stream);
-		String[] splitLines = readen.split(System.lineSeparator());
-		List<String> lines = new ArrayList<>();
-		Collections.addAll(lines, splitLines);
-		return lines;
 	}
 }
