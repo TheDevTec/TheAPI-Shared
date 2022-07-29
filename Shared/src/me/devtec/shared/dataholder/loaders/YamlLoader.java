@@ -10,7 +10,7 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
 public class YamlLoader extends EmptyLoader {
-	private static final Pattern pattern = Pattern.compile("([ ]*)(['\\\"][^'\\\"]+['\\\"]|[^\\\"']?\\\\w+[^\\\"']?|.*?):[ ]*(.*)");
+	private static final Pattern pattern = Pattern.compile("( *)(['\"][^'\"]+['\"]|[^\"']?\\w+[^\"']?|.*?): ?(.*)");
 
 	@Override
 	public void load(String input) {
@@ -25,6 +25,7 @@ public class YamlLoader extends EmptyLoader {
 			BuilderType type = null;
 			// LIST OR EXTRA BUILDER
 			LinkedList<Object> items = null;
+			int spaces = 0;
 			// EXTRA BUILDER
 			StringBuilder builder = null;
 
@@ -59,12 +60,24 @@ public class YamlLoader extends EmptyLoader {
 
 				Matcher match = YamlLoader.pattern.matcher(line);
 				if (match.find()) {
+					int sub = match.group(1).length();
+
 					if (type != null) {
 						if (type == BuilderType.LIST) {
+							if (sub == spaces) {
+								items.add(Json.reader().read(YamlLoader.r(line.substring(sub))));
+								continue;
+							}
+							spaces = 0;
 							data.put(key, DataValue.of(null, new LinkedList<>(items), null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 							comments.clear();
 							items = null;
 						} else {
+							if (sub == spaces) {
+								builder.append(line.substring(sub));
+								continue;
+							}
+							spaces = 0;
 							data.put(key, DataValue.of(null, builder.toString(), null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 							comments.clear();
 							builder = null;
@@ -75,7 +88,6 @@ public class YamlLoader extends EmptyLoader {
 						items = null;
 					}
 
-					int sub = match.group(1).length();
 					String keyr = YamlLoader.r(match.group(2));
 					value = match.group(3);
 
@@ -111,11 +123,13 @@ public class YamlLoader extends EmptyLoader {
 
 					if (value.equals("|")) {
 						type = BuilderType.STRING;
+						spaces = sub + 2; // DEFAULT
 						builder = new StringBuilder();
 						continue;
 					}
 					if (value.equals("|-")) {
 						type = BuilderType.LIST;
+						spaces = sub + 2; // DEFAULT
 						items = new LinkedList<>();
 						continue;
 					}
@@ -127,10 +141,15 @@ public class YamlLoader extends EmptyLoader {
 					data.put(key, DataValue.of(value, Json.reader().read(value), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 					comments.clear();
 				} else if (type != null)
-					if (type == BuilderType.LIST)
-						items.add(Json.reader().read(YamlLoader.r(line.substring(YamlLoader.removeSpaces(line)))));
-					else
-						builder.append(line.substring(YamlLoader.removeSpaces(line)));
+					if (type == BuilderType.LIST) {
+						int space = YamlLoader.removeSpaces(line);
+						spaces = space;
+						items.add(Json.reader().read(YamlLoader.r(line.substring(space))));
+					} else {
+						int space = YamlLoader.removeSpaces(line);
+						spaces = space;
+						builder.append(line.substring(space));
+					}
 			}
 			loaded = true;
 			if (type != null) {

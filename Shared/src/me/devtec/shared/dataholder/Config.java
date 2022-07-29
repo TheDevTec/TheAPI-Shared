@@ -28,6 +28,8 @@ import me.devtec.shared.dataholder.loaders.DataLoader;
 import me.devtec.shared.dataholder.loaders.EmptyLoader;
 import me.devtec.shared.dataholder.loaders.YamlLoader;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
+import me.devtec.shared.dataholder.merge.MergeSetting;
+import me.devtec.shared.dataholder.merge.MergeStandards;
 import me.devtec.shared.json.Json;
 import me.devtec.shared.utility.StreamUtils;
 import me.devtec.shared.utility.StringUtils;
@@ -45,24 +47,40 @@ public class Config {
 		return insideJar;
 	}
 
-	public static Config loadFromInput(InputStream input, String outputFile) {
-		return Config.loadFromInput(input, new File(outputFile));
+	public static Config loadFromInput(InputStream input, String outputFile, MergeSetting... settings) {
+		return Config.loadFromInput(input, new File(outputFile), settings);
 	}
 
-	public static Config loadFromInput(InputStream input, File outputFile) {
+	public static Config loadFromInput(InputStream input, File outputFile, MergeSetting... settings) {
 		Config config = new Config(outputFile);
 		Config insideJar = new Config();
 		insideJar.reload(StreamUtils.fromStream(input));
-		config.merge(insideJar, true, true, true, true);
+		config.merge(insideJar, settings);
 		return config;
 	}
 
+	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, File outputFile, MergeSetting... settings) {
+		return Config.loadFromInput(mainClass.getClassLoader().getResourceAsStream(pathToFile), outputFile, settings);
+	}
+
+	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, String outputFile, MergeSetting... settings) {
+		return Config.loadFromInput(mainClass.getClassLoader().getResourceAsStream(pathToFile), new File(outputFile), settings);
+	}
+
+	public static Config loadFromInput(InputStream input, String outputFile) {
+		return loadFromInput(input, outputFile, MergeStandards.DEFAULT);
+	}
+
+	public static Config loadFromInput(InputStream input, File outputFile) {
+		return loadFromInput(input, outputFile, MergeStandards.DEFAULT);
+	}
+
 	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, File outputFile) {
-		return Config.loadFromInput(mainClass.getClassLoader().getResourceAsStream(pathToFile), outputFile);
+		return loadFromPlugin(mainClass, pathToFile, outputFile, MergeStandards.DEFAULT);
 	}
 
 	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, String outputFile) {
-		return Config.loadFromInput(mainClass.getClassLoader().getResourceAsStream(pathToFile), new File(outputFile));
+		return loadFromPlugin(mainClass, pathToFile, outputFile, MergeStandards.DEFAULT);
 	}
 
 	public static Config loadFromFile(File file) {
@@ -870,66 +888,11 @@ public class Config {
 		return this;
 	}
 
-	public boolean merge(Config configToMergeWith) {
-		return this.merge(configToMergeWith, true, true, true, true);
-	}
-
-	public boolean merge(Config configToMergeWith, boolean addHeader, boolean addFooter) {
-		return this.merge(configToMergeWith, addHeader, addFooter, true, true);
-	}
-
-	public boolean merge(Config configToMergeWith, boolean addHeader, boolean addFooter, boolean addCommentsAfterValue, boolean addComments) {
-		boolean change = false;
-
-		// header & footer option
-		try {
-			if (addHeader && loader.getHeader() != null /** Is header supported? **/
-					&& configToMergeWith.loader.getHeader() != null && !configToMergeWith.loader.getHeader().isEmpty() && (loader.getHeader().isEmpty() || !loader.getHeader().containsAll(configToMergeWith.loader.getHeader()))) {
-				loader.getHeader().clear();
-				loader.getHeader().addAll(configToMergeWith.loader.getHeader());
-				change = true;
-			}
-			if (addFooter && loader.getFooter() != null /** Is footer supported? **/
-					&& configToMergeWith.loader.getFooter() != null && !configToMergeWith.loader.getFooter().isEmpty() && (loader.getFooter().isEmpty() || !loader.getFooter().containsAll(configToMergeWith.loader.getFooter()))) {
-				loader.getFooter().clear();
-				loader.getFooter().addAll(configToMergeWith.loader.getFooter());
-				change = true;
-			}
-		} catch (Exception error) {
-		}
-
-		// values & comments
-		try {
-			boolean first = true;
-			for (Entry<String, DataValue> s : configToMergeWith.loader.get().entrySet()) {
-				DataValue value = getOrCreateData(s.getKey());
-				if (value.value == null && s.getValue().value != null) {
-					value.value = s.getValue().value;
-					value.writtenValue = s.getValue().writtenValue;
-					change = true;
-				}
-				if (addCommentsAfterValue && value.commentAfterValue == null && s.getValue().commentAfterValue != null && !s.getValue().commentAfterValue.equals(value.commentAfterValue)) {
-					value.commentAfterValue = s.getValue().commentAfterValue;
-					change = true;
-				}
-				if (addComments && s.getValue().comments != null && !s.getValue().comments.isEmpty()) {
-					List<String> comments = value.comments;
-					if (comments == null || comments.isEmpty()) {
-						if (first && getHeader() != null && !getHeader().isEmpty() && getHeader().containsAll(s.getValue().comments))
-							continue;
-						value.comments = s.getValue().comments;
-						change = true;
-					}
-				}
-				first = false;
-			}
-		} catch (Exception err) {
-		}
-
-		if (change)
-			markModified();
-
-		return change;
+	public boolean merge(Config merge, MergeSetting... settings) {
+		for (MergeSetting setting : settings)
+			if (setting.merge(this, merge))
+				markModified();
+		return isModified();
 	}
 
 	public static List<String> simple(List<String> list) {
