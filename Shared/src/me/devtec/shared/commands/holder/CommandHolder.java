@@ -13,6 +13,10 @@ import me.devtec.shared.utility.StringUtils;
 public class CommandHolder<S> {
 	private CommandStructure<S> structure;
 
+	private Object registeredCommandObject;
+	private String cmd;
+	private String[] aliases;
+
 	public CommandHolder(CommandStructure<S> structure) {
 		this.structure = structure;
 	}
@@ -65,12 +69,35 @@ public class CommandHolder<S> {
 		cmd.getExecutor().execute(s, cmd, args);
 	}
 
-	public void register(String command, String... aliases) {
+	public CommandHolder<S> register(String command, String... aliases) {
 		API.commandsRegister.register(this, command, aliases);
+		return this;
+	}
+
+	public void unregister() {
+		API.commandsRegister.unregister(this);
 	}
 
 	public CommandStructure<S> getStructure() {
 		return this.structure;
+	}
+
+	public Object getRegisteredCommand() {
+		return registeredCommandObject;
+	}
+
+	public String getCommandName() {
+		return cmd;
+	}
+
+	public String[] getCommandAliases() {
+		return aliases;
+	}
+
+	public void setRegisteredCommand(Object registeredCommandObject, String cmd, String... aliases) {
+		this.registeredCommandObject = registeredCommandObject;
+		this.cmd = cmd;
+		this.aliases = aliases;
 	}
 
 	private boolean maybeArgs(S sender, CommandStructure<S> cmd, String[] args, int i) {
