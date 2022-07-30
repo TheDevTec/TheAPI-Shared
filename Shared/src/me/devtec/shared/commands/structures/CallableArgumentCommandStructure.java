@@ -9,7 +9,7 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	private static String[] EMPTY_STRING = {};
 	private CallableArgument<S> futureArgs;
 
-	CallableArgumentCommandStructure(CommandStructure<S> parent, int length, CommandExecutor<S> ex, CallableArgument<S> future) {
+	protected CallableArgumentCommandStructure(CommandStructure<S> parent, int length, CommandExecutor<S> ex, CallableArgument<S> future) {
 		super(parent, null, length, ex, CallableArgumentCommandStructure.EMPTY_STRING);
 		this.futureArgs = future;
 	}

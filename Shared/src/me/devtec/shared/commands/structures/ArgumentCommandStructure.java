@@ -11,7 +11,7 @@ public class ArgumentCommandStructure<S> extends CommandStructure<S> {
 	private List<String> args = new ArrayList<>();
 	private int length;
 
-	ArgumentCommandStructure(CommandStructure<S> parent, String argument, int length, CommandExecutor<S> ex, String[] aliases) {
+	protected ArgumentCommandStructure(CommandStructure<S> parent, String argument, int length, CommandExecutor<S> ex, String[] aliases) {
 		super(parent, ex);
 		if (argument != null)
 			this.args.add(argument);

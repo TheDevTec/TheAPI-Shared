@@ -26,7 +26,7 @@ public class CommandStructure<S> {
 	private CommandExecutor<S> fallback;
 	private Class<S> senderClass;
 
-	CommandStructure(CommandStructure<S> parent, CommandExecutor<S> executor) {
+	protected CommandStructure(CommandStructure<S> parent, CommandExecutor<S> executor) {
 		this.setExecutor(executor);
 		this.parent = parent;
 	}
@@ -57,8 +57,7 @@ public class CommandStructure<S> {
 	 *          structure fail
 	 *
 	 */
-	public CommandStructure<S> fallback(CommandExecutor<S> ex) { // Everything failed? Don't worry! This will be
-																	// executed
+	public CommandStructure<S> fallback(CommandExecutor<S> ex) { // Everything failed? Don't worry! This will be executed
 		this.fallback = ex;
 		return this;
 	}
