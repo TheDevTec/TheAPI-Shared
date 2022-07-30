@@ -179,6 +179,17 @@ public class CommandStructure<S> {
 	}
 
 	/**
+	 * @apiNote Jump X times down to parent of this
+	 *          {@link CommandStructure#getParent()}
+	 *
+	 */
+	public CommandStructure<S> parent(int jumps) {
+		if (jumps <= 0 || getParent() == null)
+			return this;
+		return getParent().parent(--jumps);
+	}
+
+	/**
 	 * @apiNote Returns tab completer values of this {@link CommandStructure}
 	 *
 	 */
