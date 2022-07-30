@@ -892,6 +892,10 @@ public class Config {
 		return this;
 	}
 
+	public boolean merge(Config merge) {
+		return merge(merge, MergeStandards.DEFAULT);
+	}
+
 	public boolean merge(Config merge, MergeSetting... settings) {
 		for (MergeSetting setting : settings)
 			if (setting.merge(this, merge))
@@ -912,7 +916,7 @@ public class Config {
 	}
 
 	private static List<String> simple(Collection<String> list) {
-		if (list instanceof ArrayList)
+		if (list instanceof List)
 			return Config.simple((List<String>) list);
 		List<String> fix = new ArrayList<>(list.size());
 		Iterator<String> s = list.iterator();

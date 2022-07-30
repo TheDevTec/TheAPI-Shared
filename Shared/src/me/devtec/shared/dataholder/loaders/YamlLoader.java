@@ -188,8 +188,8 @@ public class YamlLoader extends EmptyLoader {
 	}
 
 	protected static String r(String key) {
-		String k = key.trim();
-		return k.length() > 1 && (k.startsWith("\"") && k.endsWith("\"") || k.startsWith("'") && k.endsWith("'")) ? key.substring(1, key.length() - 1 - YamlLoader.removeLastSpaces(key)) : key;
+		key = key.substring(0, key.length() - YamlLoader.removeLastSpaces(key));
+		return key.length() > 1 && (key.startsWith("\"") && key.endsWith("\"") || key.startsWith("'") && key.endsWith("'")) ? key.substring(1, key.length() - 1) : key;
 	}
 
 	public static int removeLastSpaces(String s) {
