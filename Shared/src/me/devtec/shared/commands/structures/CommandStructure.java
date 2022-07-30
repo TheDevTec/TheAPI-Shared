@@ -15,16 +15,16 @@ import me.devtec.shared.commands.structures.CallableArgumentCommandStructure.Cal
 
 public class CommandStructure<S> {
 	private CommandExecutor<S> executor;
-	String permission;
-	int priority;
+	private String permission;
+	private int priority;
 
-	PermissionChecker<S> permissionChecker;
-	CommandStructure<S> parent;
+	private PermissionChecker<S> permissionChecker;
+	private final CommandStructure<S> parent;
 
-	Map<Selector, SelectorCommandStructure<S>> selectors = new ConcurrentHashMap<>();
-	List<ArgumentCommandStructure<S>> arguments = new ArrayList<>();
-	CommandExecutor<S> fallback;
-	Class<S> senderClass;
+	private Map<Selector, SelectorCommandStructure<S>> selectors = new ConcurrentHashMap<>();
+	private List<ArgumentCommandStructure<S>> arguments = new ArrayList<>();
+	private CommandExecutor<S> fallback;
+	private Class<S> senderClass;
 
 	CommandStructure(CommandStructure<S> parent, CommandExecutor<S> executor) {
 		this.setExecutor(executor);
@@ -239,10 +239,10 @@ public class CommandStructure<S> {
 	public final CommandStructure<S> findStructure(S s, String arg, String[] args, boolean tablist) {
 		CommandStructure<S> result = null;
 		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg) && (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, tablist)) && (result == null || result != null && result.priority <= sub.priority))
+			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg) && (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), tablist)) && (result == null || result != null && result.priority <= sub.getPriority()))
 				result = sub;
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (API.selectorUtils.check(sub.getSelector(), arg) && (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, tablist)) && (result == null || result != null && result.priority <= sub.priority))
+			if (API.selectorUtils.check(sub.getSelector(), arg) && (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), tablist)) && (result == null || result != null && result.priority <= sub.getPriority()))
 				result = sub;
 		return result == null ? null : result;
 	}
@@ -250,10 +250,10 @@ public class CommandStructure<S> {
 	public final List<CommandStructure<S>> getNextStructures(S s) {
 		List<CommandStructure<S>> structures = new ArrayList<>();
 		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, true))
+			if (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), true))
 				structures.add(sub);
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (sub.permission == null ? true : sub.first().permissionChecker.has(s, sub.permission, true))
+			if (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), true))
 				structures.add(sub);
 		return structures;
 	}
