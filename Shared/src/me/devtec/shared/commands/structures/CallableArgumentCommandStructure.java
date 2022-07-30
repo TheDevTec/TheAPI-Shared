@@ -6,8 +6,8 @@ import java.util.List;
 import me.devtec.shared.commands.holder.CommandExecutor;
 
 public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructure<S> {
-	static String[] EMPTY_STRING = {};
-	CallableArgument<S> futureArgs;
+	private static String[] EMPTY_STRING = {};
+	private CallableArgument<S> futureArgs;
 
 	CallableArgumentCommandStructure(CommandStructure<S> parent, int length, CommandExecutor<S> ex, CallableArgument<S> future) {
 		super(parent, null, length, ex, CallableArgumentCommandStructure.EMPTY_STRING);

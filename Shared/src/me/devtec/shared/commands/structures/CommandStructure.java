@@ -48,7 +48,7 @@ public class CommandStructure<S> {
 	 */
 	public SelectorCommandStructure<S> selector(Selector selector, CommandExecutor<S> ex) {
 		SelectorCommandStructure<S> sub = new SelectorCommandStructure<>(this, selector, ex);
-		this.selectors.put(sub.selector, sub);
+		this.selectors.put(sub.getSelector(), sub);
 		return sub;
 	}
 
@@ -162,6 +162,13 @@ public class CommandStructure<S> {
 	}
 
 	/**
+	 * @apiNote Returns original {@link CommandStructure}
+	 */
+	public CommandStructure<S> firstParent() {
+		return first();
+	}
+
+	/**
 	 * @apiNote @Nullable Returns parent of this {@link CommandStructure}
 	 *
 	 */
@@ -176,6 +183,15 @@ public class CommandStructure<S> {
 	 */
 	public CommandStructure<S> parent() {
 		return this.getParent();
+	}
+
+	/**
+	 * @apiNote Jump X times down to parent of this
+	 *          {@link CommandStructure#getParent()}
+	 *
+	 */
+	public CommandStructure<S> getParent(int jumps) {
+		return parent(jumps);
 	}
 
 	/**

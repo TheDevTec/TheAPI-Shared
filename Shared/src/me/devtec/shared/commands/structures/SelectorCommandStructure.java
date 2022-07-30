@@ -7,7 +7,7 @@ import me.devtec.shared.commands.holder.CommandExecutor;
 import me.devtec.shared.commands.selectors.Selector;
 
 public class SelectorCommandStructure<S> extends CommandStructure<S> {
-	Selector selector;
+	private Selector selector;
 
 	SelectorCommandStructure(CommandStructure<S> parent, Selector selector, CommandExecutor<S> ex) {
 		super(parent, ex);

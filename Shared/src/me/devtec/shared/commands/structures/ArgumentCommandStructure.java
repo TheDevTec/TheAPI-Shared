@@ -8,8 +8,8 @@ import java.util.List;
 import me.devtec.shared.commands.holder.CommandExecutor;
 
 public class ArgumentCommandStructure<S> extends CommandStructure<S> {
-	List<String> args = new ArrayList<>();
-	int length;
+	private List<String> args = new ArrayList<>();
+	private int length;
 
 	ArgumentCommandStructure(CommandStructure<S> parent, String argument, int length, CommandExecutor<S> ex, String[] aliases) {
 		super(parent, ex);
