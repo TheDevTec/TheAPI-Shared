@@ -1,14 +1,14 @@
 package me.devtec.shared.commands.structures;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import me.devtec.shared.commands.holder.CommandExecutor;
 
 public class ArgumentCommandStructure<S> extends CommandStructure<S> {
-	private List<String> args = new ArrayList<>();
+	private List<String> args = new LinkedList<>();
 	private int length;
 
 	protected ArgumentCommandStructure(CommandStructure<S> parent, String argument, int length, CommandExecutor<S> ex, String[] aliases) {

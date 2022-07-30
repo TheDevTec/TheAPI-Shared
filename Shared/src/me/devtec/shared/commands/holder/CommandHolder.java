@@ -1,7 +1,7 @@
 package me.devtec.shared.commands.holder;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import me.devtec.shared.API;
@@ -10,6 +10,7 @@ import me.devtec.shared.commands.structures.CallableArgumentCommandStructure;
 import me.devtec.shared.commands.structures.CommandStructure;
 import me.devtec.shared.utility.StringUtils;
 
+@SuppressWarnings("unchecked")
 public class CommandHolder<S> {
 	private CommandStructure<S> structure;
 
@@ -24,14 +25,13 @@ public class CommandHolder<S> {
 	public List<String> tablist(Object obj, String[] args) {
 		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
 			return Collections.emptyList();
-		@SuppressWarnings("unchecked")
 		S s = (S) obj;
 		int pos = 0;
 		CommandStructure<S> cmd = this.structure;
 		int argPos = 0;
 		for (String arg : args) {
 			++argPos;
-			CommandStructure<S> next = cmd.findStructure(s, arg, args, true);
+			CommandStructure<S> next = (CommandStructure<S>) cmd.findStructure(s, arg, args, true)[0];
 			if (next == null)
 				return pos == args.length - 1 || this.maybeArgs(s, cmd, args, args.length - argPos) ? StringUtils.copyPartialMatches(args[args.length - 1], this.toList(s, args, cmd.getNextStructures(s))) : Collections.emptyList();
 			cmd = next;
@@ -41,7 +41,7 @@ public class CommandHolder<S> {
 	}
 
 	private List<String> toList(S sender, String[] args, List<CommandStructure<S>> nextStructures) {
-		List<String> cmdArgs = new ArrayList<>();
+		List<String> cmdArgs = new LinkedList<>();
 		for (CommandStructure<S> structure : nextStructures)
 			cmdArgs.addAll(structure.tabList(sender, structure, args));
 		return cmdArgs;
@@ -50,15 +50,18 @@ public class CommandHolder<S> {
 	public void execute(Object obj, String[] args) {
 		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
 			return;
-		@SuppressWarnings("unchecked")
 		S s = (S) obj;
 		CommandStructure<S> cmd = this.structure;
 		int pos = 0;
 		for (String arg : args) {
 			++pos;
-			CommandStructure<S> next = cmd.findStructure(s, arg, args, false);
+			Object[] finder = cmd.findStructure(s, arg, args, false);
+			CommandStructure<S> next = (CommandStructure<S>) finder[0];
 			if (next == null && cmd.getFallback() != null) {
-				cmd.getFallback().execute(s, cmd, args);
+				if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args))
+					return;
+				if (!(boolean) finder[1])
+					cmd.getFallback().execute(s, cmd, args);
 				return;
 			}
 			if (next == null && this.maybeArgs(s, cmd, args, args.length - pos))
@@ -66,6 +69,8 @@ public class CommandHolder<S> {
 			if (next != null)
 				cmd = next;
 		}
+		if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args))
+			return;
 		cmd.getExecutor().execute(s, cmd, args);
 	}
 

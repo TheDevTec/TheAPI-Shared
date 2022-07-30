@@ -4,9 +4,9 @@ import java.util.List;
 
 import me.devtec.shared.commands.selectors.Selector;
 
-public interface SelectorUtils {
-	public List<String> build(Selector selector);
+public interface SelectorUtils<S> {
+	public List<String> build(S sender, Selector selector);
 
-	public boolean check(Selector selector, String value);
+	public boolean check(S sender, Selector selector, String value);
 
 }

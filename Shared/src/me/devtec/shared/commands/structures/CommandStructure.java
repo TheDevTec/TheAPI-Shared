@@ -2,8 +2,11 @@ package me.devtec.shared.commands.structures;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import me.devtec.shared.API;
@@ -24,11 +27,27 @@ public class CommandStructure<S> {
 	private Map<Selector, SelectorCommandStructure<S>> selectors = new ConcurrentHashMap<>();
 	private List<ArgumentCommandStructure<S>> arguments = new ArrayList<>();
 	private CommandExecutor<S> fallback;
+	private CooldownDetection<S> detection;
 	private Class<S> senderClass;
 
 	protected CommandStructure(CommandStructure<S> parent, CommandExecutor<S> executor) {
 		this.setExecutor(executor);
 		this.parent = parent;
+	}
+
+	public interface CooldownDetection<T> {
+		public boolean waiting(T sender, CommandStructure<T> structure, String[] args);
+	}
+
+	public CommandStructure<S> cooldownDetection(CooldownDetection<S> detection) {
+		this.detection = detection;
+		return this;
+	}
+
+	public CooldownDetection<S> getCooldownDetection() {
+		if (detection == null && getParent() != null)
+			return getParent().getCooldownDetection();
+		return detection;
 	}
 
 	/**
@@ -150,7 +169,9 @@ public class CommandStructure<S> {
 	 * @apiNote Returns permission
 	 */
 	public String getPermission() {
-		return this.permission;
+		if (permission == null && getParent() != null)
+			return getParent().getPermission();
+		return permission;
 	}
 
 	/**
@@ -235,26 +256,45 @@ public class CommandStructure<S> {
 
 	// Special utils to make this structure working!
 
-	public final CommandStructure<S> findStructure(S s, String arg, String[] args, boolean tablist) {
+	@SuppressWarnings("unchecked")
+	public final Object[] findStructure(S s, String arg, String[] args, boolean tablist) {
 		CommandStructure<S> result = null;
+		boolean noPerms = false;
 		for (ArgumentCommandStructure<S> sub : this.arguments)
 			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg) && (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), tablist)) && (result == null || result != null && result.priority <= sub.getPriority()))
 				result = sub;
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (API.selectorUtils.check(sub.getSelector(), arg) && (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), tablist)) && (result == null || result != null && result.priority <= sub.getPriority()))
+			if (API.selectorUtils.check(s, sub.getSelector(), arg) && (result == null || result != null && result.priority <= sub.getPriority())) {
+				String perm = sub.getPermission();
+				if (perm != null && !sub.first().permissionChecker.has(s, sub.getPermission(), tablist)) {
+					noPerms = true;
+					continue;
+				}
 				result = sub;
-		return result == null ? null : result;
+			}
+		return new Object[] { result, noPerms };
 	}
 
 	public final List<CommandStructure<S>> getNextStructures(S s) {
-		List<CommandStructure<S>> structures = new ArrayList<>();
+		Map<Integer, List<CommandStructure<S>>> structures = new TreeMap<>();
 		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), true))
-				structures.add(sub);
+			if (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
+				List<CommandStructure<S>> list = structures.get(sub.getPriority());
+				if (list == null)
+					structures.put(sub.getPriority(), list = new LinkedList<>());
+				list.add(sub);
+			}
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), true))
-				structures.add(sub);
-		return structures;
+			if (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
+				List<CommandStructure<S>> list = structures.get(sub.getPriority());
+				if (list == null)
+					structures.put(sub.getPriority(), list = new LinkedList<>());
+				list.add(sub);
+			}
+		List<CommandStructure<S>> list = new LinkedList<>();
+		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
+			list.addAll(entry.getValue());
+		return list;
 	}
 
 	private static boolean contains(ArgumentCommandStructure<?> sub, List<String> list, String arg) {

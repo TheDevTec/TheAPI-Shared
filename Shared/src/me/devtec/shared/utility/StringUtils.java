@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -255,7 +256,7 @@ public class StringUtils {
 	 * @return List<String>
 	 */
 	public static List<String> copyPartialMatches(String prefix, Iterable<String> originals) {
-		List<String> collection = new ArrayList<>();
+		List<String> collection = new LinkedList<>();
 		for (String string : originals)
 			if (string == null || string.length() >= prefix.length() && (string.regionMatches(true, 0, prefix, 0, prefix.length()) || string.regionMatches(true, 1, prefix, 0, prefix.length())))
 				collection.add(string);
