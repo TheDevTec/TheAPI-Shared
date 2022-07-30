@@ -14,6 +14,7 @@ public class SelectorCommandStructure<S> extends CommandStructure<S> {
 		this.selector = selector;
 	}
 
+	@Override
 	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return API.selectorUtils.build(this.selector);
 	}

@@ -33,18 +33,18 @@ public class CommandHolder<S> {
 			++argPos;
 			CommandStructure<S> next = cmd.findStructure(s, arg, args, true);
 			if (next == null)
-				return pos == args.length - 1 || this.maybeArgs(s, cmd, args, args.length - argPos) ? StringUtils.copyPartialMatches(args[args.length - 1], this.toList(s, cmd.getNextStructures(s))) : Collections.emptyList();
+				return pos == args.length - 1 || this.maybeArgs(s, cmd, args, args.length - argPos) ? StringUtils.copyPartialMatches(args[args.length - 1], this.toList(s, args, cmd.getNextStructures(s))) : Collections.emptyList();
 			cmd = next;
 			++pos;
 		}
-		return StringUtils.copyPartialMatches(args[args.length - 1], this.toList(s, cmd.getParent().getNextStructures(s)));
+		return StringUtils.copyPartialMatches(args[args.length - 1], this.toList(s, args, cmd.getParent().getNextStructures(s)));
 	}
 
-	private List<String> toList(S sender, List<CommandStructure<S>> nextStructures) {
-		List<String> args = new ArrayList<>();
+	private List<String> toList(S sender, String[] args, List<CommandStructure<S>> nextStructures) {
+		List<String> cmdArgs = new ArrayList<>();
 		for (CommandStructure<S> structure : nextStructures)
-			args.addAll(structure.tabList(sender));
-		return args;
+			cmdArgs.addAll(structure.tabList(sender, structure, args));
+		return cmdArgs;
 	}
 
 	public void execute(Object obj, String[] args) {

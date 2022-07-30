@@ -208,7 +208,7 @@ public class CommandStructure<S> {
 	 * @apiNote Returns tab completer values of this {@link CommandStructure}
 	 *
 	 */
-	public List<String> tabList(S sender) {
+	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return Collections.emptyList();
 	}
 
@@ -230,7 +230,7 @@ public class CommandStructure<S> {
 
 	@Override
 	public String toString() {
-		return this.getClass().getCanonicalName() + ":" + this.tabList(null);
+		return this.getClass().getCanonicalName() + ":" + this.tabList(null, null, null);
 	}
 
 	// Special utils to make this structure working!

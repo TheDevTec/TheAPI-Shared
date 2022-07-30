@@ -19,6 +19,7 @@ public class ArgumentCommandStructure<S> extends CommandStructure<S> {
 		this.length = length;
 	}
 
+	@Override
 	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return this.args.isEmpty() ? Arrays.asList("<args>") : this.args;
 	}
