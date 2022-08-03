@@ -414,7 +414,7 @@ public class Ref {
 	public static Class<?> nms(String modernPackageName, String name) {
 		try {
 			if (Ref.isNewerThan(16))
-				return Class.forName("net.minecraft." + modernPackageName + "." + name);
+				return modernPackageName.isEmpty() ? Class.forName("net.minecraft." + name) : Class.forName("net.minecraft." + modernPackageName + "." + name);
 			return Class.forName("net.minecraft.server." + Ref.serverVersion() + "." + name);
 		} catch (Exception e) {
 			return null;

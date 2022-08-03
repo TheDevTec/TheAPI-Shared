@@ -14,7 +14,8 @@ public class MergeStandards {
 			boolean change = false;
 			try {
 				if (config.getDataLoader().getHeader() != null /** Is header supported? **/
-						&& merge.getDataLoader().getHeader() != null && !merge.getDataLoader().getHeader().isEmpty() && (config.getDataLoader().getHeader().isEmpty() || !config.getDataLoader().getHeader().containsAll(merge.getDataLoader().getHeader()))) {
+						&& merge.getDataLoader().getHeader() != null && !merge.getDataLoader().getHeader().isEmpty()
+						&& (config.getDataLoader().getHeader().isEmpty() || !config.getDataLoader().getHeader().containsAll(merge.getDataLoader().getHeader()))) {
 					config.getDataLoader().getHeader().clear();
 					config.getDataLoader().getHeader().addAll(merge.getDataLoader().getHeader());
 					change = true;
@@ -31,7 +32,8 @@ public class MergeStandards {
 			boolean change = false;
 			try {
 				if (config.getDataLoader().getFooter() != null /** Is footer supported? **/
-						&& merge.getDataLoader().getFooter() != null && !merge.getDataLoader().getFooter().isEmpty() && (config.getDataLoader().getFooter().isEmpty() || !config.getDataLoader().getFooter().containsAll(merge.getDataLoader().getFooter()))) {
+						&& merge.getDataLoader().getFooter() != null && !merge.getDataLoader().getFooter().isEmpty()
+						&& (config.getDataLoader().getFooter().isEmpty() || !config.getDataLoader().getFooter().containsAll(merge.getDataLoader().getFooter()))) {
 					config.getDataLoader().getFooter().clear();
 					config.getDataLoader().getFooter().addAll(merge.getDataLoader().getFooter());
 					change = true;
@@ -91,5 +93,5 @@ public class MergeStandards {
 			return change;
 		}
 	};
-	public static MergeSetting[] DEFAULT = { ADD_MISSING_KEYS, ADD_MISSING_COMMENTS, ADD_MISSING_HEADER, ADD_MISSING_FOOTER };
+	public static MergeSetting[] DEFAULT = { ADD_MISSING_KEYS, ADD_MISSING_HEADER, ADD_MISSING_FOOTER, ADD_MISSING_COMMENTS };
 }

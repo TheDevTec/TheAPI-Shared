@@ -565,7 +565,8 @@ public class StringUtils {
 		if (period == 0)
 			return digit ? "0" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(0);
 		List<TimeFormat> disabledList = Arrays.asList(disabled);
-		if (disabledList.contains(TimeFormat.YEARS) && disabledList.contains(TimeFormat.MONTHS) && disabledList.contains(TimeFormat.DAYS) && disabledList.contains(TimeFormat.HOURS) && disabledList.contains(TimeFormat.MINUTES))
+		if (disabledList.contains(TimeFormat.YEARS) && disabledList.contains(TimeFormat.MONTHS) && disabledList.contains(TimeFormat.DAYS) && disabledList.contains(TimeFormat.HOURS)
+				&& disabledList.contains(TimeFormat.MINUTES))
 			return digit ? period + "" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(period); // YOU
 																												// DISABLED
 																												// EVERYTHING??
@@ -960,7 +961,8 @@ public class StringUtils {
 	 * @return boolean
 	 */
 	public static boolean isNumber(String fromString) {
-		return StringUtils.isInt(fromString) || StringUtils.isDouble(fromString) || StringUtils.isLong(fromString) || StringUtils.isByte(fromString) || StringUtils.isShort(fromString) || StringUtils.isFloat(fromString);
+		return StringUtils.isInt(fromString) || StringUtils.isDouble(fromString) || StringUtils.isLong(fromString) || StringUtils.isByte(fromString) || StringUtils.isShort(fromString)
+				|| StringUtils.isFloat(fromString);
 	}
 
 	/**
