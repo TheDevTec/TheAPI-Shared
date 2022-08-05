@@ -261,7 +261,8 @@ public class CommandStructure<S> {
 		CommandStructure<S> result = null;
 		boolean noPerms = false;
 		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg) && (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), tablist)) && (result == null || result != null && result.priority <= sub.getPriority()))
+			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg) && (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), tablist))
+					&& (result == null || result != null && result.priority <= sub.getPriority()))
 				result = sub;
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
 			if (API.selectorUtils.check(s, sub.getSelector(), arg) && (result == null || result != null && result.priority <= sub.getPriority())) {
