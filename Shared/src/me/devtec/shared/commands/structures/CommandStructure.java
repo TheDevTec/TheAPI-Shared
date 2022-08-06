@@ -258,20 +258,28 @@ public class CommandStructure<S> {
 
 	@SuppressWarnings("unchecked")
 	public final Object[] findStructure(S s, String arg, String[] args, boolean tablist) {
-		CommandStructure<S> result = null;
+		List<CommandStructure<S>> result = new ArrayList<>();
 		boolean noPerms = false;
+
+		PermissionChecker<S> permsChecker = first().permissionChecker;
+
 		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg) && (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), tablist))
-					&& (result == null || result != null && result.priority <= sub.getPriority()))
-				result = sub;
-		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (API.selectorUtils.check(s, sub.getSelector(), arg) && (result == null || result != null && result.priority <= sub.getPriority())) {
+			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg)) {
 				String perm = sub.getPermission();
-				if (perm != null && !sub.first().permissionChecker.has(s, sub.getPermission(), tablist)) {
+				if (perm != null && !permsChecker.has(s, perm, tablist)) {
 					noPerms = true;
 					continue;
 				}
-				result = sub;
+				result.add(sub);
+			}
+		for (SelectorCommandStructure<S> sub : this.selectors.values())
+			if (API.selectorUtils.check(s, sub.getSelector(), arg)) {
+				String perm = sub.getPermission();
+				if (perm != null && !permsChecker.has(s, perm, tablist)) {
+					noPerms = true;
+					continue;
+				}
+				result.add(sub);
 			}
 		return new Object[] { result, noPerms };
 	}
@@ -298,7 +306,7 @@ public class CommandStructure<S> {
 		return list;
 	}
 
-	private static boolean contains(ArgumentCommandStructure<?> sub, List<String> list, String arg) {
+	public static boolean contains(ArgumentCommandStructure<?> sub, List<String> list, String arg) {
 		if (!(sub instanceof CallableArgumentCommandStructure) && list.isEmpty())
 			return true;
 		for (String value : list)
