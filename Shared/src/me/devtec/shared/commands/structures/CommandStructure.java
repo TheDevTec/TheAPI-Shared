@@ -73,7 +73,8 @@ public class CommandStructure<S> {
 	}
 
 	/**
-	 * @apiNote Add selector argument to current {@link CommandStructure}
+	 * @apiNote Add selector argument with own tab executor to current
+	 *          {@link CommandStructure}
 	 *
 	 */
 	public SelectorCommandStructure<S> selector(Selector selector, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
@@ -137,7 +138,8 @@ public class CommandStructure<S> {
 	}
 
 	/**
-	 * @apiNote Add string/s argument to current {@link CommandStructure}
+	 * @apiNote Add string/s argument with own tab executor to current
+	 *          {@link CommandStructure}
 	 *
 	 */
 	public ArgumentCommandStructure<S> argument(String argument, CommandExecutor<S> ex, CommandTabExecutor<S> tab, String... aliases) {
@@ -174,7 +176,8 @@ public class CommandStructure<S> {
 	}
 
 	/**
-	 * @apiNote Add string/s argument to current {@link CommandStructure}
+	 * @apiNote Add string/s argument with own tab executor to current
+	 *          {@link CommandStructure}
 	 *
 	 */
 	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
@@ -182,7 +185,8 @@ public class CommandStructure<S> {
 	}
 
 	/**
-	 * @apiNote Add string/s argument to current {@link CommandStructure}
+	 * @apiNote Add string/s argument with own tab executor to current
+	 *          {@link CommandStructure}
 	 *
 	 */
 	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
