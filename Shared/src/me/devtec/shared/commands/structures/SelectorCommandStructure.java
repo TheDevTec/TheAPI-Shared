@@ -4,20 +4,23 @@ import java.util.List;
 
 import me.devtec.shared.API;
 import me.devtec.shared.commands.holder.CommandExecutor;
+import me.devtec.shared.commands.holder.CommandTabExecutor;
 import me.devtec.shared.commands.selectors.Selector;
 
 public class SelectorCommandStructure<S> extends CommandStructure<S> {
 	private Selector selector;
+	private CommandTabExecutor<S> tabEx;
 
-	protected SelectorCommandStructure(CommandStructure<S> parent, Selector selector, CommandExecutor<S> ex) {
+	protected SelectorCommandStructure(CommandStructure<S> parent, Selector selector, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
 		super(parent, ex);
 		this.selector = selector;
+		this.tabEx = tabEx;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
-		return API.selectorUtils.build(sender, this.selector);
+		return tabEx != null ? tabEx.execute(sender, structure, arguments) : API.selectorUtils.build(sender, this.selector);
 	}
 
 	/**
@@ -25,5 +28,19 @@ public class SelectorCommandStructure<S> extends CommandStructure<S> {
 	 */
 	public Selector getSelector() {
 		return this.selector;
+	}
+
+	/**
+	 * @apiNote Returns custom tab executor of this {@link SelectorCommandStructure}
+	 */
+	public CommandTabExecutor<S> getTabExecutor() {
+		return tabEx;
+	}
+
+	/**
+	 * @apiNote Set custom tab executor to this {@link SelectorCommandStructure}
+	 */
+	public void setTabExecutor(CommandTabExecutor<S> tabExecutor) {
+		tabEx = tabExecutor;
 	}
 }

@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import me.devtec.shared.API;
 import me.devtec.shared.commands.holder.CommandExecutor;
 import me.devtec.shared.commands.holder.CommandHolder;
+import me.devtec.shared.commands.holder.CommandTabExecutor;
 import me.devtec.shared.commands.manager.PermissionChecker;
 import me.devtec.shared.commands.selectors.Selector;
 import me.devtec.shared.commands.structures.CallableArgumentCommandStructure.CallableArgument;
@@ -66,7 +67,17 @@ public class CommandStructure<S> {
 	 *
 	 */
 	public SelectorCommandStructure<S> selector(Selector selector, CommandExecutor<S> ex) {
-		SelectorCommandStructure<S> sub = new SelectorCommandStructure<>(this, selector, ex);
+		SelectorCommandStructure<S> sub = new SelectorCommandStructure<>(this, selector, ex, null);
+		this.selectors.put(sub.getSelector(), sub);
+		return sub;
+	}
+
+	/**
+	 * @apiNote Add selector argument to current {@link CommandStructure}
+	 *
+	 */
+	public SelectorCommandStructure<S> selector(Selector selector, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
+		SelectorCommandStructure<S> sub = new SelectorCommandStructure<>(this, selector, ex, tabEx);
 		this.selectors.put(sub.getSelector(), sub);
 		return sub;
 	}
@@ -115,11 +126,31 @@ public class CommandStructure<S> {
 	}
 
 	/**
-	 * @apiNote Add string/s argument to current {@link CommandStructure}
+	 * @apiNote Add string/s argument with own tab executor to current
+	 *          {@link CommandStructure}
 	 *
 	 */
 	public ArgumentCommandStructure<S> argument(String argument, int length, CommandExecutor<S> ex, String... aliases) {
-		ArgumentCommandStructure<S> sub = new ArgumentCommandStructure<>(this, argument, length, ex, aliases);
+		ArgumentCommandStructure<S> sub = new ArgumentCommandStructure<>(this, argument, length, ex, null, aliases);
+		this.arguments.add(sub);
+		return sub;
+	}
+
+	/**
+	 * @apiNote Add string/s argument to current {@link CommandStructure}
+	 *
+	 */
+	public ArgumentCommandStructure<S> argument(String argument, CommandExecutor<S> ex, CommandTabExecutor<S> tab, String... aliases) {
+		return this.argument(argument, 0, ex, tab, aliases);
+	}
+
+	/**
+	 * @apiNote Add string/s argument with own tab executor to current
+	 *          {@link CommandStructure}
+	 *
+	 */
+	public ArgumentCommandStructure<S> argument(String argument, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tab, String... aliases) {
+		ArgumentCommandStructure<S> sub = new ArgumentCommandStructure<>(this, argument, length, ex, tab, aliases);
 		this.arguments.add(sub);
 		return sub;
 	}
@@ -137,7 +168,25 @@ public class CommandStructure<S> {
 	 *
 	 */
 	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length, CommandExecutor<S> ex) {
-		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, future);
+		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, null, future);
+		this.arguments.add(sub);
+		return sub;
+	}
+
+	/**
+	 * @apiNote Add string/s argument to current {@link CommandStructure}
+	 *
+	 */
+	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
+		return this.callableArgument(future, 0, ex, tabEx);
+	}
+
+	/**
+	 * @apiNote Add string/s argument to current {@link CommandStructure}
+	 *
+	 */
+	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
+		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, tabEx, future);
 		this.arguments.add(sub);
 		return sub;
 	}
