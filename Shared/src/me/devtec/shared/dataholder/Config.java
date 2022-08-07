@@ -297,7 +297,7 @@ public class Config {
 	public Config setComments(String key, List<String> value) {
 		if (key == null)
 			return this;
-		if (value == null) {
+		if (value == null || value.isEmpty()) {
 			DataValue val = loader.get().get(key);
 			if (val != null)
 				val.comments = null;
@@ -435,7 +435,8 @@ public class Config {
 		try {
 			DataValue a = loader.get().get(key);
 			if (a.writtenValue != null)
-				return a.writtenValue.charAt(0) == '[' && a.writtenValue.charAt(a.writtenValue.length() - 1) == ']' || a.writtenValue.charAt(0) == '{' && a.writtenValue.charAt(a.writtenValue.length() - 1) == '}';
+				return a.writtenValue.charAt(0) == '[' && a.writtenValue.charAt(a.writtenValue.length() - 1) == ']'
+						|| a.writtenValue.charAt(0) == '{' && a.writtenValue.charAt(a.writtenValue.length() - 1) == '}';
 		} catch (Exception notNumber) {
 		}
 		return false;
@@ -746,7 +747,7 @@ public class Config {
 
 	@Override
 	public String toString() {
-		return this.toString(DataType.YAML);
+		return this.toString(DataType.BYTE);
 	}
 
 	protected void addKeys(List<Map<String, String>> list, String key) {
@@ -831,7 +832,7 @@ public class Config {
 
 	public byte[] toByteArray() {
 		try {
-			ByteArrayDataOutput in = ByteStreams.newDataOutput(loader.get().size());
+			ByteArrayDataOutput in = ByteStreams.newDataOutput();
 			in.writeInt(3);
 			for (Entry<String, DataValue> key : loader.get().entrySet())
 				try {

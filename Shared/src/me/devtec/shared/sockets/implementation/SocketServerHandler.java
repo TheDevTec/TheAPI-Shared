@@ -147,7 +147,7 @@ public class SocketServerHandler implements SocketServer {
 						try {
 							// Receive client password
 							Thread.sleep(100);
-							String pass = SocketUtils.readText(in);
+							String pass = SocketUtils.readText(in, 256);
 							if (!password.equals(pass)) {
 								Thread.sleep(100);
 								out.writeInt(ClientResponde.REJECTED_LOGIN_PASSWORD.getResponde());
@@ -160,7 +160,7 @@ public class SocketServerHandler implements SocketServer {
 							out.writeInt(ClientResponde.REQUEST_NAME.getResponde());
 							Thread.sleep(100);
 
-							String serverName = SocketUtils.readText(in);
+							String serverName = SocketUtils.readText(in, 256);
 							ServerClientPreConnectEvent event = new ServerClientPreConnectEvent(socket, serverName);
 							EventManager.call(event);
 							if (event.isCancelled()) {

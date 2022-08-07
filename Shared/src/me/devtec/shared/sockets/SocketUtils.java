@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.ByteLoader;
@@ -21,18 +22,24 @@ public class SocketUtils {
 	}
 
 	public static String readText(DataInputStream in) throws IOException {
+		return readText(in, Integer.MAX_VALUE);
+	}
+
+	public static String readText(DataInputStream in, int readLimit) throws IOException {
 		int size = in.readInt();
-		StringBuilder builder = new StringBuilder();
+		if (size > readLimit)
+			return "";
+		StringBuilder builder = new StringBuilder(size);
 		while (size > 1024) {
 			size -= 1024;
 			byte[] path = new byte[1024];
 			in.read(path);
-			builder.append(new String(path));
+			builder.append(new String(path, StandardCharsets.UTF_8));
 		}
 		if (size > 0) {
 			byte[] path = new byte[size];
 			in.read(path);
-			builder.append(new String(path));
+			builder.append(new String(path, StandardCharsets.UTF_8));
 		}
 		return builder.toString();
 	}
