@@ -61,14 +61,14 @@ public class CommandHolder<S> {
 			Object[] finder = cmd.findStructure(s, arg, args, false);
 			List<CommandStructure<S>> nextStructures = (List<CommandStructure<S>>) finder[0];
 			boolean destroy = false;
-			for (CommandStructure<S> next : nextStructures) {
-				if (next == null && cmd.getFallback() != null) {
-					if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args))
-						return;
-					if (!(boolean) finder[1])
-						cmd.getFallback().execute(s, cmd, args);
+			if (nextStructures.isEmpty() && cmd.getFallback() != null) {
+				if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args))
 					return;
-				}
+				if (!(boolean) finder[1])
+					cmd.getFallback().execute(s, cmd, args);
+				return;
+			}
+			for (CommandStructure<S> next : nextStructures) {
 				if (next == null && this.maybeArgs(s, cmd, args, args.length - pos)) {
 					destroy = true;
 					break;
