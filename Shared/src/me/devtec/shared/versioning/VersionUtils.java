@@ -3,8 +3,18 @@ package me.devtec.shared.versioning;
 import me.devtec.shared.utility.StringUtils;
 
 public class VersionUtils {
-	public static enum Version {
-		OLDER_VERSION, NEWER_VERSION, SAME_VERSION, UKNOWN;
+	public static enum Version implements Comparable<Version> {
+		OLDER_VERSION(1), NEWER_VERSION(3), SAME_VERSION(2), UKNOWN(0);
+
+		private int id;
+
+		Version(int i) {
+			id = i;
+		}
+
+		public int getId() {
+			return id;
+		}
 	}
 
 	public static Version getVersion(String currentVersion, String version) {
