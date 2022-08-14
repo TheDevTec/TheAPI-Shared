@@ -3,22 +3,28 @@ package me.devtec.shared.sockets;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import me.devtec.shared.API;
 import me.devtec.shared.dataholder.Config;
-import me.devtec.shared.events.EventManager;
 import me.devtec.shared.events.api.ClientResponde;
-import me.devtec.shared.events.api.ServerClientRespondeEvent;
 import me.devtec.shared.sockets.implementation.SocketAction;
-import me.devtec.shared.sockets.implementation.SocketAction.SocketActionEnum;
 import me.devtec.shared.sockets.implementation.SocketClientHandler;
 
 public interface SocketClient {
 
+	static AtomicInteger ID_GEN = new AtomicInteger(1);
+
+	public Queue<Integer> readActionsAfterUnlock();
+
 	public Queue<SocketAction> actionsAfterUnlock();
+
+	public Map<Integer, SocketAction> getWriteActions();
 
 	public String serverName();
 
@@ -26,9 +32,11 @@ public interface SocketClient {
 
 	public int port();
 
-	public boolean isConnected();
+	public DataInputStream getInputStream();
 
-	public boolean canReconnect();
+	public DataOutputStream getOutputStream();
+
+	public Socket getSocket();
 
 	public int ping();
 
@@ -36,84 +44,79 @@ public interface SocketClient {
 
 	public void unlock();
 
+	public boolean isConnected();
+
+	/**
+	 * @apiNote Checks if this isn't server-side client and can reconnect back to
+	 *          the server
+	 */
+	public boolean canReconnect();
+
 	public boolean isLocked();
 
-	public boolean shouldAddToQueue();
+	/**
+	 * @throws SocketException If client can't be connected back to the server.
+	 *                         Probably that's mean this is already server-side
+	 *                         client (bridge). Check method
+	 *                         {@link SocketClient#canReconnect()}
+	 */
+	public void start() throws SocketException;
+
+	public void stop();
+
+	public boolean isRawConnected();
+
+	public boolean isManuallyClosed();
+
+	public default boolean shouldAddToQueue() {
+		return !isConnected() || isLocked();
+	}
 
 	public default void write(String fileName, File file) {
 		writeWithData(null, fileName, file);
 	}
 
 	public default ClientResponde readUntilFind(ClientResponde... specified) throws IOException {
-		int task = getInputStream().readInt();
-		ClientResponde responde = ClientResponde.fromResponde(task);
-		for (ClientResponde lookingFor : specified)
-			if (lookingFor == responde)
-				return lookingFor;
-		SocketUtils.process(this, task);
-		return readUntilFind(specified);
+		while (API.isEnabled() && isRawConnected()) {
+			int task = getInputStream().readInt();
+			ClientResponde responde = ClientResponde.fromResponde(task);
+			for (ClientResponde lookingFor : specified)
+				if (lookingFor == responde)
+					return lookingFor;
+			if (responde == ClientResponde.RECEIVE_ACTION)
+				readActionsAfterUnlock().add(getInputStream().readInt());
+		}
+		return null;
 	}
 
 	public default void writeWithData(Config data, String fileName, File file) {
 		if (fileName == null || file == null)
 			return;
 		if (shouldAddToQueue()) {
-			actionsAfterUnlock().add(new SocketAction(SocketActionEnum.FILE, data, fileName, file));
+			actionsAfterUnlock().add(new SocketAction(data == null ? ClientResponde.RECEIVE_FILE.getResponde() : ClientResponde.RECEIVE_DATA_AND_FILE.getResponde(),
+					data == null ? null : data.toByteArray(), file, fileName));
 			return;
 		}
+		int taskId = ID_GEN.incrementAndGet();
+		getWriteActions().put(taskId, new SocketAction(data == null ? ClientResponde.RECEIVE_FILE.getResponde() : ClientResponde.RECEIVE_DATA_AND_FILE.getResponde(),
+				data == null ? null : data.toByteArray(), file, fileName));
 		DataOutputStream out = getOutputStream();
 		try {
-			lock();
-			if (data != null) {
-				out.writeInt(ClientResponde.RECEIVE_DATA_AND_FILE.getResponde());
-				// data
-				byte[] path = data.toByteArray();
-				out.writeInt(path.length);
-				out.write(path);
-			} else
-				out.writeInt(ClientResponde.RECEIVE_FILE.getResponde());
-			// file
-			byte[] bytesData = fileName.getBytes();
-			out.writeInt(bytesData.length);
-			out.write(bytesData);
-			ClientResponde responde = readUntilFind(ClientResponde.ACCEPTED_FILE, ClientResponde.REJECTED_FILE);
-			ServerClientRespondeEvent crespondeEvent = new ServerClientRespondeEvent(this, responde.getResponde());
-			EventManager.call(crespondeEvent);
-
-			if (responde == ClientResponde.ACCEPTED_FILE) {
-				long size = file.length();
-				out.writeLong(size);
-				out.flush();
-				FileInputStream fileInputStream = new FileInputStream(file);
-				int bytes = 0;
-				byte[] buffer = new byte[16 * 1024];
-				long total = 0;
-				while (total < size && (bytes = fileInputStream.read(buffer, 0, size - total > buffer.length ? buffer.length : (int) (size - total))) > 0) {
-					out.write(buffer, 0, bytes);
-					total += bytes;
-				}
-				out.flush();
-				fileInputStream.close();
-				responde = readUntilFind(ClientResponde.SUCCESSFULLY_DOWNLOADED_FILE, ClientResponde.FAILED_DOWNLOAD_FILE);
-				crespondeEvent = new ServerClientRespondeEvent(this, responde.getResponde());
-				EventManager.call(crespondeEvent);
-				unlock();
-				if (responde == ClientResponde.FAILED_DOWNLOAD_FILE)
-					writeWithData(data, fileName, file);
-			} else {
-				out.flush();
-				unlock();
-			}
+			out.writeInt(ClientResponde.RECEIVE_ACTION.getResponde());
+			out.writeInt(taskId);
+			out.flush();
 		} catch (Exception e) {
-			e.printStackTrace();
-			unlock();
 			stop();
 			if (shouldAddToQueue()) {
-				actionsAfterUnlock().add(new SocketAction(SocketActionEnum.FILE, data, fileName, file));
-				return;
+				getWriteActions().remove(taskId);
+				actionsAfterUnlock().add(new SocketAction(data == null ? ClientResponde.RECEIVE_FILE.getResponde() : ClientResponde.RECEIVE_DATA_AND_FILE.getResponde(),
+						data == null ? null : data.toByteArray(), file, fileName));
 			}
 			if (canReconnect())
-				start();
+				try {
+					start();
+				} catch (SocketException e1) {
+				}
 		}
 	}
 
@@ -121,24 +124,27 @@ public interface SocketClient {
 		if (data == null)
 			return;
 		if (shouldAddToQueue()) {
-			actionsAfterUnlock().add(new SocketAction(SocketActionEnum.DATA, data, null, null));
+			actionsAfterUnlock().add(new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray(), null, null));
 			return;
 		}
+		int taskId = ID_GEN.incrementAndGet();
+		getWriteActions().put(taskId, new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray(), null, null));
 		DataOutputStream out = getOutputStream();
 		try {
-			byte[] path = data.toByteArray();
-			out.writeInt(ClientResponde.RECEIVE_DATA.getResponde());
-			out.writeInt(path.length);
-			out.write(path);
+			out.writeInt(ClientResponde.RECEIVE_ACTION.getResponde());
+			out.writeInt(taskId);
 			out.flush();
 		} catch (Exception e) {
 			stop();
 			if (shouldAddToQueue()) {
-				actionsAfterUnlock().add(new SocketAction(SocketActionEnum.DATA, data, null, null));
-				return;
+				getWriteActions().remove(taskId);
+				actionsAfterUnlock().add(new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray(), null, null));
 			}
 			if (canReconnect())
-				start();
+				try {
+					start();
+				} catch (SocketException e1) {
+				}
 		}
 	}
 
@@ -153,16 +159,6 @@ public interface SocketClient {
 			return;
 		writeWithData(data, file.getName(), file);
 	}
-
-	public void start();
-
-	public void stop();
-
-	public DataInputStream getInputStream();
-
-	public DataOutputStream getOutputStream();
-
-	public Socket getSocket();
 
 	public static void setServerName(String serverName) {
 		SocketClientHandler.serverName = serverName.getBytes();

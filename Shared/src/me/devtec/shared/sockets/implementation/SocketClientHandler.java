@@ -2,19 +2,23 @@ package me.devtec.shared.sockets.implementation;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Queues;
 
 import me.devtec.shared.API;
+import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.loaders.ByteLoader;
 import me.devtec.shared.events.EventManager;
 import me.devtec.shared.events.api.ClientResponde;
 import me.devtec.shared.events.api.ServerClientConnectedEvent;
 import me.devtec.shared.events.api.ServerClientRespondeEvent;
 import me.devtec.shared.sockets.SocketClient;
 import me.devtec.shared.sockets.SocketUtils;
-import me.devtec.shared.sockets.implementation.SocketAction.SocketActionEnum;
 
 public class SocketClientHandler implements SocketClient {
 	public static byte[] serverName;
@@ -28,9 +32,11 @@ public class SocketClientHandler implements SocketClient {
 
 	private DataInputStream in;
 	private DataOutputStream out;
-	private int task = 0;
 	private int ping;
 	private Queue<SocketAction> actions = Queues.newLinkedBlockingDeque();
+	private Queue<Integer> unlockReadActions = Queues.newLinkedBlockingDeque();
+
+	private Map<Integer, SocketAction> writeActions = new ConcurrentHashMap<>();
 
 	private boolean lock;
 
@@ -99,12 +105,14 @@ public class SocketClientHandler implements SocketClient {
 			if (checkRawConnected() && in.readInt() == ClientResponde.LOGIN.getResponde()) {
 				out.writeInt(password.length);
 				out.write(password);
+				out.flush();
 				int result = in.readInt(); // backwards support
 				ServerClientRespondeEvent respondeEvent = new ServerClientRespondeEvent(SocketClientHandler.this, result);
 				EventManager.call(respondeEvent);
 				if (result == ClientResponde.REQUEST_NAME.getResponde()) {
 					out.writeInt(SocketClientHandler.serverName.length);
 					out.write(SocketClientHandler.serverName);
+					out.flush();
 					result = in.readInt(); // await for respond
 					respondeEvent = new ServerClientRespondeEvent(SocketClientHandler.this, result);
 					EventManager.call(respondeEvent);
@@ -136,32 +144,33 @@ public class SocketClientHandler implements SocketClient {
 					Thread.sleep(100);
 				} catch (Exception e) {
 				}
-				if (!isLocked())
-					try {
-						task = in.readInt();
-						if (task == ClientResponde.PING.getResponde()) {
-							long pingTime = in.readLong();
-							ping = (int) (-pingTime + System.currentTimeMillis() / 100);
-							out.writeInt(ClientResponde.PONG.getResponde());
-							out.writeInt(ping);
-							try {
-								Thread.sleep(100);
-							} catch (Exception e) {
-							}
-							continue;
-						}
-						ServerClientRespondeEvent crespondeEvent = new ServerClientRespondeEvent(SocketClientHandler.this, task);
-						EventManager.call(crespondeEvent);
-						SocketUtils.process(this, task);
-					} catch (Exception e) {
-						break;
+				if (isLocked())
+					continue;
+				try {
+					int task = in.readInt();
+					ClientResponde responde = ClientResponde.fromResponde(task);
+					if (responde == ClientResponde.PING) {
+						long pingTime = in.readLong();
+						ping = (int) (-pingTime + System.currentTimeMillis() / 100);
+						out.writeInt(ClientResponde.PONG.getResponde());
+						out.writeInt(ping);
+						out.flush();
+						continue;
 					}
+					if (responde == ClientResponde.RECEIVE_ACTION)
+						SocketUtils.process(SocketClientHandler.this, in.readInt(), false);
+					if (responde == ClientResponde.READ_ACTION)
+						SocketUtils.postAction(SocketClientHandler.this, in.readInt());
+				} catch (Exception destroy) {
+					break;
+				}
 			}
 			if (socket != null && connected && !manuallyClosed) {
 				stop();
 				start();
 			}
 		}).start();
+
 	}
 
 	private Socket tryConnect() {
@@ -211,23 +220,6 @@ public class SocketClientHandler implements SocketClient {
 	}
 
 	@Override
-	public boolean shouldAddToQueue() {
-		return !isConnected() || isLocked();
-	}
-
-	@Override
-	public void unlock() {
-		lock = false;
-		while (!actionsAfterUnlock().isEmpty()) {
-			SocketAction value = actionsAfterUnlock().poll();
-			if (value.action == SocketActionEnum.DATA)
-				write(value.config);
-			else
-				writeWithData(value.config, value.fileName, value.file);
-		}
-	}
-
-	@Override
 	public boolean isLocked() {
 		return lock;
 	}
@@ -235,6 +227,46 @@ public class SocketClientHandler implements SocketClient {
 	@Override
 	public Queue<SocketAction> actionsAfterUnlock() {
 		return actions;
+	}
+
+	@Override
+	public boolean isRawConnected() {
+		return connected;
+	}
+
+	@Override
+	public boolean isManuallyClosed() {
+		return manuallyClosed;
+	}
+
+	@Override
+	public Queue<Integer> readActionsAfterUnlock() {
+		return unlockReadActions;
+	}
+
+	@Override
+	public Map<Integer, SocketAction> getWriteActions() {
+		return writeActions;
+	}
+
+	@Override
+	public void unlock() {
+		while (!readActionsAfterUnlock().isEmpty()) {
+			Integer value = readActionsAfterUnlock().poll();
+			try {
+				SocketUtils.process(this, value, true);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		while (!actionsAfterUnlock().isEmpty()) {
+			SocketAction value = actionsAfterUnlock().poll();
+			if (value.file == null)
+				write(new Config(ByteLoader.fromBytes(value.config)));
+			else
+				writeWithData(new Config(ByteLoader.fromBytes(value.config)), value.fileName, value.file);
+		}
+		lock = false;
 	}
 
 }

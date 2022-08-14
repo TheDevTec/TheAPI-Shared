@@ -40,7 +40,7 @@ public class SocketServerHandler implements SocketServer {
 
 	@Override
 	public List<SocketClient> connectedClients() {
-		return connected;
+		return new ArrayList<>(connected);
 	}
 
 	/**
@@ -74,18 +74,60 @@ public class SocketServerHandler implements SocketServer {
 			serverSocket = new ServerSocket(port);
 			serverSocket.setReuseAddress(true);
 			serverSocket.setReceiveBufferSize(4 * 1024);
+
 			new Thread(() -> {
+
+				long lastConnection = System.currentTimeMillis() / 1000;
+				long sleepTime = 1000;
+
 				while (API.isEnabled() && isRunning()) {
 					try {
 						Socket socket = serverSocket.accept();
-						if (socket != null && !isAlreadyConnected(socket))
+						if (socket != null && !isAlreadyConnected(socket)) {
 							handleConnection(socket);
+							lastConnection = System.currentTimeMillis() / 1000;
+						}
 					} catch (Exception e) {
 						// Nothing is connecting
 					}
 					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
+						if (System.currentTimeMillis() / 1000 - lastConnection >= 15)
+							switch ((int) sleepTime) {
+							case 1000:
+								sleepTime = 5000;
+								break;
+							case 5000:
+								sleepTime = 15000;
+								break;
+							case 15000:
+								sleepTime = 30000;
+								break;
+							}
+						Thread.sleep(sleepTime);
+					} catch (Exception e) {
+					}
+				}
+			}).start();
+
+			// ping - pong service
+			new Thread(() -> {
+				while (API.isEnabled()) {
+					for (SocketClient client : connectedClients()) {
+						if (!client.isConnected() || client.isLocked())
+							continue;
+						try {
+							client.getOutputStream().writeInt(ClientResponde.PING.getResponde());
+							client.getOutputStream().writeLong(System.currentTimeMillis() / 100);
+							client.getOutputStream().flush();
+						} catch (Exception e) {
+							if (client.getSocket() != null && client.isRawConnected() && !client.isManuallyClosed())
+								client.stop();
+						}
+					}
+					try {
+						Thread.sleep(5000);
+					} catch (Exception e) {
+
 					}
 				}
 			}).start();
@@ -160,7 +202,7 @@ public class SocketServerHandler implements SocketServer {
 							out.writeInt(ClientResponde.REQUEST_NAME.getResponde());
 							Thread.sleep(100);
 
-							String serverName = SocketUtils.readText(in, 256);
+							String serverName = SocketUtils.readText(in, 128);
 							ServerClientPreConnectEvent event = new ServerClientPreConnectEvent(socket, serverName);
 							EventManager.call(event);
 							if (event.isCancelled()) {
@@ -182,8 +224,8 @@ public class SocketServerHandler implements SocketServer {
 	}
 
 	private boolean isAlreadyConnected(Socket socket) {
-		for (SocketClient c : connected)
-			if (c.getSocket().equals(socket))
+		for (SocketClient client : connected)
+			if (client.getSocket().equals(socket))
 				return true;
 		return false;
 	}
@@ -195,7 +237,8 @@ public class SocketServerHandler implements SocketServer {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		new ArrayList<>(connected).forEach(SocketClient::stop);
+		for (SocketClient client : connectedClients())
+			client.stop();
 		serverSocket = null;
 	}
 

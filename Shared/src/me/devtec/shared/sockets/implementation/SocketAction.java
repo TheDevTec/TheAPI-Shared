@@ -2,22 +2,18 @@ package me.devtec.shared.sockets.implementation;
 
 import java.io.File;
 
-import me.devtec.shared.dataholder.Config;
-
 public class SocketAction {
-	public enum SocketActionEnum {
-		FILE, DATA
-	}
+	public int action;
 
-	SocketActionEnum action;
-	Config config;
-	String fileName;
-	File file;
+	public byte[] config;
+	public String fileName;
+	public File file;
 
-	public SocketAction(SocketActionEnum action, Config data, String fileName, File file) {
+	public SocketAction(int action, byte[] config, File file, String fileName) {
 		this.action = action;
-		config = data;
+		this.config = config;
 		this.fileName = fileName;
 		this.file = file;
 	}
+
 }
