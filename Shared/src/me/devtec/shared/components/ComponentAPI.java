@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import me.devtec.shared.Ref;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.utility.StringUtils;
 
 public class ComponentAPI {
@@ -64,7 +65,7 @@ public class ComponentAPI {
 		Component current = start;
 
 		final List<Component> extra = new ArrayList<>();
-		final StringBuilder builder = new StringBuilder();
+		StringContainer builder = new StringContainer(input.length());
 		char prev = 0;
 
 		// REQUIRES hexMode ENABLED
@@ -88,7 +89,7 @@ public class ComponentAPI {
 						builder.deleteCharAt(builder.length() - 1); // Remove §
 						if (hex.length() == 7) {
 							current.setText(builder.toString()); // Current builder into text
-							builder.delete(0, builder.length()); // Clear builder
+							builder.clear(); // Clear builder
 							current = new Component(); // Create new component
 							extra.add(current);
 							current.setColor(hex); // Set current format component to bold
@@ -102,7 +103,7 @@ public class ComponentAPI {
 						current.setColor(null);
 						current.setFormatFromChar('r', false);
 					}
-					builder.delete(0, builder.length()); // Clear builder
+					builder.clear(); // Clear builder
 					current = new Component(); // Create new component
 					extra.add(current);
 					current.setColorFromChar(c);
@@ -113,7 +114,7 @@ public class ComponentAPI {
 					hex = null;
 					builder.deleteCharAt(builder.length() - 1); // Remove §
 					current.setText(builder.toString()); // Current builder into text
-					builder.delete(0, builder.length()); // Clear builder
+					builder.clear(); // Clear builder
 					Component before = current;
 					current = new Component().copyOf(before); // Create new component
 					extra.add(current);
@@ -133,7 +134,7 @@ public class ComponentAPI {
 					hex = null;
 					current.setText(builder.toString().substring(0, builder.toString().length() - split[split.length - 1].length())); // Current builder into
 					// text
-					builder.delete(0, builder.length()); // Clear builder
+					builder.clear(); // Clear builder
 					Component before = current;
 					if (!current.getText().trim().isEmpty()) {
 						current = new Component().copyOf(before); // Create new component
@@ -157,7 +158,7 @@ public class ComponentAPI {
 
 			if (ComponentAPI.checkHttp(split[split.length - 1])) {
 				current.setText(builder.toString().substring(0, builder.toString().length() - split[split.length - 1].length())); // Current builder into text
-				builder.delete(0, builder.length()); // Clear builder
+				builder.clear(); // Clear builder
 				Component before = current;
 				current = new Component().copyOf(before); // Create new component
 				extra.add(current);
@@ -255,13 +256,13 @@ public class ComponentAPI {
 
 	@SuppressWarnings("unchecked")
 	public static String listToString(List<?> list) {
-		StringBuilder string = new StringBuilder(list.size() * 16);
+		StringContainer builder = new StringContainer(list.size() * 20);
 		for (Object text : list)
 			if (text instanceof Map)
-				string.append(ComponentAPI.getColor(((Map<String, Object>) text).get("color"))).append(((Map<String, Object>) text).get("text"));
+				builder.append(ComponentAPI.getColor(((Map<String, Object>) text).get("color"))).append(String.valueOf(((Map<String, Object>) text).get("text")));
 			else
-				string.append(StringUtils.colorize(text + ""));
-		return string.toString();
+				builder.append(StringUtils.colorize(text + ""));
+		return builder.toString();
 	}
 
 	private static String getColor(Object color) {

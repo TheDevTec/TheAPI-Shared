@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
+import me.devtec.shared.dataholder.StringContainer;
+
 public class StreamUtils {
 
 	/**
@@ -28,13 +30,14 @@ public class StreamUtils {
 	public static String fromStream(InputStream stream) {
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8), 4096);
-			StringBuilder sb = new StringBuilder(512);
+			StringContainer sb = new StringContainer(512);
 			String content;
 			while ((content = br.readLine()) != null) {
 				if (sb.length() != 0)
 					sb.append(System.lineSeparator());
 				sb.append(content);
 			}
+			stream.close();
 			return sb.toString();
 		} catch (Exception err) {
 			return null;

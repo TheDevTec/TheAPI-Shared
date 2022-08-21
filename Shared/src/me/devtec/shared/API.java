@@ -3,6 +3,7 @@ package me.devtec.shared;
 import java.awt.Color;
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +19,7 @@ import me.devtec.shared.Ref.ServerType;
 import me.devtec.shared.commands.manager.CommandsRegister;
 import me.devtec.shared.commands.manager.SelectorUtils;
 import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.utility.LibraryLoader;
 import me.devtec.shared.utility.OfflineCache;
 import me.devtec.shared.utility.StringUtils;
@@ -291,33 +293,33 @@ public class API {
 		public String[] getLastColors(Pattern pattern, String text) {
 			Matcher m = pattern.matcher(text);
 			String color = null;
-			StringBuilder formats = new StringBuilder();
+			StringContainer formats = new StringContainer(8);
 			while (m.find()) {
 				String last = m.group(1).toLowerCase();
 				if (last.charAt(1) != 'x' && isFormat(last.charAt(1))) {
 					if (last.charAt(1) == 'r') {
-						formats.delete(0, formats.length());
+						formats.clear();
 						continue;
 					}
 					formats.append(last.charAt(1));
 					continue;
 				}
 				color = last.replace("§", "").replace("&", "");
-				formats.delete(0, formats.length());
+				formats.clear();
 			}
-			return new String[] { color, formats.toString() };
+			return new String[] { color, formats.length() == 0 ? null : formats.toString() };
 		}
 
-		public String rainbow(String msg, String fromHex, String toHex) {
+		public String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings) {
 			if (msg == null || fromHex == null || toHex == null)
 				return msg;
-			return rawGradient(msg, fromHex, toHex, false);
+			return rawGradient(msg, fromHex, toHex, false, protectedStrings);
 		}
 
-		public String gradient(String msg, String fromHex, String toHex) {
+		public String gradient(String msg, String fromHex, String toHex, List<String> protectedStrings) {
 			if (msg == null || fromHex == null || toHex == null)
 				return msg;
-			return rawGradient(msg, fromHex, toHex, true);
+			return rawGradient(msg, fromHex, toHex, true, protectedStrings);
 		}
 
 		private boolean isColor(int charAt) {
@@ -328,19 +330,30 @@ public class API {
 			return charAt >= 107 && charAt <= 111 || charAt == 114;
 		}
 
-		private String rawGradient(String msg, String from, String to, boolean defaultRainbow) {
-			String split = msg.replace("", "<>");
+		private String rawGradient(String msg, String from, String to, boolean defaultRainbow, List<String> protectedStrings) {
+			String split = msg.replace("", "");
 			String formats = "";
 
-			StringBuilder builder = new StringBuilder();
+			int removedLength = 0;
+
+			if (protectedStrings != null)
+				for (String protect : protectedStrings) {
+					String editSplit = split.replace(protect.replace("", ""), protect);
+					if (editSplit.length() != split.length()) {
+						split = split.replace(protect.replace("", ""), protect);
+						removedLength += protect.length();
+					}
+				}
+
+			StringContainer builder = new StringContainer((int) ((msg.length() + 1) * 1.25));
 			boolean inRainbow = defaultRainbow;
 			char prev = 0;
 
 			Color fromRGB = Color.decode(from);
 			Color toRGB = Color.decode(to);
-			double rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / msg.length());
-			double gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / msg.length());
-			double bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / msg.length());
+			double rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / (msg.length() - removedLength));
+			double gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / (msg.length() - removedLength));
+			double bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / (msg.length() - removedLength));
 			if (fromRGB.getRed() > toRGB.getRed())
 				rStep = -rStep;
 			if (fromRGB.getGreen() > toRGB.getGreen())
@@ -349,9 +362,13 @@ public class API {
 				bStep = -bStep;
 
 			Color finalColor = new Color(fromRGB.getRGB());
-			for (String s : split.split("<>")) {
+			for (String s : split.split("")) {
 				if (s.isEmpty())
 					continue;
+				if (s.length() > 1) {
+					builder.append(s);
+					continue;
+				}
 				char c = s.charAt(0);
 				if (prev == '&' || prev == '§') {
 					char inLower = Character.toLowerCase(c);

@@ -160,6 +160,16 @@ public interface SocketClient {
 		writeWithData(data, file.getName(), file);
 	}
 
+	public default void processReadActions() {
+		while (!readActionsAfterUnlock().isEmpty()) {
+			Integer value = readActionsAfterUnlock().poll();
+			try {
+				SocketUtils.process(this, value);
+			} catch (IOException e) {
+			}
+		}
+	}
+
 	public static void setServerName(String serverName) {
 		SocketClientHandler.serverName = serverName.getBytes();
 	}

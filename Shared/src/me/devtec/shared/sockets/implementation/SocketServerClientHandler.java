@@ -59,6 +59,7 @@ public class SocketServerClientHandler implements SocketClient {
 				}
 				if (isLocked())
 					continue;
+
 				try {
 					int task = in.readInt();
 					ClientResponde responde = ClientResponde.fromResponde(task);
@@ -66,10 +67,12 @@ public class SocketServerClientHandler implements SocketClient {
 						ping = in.readInt();
 						continue;
 					}
+					lock();
 					if (responde == ClientResponde.RECEIVE_ACTION)
-						SocketUtils.process(this, in.readInt(), false);
+						SocketUtils.process(this, in.readInt());
 					if (responde == ClientResponde.READ_ACTION)
 						SocketUtils.postAction(this, in.readInt());
+					unlock();
 				} catch (Exception destroy) {
 					break;
 				}
@@ -181,18 +184,11 @@ public class SocketServerClientHandler implements SocketClient {
 
 	@Override
 	public void unlock() {
-		while (!readActionsAfterUnlock().isEmpty()) {
-			Integer value = readActionsAfterUnlock().poll();
-			try {
-				SocketUtils.process(this, value, true);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		processReadActions();
 		lock = false;
 		while (!actionsAfterUnlock().isEmpty()) {
 			SocketAction value = actionsAfterUnlock().poll();
-			if (value.config != null && value.config == null)
+			if (value.file == null)
 				write(new Config(ByteLoader.fromBytes(value.config)));
 			else
 				writeWithData(new Config(ByteLoader.fromBytes(value.config)), value.fileName, value.file);

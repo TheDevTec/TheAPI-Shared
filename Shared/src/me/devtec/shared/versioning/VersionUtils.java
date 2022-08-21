@@ -14,15 +14,20 @@ public class VersionUtils {
 		double compareVersionD = convertToDouble(compareVersion);
 		if (versionD == compareVersionD)
 			return Version.SAME_VERSION;
-		return versionD > compareVersionD ? Version.OLDER_VERSION : Version.NEWER_VERSION;
+		return versionD > compareVersionD ? Version.NEWER_VERSION : Version.OLDER_VERSION;
 	}
 
 	public static double convertToDouble(String version) {
 		double ver = 0;
 		int dotPos = 1;
 		for (String split : version.replaceAll("[^0-9.]+", "").split("\\.")) {
-			ver += StringUtils.getDouble(split) / dotPos;
-			dotPos *= 10;
+			int additional = 1;
+			if (split.length() > 1)
+				for (int i = 1; i < split.length(); ++i)
+					additional *= 10;
+
+			ver += StringUtils.getDouble(split) / dotPos / additional;
+			dotPos = dotPos * 10;
 		}
 		return ver;
 	}

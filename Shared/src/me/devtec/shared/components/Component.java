@@ -4,6 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import me.devtec.shared.dataholder.StringContainer;
+
 public class Component {
 	private String text;
 	private List<Component> extra;
@@ -31,61 +33,61 @@ public class Component {
 	}
 
 	public Component setText(String value) {
-		this.text = value;
+		text = value;
 		return this;
 	}
 
 	public String getText() {
-		return this.text;
+		return text;
 	}
 
 	public boolean isBold() {
-		return this.bold;
+		return bold;
 	}
 
 	public boolean isItalic() {
-		return this.italic;
+		return italic;
 	}
 
 	public boolean isObfuscated() {
-		return this.obfuscated;
+		return obfuscated;
 	}
 
 	public boolean isUnderlined() {
-		return this.underlined;
+		return underlined;
 	}
 
 	public boolean isStrikethrough() {
-		return this.strikethrough;
+		return strikethrough;
 	}
 
 	public Component setBold(boolean status) {
-		this.bold = status;
+		bold = status;
 		return this;
 	}
 
 	public Component setItalic(boolean status) {
-		this.italic = status;
+		italic = status;
 		return this;
 	}
 
 	public Component setObfuscated(boolean status) {
-		this.obfuscated = status;
+		obfuscated = status;
 		return this;
 	}
 
 	public Component setUnderlined(boolean status) {
-		this.underlined = status;
+		underlined = status;
 		return this;
 	}
 
 	public Component setStrikethrough(boolean status) {
-		this.strikethrough = status;
+		strikethrough = status;
 		return this;
 	}
 
 	public String getFont() {
-		return this.font;
+		return font;
 	}
 
 	public Component setFont(String font) {
@@ -94,7 +96,7 @@ public class Component {
 	}
 
 	public HoverEvent getHoverEvent() {
-		return this.hoverEvent;
+		return hoverEvent;
 	}
 
 	public Component setHoverEvent(HoverEvent hoverEvent) {
@@ -103,7 +105,7 @@ public class Component {
 	}
 
 	public ClickEvent getClickEvent() {
-		return this.clickEvent;
+		return clickEvent;
 	}
 
 	public Component setClickEvent(ClickEvent clickEvent) {
@@ -112,7 +114,7 @@ public class Component {
 	}
 
 	public String getInsertion() {
-		return this.insertion;
+		return insertion;
 	}
 
 	public Component setInsertion(String insertion) {
@@ -121,7 +123,7 @@ public class Component {
 	}
 
 	public List<Component> getExtra() {
-		return this.extra;
+		return extra;
 	}
 
 	public void setExtra(List<Component> extra) {
@@ -129,59 +131,59 @@ public class Component {
 	}
 
 	public String getFormats() {
-		StringBuilder builder = new StringBuilder();
-		if (this.bold)
+		StringContainer builder = new StringContainer(6);
+		if (bold)
 			builder.append('§').append('l');
-		if (this.italic)
+		if (italic)
 			builder.append('§').append('o');
-		if (this.obfuscated)
+		if (obfuscated)
 			builder.append('§').append('k');
-		if (this.underlined)
+		if (underlined)
 			builder.append('§').append('n');
-		if (this.strikethrough)
+		if (strikethrough)
 			builder.append('§').append('m');
 		return builder.toString();
 	}
 
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder();
+		StringContainer builder = new StringContainer(text.length() + 24);
 
 		String colorBefore = null;
 
 		// COLOR
-		if (this.color != null) {
-			if (this.color.charAt(0) == '#')
-				colorBefore = this.color;
+		if (color != null) {
+			if (color.charAt(0) == '#')
+				colorBefore = color;
 			else
 				colorBefore = "§" + this.colorToChar();
 			builder.append(colorBefore);
 		}
 
 		// FORMATS
-		String formatsBefore = this.getFormats();
+		String formatsBefore = getFormats();
 		builder.append(formatsBefore);
 
-		builder.append(this.text);
+		builder.append(text);
 
-		if (this.extra != null)
-			for (Component c : this.extra)
+		if (extra != null)
+			for (Component c : extra)
 				builder.append(c.toString(colorBefore, formatsBefore));
 		return builder.toString();
 	}
 
 	// Deeper toString with "anti" copying of colors & formats
-	protected String toString(String parentColorBefore, String parentFormatsBefore) {
-		StringBuilder builder = new StringBuilder();
+	protected StringContainer toString(String parentColorBefore, String parentFormatsBefore) {
+		StringContainer builder = new StringContainer(text.length() + 24);
 
 		String colorBefore = parentColorBefore;
 
 		// FORMATS
-		String formatsBefore = this.getFormats();
+		String formatsBefore = getFormats();
 		// COLOR
-		if (this.color != null) {
-			if (this.color.charAt(0) == '#')
-				colorBefore = this.color;
+		if (color != null) {
+			if (color.charAt(0) == '#')
+				colorBefore = color;
 			else
 				colorBefore = "§" + this.colorToChar();
 			if (!colorBefore.equals(parentColorBefore) || !formatsBefore.equals(parentFormatsBefore))
@@ -192,25 +194,25 @@ public class Component {
 		if (!formatsBefore.equals(parentFormatsBefore))
 			builder.append(formatsBefore);
 
-		builder.append(this.text);
+		builder.append(text);
 
-		if (this.extra != null)
-			for (Component c : this.extra)
+		if (extra != null)
+			for (Component c : extra)
 				builder.append(c.toString(colorBefore, formatsBefore));
-		return builder.toString();
+		return builder;
 	}
 
 	public Component setColor(String nameOrHex) {
-		this.color = nameOrHex;
+		color = nameOrHex;
 		return this;
 	}
 
 	public String getColor() {
-		return this.color;
+		return color;
 	}
 
 	public char colorToChar() {
-		return Component.colorToChar(this.color);
+		return Component.colorToChar(color);
 	}
 
 	protected static char colorToChar(String color) {
@@ -260,56 +262,56 @@ public class Component {
 		switch (character) {
 		// a - f
 		case 97:
-			this.color = "green";
+			color = "green";
 			break;
 		case 98:
-			this.color = "aqua";
+			color = "aqua";
 			break;
 		case 99:
-			this.color = "red";
+			color = "red";
 			break;
 		case 100:
-			this.color = "light_purple";
+			color = "light_purple";
 			break;
 		case 101:
-			this.color = "yellow";
+			color = "yellow";
 			break;
 		case 102:
-			this.color = "white";
+			color = "white";
 			break;
 		// 0 - 9
 		case 48:
-			this.color = "black";
+			color = "black";
 			break;
 		case 49:
-			this.color = "dark_blue";
+			color = "dark_blue";
 			break;
 		case 50:
-			this.color = "dark_green";
+			color = "dark_green";
 			break;
 		case 51:
-			this.color = "dark_aqua";
+			color = "dark_aqua";
 			break;
 		case 52:
-			this.color = "dark_red";
+			color = "dark_red";
 			break;
 		case 53:
-			this.color = "dark_purple";
+			color = "dark_purple";
 			break;
 		case 54:
-			this.color = "gold";
+			color = "gold";
 			break;
 		case 55:
-			this.color = "gray";
+			color = "gray";
 			break;
 		case 56:
-			this.color = "dark_gray";
+			color = "dark_gray";
 			break;
 		case 57:
-			this.color = "blue";
+			color = "blue";
 			break;
 		default:
-			this.color = null;
+			color = null;
 			break;
 		}
 		return this;
@@ -318,26 +320,26 @@ public class Component {
 	public Component setFormatFromChar(char character, boolean status) {
 		switch (character) {
 		case 107:
-			this.obfuscated = status;
+			obfuscated = status;
 			break;
 		case 108:
-			this.bold = status;
+			bold = status;
 			break;
 		case 109:
-			this.strikethrough = status;
+			strikethrough = status;
 			break;
 		case 110:
-			this.underlined = status;
+			underlined = status;
 			break;
 		case 111:
-			this.bold = status;
+			bold = status;
 			break;
 		default: // reset
-			this.bold = false;
-			this.italic = false;
-			this.obfuscated = false;
-			this.underlined = false;
-			this.strikethrough = false;
+			bold = false;
+			italic = false;
+			obfuscated = false;
+			underlined = false;
+			strikethrough = false;
 			break;
 		}
 		return this;
@@ -349,40 +351,40 @@ public class Component {
 	 * @return Component
 	 */
 	public Component copyOf(Component selectedComp) {
-		this.bold = selectedComp.bold;
-		this.italic = selectedComp.italic;
-		this.obfuscated = selectedComp.obfuscated;
-		this.underlined = selectedComp.underlined;
-		this.strikethrough = selectedComp.strikethrough;
-		this.color = selectedComp.color;
+		bold = selectedComp.bold;
+		italic = selectedComp.italic;
+		obfuscated = selectedComp.obfuscated;
+		underlined = selectedComp.underlined;
+		strikethrough = selectedComp.strikethrough;
+		color = selectedComp.color;
 
-		this.font = selectedComp.font;
+		font = selectedComp.font;
 		return this;
 	}
 
 	public Map<String, Object> toJsonMap() {
 		Map<String, Object> map = new LinkedHashMap<>();
 		String color = this.color;
-		map.put("text", this.getText());
+		map.put("text", getText());
 		if (color != null)
 			map.put("color", color);
-		if (this.clickEvent != null)
-			map.put("clickEvent", this.clickEvent.toJsonMap());
-		if (this.hoverEvent != null)
-			map.put("hoverEvent", this.hoverEvent.toJsonMap());
-		if (this.font != null)
-			map.put("font", this.font);
-		if (this.insertion != null)
-			map.put("insertion", this.insertion);
-		if (this.bold)
+		if (clickEvent != null)
+			map.put("clickEvent", clickEvent.toJsonMap());
+		if (hoverEvent != null)
+			map.put("hoverEvent", hoverEvent.toJsonMap());
+		if (font != null)
+			map.put("font", font);
+		if (insertion != null)
+			map.put("insertion", insertion);
+		if (bold)
 			map.put("bold", true);
-		if (this.italic)
+		if (italic)
 			map.put("italic", true);
-		if (this.strikethrough)
+		if (strikethrough)
 			map.put("strikethrough", true);
-		if (this.obfuscated)
+		if (obfuscated)
 			map.put("obfuscated", true);
-		if (this.underlined)
+		if (underlined)
 			map.put("underlined", true);
 		return map;
 	}

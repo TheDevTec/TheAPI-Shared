@@ -10,6 +10,7 @@ import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 
 import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.ByteLoader;
 import me.devtec.shared.events.EventManager;
 import me.devtec.shared.events.api.ClientResponde;
@@ -27,14 +28,14 @@ public class SocketUtils {
 	}
 
 	public static String readText(DataInputStream in) throws IOException {
-		return readText(in, Integer.MAX_VALUE);
+		return readText(in, Integer.MAX_VALUE - 8);
 	}
 
 	public static String readText(DataInputStream in, int readLimit) throws IOException {
 		int size = in.readInt();
 		if (size > readLimit)
 			return "";
-		StringBuilder builder = new StringBuilder(size);
+		StringContainer builder = new StringContainer(size);
 		while (size > 1024) {
 			size -= 1024;
 			byte[] path = new byte[1024];
@@ -145,7 +146,7 @@ public class SocketUtils {
 		}
 	}
 
-	public static void process(SocketClient client, int actionUid, boolean insideLock) throws IOException {
+	public static void process(SocketClient client, int actionUid) throws IOException {
 
 		client.getOutputStream().writeInt(ClientResponde.READ_ACTION.getResponde());
 		client.getOutputStream().writeInt(actionUid);
@@ -163,15 +164,11 @@ public class SocketUtils {
 		case RECEIVE_DATA_AND_FILE:
 			data = SocketUtils.readConfig(in);
 		case RECEIVE_FILE:
-			if (!insideLock)
-				client.lock();
 			ServerClientPreReceiveFileEvent event = new ServerClientPreReceiveFileEvent(client, data, SocketUtils.readText(in));
 			EventManager.call(event);
 			if (event.isCancelled()) {
 				client.getOutputStream().writeInt(ClientResponde.REJECTED_FILE.getResponde());
 				client.getOutputStream().flush();
-				if (!insideLock)
-					client.unlock();
 				break;
 			}
 			client.getOutputStream().writeInt(ClientResponde.ACCEPTED_FILE.getResponde());
@@ -185,16 +182,12 @@ public class SocketUtils {
 				createdFile.delete(); // Failed to download file! Repeat.
 				client.getOutputStream().writeInt(ClientResponde.FAILED_DOWNLOAD_FILE.getResponde());
 				client.getOutputStream().flush();
-				if (!insideLock)
-					client.unlock();
 				break;
 			}
 			client.getOutputStream().writeInt(ClientResponde.SUCCESSFULLY_DOWNLOADED_FILE.getResponde());
 			client.getOutputStream().flush();
 			ServerClientReceiveFileEvent fileEvent = new ServerClientReceiveFileEvent(client, data, createdFile);
 			EventManager.call(fileEvent);
-			if (!insideLock)
-				client.unlock();
 			break;
 		default:
 			break;

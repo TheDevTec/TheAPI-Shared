@@ -31,6 +31,8 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.dataholder.merge.MergeSetting;
 import me.devtec.shared.dataholder.merge.MergeStandards;
 import me.devtec.shared.json.Json;
+import me.devtec.shared.scheduler.Scheduler;
+import me.devtec.shared.scheduler.Tasker;
 import me.devtec.shared.utility.StreamUtils;
 import me.devtec.shared.utility.StringUtils;
 
@@ -40,6 +42,11 @@ public class Config {
 	protected File file;
 	protected boolean isSaving; // LOCK
 	protected boolean requireSave;
+
+	// Config updater
+	protected long lastUpdate;
+	protected int updaterTask;
+	protected List<String> removedKeys = new ArrayList<>();
 
 	public static Config loadFromInput(InputStream input) {
 		Config insideJar = new Config();
@@ -137,6 +144,7 @@ public class Config {
 			}
 		}
 		this.file = file;
+		lastUpdate = file.lastModified();
 		keys = new LinkedList<>();
 		if (load)
 			this.reload(file);
@@ -194,8 +202,11 @@ public class Config {
 		DataValue h = loader.get().get(key);
 		if (h == null) {
 			String ss = Config.splitFirst(key);
-			if (!keys.contains(ss))
+			if (!keys.contains(ss)) {
 				keys.add(ss);
+				removedKeys.remove(ss);
+			}
+			removedKeys.remove(key);
 			loader.get().put(key, h = DataValue.empty());
 		}
 		return h;
@@ -214,9 +225,10 @@ public class Config {
 		if (key == null || value == null)
 			return false;
 		if (!existsKey(key)) {
-			markModified();
 			DataValue data = getOrCreateData(key);
 			data.value = value;
+			data.modified = true;
+			markModified();
 			return true;
 		}
 		return false;
@@ -226,16 +238,18 @@ public class Config {
 		if (key == null || value == null)
 			return false;
 		if (!existsKey(key)) {
-			markModified();
 			DataValue data = getOrCreateData(key);
 			data.value = value;
 			data.comments = Config.simple(new ArrayList<>(comments));
+			data.modified = true;
+			markModified();
 			return true;
 		}
 		if (comments != null && !comments.isEmpty()) {
 			DataValue data = getOrCreateData(key);
 			if (data.comments == null || data.comments.isEmpty()) {
 				data.comments = Config.simple(new ArrayList<>(comments));
+				data.modified = true;
 				markModified();
 				return true;
 			}
@@ -258,6 +272,7 @@ public class Config {
 		if (o.value == null && value != null || o.value != null && !o.value.equals(value)) {
 			o.value = value;
 			o.writtenValue = null;
+			o.modified = true;
 			markModified();
 		}
 		return this;
@@ -268,15 +283,20 @@ public class Config {
 			return this;
 		boolean removed = false;
 		String sf = Config.splitFirst(key);
-		if (keys.remove(sf))
+		if (keys.remove(sf)) {
 			removed = true;
-		if (loader.remove(key) && !removed)
+			removedKeys.add(sf);
+		}
+		if (loader.remove(key)) {
 			removed = true;
+			removedKeys.add(sf);
+		}
 		Iterator<Entry<String, DataValue>> iterator = loader.get().entrySet().iterator();
 		while (iterator.hasNext()) {
 			String section = iterator.next().getKey();
 			if (section.startsWith(key) && section.substring(key.length()).startsWith(".")) {
 				iterator.remove();
+				removedKeys.add(section);
 				removed = true;
 			}
 		}
@@ -299,15 +319,19 @@ public class Config {
 			return this;
 		if (value == null || value.isEmpty()) {
 			DataValue val = loader.get().get(key);
-			if (val != null)
+			if (val != null && val.comments != null && !val.comments.isEmpty()) {
 				val.comments = null;
+				val.modified = true;
+				markModified();
+			}
 			return this;
 		}
 		DataValue val = getOrCreateData(key);
 		List<String> simple = Config.simple(new ArrayList<>(value));
 		if (val.comments == null || !simple.containsAll(val.comments)) {
-			markModified();
+			val.modified = true;
 			val.comments = simple;
+			markModified();
 		}
 		return this;
 	}
@@ -325,9 +349,11 @@ public class Config {
 		if (key == null)
 			return null;
 		DataValue val = getOrCreateData(key);
-		if (comment != null && !comment.equals(val.commentAfterValue))
+		if (comment != null && !comment.equals(val.commentAfterValue)) {
+			val.modified = true;
+			val.commentAfterValue = comment;
 			markModified();
-		getOrCreateData(key).commentAfterValue = comment;
+		}
 		return this;
 	}
 
@@ -376,6 +402,7 @@ public class Config {
 	}
 
 	public Config reload(File f) {
+		lastUpdate = f.lastModified();
 		if (!f.exists()) {
 			markModified();
 			loader = new EmptyLoader();
@@ -688,16 +715,13 @@ public class Config {
 		isSaving = true;
 		markNonModified();
 		try {
-			try {
-				OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
-				w.write(this.toString(type));
-				w.close();
-			} catch (Exception e1) {
-				e1.printStackTrace();
-			}
-			isSaving = false;
+			OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
+			w.write(toString(type, true));
+			w.close();
 		} catch (Exception e1) {
+			e1.printStackTrace();
 		}
+		isSaving = false;
 		return this;
 	}
 
@@ -747,25 +771,20 @@ public class Config {
 
 	@Override
 	public String toString() {
-		return this.toString(DataType.BYTE);
-	}
-
-	protected void addKeys(List<Map<String, String>> list, String key) {
-		Object o = get(key);
-		if (o != null) {
-			Map<String, String> a = new ConcurrentHashMap<>();
-			a.put(key, Json.writer().write(o));
-			list.add(a);
-		}
-		for (String keyer : this.getKeys(key))
-			addKeys(list, key + "." + keyer);
+		return toString(DataType.BYTE);
 	}
 
 	public String toString(DataType type) {
+		return new String(toString(type, false));
+	}
+
+	public char[] toString(DataType type, boolean markSaved) {
+		if (markSaved)
+			removedKeys.clear();
 		switch (type) {
 		case PROPERTIES: {
 			int size = loader.get().size();
-			StringBuilder builder = new StringBuilder(size * 8);
+			StringContainer builder = new StringContainer(size * 20);
 			if (loader.getHeader() != null)
 				try {
 					for (String h : loader.getHeader())
@@ -779,6 +798,8 @@ public class Config {
 					first = false;
 				else
 					builder.append(System.lineSeparator());
+				if (markSaved)
+					key.getValue().modified = false;
 				if (key.getValue().value == null) {
 					if (key.getValue().commentAfterValue != null)
 						builder.append(key.getKey() + ": " + key.getValue().commentAfterValue);
@@ -795,18 +816,23 @@ public class Config {
 				} catch (Exception er) {
 					er.printStackTrace();
 				}
-			return builder.toString();
+			return builder.toString().toCharArray();
 		}
-		case BYTE:
-			return Base64.getEncoder().encodeToString(toByteArray());
+		case BYTE: {
+			byte[] encoded = Base64.getEncoder().encode(toByteArray(markSaved));
+			char[] chars = new char[encoded.length];
+			int i = 0;
+			for (byte b : encoded)
+				chars[i++] = (char) b;
+		}
 		case JSON:
 			List<Map<String, String>> list = new ArrayList<>();
 			for (String key : getKeys())
-				addKeys(list, key);
-			return Json.writer().simpleWrite(list);
+				addKeys(list, key, markSaved);
+			return Json.writer().simpleWrite(list).toCharArray();
 		case YAML:
 			int size = loader.get().size();
-			StringBuilder builder = new StringBuilder(size * 16);
+			StringContainer builder = new StringContainer(size * 20);
 			if (loader.getHeader() != null)
 				try {
 					for (String h : loader.getHeader())
@@ -816,7 +842,7 @@ public class Config {
 				}
 
 			// BUILD KEYS & SECTIONS
-			YamlSectionBuilderHelper.write(builder, keys, loader.get());
+			YamlSectionBuilderHelper.write(builder, keys, loader.get(), markSaved);
 
 			if (loader.getFooter() != null)
 				try {
@@ -825,20 +851,26 @@ public class Config {
 				} catch (Exception er) {
 					er.printStackTrace();
 				}
-			return builder.toString();
+			return builder.getValue();
 		}
 		return null;
 	}
 
 	public byte[] toByteArray() {
+		return toByteArray(false);
+	}
+
+	public byte[] toByteArray(boolean markSaved) {
 		try {
 			ByteArrayDataOutput in = ByteStreams.newDataOutput();
 			in.writeInt(3);
 			for (Entry<String, DataValue> key : loader.get().entrySet())
 				try {
+					if (markSaved)
+						key.getValue().modified = false;
 					in.writeInt(0);
 					in.writeUTF(key.getKey());
-					if (key.getValue() == null || key.getValue().value == null) {
+					if (key.getValue().value == null) {
 						in.writeInt(3);
 						continue;
 					}
@@ -916,6 +948,19 @@ public class Config {
 		return list;
 	}
 
+	protected void addKeys(List<Map<String, String>> list, String key, boolean markSaved) {
+		DataValue data = getDataLoader().get().get(key);
+		if (data != null) {
+			if (markSaved)
+				data.modified = false;
+			Map<String, String> a = new ConcurrentHashMap<>();
+			a.put(key, Json.writer().write(data.value));
+			list.add(a);
+		}
+		for (String keyer : this.getKeys(key))
+			addKeys(list, key + "." + keyer, markSaved);
+	}
+
 	private static List<String> simple(Collection<String> list) {
 		if (list instanceof List)
 			return Config.simple((List<String>) list);
@@ -933,5 +978,44 @@ public class Config {
 
 	public DataLoader getDataLoader() {
 		return loader;
+	}
+
+	public boolean isAutoUpdating() {
+		return updaterTask != 0;
+	}
+
+	public Config setAutoUpdating(long checkEvery) {
+		if (file == null)
+			return this;
+		if (checkEvery <= 0) {
+			if (updaterTask != 0) {
+				Scheduler.cancelTask(updaterTask);
+				updaterTask = 0;
+				lastUpdate = 0;
+			}
+		} else
+			new Tasker() {
+				@Override
+				public void run() {
+					long lastModify = file.lastModified();
+					if (lastModify != lastUpdate) {
+						lastUpdate = file.lastModified();
+						Config read = new Config(file);
+						for (Entry<String, DataValue> key : read.getDataLoader().get().entrySet()) {
+							if (removedKeys.contains(key.getKey()))
+								continue;
+							DataValue holder = getOrCreateData(key.getKey());
+							if (holder.modified)
+								continue;
+							holder.value = key.getValue().value;
+							holder.writtenValue = key.getValue().writtenValue;
+							holder.comments = key.getValue().comments;
+							holder.commentAfterValue = key.getValue().commentAfterValue;
+							holder.modified = true;
+						}
+					}
+				}
+			}.runRepeating(updaterTask, updaterTask);
+		return this;
 	}
 }

@@ -11,6 +11,7 @@ import java.util.List;
 import me.devtec.shared.database.DatabaseAPI.DatabaseSettings;
 import me.devtec.shared.database.DatabaseAPI.DatabaseType;
 import me.devtec.shared.database.DatabaseHandler.SelectQuery.Sorting;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.scheduler.Tasker;
 import me.devtec.shared.utility.StringUtils;
 
@@ -42,7 +43,7 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	public String buildSelectCommand(SelectQuery query) {
-		StringBuilder builder = new StringBuilder("select ");
+		StringContainer builder = new StringContainer(32).append("select ");
 		boolean first = true;
 		for (String search : query.getSearch()) {
 			if (!first)
@@ -64,14 +65,15 @@ public class SqlHandler implements DatabaseHandler {
 			builder.append(' ').append('`').append(pair[0].replace("'", "\\'")).append('`').append('=').append('\'').append(pair[1].replace("'", "\\'")).append('\'');
 		}
 		if (query.sorting != null)
-			builder.append(' ').append("order").append(' ').append("by").append(' ').append('`').append(StringUtils.join(query.sortingKey, ",").replace("'", "\\'")).append('`').append(' ').append(query.sorting == Sorting.UP ? "DESC" : "ASC");
+			builder.append(' ').append("order").append(' ').append("by").append(' ').append('`').append(StringUtils.join(query.sortingKey, ",").replace("'", "\\'")).append('`').append(' ')
+					.append(query.sorting == Sorting.UP ? "DESC" : "ASC");
 		if (query.limit != null)
 			builder.append(' ').append("limit").append(' ').append(query.limit);
 		return builder.toString();
 	}
 
 	public String buildInsertCommand(InsertQuery query) {
-		StringBuilder builder = new StringBuilder("insert into ");
+		StringContainer builder = new StringContainer(32).append("insert into ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		builder.append("values").append('(');
 		boolean first = true;
@@ -86,7 +88,7 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	public String buildUpdateCommand(UpdateQuery query) {
-		StringBuilder builder = new StringBuilder("update ");
+		StringContainer builder = new StringContainer(32).append("update ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		builder.append("set");
 		boolean first = true;
@@ -114,7 +116,7 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	public String buildRemoveCommand(RemoveQuery query) {
-		StringBuilder builder = new StringBuilder("delete from ");
+		StringContainer builder = new StringContainer(32).append("delete from ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		boolean first = true;
 		for (String[] val : query.values) {
@@ -167,13 +169,14 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	public String buildTableValues(Row[] values) {
-		StringBuilder builder = new StringBuilder();
+		StringContainer builder = new StringContainer(16);
 		boolean first = true;
 		for (Row row : values) {
 			if (!first)
 				builder.append(',');
 			first = false;
-			builder.append('`').append(row.getFieldName().replace("'", "\\'")).append('`').append(' ').append(row.getFieldType().toLowerCase()).append(' ').append(row.isNulled() ? "NULL" : "NOT NULL");
+			builder.append('`').append(row.getFieldName().replace("'", "\\'")).append('`').append(' ').append(row.getFieldType().toLowerCase()).append(' ')
+					.append(row.isNulled() ? "NULL" : "NOT NULL");
 		}
 		return builder.toString();
 	}

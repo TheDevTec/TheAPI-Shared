@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 
 import me.devtec.shared.API;
 import me.devtec.shared.Ref;
+import me.devtec.shared.dataholder.StringContainer;
 
 public class StringUtils {
 
@@ -92,14 +93,16 @@ public class StringUtils {
 		public String replaceHex(String msg);
 
 		/**
+		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public String gradient(String msg, String fromHex, String toHex);
+		public String gradient(String msg, String fromHex, String toHex, List<String> protectedStrings);
 
 		/**
+		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public String rainbow(String msg, String generateColor, String generateColor2);
+		public String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings);
 	}
 
 	public enum FormatType {
@@ -308,12 +311,12 @@ public class StringUtils {
 	public static String join(Iterable<?> args, String split, int start, int end) {
 		if (args == null || split == null)
 			return null;
-		StringBuilder msg = new StringBuilder();
+		StringContainer msg = new StringContainer(split.length() + 32);
 		Iterator<?> iterator = args.iterator();
 		for (int i = start; iterator.hasNext() && (end == -1 || i < end); ++i) {
 			if (msg.length() != 0)
 				msg.append(split);
-			msg.append(iterator.next());
+			msg.append(String.valueOf(iterator.next()));
 		}
 		return msg.toString();
 	}
@@ -353,11 +356,11 @@ public class StringUtils {
 	public static String join(Object[] args, String split, int start, int end) {
 		if (args == null || split == null)
 			return null;
-		StringBuilder msg = new StringBuilder();
+		StringContainer msg = new StringContainer(split.length() * (args.length - 1) + args.length * 4);
 		for (int i = start; i < args.length && i < end; ++i) {
 			if (msg.length() != 0)
 				msg.append(split);
-			msg.append(args[i]);
+			msg.append(String.valueOf(args[i]));
 		}
 		return msg.toString();
 	}
@@ -370,7 +373,7 @@ public class StringUtils {
 	 */
 	public static String getLastColors(String text) {
 		String[] split = StringUtils.color.getLastColors(text);
-		return split[0] + split[1];
+		return (split[0] == null ? "" : split[0]) + (split[1] == null ? "" : split[1]);
 	}
 
 	/**
@@ -398,6 +401,16 @@ public class StringUtils {
 	 * @return String
 	 */
 	public static String gradient(String originalMsg) {
+		return gradient(originalMsg, null);
+	}
+
+	/**
+	 * @apiNote Replace gradients in the String
+	 * @param originalMsg      Input string to colorize
+	 * @param protectedStrings List of strings which not be colored via gradient
+	 * @return String
+	 */
+	public static String gradient(String originalMsg, List<String> protectedStrings) {
 		if (originalMsg == null || StringUtils.gradientFinder == null)
 			return originalMsg;
 
@@ -414,7 +427,7 @@ public class StringUtils {
 		while (matcher.find()) {
 			if (matcher.groupCount() == 0 || matcher.group().isEmpty())
 				continue;
-			String replace = StringUtils.color.gradient(matcher.group(2), matcher.group(1), matcher.group(3));
+			String replace = StringUtils.color.gradient(matcher.group(2), matcher.group(1), matcher.group(3), protectedStrings);
 			if (replace == null)
 				continue;
 			legacyMsg = legacyMsg.replace(matcher.group(), replace);
@@ -433,11 +446,32 @@ public class StringUtils {
 	}
 
 	/**
+	 * @apiNote Colorize List of strings with colors
+	 * @param list             Texts to colorize
+	 * @param protectedStrings List of strings which not be colored via gradient
+	 * @return List<String>
+	 */
+	public static List<String> colorize(List<String> list, List<String> protectedStrings) {
+		list.replaceAll(string -> colorize(string, protectedStrings));
+		return list;
+	}
+
+	/**
 	 * @apiNote Colorize string with colors
 	 * @param original Text to colorize
 	 * @return String
 	 */
 	public static String colorize(String original) {
+		return colorize(original, null);
+	}
+
+	/**
+	 * @apiNote Colorize string with colors
+	 * @param original         Text to colorize
+	 * @param protectedStrings List of strings which not be colored via gradient
+	 * @return String
+	 */
+	public static String colorize(String original, List<String> protectedStrings) {
 		if (original == null || original.trim().isEmpty())
 			return original;
 
@@ -451,12 +485,12 @@ public class StringUtils {
 		msg = new String(b);
 		if (StringUtils.color != null && /** Fast check for working #RRGGBB symbol **/
 				(!Ref.serverType().isBukkit() || Ref.isNewerThan(15))) {
-			msg = StringUtils.gradient(msg);
+			msg = StringUtils.gradient(msg, protectedStrings);
 			if (msg.contains("#"))
 				msg = StringUtils.color.replaceHex(msg);
 		}
 		if (msg.contains("&u") && StringUtils.color != null)
-			msg = StringUtils.color.rainbow(msg, StringUtils.color.generateColor(), StringUtils.color.generateColor());
+			msg = StringUtils.color.rainbow(msg, StringUtils.color.generateColor(), StringUtils.color.generateColor(), protectedStrings);
 		return msg;
 	}
 
@@ -617,7 +651,7 @@ public class StringUtils {
 		if (disabledList.contains(TimeFormat.SECONDS))
 			seconds = 0;
 
-		StringBuilder builder = new StringBuilder();
+		StringContainer builder = new StringContainer(split.length() + 32);
 		StringUtils.addFormat(builder, split, TimeFormat.YEARS, digit, (long) years);
 		StringUtils.addFormat(builder, split, TimeFormat.MONTHS, digit, (long) months);
 		StringUtils.addFormat(builder, split, TimeFormat.DAYS, digit, (long) days);
@@ -627,7 +661,7 @@ public class StringUtils {
 		return builder.toString();
 	}
 
-	private static void addFormat(StringBuilder builder, String split, TimeFormat format, boolean digit, long time) {
+	private static void addFormat(StringContainer builder, String split, TimeFormat format, boolean digit, long time) {
 		if (time > 0) {
 			boolean notFirst = builder.length() != 0;
 			if (notFirst)
@@ -754,8 +788,8 @@ public class StringUtils {
 	}
 
 	private static String splitter(String s) {
-		StringBuilder i = new StringBuilder();
-		StringBuilder fix = new StringBuilder();
+		StringContainer i = new StringContainer(s.length());
+		StringContainer fix = new StringContainer(s.length());
 
 		int count = 0;
 		int waiting = 0;
@@ -769,8 +803,9 @@ public class StringUtils {
 				fix.append(c);
 				if (--count == 0) {
 					waiting = 0;
-					i = new StringBuilder(i.toString().replace(fix.toString(), "" + StringUtils.calculate(fix.substring(1, fix.length() - 1))));
-					fix.delete(0, fix.length());
+					String replaced = i.toString().replace(fix.toString(), "" + StringUtils.calculate(fix.substring(1, fix.length() - 1)));
+					i = new StringContainer(replaced.length()).append(replaced);
+					fix.clear();
 				}
 			} else if (waiting == 1)
 				fix.append(c);

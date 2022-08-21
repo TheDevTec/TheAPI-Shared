@@ -2,7 +2,6 @@ package me.devtec.shared.sockets.implementation;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Queue;
@@ -146,6 +145,7 @@ public class SocketClientHandler implements SocketClient {
 				}
 				if (isLocked())
 					continue;
+
 				try {
 					int task = in.readInt();
 					ClientResponde responde = ClientResponde.fromResponde(task);
@@ -157,10 +157,12 @@ public class SocketClientHandler implements SocketClient {
 						out.flush();
 						continue;
 					}
+					lock();
 					if (responde == ClientResponde.RECEIVE_ACTION)
-						SocketUtils.process(SocketClientHandler.this, in.readInt(), false);
+						SocketUtils.process(this, in.readInt());
 					if (responde == ClientResponde.READ_ACTION)
-						SocketUtils.postAction(SocketClientHandler.this, in.readInt());
+						SocketUtils.postAction(this, in.readInt());
+					unlock();
 				} catch (Exception destroy) {
 					break;
 				}
@@ -251,14 +253,8 @@ public class SocketClientHandler implements SocketClient {
 
 	@Override
 	public void unlock() {
-		while (!readActionsAfterUnlock().isEmpty()) {
-			Integer value = readActionsAfterUnlock().poll();
-			try {
-				SocketUtils.process(this, value, true);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		processReadActions();
+		lock = false;
 		while (!actionsAfterUnlock().isEmpty()) {
 			SocketAction value = actionsAfterUnlock().poll();
 			if (value.file == null)
@@ -266,7 +262,6 @@ public class SocketClientHandler implements SocketClient {
 			else
 				writeWithData(new Config(ByteLoader.fromBytes(value.config)), value.fileName, value.file);
 		}
-		lock = false;
 	}
 
 }

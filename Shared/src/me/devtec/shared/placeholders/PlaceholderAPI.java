@@ -40,24 +40,17 @@ public class PlaceholderAPI {
 		Matcher match = PlaceholderAPI.placeholderLookup.matcher(text);
 		while (match.find()) {
 			String placeholder = match.group(1);
-			boolean found = false;
 			Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
 			while (iterator.hasNext()) {
 				PlaceholderExpansion ext = iterator.next();
 				String value = ext.apply(placeholder, player);
-				if (value != null && !value.equals(placeholder)) {
+				if (value != null && !value.equals(placeholder))
 					text = text.replace(match.group(), value);
-					found = true;
-					break;
-				}
 			}
-			if (!found && PlaceholderAPI.PAPI_BRIDGE != null) {
+			if (PlaceholderAPI.PAPI_BRIDGE != null) {
 				String value = PlaceholderAPI.PAPI_BRIDGE.apply(placeholder, player);
-				if (value != null && !value.equals(placeholder)) {
+				if (value != null && !value.equals(placeholder))
 					text = text.replace(match.group(), value);
-					found = true;
-					break;
-				}
 			}
 		}
 		return text;

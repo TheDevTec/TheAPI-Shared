@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
@@ -27,7 +28,7 @@ public class YamlLoader extends EmptyLoader {
 			LinkedList<Object> items = null;
 			int spaces = 0;
 			// EXTRA BUILDER
-			StringBuilder builder = null;
+			StringContainer builder = null;
 
 			// BUILDER
 			String key = "";
@@ -124,7 +125,7 @@ public class YamlLoader extends EmptyLoader {
 					if (value.equals("|")) {
 						type = BuilderType.STRING;
 						spaces = sub + 2; // DEFAULT
-						builder = new StringBuilder();
+						builder = new StringContainer(32);
 						continue;
 					}
 					if (value.equals("|-")) {
@@ -134,7 +135,8 @@ public class YamlLoader extends EmptyLoader {
 						continue;
 					}
 					if (value.equals("[]")) {
-						data.put(key, DataValue.of("[]", Collections.emptyList(), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+						data.put(key,
+								DataValue.of("[]", Collections.emptyList(), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 						comments.clear();
 						continue;
 					}
@@ -206,7 +208,7 @@ public class YamlLoader extends EmptyLoader {
 		if (group.isEmpty() || group.length() == 1)
 			return new String[] { group };
 		String[] values = null;
-		StringBuilder builder = new StringBuilder();
+		StringContainer builder = new StringContainer(group.length());
 		boolean insideQuetos = false;
 		boolean comment = false;
 		boolean spaceCounting = true;
@@ -233,7 +235,7 @@ public class YamlLoader extends EmptyLoader {
 				values = new String[2];
 				String value = builder.toString();
 				values[0] = value.substring(0, value.length() - spaces);
-				builder.delete(0, builder.length());
+				builder.clear();
 				builder.append(posChar);
 				continue;
 			}

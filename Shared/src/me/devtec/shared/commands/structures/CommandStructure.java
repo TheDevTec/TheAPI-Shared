@@ -311,7 +311,7 @@ public class CommandStructure<S> {
 
 	@SuppressWarnings("unchecked")
 	public final Object[] findStructure(S s, String arg, String[] args, boolean tablist) {
-		List<CommandStructure<S>> result = new ArrayList<>();
+		Map<Integer, List<CommandStructure<S>>> structures = new TreeMap<>();
 		boolean noPerms = false;
 
 		PermissionChecker<S> permsChecker = first().permissionChecker;
@@ -323,7 +323,10 @@ public class CommandStructure<S> {
 					noPerms = true;
 					continue;
 				}
-				result.add(sub);
+				List<CommandStructure<S>> list = structures.get(sub.getPriority());
+				if (list == null)
+					structures.put(sub.getPriority(), list = new LinkedList<>());
+				list.add(sub);
 			}
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
 			if (API.selectorUtils.check(s, sub.getSelector(), arg)) {
@@ -332,9 +335,15 @@ public class CommandStructure<S> {
 					noPerms = true;
 					continue;
 				}
-				result.add(sub);
+				List<CommandStructure<S>> list = structures.get(sub.getPriority());
+				if (list == null)
+					structures.put(sub.getPriority(), list = new LinkedList<>());
+				list.add(sub);
 			}
-		return new Object[] { result, noPerms };
+		List<CommandStructure<S>> list = new LinkedList<>();
+		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
+			list.addAll(entry.getValue());
+		return new Object[] { list, noPerms };
 	}
 
 	public final List<CommandStructure<S>> getNextStructures(S s) {
