@@ -170,8 +170,12 @@ public class API {
 				@Override
 				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.seconds.convertor"))
-						if (matchAction(action, value))
-							return value + action.substring(action.indexOf(" ") + 1);
+						if (matchAction(action, value)) {
+							action = action.substring(action.indexOf(" "));
+							if (action.startsWith(" "))
+								action = action.substring(1);
+							return value + action;
+						}
 					return value + "s";
 				}
 			});
@@ -186,8 +190,12 @@ public class API {
 				@Override
 				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.minutes.convertor"))
-						if (matchAction(action, value))
-							return value + action.substring(action.indexOf(" ") + 1);
+						if (matchAction(action, value)) {
+							action = action.substring(action.indexOf(" "));
+							if (action.startsWith(" "))
+								action = action.substring(1);
+							return value + action;
+						}
 					return value + "m";
 				}
 			});
@@ -202,8 +210,12 @@ public class API {
 				@Override
 				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.hours.convertor"))
-						if (matchAction(action, value))
-							return value + action.substring(action.indexOf(" " + 1));
+						if (matchAction(action, value)) {
+							action = action.substring(action.indexOf(" "));
+							if (action.startsWith(" "))
+								action = action.substring(1);
+							return value + action;
+						}
 					return value + "h";
 				}
 			});
@@ -218,8 +230,12 @@ public class API {
 				@Override
 				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.days.convertor"))
-						if (matchAction(action, value))
-							return value + action.substring(action.indexOf(" ") + 1);
+						if (matchAction(action, value)) {
+							action = action.substring(action.indexOf(" "));
+							if (action.startsWith(" "))
+								action = action.substring(1);
+							return value + action;
+						}
 					return value + "d";
 				}
 			});
@@ -234,8 +250,12 @@ public class API {
 				@Override
 				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.weeks.convertor"))
-						if (matchAction(action, value))
-							return value + action.substring(action.indexOf(" ") + 1);
+						if (matchAction(action, value)) {
+							action = action.substring(action.indexOf(" "));
+							if (action.startsWith(" "))
+								action = action.substring(1);
+							return value + action;
+						}
 					return value + "w";
 				}
 			});
@@ -250,8 +270,12 @@ public class API {
 				@Override
 				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.months.convertor"))
-						if (matchAction(action, value))
-							return value + action.substring(action.indexOf(" ") + 1);
+						if (matchAction(action, value)) {
+							action = action.substring(action.indexOf(" "));
+							if (action.startsWith(" "))
+								action = action.substring(1);
+							return value + action;
+						}
 					return value + "mo";
 				}
 			});
@@ -266,8 +290,12 @@ public class API {
 				@Override
 				public String toString(long value) {
 					for (String action : config.getStringList("timeConvertor.years.convertor"))
-						if (matchAction(action, value))
-							return value + action.substring(action.indexOf(" ") + 1);
+						if (matchAction(action, value)) {
+							action = action.substring(action.indexOf(" "));
+							if (action.startsWith(" "))
+								action = action.substring(1);
+							return value + action;
+						}
 					return value + "y";
 				}
 			});

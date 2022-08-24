@@ -149,7 +149,7 @@ public class SocketServerHandler implements SocketServer {
 				if (socket.isInputShutdown() || socket.isOutputShutdown())
 					return;
 				// Receive client password
-				String pass = SocketUtils.readText(in);
+				String pass = SocketUtils.readText(in, 256);
 				if (!password.equals(pass)) {
 					out.writeInt(ClientResponde.REJECTED_LOGIN_PASSWORD.getResponde());
 					socket.close();
@@ -159,7 +159,7 @@ public class SocketServerHandler implements SocketServer {
 				}
 				// Receive client name
 				out.writeInt(ClientResponde.REQUEST_NAME.getResponde());
-				String serverName = SocketUtils.readText(in);
+				String serverName = SocketUtils.readText(in, 128);
 				ServerClientPreConnectEvent event = new ServerClientPreConnectEvent(socket, serverName);
 				EventManager.call(event);
 				if (event.isCancelled()) {

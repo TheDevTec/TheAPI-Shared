@@ -7,6 +7,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 
 import me.devtec.shared.dataholder.Config;
@@ -21,6 +23,10 @@ import me.devtec.shared.events.api.ServerClientRespondeEvent;
 import me.devtec.shared.sockets.implementation.SocketAction;
 
 public class SocketUtils {
+	private static final int READ_LIMIT = Integer.MAX_VALUE - 8;
+	private static final int READ_TEXT_LIMIT = 256;
+	private static final int READ_FILE_LIMIT = 16 * 1024;
+
 	public static Config readConfig(DataInputStream in) throws IOException {
 		byte[] path = new byte[in.readInt()];
 		in.read(path);
@@ -28,24 +34,30 @@ public class SocketUtils {
 	}
 
 	public static String readText(DataInputStream in) throws IOException {
-		return readText(in, Integer.MAX_VALUE - 8);
+		return readText(in, READ_LIMIT);
 	}
 
 	public static String readText(DataInputStream in, int readLimit) throws IOException {
 		int size = in.readInt();
-		if (size > readLimit)
+		if (size >= readLimit || size >= READ_LIMIT)
 			return "";
 		StringContainer builder = new StringContainer(size);
-		while (size > 1024) {
-			size -= 1024;
-			byte[] path = new byte[1024];
+		while (size > READ_TEXT_LIMIT) {
+			size -= READ_TEXT_LIMIT;
+			byte[] path = new byte[READ_TEXT_LIMIT];
 			in.read(path);
-			builder.append(new String(path, StandardCharsets.UTF_8));
+			CharBuffer decoded = StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(path));
+			char[] set = new char[decoded.capacity()];
+			decoded.get(set);
+			builder.append(new String(set));
 		}
 		if (size > 0) {
 			byte[] path = new byte[size];
 			in.read(path);
-			builder.append(new String(path, StandardCharsets.UTF_8));
+			CharBuffer decoded = StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(path));
+			char[] set = new char[decoded.capacity()];
+			decoded.get(set);
+			builder.append(new String(set));
 		}
 		return builder.toString();
 	}
@@ -56,7 +68,7 @@ public class SocketUtils {
 		try {
 			long size = in.readLong();
 			origin = size;
-			byte[] buffer = new byte[16 * 1024];
+			byte[] buffer = new byte[READ_FILE_LIMIT];
 			long total = 0;
 			while (total < size && (bytes = in.read(buffer, 0, size - total > buffer.length ? buffer.length : (int) (size - total))) > 0) {
 				out.write(buffer, 0, bytes);
@@ -102,7 +114,7 @@ public class SocketUtils {
 					out.flush();
 					FileInputStream fileInputStream = new FileInputStream(file);
 					int bytes = 0;
-					byte[] buffer = new byte[16 * 1024];
+					byte[] buffer = new byte[READ_FILE_LIMIT];
 					long total = 0;
 					while (total < size && (bytes = fileInputStream.read(buffer, 0, size - total > buffer.length ? buffer.length : (int) (size - total))) > 0) {
 						out.write(buffer, 0, bytes);
