@@ -1,9 +1,12 @@
 package me.devtec.shared.dataholder.loaders;
 
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.google.common.collect.Queues;
 
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
@@ -210,16 +213,26 @@ public class YamlLoader extends EmptyLoader {
 		String[] values = null;
 		StringContainer builder = new StringContainer(group.length());
 		boolean insideQuetos = false;
+		boolean insideJson = false;
+		boolean insideQuetosJson = false;
 		boolean comment = false;
 		boolean spaceCounting = true;
 		char quetoChar = 0;
 		int spaces = 0;
+
+		ArrayDeque<Character> jsonChars = null;
 
 		char posChar = group.charAt(0);
 		if (posChar == '"' || posChar == '\'') { // first char is often queto
 			quetoChar = posChar;
 			insideQuetos = true;
 			spaceCounting = false;
+		}
+		if (posChar == '{' || posChar == '[') { // first char is often queto
+			insideJson = true;
+			spaceCounting = false;
+			jsonChars = Queues.newArrayDeque();
+			jsonChars.add(posChar);
 		}
 
 		for (int pos = insideQuetos ? 1 : 0; pos < group.length(); ++pos) {
@@ -230,7 +243,13 @@ public class YamlLoader extends EmptyLoader {
 				continue;
 			}
 
-			if (posChar == '#' && !insideQuetos) {
+			if (insideJson && (posChar == '"' || posChar == '\''))
+				insideQuetosJson = !insideQuetosJson;
+
+			if (!insideQuetosJson && insideJson && (posChar == '[' || posChar == '{'))
+				jsonChars.add(posChar);
+
+			if (posChar == '#' && !insideQuetos && !insideJson) {
 				comment = true;
 				values = new String[2];
 				String value = builder.toString();
@@ -240,6 +259,13 @@ public class YamlLoader extends EmptyLoader {
 				continue;
 			}
 
+			if (!insideQuetosJson && insideJson && posChar == jsonChars.getLast()) {
+				jsonChars.peekLast();
+				if (jsonChars.isEmpty()) {
+					insideJson = false;
+					spaceCounting = true;
+				}
+			}
 			if (insideQuetos && posChar == quetoChar) {
 				insideQuetos = false;
 				spaceCounting = true;

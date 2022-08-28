@@ -1,13 +1,13 @@
 package me.devtec.shared.components;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import me.devtec.shared.Ref;
@@ -197,61 +197,58 @@ public class ComponentAPI {
 
 	@SuppressWarnings("unchecked")
 	public static List<Map<String, Object>> fixJsonList(List<Map<String, Object>> lists) { // usable for ex. chat format
-		if (lists == null)
-			return null;
-		ListIterator<Map<String, Object>> it = lists.listIterator();
+		if (lists == null || lists.isEmpty())
+			return lists;
+		List<Map<String, Object>> list = new ArrayList<>();
+
+		Iterator<Map<String, Object>> it = lists.iterator();
 		while (it.hasNext()) {
 			Map<String, Object> text = it.next();
-			Map<String, Object> hover = (Map<String, Object>) text.get("hoverEvent");
-			Map<String, Object> click = (Map<String, Object>) text.get("clickEvent");
-			if (hover != null)
-				hover = ComponentAPI.convertMapValues("hoverEvent", hover);
-			if (click != null)
-				click = ComponentAPI.convertMapValues("clickEvent", click);
-			String interact = (String) text.get("insertion");
-			boolean remove = false;
-			for (Entry<String, Object> s : text.entrySet()) {
-				if (s.getKey().equals("color") || s.getKey().equals("insertion"))
-					continue;
-				if (s.getValue() instanceof String) {
-					Component c = ComponentAPI.fromString((String) s.getValue(), false);
-					if (c.getText() != null && !c.getText().isEmpty() || c.getExtra() != null) {
-						try {
-							if (!remove) {
-								it.remove();
-								remove = true;
-							}
-						} catch (Exception err) {
-						}
-						Map<String, Object> d = c.toJsonMap();
-						if (!d.containsKey("color") && text.containsKey("color"))
-							d.put("color", text.get("color"));
-						if (hover != null && !d.containsKey("hoverEvent"))
-							d.put("hoverEvent", hover);
-						if (click != null && !d.containsKey("clickEvent"))
-							d.put("clickEvent", click);
-						if (interact != null && !d.containsKey("insertation"))
-							d.put("insertion", interact);
-						it.add(d);
-						if (c.getExtra() != null)
-							ComponentAPI.fixJsonListAll(it, c.getExtra());
-					}
 
-				} else if (s.getValue() instanceof Map) // hoverEvent or clickEvent
-					text.put(s.getKey(), s.getValue());
-				else if (s.getValue() instanceof List) // extras
-					text.put(s.getKey(), ComponentAPI.fixJsonList((List<Map<String, Object>>) s.getValue()));
+			if (text.get("text") == null || text.get("text").toString().isEmpty())
+				continue; // fast skip
+
+			Map<String, Object> hover = convertMapValues("hoverEvent", (Map<String, Object>) text.get("hoverEvent"));
+			Map<String, Object> click = convertMapValues("clickEvent", (Map<String, Object>) text.get("clickEvent"));
+			String insertion = (String) text.get("insertion");
+
+			String stext = text.get("text").toString();
+			if (stext.contains("§")) {
+				Component c = ComponentAPI.fromString(stext);
+				while (c != null) {
+					Map<String, Object> json = c.toJsonMap();
+					if (hover != null)
+						json.put("hoverEvent", hover);
+					if (click != null && c.getClickEvent() == null) // Propably URL
+						json.put("clickEvent", click);
+					if (insertion != null)
+						json.put("insertion", insertion);
+					list.add(json);
+				}
+			} else {
+				Component c = ComponentAPI.fromString(stext, false);
+				while (c != null) {
+					Map<String, Object> json = c.toJsonMap();
+					if (hover != null)
+						json.put("hoverEvent", hover);
+					if (click != null && c.getClickEvent() == null) // Propably URL
+						json.put("clickEvent", click);
+					if (insertion != null)
+						json.put("insertion", insertion);
+					list.add(json);
+				}
+			}
+			Object extra = text.get("extra");
+			if (extra != null) {
+				List<Map<String, Object>> extras = new ArrayList<>();
+				if (extra instanceof Map)
+					extras.addAll(fixJsonList(Arrays.asList((Map<String, Object>) extra)));
+				else if (extra instanceof List)
+					extras.addAll(fixJsonList((List<Map<String, Object>>) extra));
+				list.get(list.size() - 1).put("extra", extras);
 			}
 		}
-		return lists;
-	}
-
-	private static void fixJsonListAll(ListIterator<Map<String, Object>> list, List<Component> extra) {
-		for (Component c : extra) {
-			list.add(c.toJsonMap());
-			if (c.getExtra() != null)
-				ComponentAPI.fixJsonListAll(list, c.getExtra());
-		}
+		return list;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -274,6 +271,8 @@ public class ComponentAPI {
 	}
 
 	private static Map<String, Object> convertMapValues(String key, Map<String, Object> hover) {
+		if (hover == null || hover.isEmpty())
+			return null;
 		Object val = hover.getOrDefault("value", hover.getOrDefault("content", hover.getOrDefault("contents", null)));
 		if (val == null)
 			hover.put("value", "");
