@@ -106,7 +106,7 @@ public class SqlHandler implements DatabaseHandler {
 					first = false;
 					builder.append(' ').append("where");
 				} else
-					builder.append(',');
+					builder.append(' ').append("and");
 				builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('\'').append(val[1].replace("'", "\\'")).append('\'');
 			}
 		}
