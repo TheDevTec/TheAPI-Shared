@@ -67,12 +67,16 @@ public class SocketServerClientHandler implements SocketClient {
 						ping = in.readInt();
 						continue;
 					}
-					lock();
-					if (responde == ClientResponde.RECEIVE_ACTION)
+					if (responde == ClientResponde.RECEIVE_ACTION) {
+						lock();
 						SocketUtils.process(this, in.readInt());
-					if (responde == ClientResponde.READ_ACTION)
+						unlock();
+					}
+					if (responde == ClientResponde.READ_ACTION) {
+						lock();
 						SocketUtils.postAction(this, in.readInt());
-					unlock();
+						unlock();
+					}
 				} catch (Exception destroy) {
 					break;
 				}
@@ -124,6 +128,7 @@ public class SocketServerClientHandler implements SocketClient {
 			socket.close();
 		} catch (Exception e) {
 		}
+		lock = false;
 		getSocketServer().notifyDisconnect(this);
 	}
 
@@ -187,11 +192,13 @@ public class SocketServerClientHandler implements SocketClient {
 		processReadActions();
 		lock = false;
 		while (!actionsAfterUnlock().isEmpty()) {
+			if (shouldAddToQueue())
+				continue;
 			SocketAction value = actionsAfterUnlock().poll();
 			if (value.file == null)
 				write(new Config(ByteLoader.fromBytes(value.config)));
 			else
-				writeWithData(new Config(ByteLoader.fromBytes(value.config)), value.fileName, value.file);
+				writeWithData(value.config == null ? null : new Config(ByteLoader.fromBytes(value.config)), value.fileName, value.file);
 		}
 	}
 

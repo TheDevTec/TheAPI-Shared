@@ -102,9 +102,11 @@ public interface SocketClient {
 				data == null ? null : data.toByteArray(), file, fileName));
 		DataOutputStream out = getOutputStream();
 		try {
+			lock();
 			out.writeInt(ClientResponde.RECEIVE_ACTION.getResponde());
 			out.writeInt(taskId);
 			out.flush();
+			unlock();
 		} catch (Exception e) {
 			stop();
 			if (shouldAddToQueue()) {
@@ -115,7 +117,7 @@ public interface SocketClient {
 			if (canReconnect())
 				try {
 					start();
-				} catch (SocketException e1) {
+				} catch (Exception e1) {
 				}
 		}
 	}
@@ -131,9 +133,11 @@ public interface SocketClient {
 		getWriteActions().put(taskId, new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray(), null, null));
 		DataOutputStream out = getOutputStream();
 		try {
+			lock();
 			out.writeInt(ClientResponde.RECEIVE_ACTION.getResponde());
 			out.writeInt(taskId);
 			out.flush();
+			unlock();
 		} catch (Exception e) {
 			stop();
 			if (shouldAddToQueue()) {
@@ -143,7 +147,7 @@ public interface SocketClient {
 			if (canReconnect())
 				try {
 					start();
-				} catch (SocketException e1) {
+				} catch (Exception e1) {
 				}
 		}
 	}
@@ -163,9 +167,11 @@ public interface SocketClient {
 	public default void processReadActions() {
 		while (!readActionsAfterUnlock().isEmpty()) {
 			Integer value = readActionsAfterUnlock().poll();
+			if (value == null)
+				break;
 			try {
 				SocketUtils.process(this, value);
-			} catch (IOException e) {
+			} catch (Exception e) {
 			}
 		}
 	}

@@ -27,17 +27,17 @@ public class SocketUtils {
 	private static final int READ_TEXT_LIMIT = 256;
 	private static final int READ_FILE_LIMIT = 16 * 1024;
 
-	public static Config readConfig(DataInputStream in) throws IOException {
+	public static synchronized Config readConfig(DataInputStream in) throws IOException {
 		byte[] path = new byte[in.readInt()];
 		in.read(path);
 		return new Config(ByteLoader.fromBytes(path));
 	}
 
-	public static String readText(DataInputStream in) throws IOException {
+	public static synchronized String readText(DataInputStream in) throws IOException {
 		return readText(in, READ_LIMIT);
 	}
 
-	public static String readText(DataInputStream in, int readLimit) throws IOException {
+	public static synchronized String readText(DataInputStream in, int readLimit) throws IOException {
 		int size = in.readInt();
 		if (size >= readLimit || size >= READ_LIMIT)
 			return "";
@@ -62,7 +62,7 @@ public class SocketUtils {
 		return builder.toString();
 	}
 
-	public static boolean readFile(DataInputStream in, FileOutputStream out, File file) {
+	public static synchronized boolean readFile(DataInputStream in, FileOutputStream out, File file) {
 		int bytes;
 		long origin;
 		try {
@@ -82,23 +82,25 @@ public class SocketUtils {
 		return origin == file.length();
 	}
 
-	public static void postAction(SocketClient client, int actionId) {
+	public static synchronized void postAction(SocketClient client, int actionId) {
 		SocketAction path = client.getWriteActions().get(actionId);
 		if (path == null)
 			return;
 		DataOutputStream out = client.getOutputStream();
-		if (path.file != null) {
+		if (path.file != null && path.file.exists()) {
 			byte[] data = path.config;
 			File file = path.file;
 			String fileName = path.fileName;
 			try {
 				if (data != null) {
 					out.writeInt(ClientResponde.RECEIVE_DATA_AND_FILE.getResponde());
+					out.flush();
 					// data
 					out.writeInt(data.length);
 					out.write(data);
 				} else
 					out.writeInt(ClientResponde.RECEIVE_FILE.getResponde());
+				out.flush();
 				// file
 				byte[] bytesData = fileName.getBytes();
 				out.writeInt(bytesData.length);
@@ -117,17 +119,15 @@ public class SocketUtils {
 					byte[] buffer = new byte[READ_FILE_LIMIT];
 					long total = 0;
 					while (total < size && (bytes = fileInputStream.read(buffer, 0, size - total > buffer.length ? buffer.length : (int) (size - total))) > 0) {
-						out.write(buffer, 0, bytes);
 						total += bytes;
+						out.write(buffer, 0, bytes);
 					}
 					out.flush();
 					fileInputStream.close();
 					responde = client.readUntilFind(ClientResponde.SUCCESSFULLY_DOWNLOADED_FILE, ClientResponde.FAILED_DOWNLOAD_FILE);
 					crespondeEvent = new ServerClientRespondeEvent(client, responde.getResponde());
 					EventManager.call(crespondeEvent);
-					if (responde == ClientResponde.FAILED_DOWNLOAD_FILE)
-						postAction(client, actionId); // Next attempt
-					else
+					if (responde != ClientResponde.FAILED_DOWNLOAD_FILE)
 						client.getWriteActions().remove(actionId);
 				} else
 					client.getWriteActions().remove(actionId);
@@ -141,6 +141,8 @@ public class SocketUtils {
 			}
 			return;
 		}
+		if (path.config == null)
+			return; // Invalid action
 		try {
 			byte[] data = path.config;
 			out.writeInt(ClientResponde.RECEIVE_DATA.getResponde());
@@ -158,8 +160,7 @@ public class SocketUtils {
 		}
 	}
 
-	public static void process(SocketClient client, int actionUid) throws IOException {
-
+	public static synchronized void process(SocketClient client, int actionUid) throws IOException {
 		client.getOutputStream().writeInt(ClientResponde.READ_ACTION.getResponde());
 		client.getOutputStream().writeInt(actionUid);
 		client.getOutputStream().flush();

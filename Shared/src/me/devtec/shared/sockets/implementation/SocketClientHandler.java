@@ -147,6 +147,7 @@ public class SocketClientHandler implements SocketClient {
 					continue;
 
 				try {
+					lock();
 					int task = in.readInt();
 					ClientResponde responde = ClientResponde.fromResponde(task);
 					if (responde == ClientResponde.PING) {
@@ -157,7 +158,6 @@ public class SocketClientHandler implements SocketClient {
 						out.flush();
 						continue;
 					}
-					lock();
 					if (responde == ClientResponde.RECEIVE_ACTION)
 						SocketUtils.process(this, in.readInt());
 					if (responde == ClientResponde.READ_ACTION)
@@ -193,6 +193,7 @@ public class SocketClientHandler implements SocketClient {
 			socket.close();
 		} catch (Exception e) {
 		}
+		lock = false;
 		socket = null;
 	}
 
@@ -256,11 +257,13 @@ public class SocketClientHandler implements SocketClient {
 		processReadActions();
 		lock = false;
 		while (!actionsAfterUnlock().isEmpty()) {
+			if (shouldAddToQueue())
+				continue;
 			SocketAction value = actionsAfterUnlock().poll();
 			if (value.file == null)
 				write(new Config(ByteLoader.fromBytes(value.config)));
 			else
-				writeWithData(new Config(ByteLoader.fromBytes(value.config)), value.fileName, value.file);
+				writeWithData(value.config == null ? null : new Config(ByteLoader.fromBytes(value.config)), value.fileName, value.file);
 		}
 	}
 

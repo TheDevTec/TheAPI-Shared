@@ -145,6 +145,7 @@ public class SocketServerHandler implements SocketServer {
 				DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
 				out.writeInt(ClientResponde.LOGIN.getResponde());
+				out.flush();
 
 				if (socket.isInputShutdown() || socket.isOutputShutdown())
 					return;
@@ -152,24 +153,29 @@ public class SocketServerHandler implements SocketServer {
 				String pass = SocketUtils.readText(in, 256);
 				if (!password.equals(pass)) {
 					out.writeInt(ClientResponde.REJECTED_LOGIN_PASSWORD.getResponde());
-					socket.close();
+					out.flush();
 					ServerClientRejectedEvent rejectedEvent = new ServerClientRejectedEvent(socket, null);
 					EventManager.call(rejectedEvent);
+					socket.close();
 					return;
 				}
 				// Receive client name
 				out.writeInt(ClientResponde.REQUEST_NAME.getResponde());
+				out.flush();
 				String serverName = SocketUtils.readText(in, 128);
 				ServerClientPreConnectEvent event = new ServerClientPreConnectEvent(socket, serverName);
 				EventManager.call(event);
 				if (event.isCancelled()) {
 					out.writeInt(ClientResponde.REJECTED_LOGIN_PLUGIN.getResponde());
+					out.flush();
 					ServerClientRejectedEvent rejectedEvent = new ServerClientRejectedEvent(socket, serverName);
 					EventManager.call(rejectedEvent);
+					socket.close();
 					return;
 				}
 				// Connected
 				out.writeInt(ClientResponde.ACCEPTED_LOGIN.getResponde());
+				out.flush();
 				connected.add(new SocketServerClientHandler(this, in, out, serverName, socket));
 			} catch (Exception e) {
 			}
@@ -183,6 +189,7 @@ public class SocketServerHandler implements SocketServer {
 				if (socket.isInputShutdown() || socket.isOutputShutdown())
 					return;
 				out.writeInt(ClientResponde.LOGIN.getResponde());
+				out.flush();
 
 				new Thread(() -> {
 					if (API.isEnabled())
@@ -193,13 +200,15 @@ public class SocketServerHandler implements SocketServer {
 							if (!password.equals(pass)) {
 								Thread.sleep(100);
 								out.writeInt(ClientResponde.REJECTED_LOGIN_PASSWORD.getResponde());
-								socket.close();
+								out.flush();
 								ServerClientRejectedEvent rejectedEvent = new ServerClientRejectedEvent(socket, null);
 								EventManager.call(rejectedEvent);
+								socket.close();
 								return;
 							}
 							// Receive client name
 							out.writeInt(ClientResponde.REQUEST_NAME.getResponde());
+							out.flush();
 							Thread.sleep(100);
 
 							String serverName = SocketUtils.readText(in, 128);
@@ -208,13 +217,16 @@ public class SocketServerHandler implements SocketServer {
 							if (event.isCancelled()) {
 								Thread.sleep(100);
 								out.writeInt(ClientResponde.REJECTED_LOGIN_PLUGIN.getResponde());
+								out.flush();
 								ServerClientRejectedEvent rejectedEvent = new ServerClientRejectedEvent(socket, serverName);
 								EventManager.call(rejectedEvent);
+								socket.close();
 								return;
 							}
 							// Connected
 							Thread.sleep(100);
 							out.writeInt(ClientResponde.ACCEPTED_LOGIN.getResponde());
+							out.flush();
 							connected.add(new SocketServerClientHandler(this, in, out, serverName, socket));
 						} catch (Exception e) {
 						}
@@ -237,9 +249,9 @@ public class SocketServerHandler implements SocketServer {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		serverSocket = null;
 		for (SocketClient client : connectedClients())
 			client.stop();
-		serverSocket = null;
 	}
 
 }

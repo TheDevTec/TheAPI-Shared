@@ -148,6 +148,8 @@ public class Config {
 		keys = new LinkedList<>();
 		if (load)
 			this.reload(file);
+		else
+			loader = new EmptyLoader();
 		markNonModified();
 	}
 

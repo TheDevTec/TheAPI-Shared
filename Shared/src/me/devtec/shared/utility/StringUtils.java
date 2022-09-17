@@ -186,46 +186,92 @@ public class StringUtils {
 	}
 
 	/**
+	 * @apiNote Generates a random chance and compares it to the specified chance
+	 * @param percent Inserted chance
+	 */
+	public static boolean checkProbability(double percent) {
+		return checkProbability(percent, 100);
+	}
+
+	/**
+	 * @apiNote Generates a random chance and compares it to the specified chance
+	 * @param percent       Inserted chance
+	 * @param maximumChance Based chance
+	 */
+	public static boolean checkProbability(double percent, double basedChance) {
+		return StringUtils.randomDouble(basedChance) <= percent;
+	}
+
+	/**
 	 * @apiNote Generate random int within limits
-	 * @param max Maximum int (defaulty {@link Integer#MAX_VALUE}
+	 * @param max Maximum int
 	 */
-	public static int generateRandomInt(int max) {
-		return StringUtils.generateRandomInt(0, max);
+	public static int randomInt(int max) {
+		return StringUtils.randomInt(0, max);
 	}
 
 	/**
 	 * @apiNote Generate random double within limits
-	 * @param max Maximum double (defaulty {@link Double#MAX_VALUE}
+	 * @param max Maximum double
 	 */
-	public static double generateRandomDouble(double max) {
-		return StringUtils.generateRandomDouble(0, max);
+	public static double randomDouble(double max) {
+		return StringUtils.randomDouble(0, max);
 	}
 
 	/**
 	 * @apiNote Generate random double within limits
-	 * @param min Minimum double (defaulty 0)
-	 * @param max Maximum double (defaulty {@link Double#MAX_VALUE}
+	 * @param min Minimum double
+	 * @param max Maximum double
 	 * @return double
 	 */
-	public static double generateRandomDouble(double min, double max) {
-		if (min == max)
-			return min;
-		double result = StringUtils.generateRandomInt((int) min, (int) max) + StringUtils.random.nextDouble();
-		if (result > max)
-			return max;
-		return result;
+	public static double randomDouble(double min, double max) {
+		double r = (StringUtils.random.nextLong() >>> 11) * 0x1.0p-53;
+		boolean isNegative = max < 0;
+		if (isNegative) {
+			max *= -1;
+			min *= -1;
+		}
+		r = r * max;
+		if (r >= max) // may need to correct a rounding problem
+			r = Double.longBitsToDouble(Double.doubleToLongBits(max) - 1);
+		else if (r < min)
+			r = min;
+		return isNegative ? r * -1 : r;
 	}
 
 	/**
 	 * @apiNote Generate random int within limits
-	 * @param min Minimum int (defaulty 0)
-	 * @param max Maximum int (defaulty {@link Integer#MAX_VALUE}
+	 * @param min Minimum int
+	 * @param max Maximum int
 	 * @return int
 	 */
-	public static int generateRandomInt(int min, int max) {
+	public static int randomInt(int min, int max) {
 		if (min == max)
 			return min;
-		return StringUtils.random.nextInt(max - min) + min;
+		boolean isNegative = max < 0;
+		if (isNegative) {
+			max *= -1;
+			min *= -1;
+		}
+		int r = random.nextInt();
+		if (min < max) {
+			// It's not case (1).
+			final int n = max - min;
+			final int m = n - 1;
+			if ((n & m) == 0)
+				// It is case (2): length of range is a power of 2.
+				r = (r & m) + min;
+			else if (n > 0) {
+				// It is case (3): need to reject over-represented candidates.
+				for (int u = r >>> 1; u + m - (r = u % n) < 0; u = random.nextInt() >>> 1)
+					;
+				r += min;
+			} else
+				// It is case (4): length of range not representable as long.
+				while (r < min || r >= max)
+					r = random.nextInt();
+		}
+		return isNegative ? r * -1 : r;
 	}
 
 	/**
@@ -559,7 +605,7 @@ public class StringUtils {
 	/**
 	 * @apiNote Return random object from list
 	 */
-	public static <T> T getRandomFromList(List<T> list) {
+	public static <T> T randomFromList(List<T> list) {
 		if (list == null || list.isEmpty())
 			return null;
 		return list.get(StringUtils.random.nextInt(list.size()));
@@ -569,11 +615,11 @@ public class StringUtils {
 	 * @apiNote Return random object from collection
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T getRandomFromCollection(Collection<T> list) {
+	public static <T> T randomFromCollection(Collection<T> list) {
 		if (list == null || list.isEmpty())
 			return null;
 		if (list instanceof List)
-			return StringUtils.getRandomFromList((List<T>) list);
+			return StringUtils.randomFromList((List<T>) list);
 		return (T) list.toArray()[StringUtils.random.nextInt(list.size())];
 	}
 
