@@ -49,13 +49,15 @@ public class ComponentAPI {
 	public static Component fromString(String input) {
 		if (input == null)
 			return null;
-		return ComponentAPI.fromString(input, /* Depends on version & software */ Ref.serverType().isBukkit() && Ref.isNewerThan(15), input.contains("http"));
+		return ComponentAPI.fromString(input, /* Depends on version & software */ !Ref.serverType().isBukkit() || Ref.serverType().isBukkit() && Ref.isNewerThan(15),
+				input.contains("http://") || input.contains("https://") || input.contains("www."));
 	}
 
 	public static Component fromString(String input, boolean hexMode) {
 		if (input == null)
 			return null;
-		return ComponentAPI.fromString(input, hexMode ? Ref.serverType().isBukkit() && Ref.isNewerThan(15) : false, input.contains("http"));
+		return ComponentAPI.fromString(input, hexMode ? !Ref.serverType().isBukkit() || Ref.serverType().isBukkit() && Ref.isNewerThan(15) : false,
+				input.contains("http://") || input.contains("https://") || input.contains("www."));
 	}
 
 	public static Component fromString(String input, boolean hexMode, boolean urlMode) {
