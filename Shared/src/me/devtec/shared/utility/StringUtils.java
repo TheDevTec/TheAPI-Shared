@@ -403,11 +403,8 @@ public class StringUtils {
 		if (args == null || split == null)
 			return null;
 		StringContainer msg = new StringContainer(split.length() * (args.length - 1) + args.length * 4);
-		for (int i = start; i < args.length && i < end; ++i) {
-			if (msg.length() != 0)
-				msg.append(split);
-			msg.append(String.valueOf(args[i]));
-		}
+		for (int i = start; i < args.length && i < end; ++i)
+			msg.append(split).append(String.valueOf(args[i]));
 		return msg.toString();
 	}
 

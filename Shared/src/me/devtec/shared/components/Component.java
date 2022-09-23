@@ -357,7 +357,6 @@ public class Component {
 		underlined = selectedComp.underlined;
 		strikethrough = selectedComp.strikethrough;
 		color = selectedComp.color;
-
 		font = selectedComp.font;
 		return this;
 	}

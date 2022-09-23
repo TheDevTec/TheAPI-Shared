@@ -21,7 +21,7 @@ public class StringContainer {
 	private int count;
 
 	public StringContainer(int capacity) {
-		value = new char[capacity];
+		value = new char[capacity <= 0 ? 16 : capacity];
 	}
 
 	public int length() {
