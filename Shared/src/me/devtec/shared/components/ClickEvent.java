@@ -23,22 +23,27 @@ public class ClickEvent {
 	}
 
 	public Action getAction() {
-		return this.action;
+		return action;
 	}
 
 	public String getValue() {
-		return this.value;
+		return value;
 	}
 
 	public String toJson() {
-		return "{\"action\":\"" + this.action.name().toLowerCase() + "\",\"value\":\"" + this.value + "\"}";
+		return "{\"action\":\"" + action.name().toLowerCase() + "\",\"value\":\"" + value + "\"}";
 	}
 
 	public Map<String, Object> toJsonMap() {
 		Map<String, Object> map = new LinkedHashMap<>();
-		map.put("action", this.action.name().toLowerCase());
-		map.put("value", this.value);
+		map.put("action", action.name().toLowerCase());
+		map.put("value", value);
 		return map;
+	}
+
+	@Override
+	public String toString() {
+		return toJson();
 	}
 
 	public enum Action {

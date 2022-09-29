@@ -147,7 +147,7 @@ public class Component {
 
 	@Override
 	public String toString() {
-		StringContainer builder = new StringContainer(text.length() + 24);
+		StringContainer builder = new StringContainer(text.length() + 8);
 
 		String colorBefore = null;
 
@@ -166,15 +166,25 @@ public class Component {
 
 		builder.append(text);
 
+		System.out.println("=" + colorBefore);
 		if (extra != null)
-			for (Component c : extra)
+			for (Component c : extra) {
 				builder.append(c.toString(colorBefore, formatsBefore));
+				if (c.color != null)
+					if (c.color.charAt(0) == '#')
+						colorBefore = c.color;
+					else
+						colorBefore = "§" + c.colorToChar();
+				String formats = c.getFormats();
+				if (!formats.isEmpty())
+					formatsBefore = formats;
+			}
 		return builder.toString();
 	}
 
 	// Deeper toString with "anti" copying of colors & formats
 	protected StringContainer toString(String parentColorBefore, String parentFormatsBefore) {
-		StringContainer builder = new StringContainer(text.length() + 24);
+		StringContainer builder = new StringContainer(text.length() + 8);
 
 		String colorBefore = parentColorBefore;
 

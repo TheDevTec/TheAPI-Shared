@@ -29,21 +29,26 @@ public class HoverEvent {
 	}
 
 	public Action getAction() {
-		return this.action;
+		return action;
 	}
 
 	public Component getValue() {
-		return this.value;
+		return value;
 	}
 
 	public String toJson() {
-		return "{\"action\":\"" + this.action.name().toLowerCase() + "\",\"value\":\"" + Json.writer().simpleWrite(ComponentAPI.toJsonList(this.value)) + "\"}";
+		return "{\"action\":\"" + action.name().toLowerCase() + "\",\"value\":\"" + Json.writer().simpleWrite(ComponentAPI.toJsonList(value)) + "\"}";
+	}
+
+	@Override
+	public String toString() {
+		return toJson();
 	}
 
 	public Map<String, Object> toJsonMap() {
 		Map<String, Object> map = new LinkedHashMap<>();
-		map.put("action", this.action.name().toLowerCase());
-		map.put("value", ComponentAPI.toJsonList(this.value));
+		map.put("action", action.name().toLowerCase());
+		map.put("value", ComponentAPI.toJsonList(value));
 		return map;
 	}
 

@@ -359,9 +359,12 @@ public class StringUtils {
 			return null;
 		StringContainer msg = new StringContainer(split.length() + 32);
 		Iterator<?> iterator = args.iterator();
+		boolean first = true;
 		for (int i = start; iterator.hasNext() && (end == -1 || i < end); ++i) {
-			if (msg.length() != 0)
+			if (!first)
 				msg.append(split);
+			else
+				first = false;
 			msg.append(String.valueOf(iterator.next()));
 		}
 		return msg.toString();
@@ -403,8 +406,14 @@ public class StringUtils {
 		if (args == null || split == null)
 			return null;
 		StringContainer msg = new StringContainer(split.length() * (args.length - 1) + args.length * 4);
-		for (int i = start; i < args.length && i < end; ++i)
-			msg.append(split).append(String.valueOf(args[i]));
+		boolean first = true;
+		for (int i = start; i < args.length && i < end; ++i) {
+			if (!first)
+				msg.append(split);
+			else
+				first = false;
+			msg.append(String.valueOf(args[i]));
+		}
 		return msg.toString();
 	}
 

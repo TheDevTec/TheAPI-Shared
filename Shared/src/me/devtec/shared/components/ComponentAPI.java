@@ -9,14 +9,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.devtec.shared.Ref;
+import me.devtec.shared.components.ClickEvent.Action;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.utility.StringUtils;
 
 public class ComponentAPI {
-	static Pattern url = Pattern.compile("(w{3}\\\\.|[a-zA-Z0-9+&@#/%?=~_|!:,.;-]+:\\/\\/)?[a-zA-Z0-9+&@#/%?=~_|!:,.;-]+\\w\\.[a-zA-Z0-9+&@#/%?=~_|!:,.;-]{1,}\\w");
+	static Pattern url = Pattern.compile("(w{3}\\.|[a-zA-Z0-9+&@#/%?=~_|!:,.;-]+:\\/\\/)?[a-zA-Z0-9+&@#/%?=~_|!:,.;-]+\\w\\.[a-zA-Z0-9+&@#/%?=~_|!:,.;-]{1,}\\w");
 	static Map<String, ComponentTransformer<?>> transformers = new HashMap<>();
 
 	public static ComponentTransformer<?> transformer(String name) {
@@ -50,21 +52,21 @@ public class ComponentAPI {
 	public static Component fromString(String input) {
 		if (input == null)
 			return null;
-		return ComponentAPI.fromString(input, /* Depends on version & software */ !Ref.serverType().isBukkit() || Ref.serverType().isBukkit() && Ref.isNewerThan(15),
-				input.contains("http://") || input.contains("https://") || input.contains("www."));
+		return ComponentAPI.fromString(input, /* Depends on version & software */ !Ref.serverType().isBukkit() || Ref.serverType().isBukkit() && Ref.isNewerThan(15), input.contains("."));
 	}
 
 	public static Component fromString(String input, boolean hexMode) {
 		if (input == null)
 			return null;
-		return ComponentAPI.fromString(input, hexMode ? !Ref.serverType().isBukkit() || Ref.serverType().isBukkit() && Ref.isNewerThan(15) : false,
-				input.contains("http://") || input.contains("https://") || input.contains("www."));
+		return ComponentAPI.fromString(input, hexMode ? !Ref.serverType().isBukkit() || Ref.serverType().isBukkit() && Ref.isNewerThan(15) : false, input.contains("."));
 	}
 
 	public static Component fromString(String inputText, boolean hexMode, boolean urlMode) {
 		if (inputText == null)
 			return null;
 		final Component start = new Component("");
+		if (inputText.isEmpty())
+			return start;
 
 		final List<Component> extra = new ArrayList<>();
 
@@ -75,24 +77,49 @@ public class ComponentAPI {
 		String[] splits = inputText.split("\n");
 		boolean onEnd = inputText.endsWith("\n");
 		int splitPos = 0;
-		Component current = start;
+		ClickEvent click = null;
 
 		for (String input : splits) {
+			Component current = new Component();
+			extra.add(current);
+			if (splits.length == 1 && onEnd || splits.length > 1 && (++splitPos < splits.length || splitPos == splits.length && onEnd))
+				input = input + "\n";
+
 			StringContainer builder = new StringContainer(input.length());
 
 			for (int i = 0; i < input.length(); ++i) {
 				char c = input.charAt(i);
+				if (urlMode && c != ' ')
+					if (click == null) {
+						String text = builder.toString();
+						Matcher urlFinder = ComponentAPI.checkHttp(text);
+						if (urlFinder != null && urlFinder.find()) {
+
+							current.setText(text.substring(0, urlFinder.start()));
+							builder.delete(0, urlFinder.start());
+							text = text.substring(urlFinder.start());
+
+							current = new Component(text).copyOf(current);
+							extra.add(current);
+							String middle = urlFinder.group() + (c == '§' ? '&' : c);
+							click = new ClickEvent(Action.OPEN_URL, middle.startsWith("https://") || middle.startsWith("http://") ? middle : "https://" + middle);
+							current.setClickEvent(click);
+						}
+					} else
+						current.setClickEvent(click = click.setValue(click.getValue() + (c == '§' ? '&' : c)));
 
 				// COLOR or FORMAT
 				if (prev == '§') {
 					prev = c;
+
 					if (hexMode && c == 'x') {
 						builder.deleteCharAt(builder.length() - 1); // Remove §
 						hex = "#";
 						continue;
 					}
+
 					// COLOR
-					if (c >= 97 && c <= 102 || c >= 48 && c <= 57) { // a-f or 0-9
+					if (c >= 97 && c <= 102 || c >= 48 && c <= 57) {
 						if (hex != null) {
 							hex += c;
 							builder.deleteCharAt(builder.length() - 1); // Remove §
@@ -124,70 +151,44 @@ public class ComponentAPI {
 						builder.deleteCharAt(builder.length() - 1); // Remove §
 						current.setText(builder.toString()); // Current builder into text
 						builder.clear(); // Clear builder
-						Component before = current;
-						current = new Component().copyOf(before); // Create new component
+						current = new Component().copyOf(current); // Create new component
 						extra.add(current);
 						current.setFormatFromChar(c, c != 114); // Set current format to 'true' or reset all
 						continue;
 					}
-					// Is this bug?
 				}
 				prev = c;
-
-				builder.append(c);
-				if (urlMode && c == ' ') {
-					// URL
-
-					String url = builder.toString();
-					String[] split = url.split(" ");
-
-					int pos = split.length - 1;
-					if (pos > 0)
-						url = split[pos];
-
-					if (ComponentAPI.checkHttp(url)) {
-						hex = null;
-						current.setText(builder.toString().substring(0, builder.toString().length() - url.length())); // Current builder into
-						// text
-						builder.clear(); // Clear builder
-						Component before = current;
-						if (!current.getText().trim().isEmpty()) {
-							current = new Component().copyOf(before); // Create new component
-							extra.add(current);
+				if (urlMode && prev == ' ') {
+					if (click == null) {
+						String text = builder.toString();
+						Matcher urlFinder = ComponentAPI.checkHttp(text);
+						if (urlFinder != null) {
+							click = new ClickEvent(Action.OPEN_URL, "");
+							while (urlFinder.find()) {
+								String before = text.substring(0, urlFinder.start());
+								String middle = urlFinder.group();
+								click.setValue(middle);
+								current.setText(before);
+								current = new Component(middle).setClickEvent(click).copyOf(current);
+								extra.add(current);
+								current = new Component().copyOf(current);
+								extra.add(current);
+							}
 						}
-						current.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url));
-						current.setText(url);
-
-						current = new Component().copyOf(before); // Create new component
+					} else {
+						String split = builder.toString().substring(builder.toString().split(" ")[0].length());
+						current.setText(builder.toString().split(" ")[0]);
+						current = new Component(split).copyOf(current);
 						extra.add(current);
+						builder.clear();
 					}
+					click = null;
 				}
+				builder.append(c);
 			}
 			current.setText(builder.toString());
-			if (urlMode) {
-
-				String url = builder.toString();
-				String[] split = url.split(" ");
-
-				int pos = split.length - 1;
-				if (pos > 0)
-					url = split[pos];
-
-				if (ComponentAPI.checkHttp(url)) {
-					current.setText(builder.toString().substring(0, builder.toString().length() - url.length())); // Current builder into text
-					builder.clear(); // Clear builder
-					Component before = current;
-					current = new Component().copyOf(before); // Create new component
-					current.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url));
-					current.setText(url);
-					extra.add(current);
-				}
-			}
-			if (splits.length > 1 && (++splitPos < splits.length || splitPos == splits.length && onEnd)) {
-				current.setText(current.getText() + "\n");
-				current = new Component().copyOf(current); // Create new component
-				extra.add(current);
-			}
+			hex = null;
+			prev = 0;
 		}
 		filterEmpty(extra);
 		start.setExtra(extra);
@@ -198,13 +199,14 @@ public class ComponentAPI {
 		ListIterator<Component> itr = extra.listIterator();
 		while (itr.hasNext()) {
 			Component next = itr.next();
-			if (next.getText().length() == 0)
+			if (next.getText().isEmpty())
 				itr.remove();
 		}
 	}
 
-	private static boolean checkHttp(String text) {
-		return ComponentAPI.url.matcher(text).find();
+	private static Matcher checkHttp(String text) {
+		Matcher m = ComponentAPI.url.matcher(text);
+		return m.find() ? m.reset(text) : null;
 	}
 
 	public static List<Map<String, Object>> toJsonList(Component component) {
@@ -247,7 +249,7 @@ public class ComponentAPI {
 			String stext = (String) text.get("text");
 			Component c = ComponentAPI.fromString(stext);
 			if (c != null) {
-				if (!(c.getText() == null || c.getText().isEmpty())) {
+				if (!c.getText().isEmpty()) {
 					Map<String, Object> json = c.toJsonMap();
 					if (hover != null)
 						json.put("hoverEvent", hover);
