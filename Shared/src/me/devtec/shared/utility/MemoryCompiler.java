@@ -22,11 +22,10 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 
 import me.devtec.shared.Ref;
-import me.devtec.shared.dataholder.StringContainer;
 
 public class MemoryCompiler {
 
-	private String allJars = getAllJarFiles();
+	public static String allJars = "./" + new File(System.getProperty("java.class.path")).getPath();
 
 	private JavaFileManager fileManager;
 	private String fullName;
@@ -58,37 +57,6 @@ public class MemoryCompiler {
 		files.add(new CharSequenceJavaFileObject(fullName, sourceCode));
 
 		compiler.getTask(null, fileManager, null, Arrays.asList("-classpath", allJars), null, files).call();
-	}
-
-	private static String getAllJarFiles() {
-		StringContainer args = new StringContainer(128);
-		boolean first = true;
-		for (File file : File.listRoots())
-			if (file.getName().endsWith(".jar")) {
-				if (first)
-					first = false;
-				else
-					args.append(';');
-				args.append('.').append('/').append(file.getPath());
-			}
-		addAllJarFiles(args, new File("plugins"), false);
-		addAllJarFiles(args, new File("versions"), true);
-		addAllJarFiles(args, new File("cache"), true);
-		addAllJarFiles(args, new File("bundler"), true);
-		addAllJarFiles(args, new File("libraries"), true);
-		return args.toString();
-	}
-
-	private static void addAllJarFiles(StringContainer args, File folder, boolean sub) {
-		if (!folder.exists())
-			return;
-		File[] files = folder.listFiles();
-		if (files != null)
-			for (File file : files)
-				if (file.isDirectory() && sub)
-					addAllJarFiles(args, file, sub);
-				else if (file.getName().endsWith(".jar"))
-					args.append(';').append('.').append('/').append(file.getPath());
 	}
 
 	public Class<?> buildClass() {
