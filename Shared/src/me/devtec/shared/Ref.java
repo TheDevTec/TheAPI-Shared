@@ -32,7 +32,7 @@ public class Ref {
 
 	public static void init(ServerType type, String serverVersion) {
 		Ref.ver = serverVersion;
-		if (type == ServerType.BUKKIT || type == ServerType.SPIGOT || type == ServerType.PAPER) {
+		if (type.isBukkit()) {
 			Ref.intVer = StringUtils.getInt(Ref.ver.split("_")[1]);
 			Ref.intRelease = StringUtils.getInt(Ref.ver.split("_")[2]);
 		}
