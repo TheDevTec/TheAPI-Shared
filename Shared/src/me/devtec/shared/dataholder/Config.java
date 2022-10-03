@@ -435,6 +435,10 @@ public class Config {
 	}
 
 	public <E> E getAs(String key, Class<? extends E> clazz) {
+		return getAs(key, clazz, null);
+	}
+
+	public <E> E getAs(String key, Class<? extends E> clazz, E defaultValue) {
 		try {
 			if (clazz == String.class || clazz == CharSequence.class)
 				return clazz.cast(getString(key));
@@ -444,7 +448,7 @@ public class Config {
 			return clazz.cast(loader.get().get(key).value);
 		} catch (Exception e) {
 		}
-		return null;
+		return defaultValue;
 	}
 
 	public String getString(String key) {

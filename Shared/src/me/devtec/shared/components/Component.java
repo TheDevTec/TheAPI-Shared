@@ -213,7 +213,7 @@ public class Component {
 	}
 
 	public Component setColor(String nameOrHex) {
-		color = nameOrHex;
+		color = nameOrHex != null && nameOrHex.isEmpty() ? null : nameOrHex;
 		return this;
 	}
 
