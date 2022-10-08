@@ -31,7 +31,8 @@ public interface LibraryLoader {
 			if (file.exists() && !file.delete())
 				return;
 			if (!file.exists()) {
-				file.getParentFile().mkdirs();
+				if (file.getParentFile() != null)
+					file.getParentFile().mkdirs();
 				file.createNewFile();
 				OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
 				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
