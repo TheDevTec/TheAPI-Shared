@@ -49,9 +49,7 @@ public class Config {
 	protected List<String> removedKeys = new ArrayList<>();
 
 	public static Config loadFromInput(InputStream input) {
-		Config insideJar = new Config();
-		insideJar.reload(StreamUtils.fromStream(input));
-		return insideJar;
+		return new Config().reload(StreamUtils.fromStream(input));
 	}
 
 	public static Config loadFromInput(InputStream input, String outputFile, MergeSetting... settings) {
@@ -60,9 +58,7 @@ public class Config {
 
 	public static Config loadFromInput(InputStream input, File outputFile, MergeSetting... settings) {
 		Config config = new Config(outputFile);
-		Config insideJar = new Config();
-		insideJar.reload(StreamUtils.fromStream(input));
-		config.merge(insideJar, settings);
+		config.merge(new Config().reload(StreamUtils.fromStream(input)), settings);
 		return config;
 	}
 
