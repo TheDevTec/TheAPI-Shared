@@ -716,12 +716,10 @@ public class Config {
 		}
 		isSaving = true;
 		markNonModified();
-		try {
-			OutputStreamWriter w = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
-			w.write(toString(type, true));
-			w.close();
-		} catch (Exception e1) {
-			e1.printStackTrace();
+		try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+			writer.write(toString(type, true));
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		isSaving = false;
 		return this;

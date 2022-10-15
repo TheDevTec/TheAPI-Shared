@@ -34,18 +34,20 @@ public interface LibraryLoader {
 				if (file.getParentFile() != null)
 					file.getParentFile().mkdirs();
 				file.createNewFile();
-				OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
 				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 				conn.setRequestProperty("User-Agent", "DevTec-JavaClient");
-				InputStream in = conn.getInputStream();
-				byte[] buf = new byte[4096];
-				int r;
-				while ((r = in.read(buf)) != -1)
-					out.write(buf, 0, r);
-				if (in != null)
-					in.close();
-				if (out != null)
-					out.close();
+				try (InputStream in = conn.getInputStream()) {
+					byte[] buf = new byte[4096];
+					int r;
+					try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+						while ((r = in.read(buf)) != -1)
+							out.write(buf, 0, r);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

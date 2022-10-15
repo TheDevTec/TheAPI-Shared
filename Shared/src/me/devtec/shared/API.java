@@ -1,6 +1,7 @@
 package me.devtec.shared;
 
 import java.awt.Color;
+import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.List;
@@ -299,6 +300,13 @@ public class API {
 					return value + "y";
 				}
 			});
+			// Init libraries without waiting
+			if (library != null) {
+				File libraries = new File(path + "libraries");
+				if (libraries.exists())
+					for (File file : libraries.listFiles())
+						library.load(file);
+			}
 		}
 
 		private boolean matchAction(String action, long value) {

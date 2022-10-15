@@ -87,17 +87,15 @@ public class SocketClientHandler implements SocketClient {
 					} catch (Exception e) {
 					}
 			}
-			if (!checkRawConnected()) { // What happened? API is disabled?
-				start();
+			if (!API.isEnabled())
 				return;
-			}
 			try {
 				in = new DataInputStream(socket.getInputStream());
 				out = new DataOutputStream(socket.getOutputStream());
 			} catch (Exception err) {
+				socket = null;
 				connected = false;
-				if (API.isEnabled())
-					start();
+				start();
 				return;
 			}
 			// PROCESS LOGIN
