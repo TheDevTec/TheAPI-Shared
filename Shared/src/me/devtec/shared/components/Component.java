@@ -131,7 +131,7 @@ public class Component {
 	}
 
 	public String getFormats() {
-		StringContainer builder = new StringContainer(6);
+		StringContainer builder = new StringContainer(10);
 		if (bold)
 			builder.append('§').append('l');
 		if (italic)
