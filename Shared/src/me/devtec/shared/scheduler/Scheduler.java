@@ -26,11 +26,10 @@ public class Scheduler {
 			try {
 				if (!Scheduler.isCancelled(id))
 					r.run();
-				Scheduler.thread.destroy(id);
-			} catch (Exception err) {
-				Scheduler.thread.destroy(id);
+			} catch (Throwable err) {
 				err.printStackTrace();
 			}
+			Scheduler.thread.destroy(id);
 		});
 	}
 
@@ -44,13 +43,11 @@ public class Scheduler {
 					Thread.sleep(delay * 50);
 				if (!Scheduler.isCancelled(id))
 					r.run();
-				Scheduler.thread.destroy(id);
-			} catch (InterruptedException hide) {
-				Scheduler.thread.destroy(id);
-			} catch (Exception err) {
-				Scheduler.thread.destroy(id);
+			} catch (InterruptedException | ThreadDeath hide) {
+			} catch (Throwable err) {
 				err.printStackTrace();
 			}
+			Scheduler.thread.destroy(id);
 		});
 	}
 
@@ -66,13 +63,11 @@ public class Scheduler {
 					r.run();
 					Thread.sleep(period * 50);
 				}
-				Scheduler.thread.destroy(id);
-			} catch (InterruptedException hide) {
-				Scheduler.thread.destroy(id);
-			} catch (Exception err) {
-				Scheduler.thread.destroy(id);
+			} catch (InterruptedException | ThreadDeath hide) {
+			} catch (Throwable err) {
 				err.printStackTrace();
 			}
+			Scheduler.thread.destroy(id);
 		});
 	}
 
@@ -96,19 +91,17 @@ public class Scheduler {
 				try {
 					if (delay > 0)
 						Thread.sleep(delay * 50);
-					while (!Scheduler.isCancelled(id) && this.run++ < times) {
+					while (!Scheduler.isCancelled(id) && run++ < times) {
 						runnable.run();
 						Thread.sleep(period * 50);
 					}
 					if (onFinish != null && !Scheduler.isCancelled(id))
 						onFinish.run();
-					Scheduler.thread.destroy(id);
-				} catch (InterruptedException hide) {
-					Scheduler.thread.destroy(id);
-				} catch (Exception err) {
-					Scheduler.thread.destroy(id);
+				} catch (InterruptedException | ThreadDeath hide) {
+				} catch (Throwable err) {
 					err.printStackTrace();
 				}
+				Scheduler.thread.destroy(id);
 			}
 		});
 	}

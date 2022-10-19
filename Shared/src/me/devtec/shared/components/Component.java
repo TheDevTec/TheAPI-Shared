@@ -166,7 +166,6 @@ public class Component {
 
 		builder.append(text);
 
-		System.out.println("=" + colorBefore);
 		if (extra != null)
 			for (Component c : extra) {
 				builder.append(c.toString(colorBefore, formatsBefore));

@@ -11,7 +11,7 @@ public class ThreadManager implements Executor {
 	protected final AtomicInteger i = new AtomicInteger();
 
 	public void destroy() {
-		Iterator<Thread> it = this.threads.values().iterator();
+		Iterator<Thread> it = threads.values().iterator();
 		while (it.hasNext()) {
 			Thread tht = it.next();
 			it.remove();
@@ -23,19 +23,19 @@ public class ThreadManager implements Executor {
 	}
 
 	public boolean isAlive(int id) {
-		return this.threads.containsKey(id) && this.threads.get(id).isAlive();
+		return threads.containsKey(id) && threads.get(id).isAlive();
 	}
 
 	public Map<Integer, Thread> getThreads() {
-		return this.threads;
+		return threads;
 	}
 
 	public int incrementAndGet() {
-		return this.i.incrementAndGet();
+		return i.incrementAndGet();
 	}
 
 	public void destroy(int id) {
-		Thread t = this.threads.remove(id);
+		Thread t = threads.remove(id);
 		if (t == null)
 			return;
 		t.interrupt(); // safe destroy of thread
@@ -43,20 +43,20 @@ public class ThreadManager implements Executor {
 	}
 
 	public int executeWithId(int id, Runnable command) {
-		Thread t = new Thread(command, "ThreadManager-Worker-" + id);
-		this.threads.put(id, t);
+		Thread t = new Thread(command, "AsyncThreadWorker-" + id);
+		threads.put(id, t);
 		t.start();
 		return id;
 	}
 
 	public int executeAndGet(Runnable command) {
-		int id = this.i.incrementAndGet();
-		return this.executeWithId(id, command);
+		int id = i.incrementAndGet();
+		return executeWithId(id, command);
 	}
 
 	@Override
 	public void execute(Runnable command) {
-		int id = this.i.incrementAndGet();
-		this.executeWithId(id, command);
+		int id = i.incrementAndGet();
+		executeWithId(id, command);
 	}
 }
