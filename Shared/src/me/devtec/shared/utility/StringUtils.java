@@ -82,33 +82,59 @@ public class StringUtils {
 	}
 
 	public interface ColormaticFactory {
+		char[] characters = "abcdef0123456789".toCharArray();
+		Pattern getLast = Pattern.compile("(&?#[A-Fa-f0-9k-oK-ORrXxUu]{6}|§[Xx](§[A-Fa-f0-9k-oK-ORrXxUu]){6}|§[A-Fa-f0-9k-oK-ORrXxUu]|&[Uu])");
+		Pattern hex = Pattern.compile("(&?#[a-fA-F0-9]{6})");
 
 		/**
 		 * @apiNote Generates random color depends on software & version
 		 */
-		public String generateColor();
+		public default String generateColor() {
+			StringContainer b = new StringContainer(7).append("#");
+			for (int i = 0; i < 6; ++i)
+				b.append(characters[random.nextInt(16)]);
+			return b.toString();
+		}
 
 		/**
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public String[] getLastColors(String text);
+		public default String[] getLastColors(String text) {
+			return API.basics().getLastColors(getLast, text);
+		}
 
 		/**
 		 * @apiNote Replace #RRGGBB hex color depends on software
 		 */
-		public String replaceHex(String msg);
+		public default String replaceHex(String text) {
+			String msg = text;
+			Matcher match = hex.matcher(msg);
+			while (match.find()) {
+				String color = match.group();
+				StringContainer hex = new StringContainer(14).append("§x");
+				for (char c : color.substring(1).toCharArray())
+					hex.append('§').append(Character.toLowerCase(c));
+				msg = msg.replace(color, hex.toString());
+			}
+			return msg;
+		}
 
 		/**
 		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public String gradient(String msg, String fromHex, String toHex, List<String> protectedStrings);
+		public default String gradient(String msg, String fromHex, String toHex, List<String> protectedStrings) {
+			return API.basics().gradient(msg, fromHex, toHex, protectedStrings);
+		}
 
 		/**
 		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings);
+		public default String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings) {
+			return API.basics().rainbow(msg, fromHex, toHex, protectedStrings);
+		}
+
 	}
 
 	public enum FormatType {
