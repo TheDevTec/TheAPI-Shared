@@ -151,12 +151,13 @@ public class StringContainer {
 	}
 
 	// long utils
-	void getChars(long i, int index, char[] buf) {
+	void getChars(long lIndex, int index, char[] buf) {
 		long q;
 		int r;
 		int charPos = index;
 		char sign = 0;
 
+		long i = lIndex;
 		if (i < 0) {
 			sign = '-';
 			i = -i;

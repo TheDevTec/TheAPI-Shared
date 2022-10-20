@@ -47,14 +47,16 @@ public class StringUtils {
 	private static final Pattern normal = Pattern.compile("((^[-])?[ ]*[0-9.]+)[ ]*([+-])[ ]*(-?[ ]*[0-9.]+)");
 
 	public enum TimeFormat {
-		YEARS(31556926, 0), MONTHS(2629743.83, 12), WEEKS(604800, 4.34812141), DAYS(86400, 30.4368499), HOURS(3600, 24), MINUTES(60, 60), SECONDS(1, 60);
+		YEARS(31556926, 0, "y"), MONTHS(2629743.83, 12, "mon"), WEEKS(604800, 4.34812141, "w"), DAYS(86400, 30.4368499, "d"), HOURS(3600, 24, "h"), MINUTES(60, 60, "m"), SECONDS(1, 60, "s");
 
 		private double multiplier;
 		private double cast;
+		private String defaultSuffix;
 
-		TimeFormat(double multiplier, double cast) {
+		TimeFormat(double multiplier, double cast, String defSuffix) {
 			this.multiplier = multiplier;
 			this.cast = cast;
+			defaultSuffix = defSuffix;
 		}
 
 		public double multiplier() {
@@ -63,6 +65,10 @@ public class StringUtils {
 
 		public double cast() {
 			return cast;
+		}
+
+		public String getDefaultSuffix() {
+			return defaultSuffix;
 		}
 	}
 

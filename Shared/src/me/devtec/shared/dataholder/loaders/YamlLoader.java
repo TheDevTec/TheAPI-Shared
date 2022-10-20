@@ -193,8 +193,8 @@ public class YamlLoader extends EmptyLoader {
 	}
 
 	protected static String r(String key) {
-		key = key.substring(0, key.length() - YamlLoader.removeLastSpaces(key));
-		return key.length() > 1 && (key.startsWith("\"") && key.endsWith("\"") || key.startsWith("'") && key.endsWith("'")) ? key.substring(1, key.length() - 1) : key;
+		String modKey = key.substring(0, key.length() - YamlLoader.removeLastSpaces(key));
+		return modKey.length() > 1 && (modKey.startsWith("\"") && modKey.endsWith("\"") || modKey.startsWith("'") && modKey.endsWith("'")) ? modKey.substring(1, modKey.length() - 1) : modKey;
 	}
 
 	public static int removeLastSpaces(String s) {

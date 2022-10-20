@@ -160,146 +160,27 @@ public class API {
 
 			StringUtils.timeSplit = config.getString("timeConvertor.settings.defaultSplit");
 
-			StringUtils.timeConvertor.put(TimeFormat.SECONDS, new TimeFormatter() {
-				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.seconds.matcher") + ")");
+			for (TimeFormat format : TimeFormat.values())
+				StringUtils.timeConvertor.put(format, new TimeFormatter() {
+					Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor." + format.name().toLowerCase() + ".matcher") + ")");
 
-				@Override
-				public Matcher matcher(String text) {
-					return pattern.matcher(text);
-				}
+					@Override
+					public Matcher matcher(String text) {
+						return pattern.matcher(text);
+					}
 
-				@Override
-				public String toString(long value) {
-					for (String action : config.getStringList("timeConvertor.seconds.convertor"))
-						if (matchAction(action, value)) {
-							action = action.substring(action.indexOf(" "));
-							if (action.startsWith(" "))
-								action = action.substring(1);
-							return value + action;
-						}
-					return value + "s";
-				}
-			});
-			StringUtils.timeConvertor.put(TimeFormat.MINUTES, new TimeFormatter() {
-				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.minutes.matcher") + ")");
-
-				@Override
-				public Matcher matcher(String text) {
-					return pattern.matcher(text);
-				}
-
-				@Override
-				public String toString(long value) {
-					for (String action : config.getStringList("timeConvertor.minutes.convertor"))
-						if (matchAction(action, value)) {
-							action = action.substring(action.indexOf(" "));
-							if (action.startsWith(" "))
-								action = action.substring(1);
-							return value + action;
-						}
-					return value + "m";
-				}
-			});
-			StringUtils.timeConvertor.put(TimeFormat.HOURS, new TimeFormatter() {
-				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.hours.matcher") + ")");
-
-				@Override
-				public Matcher matcher(String text) {
-					return pattern.matcher(text);
-				}
-
-				@Override
-				public String toString(long value) {
-					for (String action : config.getStringList("timeConvertor.hours.convertor"))
-						if (matchAction(action, value)) {
-							action = action.substring(action.indexOf(" "));
-							if (action.startsWith(" "))
-								action = action.substring(1);
-							return value + action;
-						}
-					return value + "h";
-				}
-			});
-			StringUtils.timeConvertor.put(TimeFormat.DAYS, new TimeFormatter() {
-				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.days.matcher") + ")");
-
-				@Override
-				public Matcher matcher(String text) {
-					return pattern.matcher(text);
-				}
-
-				@Override
-				public String toString(long value) {
-					for (String action : config.getStringList("timeConvertor.days.convertor"))
-						if (matchAction(action, value)) {
-							action = action.substring(action.indexOf(" "));
-							if (action.startsWith(" "))
-								action = action.substring(1);
-							return value + action;
-						}
-					return value + "d";
-				}
-			});
-			StringUtils.timeConvertor.put(TimeFormat.WEEKS, new TimeFormatter() {
-				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.weeks.matcher") + ")");
-
-				@Override
-				public Matcher matcher(String text) {
-					return pattern.matcher(text);
-				}
-
-				@Override
-				public String toString(long value) {
-					for (String action : config.getStringList("timeConvertor.weeks.convertor"))
-						if (matchAction(action, value)) {
-							action = action.substring(action.indexOf(" "));
-							if (action.startsWith(" "))
-								action = action.substring(1);
-							return value + action;
-						}
-					return value + "w";
-				}
-			});
-			StringUtils.timeConvertor.put(TimeFormat.MONTHS, new TimeFormatter() {
-				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.months.matcher") + ")");
-
-				@Override
-				public Matcher matcher(String text) {
-					return pattern.matcher(text);
-				}
-
-				@Override
-				public String toString(long value) {
-					for (String action : config.getStringList("timeConvertor.months.convertor"))
-						if (matchAction(action, value)) {
-							action = action.substring(action.indexOf(" "));
-							if (action.startsWith(" "))
-								action = action.substring(1);
-							return value + action;
-						}
-					return value + "mo";
-				}
-			});
-			StringUtils.timeConvertor.put(TimeFormat.YEARS, new TimeFormatter() {
-				Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor.years.matcher") + ")");
-
-				@Override
-				public Matcher matcher(String text) {
-					return pattern.matcher(text);
-				}
-
-				@Override
-				public String toString(long value) {
-					for (String action : config.getStringList("timeConvertor.years.convertor"))
-						if (matchAction(action, value)) {
-							action = action.substring(action.indexOf(" "));
-							if (action.startsWith(" "))
-								action = action.substring(1);
-							return value + action;
-						}
-					return value + "y";
-				}
-			});
+					@Override
+					public String toString(long value) {
+						for (String action : config.getStringList("timeConvertor." + format.name().toLowerCase() + ".convertor"))
+							if (matchAction(action, value)) {
+								action = action.substring(action.indexOf(" "));
+								if (action.startsWith(" "))
+									action = action.substring(1);
+								return value + action;
+							}
+						return value + format.getDefaultSuffix();
+					}
+				});
 			// Init libraries without waiting
 			if (library != null) {
 				File libraries = new File(path + "libraries");
