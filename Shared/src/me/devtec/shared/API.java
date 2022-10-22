@@ -83,7 +83,8 @@ public class API {
 
 	public static void setEnabled(boolean status) {
 		API.enabled = status;
-		PlaceholderAPI.unregisterAll();
+		if (!status)
+			PlaceholderAPI.unregisterAll();
 	}
 
 	public static boolean isEnabled() {
