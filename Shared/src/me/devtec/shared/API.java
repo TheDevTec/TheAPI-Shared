@@ -21,6 +21,7 @@ import me.devtec.shared.commands.manager.CommandsRegister;
 import me.devtec.shared.commands.manager.SelectorUtils;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.placeholders.PlaceholderAPI;
 import me.devtec.shared.utility.LibraryLoader;
 import me.devtec.shared.utility.OfflineCache;
 import me.devtec.shared.utility.StringUtils;
@@ -82,6 +83,7 @@ public class API {
 
 	public static void setEnabled(boolean status) {
 		API.enabled = status;
+		PlaceholderAPI.unregisterAll();
 	}
 
 	public static boolean isEnabled() {

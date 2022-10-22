@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public abstract class PlaceholderExpansion {
 	private final String name;
+	private Object instancePAPI;
 
 	public PlaceholderExpansion(String name) {
 		this.name = name;
@@ -11,6 +12,15 @@ public abstract class PlaceholderExpansion {
 
 	public final String getName() {
 		return name;
+	}
+
+	public Object getPapiInstance() {
+		return instancePAPI;
+	}
+
+	public PlaceholderExpansion setPapiInstance(Object papi) {
+		instancePAPI = papi;
+		return this;
 	}
 
 	public PlaceholderExpansion register() {
@@ -27,7 +37,11 @@ public abstract class PlaceholderExpansion {
 		return PlaceholderAPI.isRegistered(getName());
 	}
 
-	// Nullable return value
+	/**
+	 * @param text   Placeholder
+	 * @param player UUID of player (Nullable)
+	 * @return Replaced placeholder (or null if not)
+	 */
 	public abstract String apply(String text, UUID player);
 
 	@Override
