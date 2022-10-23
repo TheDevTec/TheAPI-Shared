@@ -91,7 +91,7 @@ public class TempList<V> extends AbstractList<V> {
 	/**
 	 * @apiNote Get expire time of item on specified index
 	 */
-	public long getExpireOf(int index) {
+	public long getTimeOf(int index) {
 		if (index < 0 || index >= size())
 			return 0;
 		return queue.get(index).getValue();
@@ -100,7 +100,7 @@ public class TempList<V> extends AbstractList<V> {
 	/**
 	 * @apiNote Get expire time of specified item
 	 */
-	public long getExpireOf(V value) {
+	public long getTimeOf(V value) {
 		Iterator<Entry<V, Long>> iterator = queue.iterator();
 		while (iterator.hasNext()) {
 			Entry<V, Long> next = iterator.next();
