@@ -89,6 +89,16 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 		return null;
 	}
 
+	public long getExpireOf(K key) {
+		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
+		while (iterator.hasNext()) {
+			Entry<Entry<K, V>, Long> value = iterator.next();
+			if (value.getKey().getKey().equals(key))
+				return value.getValue();
+		}
+		return 0;
+	}
+
 	@Override
 	public V get(Object key) {
 		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();

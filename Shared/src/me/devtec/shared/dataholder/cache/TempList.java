@@ -79,6 +79,36 @@ public class TempList<V> extends AbstractList<V> {
 		return value.getKey();
 	}
 
+	public Entry<V, Long> getRaw(int index) {
+		if (index < 0 || index >= size())
+			return null;
+		Entry<V, Long> value = queue.get(index);
+		value.setValue(System.currentTimeMillis() / 50);
+		return value;
+	}
+
+	public Entry<V, Long> getRawWithoutUpdate(int index) {
+		if (index < 0 || index >= size())
+			return null;
+		return queue.get(index);
+	}
+
+	public long getExpireOf(int index) {
+		if (index < 0 || index >= size())
+			return 0;
+		return queue.get(index).getValue();
+	}
+
+	public long getExpireOf(V value) {
+		Iterator<Entry<V, Long>> iterator = queue.iterator();
+		while (iterator.hasNext()) {
+			Entry<V, Long> next = iterator.next();
+			if (value == null ? next.getKey() == null : value.equals(next.getKey()))
+				return next.getValue();
+		}
+		return 0;
+	}
+
 	@Override
 	public V remove(int index) {
 		if (index < 0 || index >= size())
