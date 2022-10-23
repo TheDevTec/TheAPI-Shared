@@ -6,7 +6,7 @@ public class Scheduler {
 	private static final ThreadManager thread = new ThreadManager();
 
 	public static void cancelAll() {
-		Scheduler.thread.destroy();
+		Scheduler.thread.kill();
 	}
 
 	public static void cancelTask(int task) {

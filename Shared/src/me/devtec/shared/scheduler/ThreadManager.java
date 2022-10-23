@@ -10,7 +10,7 @@ public class ThreadManager implements Executor {
 	protected final Map<Integer, Thread> threads = new ConcurrentHashMap<>();
 	protected final AtomicInteger i = new AtomicInteger();
 
-	public void destroy() {
+	public void kill() {
 		Iterator<Thread> it = threads.values().iterator();
 		while (it.hasNext()) {
 			Thread tht = it.next();
@@ -35,6 +35,13 @@ public class ThreadManager implements Executor {
 	}
 
 	public void destroy(int id) {
+		Thread t = threads.remove(id);
+		if (t == null)
+			return;
+		t.interrupt(); // safe destroy of thread
+	}
+
+	public void kill(int id) {
 		Thread t = threads.remove(id);
 		if (t == null)
 			return;
