@@ -28,7 +28,7 @@ public interface DatabaseHandler {
 
 		private SelectQuery(String table, String... value) {
 			this.table = table;
-			this.search = value == null || value.length == 0 ? new String[] { "*" } : value;
+			search = value == null || value.length == 0 ? new String[] { "*" } : value;
 		}
 
 		public static SelectQuery table(String table, String... search) {
@@ -36,17 +36,17 @@ public interface DatabaseHandler {
 		}
 
 		public SelectQuery where(String key, String value) {
-			this.where.add(new String[] { key, value });
+			where.add(new String[] { key, value });
 			return this;
 		}
 
 		public SelectQuery sortType(Sorting type) {
-			this.sorting = type;
+			sorting = type;
 			return this;
 		}
 
 		public SelectQuery sortBy(String key) {
-			this.sortingKey.add(key);
+			sortingKey.add(key);
 			return this;
 		}
 
@@ -56,16 +56,16 @@ public interface DatabaseHandler {
 		}
 
 		public SelectQuery limit(int limitFrom, int limitTo) {
-			this.limit = limitFrom + "," + limitTo;
+			limit = limitFrom + "," + limitTo;
 			return this;
 		}
 
 		public String getTable() {
-			return this.table;
+			return table;
 		}
 
 		public String[] getSearch() {
-			return this.search;
+			return search;
 		}
 	}
 
@@ -85,7 +85,7 @@ public interface DatabaseHandler {
 		}
 
 		public String getTable() {
-			return this.table;
+			return table;
 		}
 	}
 
@@ -109,12 +109,12 @@ public interface DatabaseHandler {
 		}
 
 		public UpdateQuery where(String key, String value) {
-			this.where.add(new String[] { key, value });
+			where.add(new String[] { key, value });
 			return this;
 		}
 
 		public UpdateQuery value(String key, String value) {
-			this.values.add(new String[] { key, value });
+			values.add(new String[] { key, value });
 			return this;
 		}
 
@@ -124,12 +124,12 @@ public interface DatabaseHandler {
 		}
 
 		public UpdateQuery limit(int limitFrom, int limitTo) {
-			this.limit = limitFrom + "," + limitTo;
+			limit = limitFrom + "," + limitTo;
 			return this;
 		}
 
 		public String getTable() {
-			return this.table;
+			return table;
 		}
 	}
 
@@ -148,7 +148,7 @@ public interface DatabaseHandler {
 		}
 
 		public RemoveQuery where(String key, String value) {
-			this.values.add(new String[] { key, value });
+			values.add(new String[] { key, value });
 			return this;
 		}
 
@@ -158,12 +158,12 @@ public interface DatabaseHandler {
 		}
 
 		public RemoveQuery limit(int limitFrom, int limitTo) {
-			this.limit = limitFrom + "," + limitTo;
+			limit = limitFrom + "," + limitTo;
 			return this;
 		}
 
 		public String getTable() {
-			return this.table;
+			return table;
 		}
 	}
 
@@ -176,45 +176,108 @@ public interface DatabaseHandler {
 		private String extra;
 
 		public Row(String fieldName, String fieldType, boolean nulled, String key, String defVal, String extra) {
-			this.field = fieldName;
-			this.type = fieldType;
+			field = fieldName;
+			type = fieldType;
 			this.nulled = nulled;
 			this.key = key;
-			this.defaultVal = defVal;
+			defaultVal = defVal;
 			this.extra = extra;
 		}
 
 		public Row(String fieldName, String fieldType, boolean nulled) {
-			this.field = fieldName;
-			this.type = fieldType;
+			field = fieldName;
+			type = fieldType;
 			this.nulled = nulled;
-			this.key = "";
-			this.defaultVal = "";
-			this.extra = "";
+			key = "";
+			defaultVal = "";
+			extra = "";
+		}
+
+		public Row(String fieldName, String fieldType) {
+			field = fieldName;
+			type = fieldType;
+			nulled = false;
+			key = "";
+			defaultVal = "";
+			extra = "";
+		}
+
+		public Row(String fieldName, SqlFieldType fieldType, int size, boolean nulled, String key, String defVal, String extra) {
+			field = fieldName;
+			type = fieldType.name() + (size == 0 ? "" : "(" + size + ")");
+			this.nulled = nulled;
+			this.key = key;
+			defaultVal = defVal;
+			this.extra = extra;
+		}
+
+		public Row(String fieldName, SqlFieldType fieldType, int size, boolean nulled) {
+			field = fieldName;
+			type = fieldType.name() + (size == 0 ? "" : "(" + size + ")");
+			this.nulled = nulled;
+			key = "";
+			defaultVal = "";
+			extra = "";
+		}
+
+		public Row(String fieldName, SqlFieldType fieldType, int size) {
+			field = fieldName;
+			type = fieldType.name() + (size == 0 ? "" : "(" + size + ")");
+			nulled = false;
+			key = "";
+			defaultVal = "";
+			extra = "";
+		}
+
+		public Row(String fieldName, SqlFieldType fieldType, boolean nulled, String key, String defVal, String extra) {
+			field = fieldName;
+			type = fieldType.name();
+			this.nulled = nulled;
+			this.key = key;
+			defaultVal = defVal;
+			this.extra = extra;
+		}
+
+		public Row(String fieldName, SqlFieldType fieldType, boolean nulled) {
+			field = fieldName;
+			type = fieldType.name();
+			this.nulled = nulled;
+			key = "";
+			defaultVal = "";
+			extra = "";
+		}
+
+		public Row(String fieldName, SqlFieldType fieldType) {
+			field = fieldName;
+			type = fieldType.name();
+			nulled = false;
+			key = "";
+			defaultVal = "";
+			extra = "";
 		}
 
 		public String getFieldName() {
-			return this.field;
+			return field;
 		}
 
 		public String getFieldType() {
-			return this.type;
+			return type;
 		}
 
 		public boolean isNulled() {
-			return this.nulled;
+			return nulled;
 		}
 
 		public String getKey() {
-			return this.key;
+			return key;
 		}
 
 		public String getDefaultValue() {
-			return this.defaultVal;
+			return defaultVal;
 		}
 
 		public String getExtra() {
-			return this.extra;
+			return extra;
 		}
 	}
 
@@ -223,7 +286,7 @@ public interface DatabaseHandler {
 		private String[] values;
 
 		protected Result(String[] value) {
-			this.values = value;
+			values = value;
 		}
 
 		protected void nextResult(Result next) {
@@ -233,16 +296,16 @@ public interface DatabaseHandler {
 
 		@Override
 		public Result next() {
-			return this.next;
+			return next;
 		}
 
 		@Override
 		public boolean hasNext() {
-			return this.next != null;
+			return next != null;
 		}
 
 		public String[] getValue() {
-			return this.values;
+			return values;
 		}
 	}
 
@@ -261,7 +324,7 @@ public interface DatabaseHandler {
 	public boolean deleteTable(String name) throws SQLException;
 
 	public default Result select(SelectQuery query) throws SQLException {
-		return this.get(query);
+		return get(query);
 	}
 
 	public Result get(SelectQuery query) throws SQLException;
@@ -269,7 +332,7 @@ public interface DatabaseHandler {
 	public boolean insert(InsertQuery query) throws SQLException;
 
 	public default boolean set(UpdateQuery query) throws SQLException {
-		return this.set(query);
+		return set(query);
 	}
 
 	public boolean update(UpdateQuery query) throws SQLException;
