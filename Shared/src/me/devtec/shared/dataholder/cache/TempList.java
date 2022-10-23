@@ -79,26 +79,27 @@ public class TempList<V> extends AbstractList<V> {
 		return value.getKey();
 	}
 
+	/**
+	 * @apiNote Get Entry with value from index without updating time
+	 */
 	public Entry<V, Long> getRaw(int index) {
-		if (index < 0 || index >= size())
-			return null;
-		Entry<V, Long> value = queue.get(index);
-		value.setValue(System.currentTimeMillis() / 50);
-		return value;
-	}
-
-	public Entry<V, Long> getRawWithoutUpdate(int index) {
 		if (index < 0 || index >= size())
 			return null;
 		return queue.get(index);
 	}
 
+	/**
+	 * @apiNote Get expire time of item on specified index
+	 */
 	public long getExpireOf(int index) {
 		if (index < 0 || index >= size())
 			return 0;
 		return queue.get(index).getValue();
 	}
 
+	/**
+	 * @apiNote Get expire time of specified item
+	 */
 	public long getExpireOf(V value) {
 		Iterator<Entry<V, Long>> iterator = queue.iterator();
 		while (iterator.hasNext()) {

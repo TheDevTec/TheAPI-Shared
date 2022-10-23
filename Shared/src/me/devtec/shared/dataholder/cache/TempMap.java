@@ -112,6 +112,37 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 		return null;
 	}
 
+	/**
+	 * @apiNote Get Entry with value from key without updating time
+	 */
+	public Entry<V, Long> getRaw(Object key) {
+		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
+		while (iterator.hasNext()) {
+			Entry<Entry<K, V>, Long> value = iterator.next();
+			if (value.getKey().getKey().equals(key)) {
+				value.setValue(System.currentTimeMillis() / 50);
+				return new Entry<V, Long>() {
+
+					@Override
+					public V getKey() {
+						return value.getKey().getValue();
+					}
+
+					@Override
+					public Long getValue() {
+						return value.getValue();
+					}
+
+					@Override
+					public Long setValue(Long value) {
+						throw new UnsupportedOperationException("You can't modify value inside Entry of TempMap");
+					}
+				};
+			}
+		}
+		return null;
+	}
+
 	@Override
 	public V remove(Object key) {
 		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
