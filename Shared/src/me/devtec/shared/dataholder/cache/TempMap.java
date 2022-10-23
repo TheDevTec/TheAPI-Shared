@@ -4,6 +4,7 @@ import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import me.devtec.shared.dataholder.StringContainer;
@@ -21,11 +22,10 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 		new Tasker() {
 			@Override
 			public void run() {
-				if (queue.isEmpty())
-					return;
-				Entry<Entry<K, V>, Long> first = queue.entrySet().iterator().next();
-				if (first != null && first.getValue() - System.currentTimeMillis() / 50 + TempMap.this.cacheTime <= 0)
-					queue.remove(first.getKey());
+				Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
+				while (iterator.hasNext())
+					if (iterator.next().getValue() - System.currentTimeMillis() / 50 + TempMap.this.cacheTime <= 0)
+						iterator.remove();
 			}
 		}.runRepeating(1, 1);
 	}
@@ -48,13 +48,13 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 
 	@Override
 	public V put(K key, V val) {
-		Iterator<Entry<K, V>> iterator = queue.keySet().iterator();
+		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
 		while (iterator.hasNext()) {
-			Entry<K, V> value = iterator.next();
-			if (value.getKey().equals(key)) {
-				V previous = value.setValue(val);
-				queue.remove(value); // update time
-				queue.put(value, System.currentTimeMillis() / 50);
+			Entry<Entry<K, V>, Long> value = iterator.next();
+			if (value.getKey().getKey().equals(key)) {
+				V previous = value.getKey().setValue(val);
+				value.getKey().setValue(val);
+				value.setValue(System.currentTimeMillis() / 50);
 				return previous;
 			}
 		}
@@ -80,7 +80,9 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 
 			@Override
 			public int hashCode() {
-				return key.hashCode() + value.hashCode();
+				int hash = 12;
+				hash = 29 * hash + Objects.hashCode(key);
+				return 29 * hash + Objects.hashCode(value);
 			}
 		};
 		queue.put(entry, System.currentTimeMillis() / 50);
@@ -89,13 +91,12 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 
 	@Override
 	public V get(Object key) {
-		Iterator<Entry<K, V>> iterator = queue.keySet().iterator();
+		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
 		while (iterator.hasNext()) {
-			Entry<K, V> value = iterator.next();
-			if (value.getKey().equals(key)) {
-				queue.remove(value); // update time
-				queue.put(value, System.currentTimeMillis() / 50);
-				return value.getValue();
+			Entry<Entry<K, V>, Long> value = iterator.next();
+			if (value.getKey().getKey().equals(key)) {
+				value.setValue(System.currentTimeMillis() / 50);
+				return value.getKey().getValue();
 			}
 		}
 		return null;
@@ -103,12 +104,12 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 
 	@Override
 	public V remove(Object key) {
-		Iterator<Entry<K, V>> iterator = queue.keySet().iterator();
+		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
 		while (iterator.hasNext()) {
-			Entry<K, V> value = iterator.next();
-			if (value.getKey().equals(key)) {
-				queue.remove(value);
-				return value.getValue();
+			Entry<Entry<K, V>, Long> value = iterator.next();
+			if (value.getKey().getKey().equals(key)) {
+				iterator.remove();
+				return value.getKey().getValue();
 			}
 		}
 		return null;

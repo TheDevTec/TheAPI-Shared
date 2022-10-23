@@ -1,16 +1,17 @@
 package me.devtec.shared.dataholder.cache;
 
 import java.util.AbstractList;
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.scheduler.Tasker;
 
 public class TempList<V> extends AbstractList<V> {
-	private ArrayDeque<Entry<V, Long>> queue = new ArrayDeque<>();
+	private List<Entry<V, Long>> queue = new ArrayList<>();
 	private long cacheTime;
 
 	/**
@@ -21,9 +22,10 @@ public class TempList<V> extends AbstractList<V> {
 		new Tasker() {
 			@Override
 			public void run() {
-				Entry<V, Long> first = queue.peekFirst();
-				if (first != null && first.getValue() - System.currentTimeMillis() / 50 + TempList.this.cacheTime <= 0)
-					queue.removeFirst();
+				Iterator<Entry<V, Long>> iterator = queue.iterator();
+				while (iterator.hasNext())
+					if (iterator.next().getValue() - System.currentTimeMillis() / 50 + TempList.this.cacheTime <= 0)
+						iterator.remove();
 			}
 		}.runRepeating(1, 1);
 	}
@@ -72,49 +74,17 @@ public class TempList<V> extends AbstractList<V> {
 	public V get(int index) {
 		if (index < 0 || index >= size())
 			return null;
-		if (index == 0) {
-			Entry<V, Long> first = queue.peekFirst();
-			first.setValue(System.currentTimeMillis() / 50);
-			queue.add(first);
-			return first.getKey();
-		}
-		if (index == size() - 1) {
-			Entry<V, Long> last = queue.getLast();
-			last.setValue(System.currentTimeMillis() / 50);
-			return last.getKey();
-		}
-		Iterator<Entry<V, Long>> iterator = queue.iterator();
-		int pos = 0;
-		while (iterator.hasNext()) {
-			Entry<V, Long> value = iterator.next();
-			if (pos++ == index) {
-				iterator.remove();
-				value.setValue(System.currentTimeMillis() / 50);
-				queue.add(value); // update time
-				return value.getKey();
-			}
-		}
-		return null;
+		Entry<V, Long> value = queue.get(index);
+		value.setValue(System.currentTimeMillis() / 50);
+		return value.getKey();
 	}
 
 	@Override
 	public V remove(int index) {
 		if (index < 0 || index >= size())
 			return null;
-		if (index == 0)
-			return queue.peekFirst().getKey();
-		if (index == size() - 1)
-			return queue.peekLast().getKey();
-		Iterator<Entry<V, Long>> iterator = queue.iterator();
-		int pos = 0;
-		while (iterator.hasNext()) {
-			Entry<V, Long> value = iterator.next();
-			if (pos++ == index) {
-				iterator.remove();
-				return value.getKey();
-			}
-		}
-		return null;
+		Entry<V, Long> removed = queue.remove(index);
+		return removed == null ? null : removed.getKey();
 	}
 
 	@Override
