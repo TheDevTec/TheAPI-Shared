@@ -253,134 +253,146 @@ public class API {
 		}
 
 		private String rawGradient(String msg, String from, String to, boolean defaultRainbow, List<String> protectedStrings) {
-			boolean inRainbow = defaultRainbow;
-			char prev = 0;
-			String formats = "";
+			long nano = -System.nanoTime();
+			try {
+				boolean inRainbow = defaultRainbow;
+				char prev = 0;
+				String formats = "";
 
-			int[][] skipRegions = EMPTY_ARRAY;
-			int allocated = 0;
+				int[][] skipRegions = EMPTY_ARRAY;
+				int allocated = 0;
 
-			int currentSkipAt = -1;
-			int skipId = 0;
+				int currentSkipAt = -1;
+				int skipId = 0;
 
-			int fixedSize = msg.length() * 14;
-			int rgbSize = msg.length();
-			if (protectedStrings != null) {
-				for (String protect : protectedStrings) {
-					int size = protect.length();
+				int rgbSize = msg.length();
+				int fixedSize = rgbSize * 14;
+				if (protectedStrings != null) {
+					for (String protect : protectedStrings) {
+						int size = protect.length();
 
-					int num = 0;
-					while (true) {
-						int position = msg.indexOf(protect, num++);
-						if (position == -1)
-							break;
-						if (allocated == skipRegions.length) {
-							int[][] copy = new int[allocated << 1 + 1][2];
-							System.arraycopy(skipRegions, 0, copy, 0, skipRegions.length);
-							skipRegions = copy;
+						int num = 0;
+						while (true) {
+							int position = msg.indexOf(protect, num++);
+							if (position == -1)
+								break;
+							if (allocated == skipRegions.length) {
+								int[][] copy = new int[allocated << 1 + 1][2];
+								System.arraycopy(skipRegions, 0, copy, 0, skipRegions.length);
+								skipRegions = copy;
+							}
+							skipRegions[allocated++] = new int[] { position, size };
+							fixedSize -= size;
+							rgbSize -= size;
 						}
-						skipRegions[allocated++] = new int[] { position, size };
-						fixedSize -= size;
-						rgbSize -= size;
 					}
-				}
-				if (allocated > 0)
-					currentSkipAt = skipRegions[0][0];
-			}
-
-			StringContainer builder = new StringContainer(fixedSize);
-
-			Color fromRGB = Color.decode(from);
-			Color toRGB = Color.decode(to);
-			double rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / rgbSize);
-			double gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / rgbSize);
-			double bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / rgbSize);
-			if (fromRGB.getRed() > toRGB.getRed())
-				rStep = -rStep;
-			if (fromRGB.getGreen() > toRGB.getGreen())
-				gStep = -gStep;
-			if (fromRGB.getBlue() > toRGB.getBlue())
-				bStep = -bStep;
-
-			Color finalColor = new Color(fromRGB.getRGB());
-
-			int skipForChars = 0;
-			for (int i = 0; i < msg.length(); ++i) {
-				char c = msg.charAt(i);
-				if (c == 0)
-					continue;
-
-				if (skipForChars > 0) {
-					builder.append(c);
-					--skipForChars;
-					continue;
+					if (allocated > 0)
+						currentSkipAt = skipRegions[0][0];
 				}
 
-				if (currentSkipAt == i) {
-					skipForChars = skipId + 1 == allocated ? -1 : skipRegions[skipId++][1];
-					builder.append(c);
-					continue;
-				}
+				StringContainer builder = new StringContainer(fixedSize);
 
-				if (prev == '&' || prev == '§') {
-					char inLower = Character.toLowerCase(c);
-					if (prev == '&' && inLower == 'u') {
-						builder.deleteCharAt(builder.length() - 1); // remove & char
-						inRainbow = true;
-						prev = c;
+				Color fromRGB = Color.decode(from);
+				Color toRGB = Color.decode(to);
+				double rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / rgbSize);
+				double gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / rgbSize);
+				double bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / rgbSize);
+				if (fromRGB.getRed() > toRGB.getRed())
+					rStep = -rStep;
+				if (fromRGB.getGreen() > toRGB.getGreen())
+					gStep = -gStep;
+				if (fromRGB.getBlue() > toRGB.getBlue())
+					bStep = -bStep;
+
+				Color finalColor = new Color(fromRGB.getRGB());
+
+				int skipForChars = 0;
+				for (int i = 0; i < msg.length(); ++i) {
+					char c = msg.charAt(i);
+					if (c == 0)
+						continue;
+
+					if (skipForChars > 0) {
+						builder.append(c);
+						--skipForChars;
 						continue;
 					}
-					if (inRainbow && prev == '§' && (isColor(inLower) || isFormat(inLower))) { // color,
-						// destroy
-						// rainbow here
-						if (isFormat(inLower)) {
-							if (inLower == 'r')
-								formats = "§r";
-							else
-								formats += "§" + inLower;
-							prev = inLower;
-							builder.deleteCharAt(builder.length() - 1); // remove &<random color> string
+
+					if (currentSkipAt == i) {
+						skipForChars = skipId + 1 == allocated ? -1 : skipRegions[skipId++][1];
+						builder.append(c);
+						continue;
+					}
+
+					if (prev == '&' || prev == '§') {
+						char inLower = c;
+						if (prev == '&' && inLower == 'u') {
+							builder.deleteCharAt(builder.length() - 1); // remove & char
+							inRainbow = true;
+							prev = c;
 							continue;
 						}
-						builder.delete(builder.length() - 14, builder.length()); // remove &<random color> string
-						inRainbow = false;
+						if (inRainbow && prev == '§' && (isColor(inLower) || isFormat(inLower))) { // color,
+							// destroy
+							// rainbow here
+							if (isFormat(inLower)) {
+								if (inLower == 'r')
+									formats = "§r";
+								else
+									formats += "§" + inLower;
+								prev = inLower;
+								builder.deleteCharAt(builder.length() - 1); // remove &<random color> string
+								continue;
+							}
+							builder.delete(builder.length() - 14, builder.length()); // remove &<random color> string
+							inRainbow = false;
+						}
 					}
-				}
-				if (c != ' ' && inRainbow) {
-					int red = (int) Math.round(finalColor.getRed() + rStep);
-					int green = (int) Math.round(finalColor.getGreen() + gStep);
-					int blue = (int) Math.round(finalColor.getBlue() + bStep);
-					if (red > 255)
-						red = 255;
-					if (red < 0)
-						red = 0;
-					if (green > 255)
-						green = 255;
-					if (green < 0)
-						green = 0;
-					if (blue > 255)
-						blue = 255;
-					if (blue < 0)
-						blue = 0;
-					finalColor = new Color(red, green, blue);
-					if (formats.equals("§r")) {
-						builder.append(formats); // add formats
-						builder.append(StringUtils.color.replaceHex("#" + String.format("%08x", finalColor.getRGB()).substring(2))); // add
-						// color
-						formats = "";
-					} else {
-						builder.append(StringUtils.color.replaceHex("#" + String.format("%08x", finalColor.getRGB()).substring(2))); // add
-						// color
-						if (!formats.isEmpty())
+					if (c != ' ' && inRainbow) {
+						int red = (int) Math.round(finalColor.getRed() + rStep);
+						int green = (int) Math.round(finalColor.getGreen() + gStep);
+						int blue = (int) Math.round(finalColor.getBlue() + bStep);
+						if (red > 255)
+							red = 255;
+						if (red < 0)
+							red = 0;
+						if (green > 255)
+							green = 255;
+						if (green < 0)
+							green = 0;
+						if (blue > 255)
+							blue = 255;
+						if (blue < 0)
+							blue = 0;
+						finalColor = new Color(red, green, blue);
+						if (formats.equals("§r")) {
 							builder.append(formats); // add formats
+							builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
+							// color
+							formats = "";
+						} else {
+							builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
+							// color
+							if (!formats.isEmpty())
+								builder.append(formats); // add formats
+						}
 					}
+					builder.append(c);
+					prev = c;
 				}
-				builder.append(c);
-				prev = c;
+				return builder.toString();
+			} finally {
+				nano += System.nanoTime();
+				System.out.println(nano);
 			}
-			return builder.toString();
 		}
 
+		private String replaceHex(String color) {
+			StringContainer hex = new StringContainer(14).append("§x");
+			for (int i = 2; i < color.length(); ++i)
+				hex.append('§').append(color.charAt(i));
+			return color.replace(color, hex.toString());
+		}
 	}
 
 	public static Basics basics() {

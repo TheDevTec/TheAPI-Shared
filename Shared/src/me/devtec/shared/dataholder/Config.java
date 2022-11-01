@@ -816,7 +816,7 @@ public class Config {
 				} catch (Exception er) {
 					er.printStackTrace();
 				}
-			return builder.toString().toCharArray();
+			return builder.getValue();
 		}
 		case BYTE: {
 			byte[] encoded = Base64.getEncoder().encode(toByteArray(markSaved));

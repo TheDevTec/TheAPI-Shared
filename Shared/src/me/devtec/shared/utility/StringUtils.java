@@ -112,8 +112,8 @@ public class StringUtils {
 			while (match.find()) {
 				String color = match.group();
 				StringContainer hex = new StringContainer(14).append("§x");
-				for (char c : color.substring(1).toCharArray())
-					hex.append('§').append(Character.toLowerCase(c));
+				for (int i = 1; i < color.length(); ++i)
+					hex.append('§').append(Character.toLowerCase(color.charAt(i)));
 				msg = msg.replace(color, hex.toString());
 			}
 			return msg;
@@ -559,14 +559,26 @@ public class StringUtils {
 		if (original == null || original.trim().isEmpty())
 			return original;
 
-		String msg = original;
-		char[] b = msg.toCharArray();
-		for (int i = 0; i < b.length - 1; i++)
-			if (b[i] == '&' && StringUtils.has(b[i + 1])) {
-				b[i] = '§';
-				b[i + 1] = StringUtils.lower(b[i + 1]);
+		StringBuilder builder = new StringBuilder(original.length());
+		boolean charColor = false;
+		for (int i = 0; i < original.length(); ++i) {
+			char c = original.charAt(i);
+			if (charColor) {
+				if (StringUtils.has(c))
+					builder.append('§').append(StringUtils.lower(c));
+				else
+					builder.append('&');
+				charColor = false;
+				continue;
 			}
-		msg = new String(b);
+			if (c == '&') {
+				charColor = true;
+				continue;
+			}
+			charColor = false;
+			builder.append(c);
+		}
+		String msg = builder.toString();
 		if (StringUtils.color != null && /** Fast check for working #RRGGBB symbol **/
 				(!Ref.serverType().isBukkit() || Ref.isNewerThan(15))) {
 			msg = StringUtils.gradient(msg, protectedStrings);
@@ -843,13 +855,13 @@ public class StringUtils {
 	 * @return double
 	 */
 	public static double calculate(String original) {
-
 		String val = original;
 
 		if (val.contains("(") && val.contains(")"))
-			val = StringUtils.splitter(val);
+			val = splitter(val);
+
 		if (val.contains("*") || val.contains("/")) {
-			Matcher s = StringUtils.extra.matcher(val);
+			Matcher s = extra.matcher(val);
 			while (s.find()) {
 				double a = StringUtils.getDouble(s.group(1));
 				String b = s.group(3);
@@ -859,7 +871,7 @@ public class StringUtils {
 			}
 		}
 		if (val.contains("+") || val.contains("-")) {
-			Matcher s = StringUtils.normal.matcher(val);
+			Matcher s = normal.matcher(val);
 			while (s.find()) {
 				double a = StringUtils.getDouble(s.group(1));
 				String b = s.group(3);
@@ -868,33 +880,40 @@ public class StringUtils {
 				s.reset(val);
 			}
 		}
-		return StringUtils.getDouble(val.replaceAll("[^0-9+.-]", ""));
+		return StringUtils.getDouble(val);
 	}
 
 	private static String splitter(String s) {
-		StringContainer i = new StringContainer(s.length());
-		StringContainer fix = new StringContainer(s.length());
+		StringContainer result = new StringContainer(s.length());
+		StringContainer subResult = null;
 
-		int count = 0;
-		int waiting = 0;
-		for (char c : s.toCharArray()) {
-			i.append(c);
+		int inside = 0;
+
+		int start = 0;
+		for (int pos = 0; pos < s.length(); ++pos) {
+			char c = s.charAt(pos);
 			if (c == '(') {
-				fix.append(c);
-				waiting = 1;
-				++count;
+				if (inside == 0) {
+					start = pos;
+					subResult = new StringContainer(s.length());
+				} else
+					subResult.append(c);
+
+				++inside;
 			} else if (c == ')') {
-				fix.append(c);
-				if (--count == 0) {
-					waiting = 0;
-					String replaced = i.toString().replace(fix.toString(), "" + StringUtils.calculate(fix.substring(1, fix.length() - 1)));
-					i = new StringContainer(replaced.length()).append(replaced);
-					fix.clear();
+				if (inside > 1)
+					subResult.append(c);
+
+				if (--inside == 0) {
+					result.replace(start, pos, calculate(subResult.toString()) + "");
+					subResult.clear();
 				}
-			} else if (waiting == 1)
-				fix.append(c);
+			} else if (inside == 0)
+				result.append(c);
+			else
+				subResult.append(c);
 		}
-		return i.toString();
+		return result.toString();
 	}
 
 	/**

@@ -150,6 +150,32 @@ public class StringContainer {
 		return this;
 	}
 
+	public StringContainer replace(int start, int end, String str) {
+		if (end > count)
+			end = count;
+		int len = str.length();
+		int newCount = count + len - (end - start);
+		ensureCapacityInternal(newCount);
+
+		System.arraycopy(value, end, value, start + len, count - end);
+		str.getChars(0, len, value, count);
+		count = newCount;
+		return this;
+	}
+
+	public StringContainer replace(int start, int end, StringContainer str) {
+		if (end > count)
+			end = count;
+		int len = str.length();
+		int newCount = count + len - (end - start);
+		ensureCapacityInternal(newCount);
+
+		System.arraycopy(value, end, value, start + len, count - end);
+		str.getChars(0, len, value, count);
+		count = newCount;
+		return this;
+	}
+
 	// long utils
 	void getChars(long lIndex, int index, char[] buf) {
 		long q;

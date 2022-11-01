@@ -131,7 +131,7 @@ public class JsonUtils {
 		if (Short.TYPE == type)
 			return ((Number) value).shortValue();
 		if (Character.TYPE == type)
-			return (value + "").toCharArray()[0];
+			return (value + "").charAt(0);
 		return JsonUtils.read(value);
 	}
 
