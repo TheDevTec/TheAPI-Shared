@@ -22,10 +22,14 @@ public class CommandHolder<S> {
 		this.structure = structure;
 	}
 
+	private String[] EMPTY_ARRAY = { "" };
+
 	public List<String> tablist(Object obj, String[] args) {
 		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
 			return Collections.emptyList();
 		S s = (S) obj;
+		if (args.length == 0)
+			args = EMPTY_ARRAY;
 		return StringUtils.copyPartialMatches(args[args.length - 1], lookupTab(this.structure, s, args, args[0], 0));
 	}
 

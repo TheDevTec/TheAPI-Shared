@@ -271,17 +271,19 @@ public class API {
 
 					int num = 0;
 					while (true) {
-						int position = msg.indexOf(protect, num++);
+						int position = msg.indexOf(protect, num);
 						if (position == -1)
 							break;
-						if (allocated == skipRegions.length) {
-							int[][] copy = new int[allocated << 1 + 1][2];
-							System.arraycopy(skipRegions, 0, copy, 0, skipRegions.length);
+						num = position + size;
+						if (allocated == 0 || allocated >= skipRegions.length - 1) {
+							int[][] copy = new int[(allocated << 1) + 1][];
+							if (allocated > 0)
+								System.arraycopy(skipRegions, 0, copy, 0, skipRegions.length);
 							skipRegions = copy;
 						}
-						skipRegions[allocated++] = new int[] { position, size };
-						fixedSize -= size;
+						fixedSize -= size * 14;
 						rgbSize -= size;
+						skipRegions[allocated++] = new int[] { position, size };
 					}
 				}
 				if (allocated > 0)
@@ -317,7 +319,8 @@ public class API {
 				}
 
 				if (currentSkipAt == i) {
-					skipForChars = skipId + 1 == allocated ? -1 : skipRegions[skipId++][1];
+					skipForChars = skipRegions[skipId++][1] - 1;
+					currentSkipAt = skipId == allocated ? -1 : skipRegions[skipId][0];
 					builder.append(c);
 					continue;
 				}
