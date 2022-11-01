@@ -824,6 +824,7 @@ public class Config {
 			int i = 0;
 			for (byte b : encoded)
 				chars[i++] = (char) b;
+			return chars;
 		}
 		case JSON:
 			List<Map<String, String>> list = new ArrayList<>();
