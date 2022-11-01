@@ -41,4 +41,26 @@ public class ArrayUtils {
 	public static <T> T[] newInstance(Class<?> clazz, int size) {
 		return (T[]) (clazz == Object[].class ? new Object[size] : Array.newInstance(clazz, size));
 	}
+
+	/**
+	 * Move item at fromPos to the specified fromPosition
+	 */
+	public static void move(Object[] array, int fromPos, int toPos) {
+		if (fromPos == toPos)
+			return; // Why are you moving to the same pos?
+
+		Object val = array[fromPos];
+
+		// before fromPos
+		System.arraycopy(array, 0, array, 0, fromPos);
+
+		// to the fromPos
+		System.arraycopy(array, fromPos + (fromPos < toPos ? 1 : 0), array, fromPos, array.length - 1 - fromPos);
+
+		// after toPos
+		System.arraycopy(array, toPos, array, toPos + 1, array.length - 1 - toPos);
+
+		// set value at toPos
+		array[toPos] = val;
+	}
 }

@@ -93,6 +93,8 @@ public class API {
 
 	public static class Basics {
 
+		int[][] EMPTY_ARRAY = {};
+
 		public void load() {
 			String path = Ref.serverType().isBukkit() || Ref.serverType() == ServerType.BUNGEECORD || Ref.serverType() == ServerType.VELOCITY ? "plugins/TheAPI/" : "TheAPI/";
 
@@ -251,29 +253,48 @@ public class API {
 		}
 
 		private String rawGradient(String msg, String from, String to, boolean defaultRainbow, List<String> protectedStrings) {
-			String split = msg.replace("", "");
-			String formats = "";
-
-			int removedLength = 0;
-
-			if (protectedStrings != null)
-				for (String protect : protectedStrings) {
-					String editSplit = split.replace(protect.replace("", ""), protect);
-					if (editSplit.length() != split.length()) {
-						split = split.replace(protect.replace("", ""), protect);
-						removedLength += protect.length();
-					}
-				}
-
-			StringContainer builder = new StringContainer((int) ((msg.length() + 1) * 1.25));
 			boolean inRainbow = defaultRainbow;
 			char prev = 0;
+			String formats = "";
+
+			int[][] skipRegions = EMPTY_ARRAY;
+			int allocated = 0;
+
+			int currentSkipAt = -1;
+			int skipId = 0;
+
+			int fixedSize = msg.length() * 14;
+			int rgbSize = msg.length();
+			if (protectedStrings != null) {
+				for (String protect : protectedStrings) {
+					int size = protect.length();
+
+					int num = 0;
+					while (true) {
+						int position = msg.indexOf(protect, num++);
+						if (position == -1)
+							break;
+						if (allocated == skipRegions.length) {
+							int[][] copy = new int[allocated << 1 + 1][2];
+							System.arraycopy(skipRegions, 0, copy, 0, skipRegions.length);
+							skipRegions = copy;
+						}
+						skipRegions[allocated++] = new int[] { position, size };
+						fixedSize -= size;
+						rgbSize -= size;
+					}
+				}
+				if (allocated > 0)
+					currentSkipAt = skipRegions[0][0];
+			}
+
+			StringContainer builder = new StringContainer(fixedSize);
 
 			Color fromRGB = Color.decode(from);
 			Color toRGB = Color.decode(to);
-			double rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / (msg.length() - removedLength));
-			double gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / (msg.length() - removedLength));
-			double bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / (msg.length() - removedLength));
+			double rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / rgbSize);
+			double gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / rgbSize);
+			double bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / rgbSize);
 			if (fromRGB.getRed() > toRGB.getRed())
 				rStep = -rStep;
 			if (fromRGB.getGreen() > toRGB.getGreen())
@@ -282,14 +303,25 @@ public class API {
 				bStep = -bStep;
 
 			Color finalColor = new Color(fromRGB.getRGB());
-			for (String s : split.split("")) {
-				if (s.isEmpty())
+
+			int skipForChars = 0;
+			for (int i = 0; i < msg.length(); ++i) {
+				char c = msg.charAt(i);
+				if (c == 0)
 					continue;
-				if (s.length() > 1) {
-					builder.append(s);
+
+				if (skipForChars > 0) {
+					builder.append(c);
+					--skipForChars;
 					continue;
 				}
-				char c = s.charAt(0);
+
+				if (currentSkipAt == i) {
+					skipForChars = skipId + 1 == allocated ? -1 : skipRegions[skipId++][1];
+					builder.append(c);
+					continue;
+				}
+
 				if (prev == '&' || prev == '§') {
 					char inLower = Character.toLowerCase(c);
 					if (prev == '&' && inLower == 'u') {
