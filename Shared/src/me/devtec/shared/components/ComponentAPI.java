@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,7 +28,7 @@ public class ComponentAPI {
 
 	public static ComponentTransformer<?> registerTransformer(String name, ComponentTransformer<?> transformer) {
 		if (ComponentAPI.transformers.put(name.toUpperCase(), transformer) != null)
-			System.out.println("[TheAPI] Overriding " + name.toUpperCase() + " transformer.");
+			Logger.getGlobal().warning("[TheAPI/ComponentAPI] Overriding " + name.toUpperCase() + " component transformer.");
 		return transformer;
 	}
 

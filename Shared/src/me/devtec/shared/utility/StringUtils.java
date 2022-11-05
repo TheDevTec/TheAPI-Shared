@@ -566,7 +566,7 @@ public class StringUtils {
 				if (StringUtils.has(c))
 					builder.append('§').append(StringUtils.lower(c));
 				else
-					builder.append('&');
+					builder.append('&').append(c);
 				charColor = false;
 				continue;
 			}

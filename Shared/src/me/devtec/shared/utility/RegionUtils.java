@@ -14,4 +14,8 @@ public class RegionUtils {
 	public static boolean isInside(double[] points, double[] from, double[] to) {
 		return isInside(points[0], points[1], points[2], from[0], from[1], from[2], to[0], to[1], to[2]);
 	}
+
+	public static long countBlocksWithin(long fromX, long fromY, long fromZ, long toX, long toY, long toZ) {
+		return (Math.max(fromX, toX) - Math.min(fromX, toX) + 1) * (Math.max(fromY, toY) - Math.min(fromY, toY) + 1) * (Math.max(fromZ, toZ) - Math.min(fromZ, toZ) + 1);
+	}
 }

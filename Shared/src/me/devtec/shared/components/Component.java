@@ -1,5 +1,6 @@
 package me.devtec.shared.components;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,6 +129,13 @@ public class Component {
 
 	public void setExtra(List<Component> extra) {
 		this.extra = extra;
+	}
+
+	public Component append(Component comp) {
+		if (extra == null)
+			extra = new ArrayList<>();
+		extra.add(comp);
+		return this;
 	}
 
 	public String getFormats() {
@@ -341,7 +349,7 @@ public class Component {
 			underlined = status;
 			break;
 		case 111:
-			bold = status;
+			italic = status;
 			break;
 		default: // reset
 			bold = false;

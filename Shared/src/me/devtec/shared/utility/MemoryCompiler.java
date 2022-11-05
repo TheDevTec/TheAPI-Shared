@@ -32,12 +32,18 @@ public class MemoryCompiler {
 	private String sourceCode;
 
 	public MemoryCompiler(String fullName, File pathToJavaFile) {
+		if (ToolProvider.getSystemJavaCompiler() == null)
+			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
+
 		this.fullName = fullName;
 		sourceCode = StreamUtils.fromStream(pathToJavaFile);
 		fileManager = initFileManager();
 	}
 
 	public MemoryCompiler(String fullName, String srcCode) {
+		if (ToolProvider.getSystemJavaCompiler() == null)
+			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
+
 		this.fullName = fullName;
 		sourceCode = srcCode;
 		fileManager = initFileManager();

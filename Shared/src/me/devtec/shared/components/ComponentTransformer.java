@@ -8,6 +8,10 @@ public interface ComponentTransformer<T> {
 		return this.fromComponent(ComponentAPI.fromString(string));
 	}
 
+	public default T[] fromStringArray(String string) {
+		return this.fromComponents(ComponentAPI.fromString(string));
+	}
+
 	public Component toComponent(T value);
 
 	public default Component toComponent(T[] value) {
