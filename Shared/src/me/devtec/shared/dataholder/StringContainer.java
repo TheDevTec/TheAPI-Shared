@@ -153,12 +153,13 @@ public class StringContainer {
 	public StringContainer replace(int start, int end, String str) {
 		if (end > count)
 			end = count;
+
 		int len = str.length();
 		int newCount = count + len - (end - start);
 		ensureCapacityInternal(newCount);
 
 		System.arraycopy(value, end, value, start + len, count - end);
-		str.getChars(0, len, value, count);
+		str.getChars(0, len, value, start);
 		count = newCount;
 		return this;
 	}
@@ -233,6 +234,99 @@ public class StringContainer {
 			p = 10 * p;
 		}
 		return 19;
+	}
+
+	public StringContainer replace(String value, String replacement) {
+		char[] lookingFor = value.toCharArray();
+
+		int start = indexOf(0, lookingFor);
+		while (start != -1) {
+			replace(start, start + value.length(), replacement);
+			start = indexOf(start, lookingFor);
+		}
+		return this;
+	}
+
+	public StringContainer replaceFirst(String value, String replacement) {
+		int start = indexOf(value);
+		if (start != -1)
+			replace(start, start + value.length(), replacement);
+		return this;
+	}
+
+	public StringContainer replaceLast(String value, String replacement) {
+		int start = lastIndexOf(value);
+		if (start != -1)
+			replace(start, start + value.length(), replacement);
+		return this;
+	}
+
+	public boolean contains(char value) {
+		return indexOf(value) != -1;
+	}
+
+	public boolean contains(String value) {
+		return indexOf(value) != -1;
+	}
+
+	public int indexOf(char c) {
+		for (int i = 0; i < count; ++i)
+			if (value[i] == c)
+				return i;
+		return -1;
+	}
+
+	public int lastIndexOf(char val) {
+		for (int i = count; i > -1; --i)
+			if (value[i] == val)
+				return i;
+		return -1;
+	}
+
+	public int indexOf(String value) {
+		return indexOf(value, 0);
+	}
+
+	public int indexOf(String value, int start) {
+		return indexOf(start, value.toCharArray());
+	}
+
+	protected int indexOf(int start, char[] lookingFor) {
+		int foundPos = 0;
+
+		if (start + lookingFor.length > count)
+			return -1;
+
+		for (int i = start; i < count; ++i)
+			if (value[i] == lookingFor[foundPos]) {
+				if (++foundPos == lookingFor.length)
+					return i - (lookingFor.length - 1);
+			} else
+				foundPos = 0;
+		return -1;
+	}
+
+	public int lastIndexOf(String value) {
+		return lastIndexOf(value, count);
+	}
+
+	public int lastIndexOf(String value, int start) {
+		return lastIndexOf(start, value.toCharArray());
+	}
+
+	protected int lastIndexOf(int start, char[] lookingFor) {
+		int foundPos = lookingFor.length - 1;
+
+		if (start - lookingFor.length < 0)
+			return -1;
+
+		for (int i = start; i > -1; --i)
+			if (value[i] == lookingFor[foundPos]) {
+				if (--foundPos == -1)
+					return i;
+			} else
+				foundPos = lookingFor.length - 1;
+		return -1;
 	}
 
 }
