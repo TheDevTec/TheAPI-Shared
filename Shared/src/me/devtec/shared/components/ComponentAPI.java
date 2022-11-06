@@ -78,7 +78,6 @@ public class ComponentAPI {
 		String[] splits = inputText.split("\n");
 		boolean onEnd = inputText.endsWith("\n");
 		int splitPos = 0;
-		ClickEvent click = null;
 
 		for (String input : splits) {
 			Component current = new Component();
@@ -90,25 +89,6 @@ public class ComponentAPI {
 
 			for (int i = 0; i < input.length(); ++i) {
 				char c = input.charAt(i);
-				if (urlMode && c != ' ')
-					if (click == null) {
-						String text = builder.toString();
-						Matcher urlFinder = ComponentAPI.checkHttp(text);
-						if (urlFinder != null && urlFinder.find()) {
-
-							current.setText(text.substring(0, urlFinder.start()));
-							builder.delete(0, urlFinder.start());
-							text = text.substring(urlFinder.start());
-
-							current = new Component(text).copyOf(current);
-							extra.add(current);
-							String middle = urlFinder.group() + (c == '§' ? '&' : c);
-							click = new ClickEvent(Action.OPEN_URL, middle.startsWith("https://") || middle.startsWith("http://") ? middle : "https://" + middle);
-							current.setClickEvent(click);
-						}
-					} else
-						current.setClickEvent(click = click.setValue(click.getValue() + (c == '§' ? '&' : c)));
-
 				// COLOR or FORMAT
 				if (prev == '§') {
 					prev = c;
@@ -158,56 +138,76 @@ public class ComponentAPI {
 						continue;
 					}
 				}
-				prev = c;
-				if (urlMode && prev == ' ') {
-					if (click == null) {
-						String text = builder.toString();
-						Matcher urlFinder = ComponentAPI.checkHttp(text);
-						if (urlFinder != null) {
-							click = new ClickEvent(Action.OPEN_URL, "");
-							while (urlFinder.find()) {
-								String before = text.substring(0, urlFinder.start());
-								String middle = urlFinder.group();
-								click.setValue(middle);
-								current.setText(before);
-								current = new Component(middle).setClickEvent(click).copyOf(current);
-								extra.add(current);
-								current = new Component().copyOf(current);
-								extra.add(current);
-							}
-						}
-					} else {
-						String split = builder.toString().substring(builder.toString().split(" ")[0].length());
-						current.setText(builder.toString().split(" ")[0]);
-						current = new Component(split).copyOf(current);
-						extra.add(current);
+				if (urlMode && c == ' ' && builder.indexOf('.') != -1) {
+					String text = builder.toString();
+					Matcher urlFinder = ComponentAPI.checkHttp(text);
+					if (urlFinder != null) {
+						// Before url
+						current.setText(text.substring(0, urlFinder.start()));
+						builder.delete(0, urlFinder.start());
+
+						// url
+						text = builder.toString();
+
+						// clear
 						builder.clear();
+
+						// url
+						current = new Component(text).copyOf(current);
+						extra.add(current);
+						current.setClickEvent(new ClickEvent(Action.OPEN_URL, text.startsWith("https://") || text.startsWith("http://") ? text : "https://" + text));
+
+						current = new Component().copyOf(current);
+						extra.add(current);
 					}
-					click = null;
 				}
+				prev = c;
 				builder.append(c);
 			}
-			current.setText(builder.toString());
+
+			String text = builder.toString();
+			if (urlMode && builder.indexOf('.') != -1) {
+				Matcher urlFinder = ComponentAPI.checkHttp(text);
+				if (urlFinder != null) {
+					// Before url
+					current.setText(text.substring(0, urlFinder.start()));
+					builder.delete(0, urlFinder.start());
+
+					// url
+					text = builder.toString();
+
+					// clear
+					builder.clear();
+
+					// url
+					current = new Component(text).copyOf(current);
+					extra.add(current);
+					current.setClickEvent(new ClickEvent(Action.OPEN_URL, text.startsWith("https://") || text.startsWith("http://") ? text : "https://" + text));
+				} else
+					current.setText(text);
+			} else
+				current.setText(text);
 			hex = null;
 			prev = 0;
 		}
-		filterEmpty(extra);
+
+		filterInvalid(extra);
 		start.setExtra(extra);
 		return start;
 	}
 
-	private static void filterEmpty(List<Component> extra) {
+	private static void filterInvalid(List<Component> extra) {
 		ListIterator<Component> itr = extra.listIterator();
 		while (itr.hasNext()) {
 			Component next = itr.next();
-			if (next.getText().isEmpty())
+			if (next.getText() == null || next.getText().isEmpty())
 				itr.remove();
 		}
 	}
 
 	private static Matcher checkHttp(String text) {
 		Matcher m = ComponentAPI.url.matcher(text);
-		return m.find() ? m.reset(text) : null;
+		return m.find() ? m : null;
 	}
 
 	public static List<Map<String, Object>> toJsonList(Component component) {
