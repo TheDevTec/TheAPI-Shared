@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,12 +27,12 @@ public class StringUtils {
 	// TIME UTILS
 	// string -> time
 	// time -> string
-	public static final Map<TimeFormat, TimeFormatter> timeConvertor = new ConcurrentHashMap<>();
+	public static final Map<TimeFormat, TimeFormatter> timeConvertor = new HashMap<>();
 	// COLOR UTILS
 	public static Pattern gradientFinder;
 
 	// VARRIABLE INIT
-	public static Map<String, String> colorMap = new ConcurrentHashMap<>();
+	public static Map<String, String> colorMap = new HashMap<>();
 	public static String tagPrefix = "!";
 	public static String timeSplit = " ";
 
@@ -827,10 +827,10 @@ public class StringUtils {
 			return (long) time;
 		}
 
-		for (int i = TimeFormat.values().length - 1; i > 0; --i) {
-			Matcher matcher = StringUtils.timeConvertor.get(TimeFormat.values()[i]).matcher(period);
+		for (TimeFormat format : TimeFormat.values()) {
+			Matcher matcher = StringUtils.timeConvertor.get(format).matcher(period);
 			while (matcher.find()) {
-				time += StringUtils.getFloat(matcher.group()) * TimeFormat.values()[i].multiplier();
+				time += StringUtils.getFloat(matcher.group()) * format.multiplier();
 				period = matcher.replaceFirst("");
 			}
 		}
