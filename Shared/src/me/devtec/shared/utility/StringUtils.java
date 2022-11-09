@@ -888,14 +888,12 @@ public class StringUtils {
 
 		int inside = 0;
 
-		int start = 0;
 		for (int pos = 0; pos < s.length(); ++pos) {
 			char c = s.charAt(pos);
 			if (c == '(') {
-				if (inside == 0) {
-					start = pos;
+				if (inside == 0)
 					subResult = new StringContainer(s.length());
-				} else
+				else
 					subResult.append(c);
 
 				++inside;
@@ -904,7 +902,7 @@ public class StringUtils {
 					subResult.append(c);
 
 				if (--inside == 0) {
-					result.replace(start, pos, calculate(subResult.toString()) + "");
+					result.append("" + calculate(subResult.toString()));
 					subResult.clear();
 				}
 			} else if (inside == 0)
