@@ -5,12 +5,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import me.devtec.shared.Pair;
 import me.devtec.shared.Ref;
+import me.devtec.shared.utility.ArrayUtils;
 import sun.misc.Unsafe;
 
 public class JsonUtils {
@@ -32,7 +33,7 @@ public class JsonUtils {
 			if (result != null)
 				return result;
 			if (s instanceof Enum) {
-				Map<String, Object> object = new ConcurrentHashMap<>();
+				Map<String, Object> object = new HashMap<>();
 				object.put("c", s.getClass().getName());
 				object.put("e", ((Enum<?>) s).name());
 				object.put("t", "enum");
@@ -41,7 +42,7 @@ public class JsonUtils {
 			if (s instanceof String || s instanceof CharSequence || s instanceof Boolean || s instanceof Number || s instanceof Character)
 				return s;
 			if (s instanceof Map) {
-				Map<String, Object> object = new ConcurrentHashMap<>();
+				Map<String, Object> object = new HashMap<>();
 				object.put("c", s.getClass().getName());
 				object.put("t", "map");
 				List<Object> vals = new ArrayList<>();
@@ -51,7 +52,7 @@ public class JsonUtils {
 				return object;
 			}
 			if (s instanceof Collection) {
-				Map<String, Object> object = new ConcurrentHashMap<>();
+				Map<String, Object> object = new HashMap<>();
 				object.put("c", s.getClass().getName());
 				object.put("t", "collection");
 				List<Object> vals = new ArrayList<>();
@@ -61,7 +62,7 @@ public class JsonUtils {
 				return object;
 			}
 			if (s.getClass().isArray()) {
-				Map<String, Object> object = new ConcurrentHashMap<>();
+				Map<String, Object> object = new HashMap<>();
 				object.put("c", s.getClass().getComponentType().getName());
 				object.put("t", "array");
 				List<Object> vals = new ArrayList<>();
@@ -70,9 +71,9 @@ public class JsonUtils {
 				object.put("s", vals);
 				return object;
 			}
-			Map<String, Object> object = new ConcurrentHashMap<>();
-			Map<String, Object> fields = new ConcurrentHashMap<>();
-			Map<String, Object> sub_fields = new ConcurrentHashMap<>();
+			Map<String, Object> object = new HashMap<>();
+			Map<String, Object> fields = new HashMap<>();
+			Map<String, Object> sub_fields = new HashMap<>();
 			object.put("c", s.getClass().getName());
 			object.put("f", fields);
 			Class<?> c = s.getClass();
@@ -131,7 +132,7 @@ public class JsonUtils {
 		if (Short.TYPE == type)
 			return ((Number) value).shortValue();
 		if (Character.TYPE == type)
-			return (value + "").charAt(0);
+			return ((Character) value).charValue();
 		return JsonUtils.read(value);
 	}
 
@@ -146,7 +147,7 @@ public class JsonUtils {
 				if (result != null)
 					return result;
 				String className = (String) map.get("c");
-				Class<?> c = JsonUtils.tryCastPrimiteClass(className);
+				Class<?> c = JsonUtils.getClassByName(className);
 				String type = (String) map.get("t");
 				if (type != null) { // collection, array or map
 					if (type.equals("map")) {
@@ -164,7 +165,7 @@ public class JsonUtils {
 						return o;
 					}
 					if (type.equals("array")) {
-						Object array = Array.newInstance(c, ((List<?>) map.get("s")).size());
+						Object array = ArrayUtils.newInstance(c, ((List<?>) map.get("s")).size());
 						int i = 0;
 						for (Object cc : (List<?>) map.get("s"))
 							Array.set(array, i++, JsonUtils.cast(JsonUtils.read(cc), c));
@@ -226,7 +227,7 @@ public class JsonUtils {
 		return s;
 	}
 
-	public static Class<?> tryCastPrimiteClass(String className) throws ClassNotFoundException {
+	public static Class<?> getClassByName(String className) throws ClassNotFoundException {
 		switch (className) {
 		case "int":
 			return int.class;
