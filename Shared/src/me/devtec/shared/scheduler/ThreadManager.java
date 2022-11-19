@@ -15,10 +15,8 @@ public class ThreadManager implements Executor {
 		while (it.hasNext()) {
 			Thread tht = it.next();
 			it.remove();
-			if (tht != null && tht.isAlive()) {
+			if (tht != null && tht.isAlive())
 				tht.interrupt(); // safe destroy of thread
-				tht.stop(); // destroy loops and whole running code
-			}
 		}
 	}
 
