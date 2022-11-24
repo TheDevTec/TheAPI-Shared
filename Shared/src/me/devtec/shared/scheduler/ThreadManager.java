@@ -17,7 +17,7 @@ public class ThreadManager implements Executor {
 			it.remove();
 			if (tht != null && tht.isAlive()) {
 				tht.interrupt(); // safe destroy of thread
-				tht.destroy(); // destroy loops and whole running code
+				tht.stop(); // destroy loops and whole running code
 			}
 		}
 	}
