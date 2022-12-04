@@ -46,7 +46,7 @@ public class StringUtils {
 	private static final Pattern normal = Pattern.compile("((^[-])?[ ]*[0-9.]+)[ ]*([+-])[ ]*(-?[ ]*[0-9.]+)");
 
 	public enum TimeFormat {
-		YEARS(31556926, 0, "y"), MONTHS(2629743.83, 12, "mon"), WEEKS(604800, 4.34812141, "w"), DAYS(86400, 30.4368499, "d"), HOURS(3600, 24, "h"), MINUTES(60, 60, "m"), SECONDS(1, 60, "s");
+		YEARS(31536000, 0, "y"), MONTHS(2678400, 12, "mon"), WEEKS(604800, 4.34812141, "w"), DAYS(86400, 30.4368499, "d"), HOURS(3600, 24, "h"), MINUTES(60, 60, "m"), SECONDS(1, 60, "s");
 
 		private double multiplier;
 		private double cast;
@@ -110,10 +110,10 @@ public class StringUtils {
 			Matcher match = hex.matcher(msg);
 			while (match.find()) {
 				String color = match.group();
-				StringContainer hex = new StringContainer(14).append("§x");
+				StringContainer hex = new StringContainer(14).append('§').append('x');
 				for (int i = 1; i < color.length(); ++i)
 					hex.append('§').append(Character.toLowerCase(color.charAt(i)));
-				msg = msg.replace(color, hex.toString());
+				msg = match.replaceAll(hex.toString());
 			}
 			return msg;
 		}

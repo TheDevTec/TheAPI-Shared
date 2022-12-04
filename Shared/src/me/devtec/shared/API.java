@@ -349,35 +349,41 @@ public class API {
 						inRainbow = false;
 					}
 				}
-				if (c != ' ' && inRainbow) {
-					int red = (int) Math.round(finalColor.getRed() + rStep);
-					int green = (int) Math.round(finalColor.getGreen() + gStep);
-					int blue = (int) Math.round(finalColor.getBlue() + bStep);
-					if (red > 255)
-						red = 255;
-					if (red < 0)
-						red = 0;
-					if (green > 255)
-						green = 255;
-					if (green < 0)
-						green = 0;
-					if (blue > 255)
-						blue = 255;
-					if (blue < 0)
-						blue = 0;
-					finalColor = new Color(red, green, blue);
-					if (formats.equals("§r")) {
+				if (inRainbow)
+					if (c != ' ') {
+						int red = (int) Math.round(finalColor.getRed() + rStep);
+						int green = (int) Math.round(finalColor.getGreen() + gStep);
+						int blue = (int) Math.round(finalColor.getBlue() + bStep);
+						if (red > 255)
+							red = 255;
+						if (red < 0)
+							red = 0;
+						if (green > 255)
+							green = 255;
+						if (green < 0)
+							green = 0;
+						if (blue > 255)
+							blue = 255;
+						if (blue < 0)
+							blue = 0;
+						finalColor = new Color(red, green, blue);
+						if (formats.equals("§r")) {
+							builder.append(formats); // add formats
+							builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
+							// color
+							formats = "";
+						} else {
+							builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
+							// color
+							if (!formats.isEmpty())
+								builder.append(formats); // add formats
+						}
+					} else if (formats.equals("§r")) {
 						builder.append(formats); // add formats
 						builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
 						// color
 						formats = "";
-					} else {
-						builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
-						// color
-						if (!formats.isEmpty())
-							builder.append(formats); // add formats
 					}
-				}
 				builder.append(c);
 				prev = c;
 			}
@@ -385,7 +391,7 @@ public class API {
 		}
 
 		private String replaceHex(String color) {
-			StringContainer hex = new StringContainer(14).append("§x");
+			StringContainer hex = new StringContainer(14).append('§').append('x');
 			for (int i = 2; i < color.length(); ++i)
 				hex.append('§').append(color.charAt(i));
 			return color.replace(color, hex.toString());
