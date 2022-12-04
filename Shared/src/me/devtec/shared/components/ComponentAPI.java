@@ -209,6 +209,8 @@ public class ComponentAPI {
 		boolean haveIllegalChar = false;
 		char before = 0;
 
+		boolean beforeColorChar = false;
+
 		int start = 0;
 
 		boolean afterDot = false;
@@ -218,11 +220,20 @@ public class ComponentAPI {
 		int i;
 		for (i = 0; i < builder.length(); ++i) {
 			char pos = builder.charAt(i);
+			if (pos == '§') {
+				beforeColorChar = true;
+				continue;
+			}
+			if (beforeColorChar && (pos >= 64 && pos <= 70 || pos >= 97 && pos <= 102 || pos >= 48 && pos <= 57 || pos >= 107 && pos <= 111 || pos == 114 || pos == 'x')) {
+				beforeColorChar = false;
+				continue;
+			}
+			beforeColorChar = false;
 			if (!afterDot && (pos == 'h' || pos == 't' || pos == 'p' || pos == 's' || pos == ':' || pos == '/'))
 				switch (pos) {
 				case 'h':
 					if (before == 0 && httpsPass == 8) {
-						before = 'h';
+						before = pos;
 						--httpsPass;
 						continue;
 
@@ -231,7 +242,7 @@ public class ComponentAPI {
 					break;
 				case 't':
 					if (before == 'h' && httpsPass == 7 || before == 't' && httpsPass == 6) {
-						before = 't';
+						before = pos;
 						--httpsPass;
 						continue;
 					}
@@ -239,7 +250,7 @@ public class ComponentAPI {
 					break;
 				case 'p':
 					if (before == 't' && httpsPass == 5) {
-						before = 'p';
+						before = pos;
 						--httpsPass;
 						continue;
 					}
@@ -247,7 +258,7 @@ public class ComponentAPI {
 					break;
 				case 's':
 					if (before == 'p' && httpsPass == 4) {
-						before = 's';
+						before = pos;
 						--httpsPass;
 						continue;
 					}
@@ -258,7 +269,7 @@ public class ComponentAPI {
 						haveIllegalChar = true;
 						if (before == 'p')
 							--httpsPass;
-						before = ':';
+						before = pos;
 						--httpsPass;
 						continue;
 					}
@@ -275,7 +286,7 @@ public class ComponentAPI {
 							httpsPass = 8;
 							continue;
 						}
-						before = '/';
+						before = pos;
 						continue;
 					}
 					haveIllegalChar = false;
