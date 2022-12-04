@@ -83,7 +83,6 @@ public class StringUtils {
 	public interface ColormaticFactory {
 		char[] characters = "abcdef0123456789".toCharArray();
 		Pattern getLast = Pattern.compile("(&?#[A-Fa-f0-9k-oK-ORrXxUu]{6}|§[Xx](§[A-Fa-f0-9k-oK-ORrXxUu]){6}|§[A-Fa-f0-9k-oK-ORrXxUu]|&[Uu])");
-		Pattern hex = Pattern.compile("(&?#[a-fA-F0-9]{6})");
 
 		/**
 		 * @apiNote Generates random color depends on software & version
