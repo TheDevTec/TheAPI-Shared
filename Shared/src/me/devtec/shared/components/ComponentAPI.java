@@ -100,7 +100,7 @@ public class ComponentAPI {
 					}
 
 					// COLOR
-					if (c >= 97 && c <= 102 || c >= 48 && c <= 57) {
+					if (c >= 64 && c <= 70 || c >= 97 && c <= 102 || c >= 48 && c <= 57) {
 						if (hex != null) {
 							hex += c;
 							builder.deleteCharAt(builder.length() - 1); // Remove §
