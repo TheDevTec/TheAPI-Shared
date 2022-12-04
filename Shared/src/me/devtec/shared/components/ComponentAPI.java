@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import me.devtec.shared.Ref;
 import me.devtec.shared.components.ClickEvent.Action;
@@ -19,7 +17,6 @@ import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.utility.StringUtils;
 
 public class ComponentAPI {
-	static Pattern url = Pattern.compile("(w{3}\\.|[a-zA-Z0-9+&@#/%?=~_|!:,.;-]+:\\/\\/)?[a-zA-Z0-9+&@#/%?=~_|!:,.;-]+\\w\\.[a-zA-Z0-9+&@#/%?=~_|!:,.;-]{1,}\\w");
 	static Map<String, ComponentTransformer<?>> transformers = new HashMap<>();
 
 	public static ComponentTransformer<?> transformer(String name) {
@@ -138,16 +135,15 @@ public class ComponentAPI {
 						continue;
 					}
 				}
-				if (urlMode && c == ' ' && builder.indexOf('.') != -1) {
-					String text = builder.toString();
-					Matcher urlFinder = ComponentAPI.checkHttp(text);
-					if (urlFinder != null) {
+				if (urlMode && c == ' ') {
+					int urlFinder = findUrl(builder);
+					if (urlFinder != -1) {
 						// Before url
-						current.setText(text.substring(0, urlFinder.start()));
-						builder.delete(0, urlFinder.start());
+						current.setText(builder.substring(0, urlFinder));
+						builder.delete(0, urlFinder);
 
 						// url
-						text = builder.toString();
+						String text = builder.toString();
 
 						// clear
 						builder.clear();
@@ -165,16 +161,15 @@ public class ComponentAPI {
 				builder.append(c);
 			}
 
-			String text = builder.toString();
-			if (urlMode && builder.indexOf('.') != -1) {
-				Matcher urlFinder = ComponentAPI.checkHttp(text);
-				if (urlFinder != null) {
+			if (urlMode) {
+				int urlFinder = findUrl(builder);
+				if (urlFinder != -1) {
 					// Before url
-					current.setText(text.substring(0, urlFinder.start()));
-					builder.delete(0, urlFinder.start());
+					current.setText(builder.substring(0, urlFinder));
+					builder.delete(0, urlFinder);
 
 					// url
-					text = builder.toString();
+					String text = builder.toString();
 
 					// clear
 					builder.clear();
@@ -184,9 +179,9 @@ public class ComponentAPI {
 					extra.add(current);
 					current.setClickEvent(new ClickEvent(Action.OPEN_URL, text.startsWith("https://") || text.startsWith("http://") ? text : "https://" + text));
 				} else
-					current.setText(text);
+					current.setText(builder.toString());
 			} else
-				current.setText(text);
+				current.setText(builder.toString());
 			hex = null;
 			prev = 0;
 		}
@@ -205,9 +200,139 @@ public class ComponentAPI {
 		}
 	}
 
-	private static Matcher checkHttp(String text) {
-		Matcher m = ComponentAPI.url.matcher(text);
-		return m.find() ? m : null;
+	private static int findUrl(StringContainer builder) {
+		if (builder.indexOf('.') <= 3)
+			return -1;
+
+		int httpsPass = 8;
+		boolean haveIllegalChar = false;
+		char before = 0;
+
+		int start = 0;
+
+		boolean afterDot = false;
+		boolean waitUntilSpace = false;
+		int countBeforeDot = 0;
+		int countAfterDot = 0;
+		int i;
+		for (i = 0; i < builder.length(); ++i) {
+			char pos = builder.charAt(i);
+			if (!afterDot && (pos == 'h' || pos == 't' || pos == 'p' || pos == 's' || pos == ':' || pos == '/'))
+				switch (pos) {
+				case 'h':
+					if (before == 0 && httpsPass == 8) {
+						before = 'h';
+						--httpsPass;
+						continue;
+
+					}
+					httpsPass = 8;
+					break;
+				case 't':
+					if (before == 'h' && httpsPass == 7 || before == 't' && httpsPass == 6) {
+						before = 't';
+						--httpsPass;
+						continue;
+					}
+					httpsPass = 8;
+					break;
+				case 'p':
+					if (before == 't' && httpsPass == 5) {
+						before = 'p';
+						--httpsPass;
+						continue;
+					}
+					httpsPass = 8;
+					break;
+				case 's':
+					if (before == 'p' && httpsPass == 4) {
+						before = 's';
+						--httpsPass;
+						continue;
+					}
+					httpsPass = 8;
+					break;
+				case ':':
+					if (before == 'p' && httpsPass == 4 || before == 's' && httpsPass == 3) {
+						haveIllegalChar = true;
+						if (before == 'p')
+							--httpsPass;
+						before = ':';
+						--httpsPass;
+						continue;
+					}
+					httpsPass = 8;
+					break;
+				case '/':
+					if (before == ':' && httpsPass == 2 || before == '/' && httpsPass == 1) {
+						haveIllegalChar = true;
+						--httpsPass;
+						if (httpsPass == 0) {
+							haveIllegalChar = false;
+							before = 0;
+							httpsPass = 8;
+							continue;
+						}
+						before = '/';
+						continue;
+					}
+					haveIllegalChar = false;
+					httpsPass = 8;
+					break;
+				}
+			if (httpsPass != 8) {
+				httpsPass = 8;
+				before = 0;
+				if (haveIllegalChar) {
+					start = i + 1;
+					haveIllegalChar = false;
+					waitUntilSpace = true;
+					countAfterDot = 0;
+					countBeforeDot = 0;
+					afterDot = false;
+					continue;
+				}
+			}
+			if (waitUntilSpace) {
+				if (pos != ' ')
+					continue;
+				waitUntilSpace = false;
+				start = i + 1;
+				continue;
+			}
+
+			if (pos == '.') {
+				afterDot = true;
+				continue;
+			}
+			if (!afterDot && !isLegal(pos)) {
+				waitUntilSpace = true;
+				countAfterDot = 0;
+				countBeforeDot = 0;
+				afterDot = false;
+				start = i + 1;
+			}
+			if (afterDot)
+				++countAfterDot;
+			else
+				++countBeforeDot;
+
+			if (pos == ' ') {
+				if (afterDot && countBeforeDot >= 3 && countAfterDot >= 2)
+					return start;
+				start = i + 1;
+				countAfterDot = 0;
+				countBeforeDot = 0;
+				afterDot = false;
+			}
+		}
+		if (afterDot && countBeforeDot >= 3 && countAfterDot >= 2)
+			return start;
+		return -1;
+	}
+
+	private static boolean isLegal(char pos) {
+		return pos >= 65 && pos <= 90 || pos >= 97 && pos <= 122 || pos >= 48 && pos <= 57;
 	}
 
 	public static List<Map<String, Object>> toJsonList(Component component) {
