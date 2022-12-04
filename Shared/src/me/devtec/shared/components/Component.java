@@ -8,6 +8,8 @@ import java.util.Map;
 import me.devtec.shared.dataholder.StringContainer;
 
 public class Component {
+	public static Component EMPTY_COMPONENT = new Component("");
+
 	private String text;
 	private List<Component> extra;
 
