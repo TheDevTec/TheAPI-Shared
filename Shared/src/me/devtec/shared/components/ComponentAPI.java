@@ -201,7 +201,7 @@ public class ComponentAPI {
 	}
 
 	private static Comparable<?>[] findUrl(StringContainer builder) {
-		if (builder.indexOf('.', 3) != -1)
+		if (builder.indexOf('.', 3) == -1)
 			return null;
 
 		boolean startsWithHttpPass = false;
