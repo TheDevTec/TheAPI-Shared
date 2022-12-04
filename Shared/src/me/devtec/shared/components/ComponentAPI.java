@@ -136,11 +136,11 @@ public class ComponentAPI {
 					}
 				}
 				if (urlMode && c == ' ') {
-					int urlFinder = findUrl(builder);
-					if (urlFinder != -1) {
+					Comparable<?>[] urlFinder = findUrl(builder);
+					if (urlFinder != null) {
 						// Before url
-						current.setText(builder.substring(0, urlFinder));
-						builder.delete(0, urlFinder);
+						current.setText(builder.substring(0, (int) urlFinder[0]));
+						builder.delete(0, (int) urlFinder[0]);
 
 						// url
 						String text = builder.toString();
@@ -151,7 +151,7 @@ public class ComponentAPI {
 						// url
 						current = new Component(text).copyOf(current);
 						extra.add(current);
-						current.setClickEvent(new ClickEvent(Action.OPEN_URL, text.startsWith("https://") || text.startsWith("http://") ? text : "https://" + text));
+						current.setClickEvent(new ClickEvent(Action.OPEN_URL, (boolean) urlFinder[1] ? text : "https://" + text));
 
 						current = new Component().copyOf(current);
 						extra.add(current);
@@ -162,11 +162,11 @@ public class ComponentAPI {
 			}
 
 			if (urlMode) {
-				int urlFinder = findUrl(builder);
-				if (urlFinder != -1) {
+				Comparable<?>[] urlFinder = findUrl(builder);
+				if (urlFinder != null) {
 					// Before url
-					current.setText(builder.substring(0, urlFinder));
-					builder.delete(0, urlFinder);
+					current.setText(builder.substring(0, (int) urlFinder[0]));
+					builder.delete(0, (int) urlFinder[0]);
 
 					// url
 					String text = builder.toString();
@@ -177,7 +177,7 @@ public class ComponentAPI {
 					// url
 					current = new Component(text).copyOf(current);
 					extra.add(current);
-					current.setClickEvent(new ClickEvent(Action.OPEN_URL, text.startsWith("https://") || text.startsWith("http://") ? text : "https://" + text));
+					current.setClickEvent(new ClickEvent(Action.OPEN_URL, (boolean) urlFinder[1] ? text : "https://" + text));
 				} else
 					current.setText(builder.toString());
 			} else
@@ -200,10 +200,11 @@ public class ComponentAPI {
 		}
 	}
 
-	private static int findUrl(StringContainer builder) {
-		if (builder.indexOf('.') <= 3)
-			return -1;
+	private static Comparable<?>[] findUrl(StringContainer builder) {
+		if (builder.indexOf('.', 3) != -1)
+			return null;
 
+		boolean startsWithHttpPass = false;
 		int httpsPass = 8;
 		boolean haveIllegalChar = false;
 		char before = 0;
@@ -268,6 +269,7 @@ public class ComponentAPI {
 						haveIllegalChar = true;
 						--httpsPass;
 						if (httpsPass == 0) {
+							startsWithHttpPass = true;
 							haveIllegalChar = false;
 							before = 0;
 							httpsPass = 8;
@@ -281,10 +283,10 @@ public class ComponentAPI {
 					break;
 				}
 			if (httpsPass != 8) {
+				startsWithHttpPass = false;
 				httpsPass = 8;
 				before = 0;
 				if (haveIllegalChar) {
-					start = i + 1;
 					haveIllegalChar = false;
 					waitUntilSpace = true;
 					countAfterDot = 0;
@@ -296,6 +298,7 @@ public class ComponentAPI {
 			if (waitUntilSpace) {
 				if (pos != ' ')
 					continue;
+				startsWithHttpPass = false;
 				waitUntilSpace = false;
 				start = i + 1;
 				continue;
@@ -305,30 +308,35 @@ public class ComponentAPI {
 				afterDot = true;
 				continue;
 			}
+			if (pos == ' ') {
+				haveIllegalChar = false;
+				startsWithHttpPass = false;
+				start = i + 1;
+				countAfterDot = 0;
+				countBeforeDot = 0;
+				afterDot = false;
+				continue;
+			}
+
 			if (!afterDot && !isLegal(pos)) {
 				waitUntilSpace = true;
 				countAfterDot = 0;
 				countBeforeDot = 0;
 				afterDot = false;
 				start = i + 1;
+				continue;
 			}
 			if (afterDot)
 				++countAfterDot;
 			else
 				++countBeforeDot;
+			if (afterDot && countBeforeDot >= 3 && countAfterDot >= 2)
+				return new Comparable[] { start, startsWithHttpPass };
 
-			if (pos == ' ') {
-				if (afterDot && countBeforeDot >= 3 && countAfterDot >= 2)
-					return start;
-				start = i + 1;
-				countAfterDot = 0;
-				countBeforeDot = 0;
-				afterDot = false;
-			}
 		}
 		if (afterDot && countBeforeDot >= 3 && countAfterDot >= 2)
-			return start;
-		return -1;
+			return new Comparable[] { start, startsWithHttpPass };
+		return null;
 	}
 
 	private static boolean isLegal(char pos) {

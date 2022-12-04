@@ -270,7 +270,11 @@ public class StringContainer {
 	}
 
 	public int indexOf(char c) {
-		for (int i = 0; i < count; ++i)
+		return indexOf(c, 0);
+	}
+
+	public int indexOf(char c, int start) {
+		for (int i = start; i < count; ++i)
 			if (value[i] == c)
 				return i;
 		return -1;
