@@ -369,18 +369,18 @@ public class API {
 						finalColor = new Color(red, green, blue);
 						if (formats.equals("§r")) {
 							builder.append(formats); // add formats
-							builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
+							replaceHex(builder, String.format("%08x", finalColor.getRGB())); // add
 							// color
 							formats = "";
 						} else {
-							builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
+							replaceHex(builder, String.format("%08x", finalColor.getRGB())); // add
 							// color
 							if (!formats.isEmpty())
 								builder.append(formats); // add formats
 						}
 					} else if (formats.equals("§r")) {
 						builder.append(formats); // add formats
-						builder.append(replaceHex(String.format("%08x", finalColor.getRGB()))); // add
+						replaceHex(builder, String.format("%08x", finalColor.getRGB())); // add
 						// color
 						formats = "";
 					}
@@ -390,11 +390,10 @@ public class API {
 			return builder.toString();
 		}
 
-		private String replaceHex(String color) {
-			StringContainer hex = new StringContainer(14).append('§').append('x');
+		private void replaceHex(StringContainer builder, String color) {
+			builder.append('§').append('x');
 			for (int i = 2; i < color.length(); ++i)
-				hex.append('§').append(color.charAt(i));
-			return color.replace(color, hex.toString());
+				builder.append('§').append(color.charAt(i));
 		}
 	}
 
