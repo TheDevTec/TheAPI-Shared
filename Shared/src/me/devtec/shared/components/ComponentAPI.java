@@ -60,8 +60,8 @@ public class ComponentAPI {
 	}
 
 	public static Component fromString(String inputText, boolean hexMode, boolean urlMode) {
-		if (inputText == null)
-			return null;
+		if (inputText == null || inputText.isEmpty())
+			return Component.EMPTY_COMPONENT;
 		final Component start = new Component("");
 		if (inputText.isEmpty())
 			return start;
@@ -209,6 +209,8 @@ public class ComponentAPI {
 		boolean haveIllegalChar = false;
 		char before = 0;
 
+		int wwwPass = 4;
+
 		boolean beforeColorChar = false;
 
 		int start = 0;
@@ -220,6 +222,16 @@ public class ComponentAPI {
 		int i;
 		for (i = 0; i < builder.length(); ++i) {
 			char pos = builder.charAt(i);
+
+			if (i > 0 && pos == '.' && builder.charAt(i - 1) == '.') {
+				haveIllegalChar = false;
+				waitUntilSpace = true;
+				countAfterDot = 0;
+				countBeforeDot = 0;
+				afterDot = false;
+				continue;
+			}
+
 			if (pos == '§') {
 				beforeColorChar = true;
 				continue;
@@ -229,6 +241,49 @@ public class ComponentAPI {
 				continue;
 			}
 			beforeColorChar = false;
+			if (!afterDot && (pos == 'w' || wwwPass != 4 && pos == '.'))
+				switch (pos) {
+				case 'w':
+					if (before == 0 && wwwPass == 4 || before == 'w' && (wwwPass == 3 || wwwPass == 2)) {
+						before = pos;
+						--wwwPass;
+						continue;
+					}
+					countBeforeDot += wwwPass;
+					wwwPass = 4;
+					break;
+				case '.':
+					if (before == 'w' && wwwPass == 1) {
+						haveIllegalChar = true;
+						--wwwPass;
+						if (wwwPass == 0) {
+							haveIllegalChar = false;
+							before = 0;
+							wwwPass = 4;
+							continue;
+						}
+						before = pos;
+						continue;
+					}
+					haveIllegalChar = false;
+					countBeforeDot += wwwPass;
+					wwwPass = 4;
+					break;
+				}
+			if (wwwPass != 4) {
+				startsWithHttpPass = false;
+				countBeforeDot += wwwPass;
+				wwwPass = 4;
+				before = 0;
+				if (haveIllegalChar) {
+					haveIllegalChar = false;
+					waitUntilSpace = true;
+					countAfterDot = 0;
+					countBeforeDot = 0;
+					afterDot = false;
+					continue;
+				}
+			}
 			if (!afterDot && (pos == 'h' || pos == 't' || pos == 'p' || pos == 's' || pos == ':' || pos == '/'))
 				switch (pos) {
 				case 'h':
@@ -238,6 +293,7 @@ public class ComponentAPI {
 						continue;
 
 					}
+					countBeforeDot += httpsPass;
 					httpsPass = 8;
 					break;
 				case 't':
@@ -246,6 +302,7 @@ public class ComponentAPI {
 						--httpsPass;
 						continue;
 					}
+					countBeforeDot += httpsPass;
 					httpsPass = 8;
 					break;
 				case 'p':
@@ -254,6 +311,7 @@ public class ComponentAPI {
 						--httpsPass;
 						continue;
 					}
+					countBeforeDot += httpsPass;
 					httpsPass = 8;
 					break;
 				case 's':
@@ -262,6 +320,7 @@ public class ComponentAPI {
 						--httpsPass;
 						continue;
 					}
+					countBeforeDot += httpsPass;
 					httpsPass = 8;
 					break;
 				case ':':
@@ -273,6 +332,7 @@ public class ComponentAPI {
 						--httpsPass;
 						continue;
 					}
+					countBeforeDot += httpsPass;
 					httpsPass = 8;
 					break;
 				case '/':
@@ -289,12 +349,14 @@ public class ComponentAPI {
 						before = pos;
 						continue;
 					}
+					countBeforeDot += httpsPass;
 					haveIllegalChar = false;
 					httpsPass = 8;
 					break;
 				}
 			if (httpsPass != 8) {
 				startsWithHttpPass = false;
+				countBeforeDot += httpsPass;
 				httpsPass = 8;
 				before = 0;
 				if (haveIllegalChar) {
@@ -341,11 +403,11 @@ public class ComponentAPI {
 				++countAfterDot;
 			else
 				++countBeforeDot;
-			if (afterDot && countBeforeDot >= 3 && countAfterDot >= 2)
+			if (afterDot && countBeforeDot >= 2 && countAfterDot >= 2)
 				return new Comparable[] { start, startsWithHttpPass };
 
 		}
-		if (afterDot && countBeforeDot >= 3 && countAfterDot >= 2)
+		if (afterDot && countBeforeDot >= 2 && countAfterDot >= 2)
 			return new Comparable[] { start, startsWithHttpPass };
 		return null;
 	}
