@@ -413,7 +413,7 @@ public class ComponentAPI {
 	}
 
 	private static boolean isLegal(char pos) {
-		return pos >= 65 && pos <= 90 || pos >= 97 && pos <= 122 || pos >= 48 && pos <= 57;
+		return pos >= 65 && pos <= 90 || pos >= 97 && pos <= 122 || pos >= 48 && pos <= 57 || pos == '-';
 	}
 
 	public static List<Map<String, Object>> toJsonList(Component component) {
