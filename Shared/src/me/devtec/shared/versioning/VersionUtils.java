@@ -8,13 +8,28 @@ public class VersionUtils {
 	}
 
 	public static Version getVersion(String version, String compareVersion) {
-		if (version == null || compareVersion == null || version.replaceAll("[^0-9.]+", "").trim().isEmpty() || compareVersion.replaceAll("[^0-9.]+", "").trim().isEmpty())
+		if (version == null || compareVersion == null)
 			return Version.UKNOWN;
-		double versionD = convertToDouble(version);
-		double compareVersionD = convertToDouble(compareVersion);
-		if (versionD == compareVersionD)
-			return Version.SAME_VERSION;
-		return versionD > compareVersionD ? Version.NEWER_VERSION : Version.OLDER_VERSION;
+
+		version = version.replaceAll("[^0-9.]+", "").trim();
+		compareVersion = compareVersion.replaceAll("[^0-9.]+", "").trim();
+
+		if (version.isEmpty() || compareVersion.isEmpty())
+			return Version.UKNOWN;
+
+		String[] primaryVersion = version.split("\\.");
+		String[] compareToVersion = compareVersion.split("\\.");
+
+		for (int i = 0; i < Math.max(primaryVersion.length, compareToVersion.length); ++i) {
+			String number = i >= primaryVersion.length ? "0" : "1" + primaryVersion[i];
+			if (compareToVersion.length <= i)
+				break;
+			if (StringUtils.getInt(number) > StringUtils.getInt("1" + compareToVersion[i]))
+				return Version.NEWER_VERSION;
+			if (StringUtils.getInt(number) < StringUtils.getInt("1" + compareToVersion[i]))
+				return Version.OLDER_VERSION;
+		}
+		return Version.SAME_VERSION;
 	}
 
 	public static double convertToDouble(String version) {
