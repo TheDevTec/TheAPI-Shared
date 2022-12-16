@@ -1,6 +1,8 @@
 package me.devtec.shared.scheduler;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -11,14 +13,30 @@ public class ThreadManager implements Executor {
 	protected final AtomicInteger i = new AtomicInteger();
 
 	public void kill() {
+		List<Thread> check = new ArrayList<>();
 		Iterator<Thread> it = threads.values().iterator();
 		while (it.hasNext()) {
 			Thread tht = it.next();
 			it.remove();
-			if (tht != null && tht.isAlive())
+			if (tht != null && tht.isAlive()) {
 				tht.interrupt(); // safe destroy of thread
-			// tht.stop(); // destroy loops and whole running code
+				check.add(tht);
+			}
 		}
+		if (!check.isEmpty())
+			new Thread(() -> {
+				try {
+					Thread.sleep(3000);
+				} catch (InterruptedException e) {
+					return;
+				}
+				for (Thread thread : check)
+					if (thread.isAlive()) {
+						thread.stop();
+						System.out.println("Stopped thread that was not interrupted normally (Infinity loop?)");
+					}
+				check.clear();
+			}).start();
 	}
 
 	public boolean isAlive(int id) {
@@ -45,7 +63,17 @@ public class ThreadManager implements Executor {
 		if (t == null)
 			return;
 		t.interrupt(); // safe destroy of thread
-		// t.stop(); // destroy loops and whole running code
+		new Thread(() -> {
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e) {
+				return;
+			}
+			if (t.isAlive()) {
+				t.stop();
+				System.out.println("Stopped thread that was not interrupted normally (Infinity loop?)");
+			}
+		}).start();
 	}
 
 	public int executeWithId(int id, Runnable command) {
