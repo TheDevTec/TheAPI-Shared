@@ -361,7 +361,7 @@ public class StringUtils {
 	public static List<String> copyPartialMatches(String prefix, Iterable<String> originals) {
 		List<String> collection = new ArrayList<>();
 		for (String string : originals)
-			if (string == null || string.length() >= prefix.length() && (string.regionMatches(true, 0, prefix, 0, prefix.length()) || string.regionMatches(true, 1, prefix, 0, prefix.length())))
+			if (string == null || string.length() < prefix.length() ? false : string.regionMatches(true, 0, prefix, 0, prefix.length()))
 				collection.add(string);
 		return collection;
 	}

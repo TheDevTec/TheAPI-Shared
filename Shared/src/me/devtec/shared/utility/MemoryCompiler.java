@@ -32,6 +32,9 @@ public class MemoryCompiler {
 	private String sourceCode;
 
 	public MemoryCompiler(String fullName, File pathToJavaFile) {
+		if (!pathToJavaFile.exists())
+			throw new RuntimeException("File doesn't exist.");
+
 		if (ToolProvider.getSystemJavaCompiler() == null)
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
 

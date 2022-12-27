@@ -706,21 +706,24 @@ public class Config {
 			return this;
 		if (!file.exists()) {
 			try {
-				file.getParentFile().mkdirs();
+				if (file.getParentFile() != null)
+					file.getParentFile().mkdirs();
 			} catch (Exception e) {
+				e.printStackTrace();
 			}
 			try {
 				file.createNewFile();
 			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 		isSaving = true;
-		markNonModified();
 		try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
 			writer.write(toString(type, true));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		markNonModified();
 		isSaving = false;
 		return this;
 	}

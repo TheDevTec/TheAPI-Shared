@@ -16,6 +16,8 @@ public class StreamUtils {
 	 * @return String
 	 */
 	public static String fromStream(File file) {
+		if (!file.exists())
+			return null;
 		try {
 			return fromStream(new FileInputStream(file));
 		} catch (Exception err) {
