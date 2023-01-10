@@ -138,6 +138,8 @@ public class StringUtils {
 				}
 				container.append(c);
 			}
+			if (HEX_CHAR)
+				container.append('#').append(hex);
 			return container.toString();
 		}
 
