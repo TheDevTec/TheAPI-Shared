@@ -1,5 +1,6 @@
 package me.devtec.shared.utility.libs;
 
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.List;
@@ -27,10 +28,19 @@ public class RjarLibrary {
 				rjarUrls[i] = new URL("jar:rjar:" + rjarPath + "!/");
 		}
 
-		ClassLoader classLoader = new URLClassLoader(rjarUrls, ClassLoader.getPlatformClassLoader());
+		ClassLoader classLoader = new URLClassLoader(rjarUrls, getPlatformClassLoader());
 		Thread.currentThread().setContextClassLoader(classLoader);
 
 		return Class.forName(mainClass, true, classLoader);
+	}
+
+	private static ClassLoader getPlatformClassLoader() throws Exception {
+		try {
+			Method platformClassLoader = ClassLoader.class.getMethod("getPlatformClassLoader");
+			return (ClassLoader) platformClassLoader.invoke(null);
+		} catch (NoSuchMethodException var1) {
+			return ClassLoader.getSystemClassLoader().getParent();
+		}
 	}
 
 }
