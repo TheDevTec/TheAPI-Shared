@@ -1,10 +1,15 @@
 package me.devtec.shared.events.api;
 
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 import me.devtec.shared.events.Event;
+import me.devtec.shared.events.ListenerHolder;
 
 public class ServerClientRejectedEvent extends Event {
+	static List<ListenerHolder> handlers = new ArrayList<>();
+
 	private final Socket socket;
 	private final String serverName;
 
@@ -22,5 +27,14 @@ public class ServerClientRejectedEvent extends Event {
 	 */
 	public String getServerName() {
 		return serverName;
+	}
+
+	@Override
+	public List<ListenerHolder> getHandlers() {
+		return handlers;
+	}
+
+	public static List<ListenerHolder> getHandlerList() {
+		return handlers;
 	}
 }

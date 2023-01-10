@@ -293,21 +293,27 @@ public class Ref {
 		if (params.length == 0) {
 			Class<?> startClass = clazz;
 			while (startClass != null) {
-				for (Method m : Ref.getDeclaredMethods(clazz))
-					if (m.getName().equals(name) && m.getParameterTypes().length == 0) {
-						m.setAccessible(true);
-						return m;
-					}
+				Method found;
+				try {
+					found = startClass.getDeclaredMethod(name);
+					found.setAccessible(true);
+					return found;
+				} catch (Exception | NoSuchMethodError err) {
+
+				}
 				startClass = startClass.getSuperclass();
 			}
 		} else {
 			Class<?> startClass = clazz;
 			while (startClass != null) {
-				for (Method m : Ref.getDeclaredMethods(clazz))
-					if (m.getName().equals(name) && m.getParameterTypes().length == params.length && areSame(params, m.getParameterTypes())) {
-						m.setAccessible(true);
-						return m;
-					}
+				Method found;
+				try {
+					found = startClass.getDeclaredMethod(name, params);
+					found.setAccessible(true);
+					return found;
+				} catch (Exception | NoSuchMethodError err) {
+
+				}
 				startClass = startClass.getSuperclass();
 			}
 		}
