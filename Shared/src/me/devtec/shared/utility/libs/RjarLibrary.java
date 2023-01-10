@@ -6,6 +6,9 @@ import java.util.List;
 
 public class RjarLibrary {
 
+	/**
+	 * @apiNote Add to the MANIFEST.MF, Class-Path: .
+	 */
 	public static Class<?> loadJars(List<String> pathToJars, String mainClass) throws Exception {
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
 		URL.setURLStreamHandlerFactory(new RjarURLStreamHandlerFactory(cl));
@@ -14,17 +17,17 @@ public class RjarLibrary {
 
 		String[] libsToLoad = pathToJars.toArray(new String[0]);
 
-		URL[] rsrcUrls = new URL[libsToLoad.length];
+		URL[] rjarUrls = new URL[libsToLoad.length];
 
 		for (int i = 0; i < libsToLoad.length; ++i) {
-			String rsrcPath = libsToLoad[i];
-			if (rsrcPath.endsWith("/"))
-				rsrcUrls[i] = new URL("rjar:" + rsrcPath);
+			String rjarPath = libsToLoad[i];
+			if (rjarPath.endsWith("/"))
+				rjarUrls[i] = new URL("rjar:" + rjarPath);
 			else
-				rsrcUrls[i] = new URL("jar:rjar:" + rsrcPath + "!/");
+				rjarUrls[i] = new URL("jar:rjar:" + rjarPath + "!/");
 		}
 
-		ClassLoader classLoader = new URLClassLoader(rsrcUrls, ClassLoader.getPlatformClassLoader());
+		ClassLoader classLoader = new URLClassLoader(rjarUrls, ClassLoader.getPlatformClassLoader());
 		Thread.currentThread().setContextClassLoader(classLoader);
 
 		return Class.forName(mainClass, true, classLoader);
