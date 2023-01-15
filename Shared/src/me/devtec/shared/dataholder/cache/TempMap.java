@@ -13,6 +13,7 @@ import me.devtec.shared.scheduler.Tasker;
 public class TempMap<K, V> extends AbstractMap<K, V> {
 	private LinkedHashMap<Entry<K, V>, Long> queue = new LinkedHashMap<>();
 	private long cacheTime;
+	private RemoveCallback<Entry<K, V>> callback;
 
 	/**
 	 * @param cacheTime Should be in Minecraft ticks time (1 = 50 milis)
@@ -23,9 +24,15 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 			@Override
 			public void run() {
 				Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
-				while (iterator.hasNext())
-					if (iterator.next().getValue() - System.currentTimeMillis() / 50 + TempMap.this.cacheTime <= 0)
+				while (iterator.hasNext()) {
+					Entry<Entry<K, V>, Long> entry = iterator.next();
+					if (entry.getValue() - System.currentTimeMillis() / 50 + TempMap.this.cacheTime <= 0) {
 						iterator.remove();
+						RemoveCallback<Entry<K, V>> callback = getCallback();
+						if (callback != null)
+							callback.call(entry.getKey());
+					}
+				}
 			}
 		}.runRepeating(1, 1);
 	}
@@ -36,6 +43,15 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 	public TempMap(long cacheTime, Map<K, V> map) {
 		this(cacheTime);
 		putAll(map);
+	}
+
+	public RemoveCallback<Entry<K, V>> getCallback() {
+		return callback;
+	}
+
+	public TempMap<K, V> setCallback(RemoveCallback<Entry<K, V>> callback) {
+		this.callback = callback;
+		return this;
 	}
 
 	public long getCacheTime() {

@@ -16,6 +16,7 @@ import me.devtec.shared.scheduler.Tasker;
 public class TempList<V> extends AbstractList<V> {
 	private List<Entry<V, Long>> queue = new ArrayList<>();
 	private long cacheTime;
+	private RemoveCallback<V> callback;
 
 	/**
 	 * @param cacheTime Should be in Minecraft ticks time (1 = 50 milis)
@@ -26,9 +27,15 @@ public class TempList<V> extends AbstractList<V> {
 			@Override
 			public void run() {
 				Iterator<Entry<V, Long>> iterator = queue.iterator();
-				while (iterator.hasNext())
-					if (iterator.next().getValue() - System.currentTimeMillis() / 50 + TempList.this.cacheTime <= 0)
+				while (iterator.hasNext()) {
+					Entry<V, Long> entry = iterator.next();
+					if (entry.getValue() - System.currentTimeMillis() / 50 + TempList.this.cacheTime <= 0) {
 						iterator.remove();
+						RemoveCallback<V> callback = getCallback();
+						if (callback != null)
+							callback.call(entry.getKey());
+					}
+				}
 			}
 		}.runRepeating(1, 1);
 	}
@@ -40,6 +47,15 @@ public class TempList<V> extends AbstractList<V> {
 		this(cacheTime);
 		for (V value : collection)
 			add(value);
+	}
+
+	public RemoveCallback<V> getCallback() {
+		return callback;
+	}
+
+	public TempList<V> setCallback(RemoveCallback<V> callback) {
+		this.callback = callback;
+		return this;
 	}
 
 	public long getCacheTime() {
