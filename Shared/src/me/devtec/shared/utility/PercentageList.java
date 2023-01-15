@@ -28,6 +28,14 @@ public class PercentageList<V> {
 		return map.remove(object) != null;
 	}
 
+	public int size() {
+		return map.size();
+	}
+
+	public double getChance(V object) {
+		return map.getOrDefault(object, 0.0);
+	}
+
 	public void clear() {
 		map.clear();
 	}
