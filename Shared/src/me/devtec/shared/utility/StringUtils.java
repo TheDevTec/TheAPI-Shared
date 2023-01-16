@@ -716,7 +716,7 @@ public class StringUtils {
 	public static String timeToString(long period, String split, TimeFormat... disabled) {
 		boolean digit = split.equals(":");
 
-		if (period == 0)
+		if (period == 0L)
 			return digit ? "0" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(0);
 		List<TimeFormat> disabledList = Arrays.asList(disabled);
 		if (disabledList.contains(TimeFormat.YEARS) && disabledList.contains(TimeFormat.MONTHS) && disabledList.contains(TimeFormat.DAYS) && disabledList.contains(TimeFormat.HOURS)
@@ -726,15 +726,20 @@ public class StringUtils {
 																												// EVERYTHING??
 
 		double seconds = period % 60;
-		double minutes = period * 0.0166666667;
-		boolean modifMin = false;
-		double hours = period * 0.0002777778;
-		boolean modifHou = false;
-		double days = period * 1.15741E-5;
-		boolean modifDay = false;
-		double months = period * 3.8051750380518E-7;
-		boolean modifMon = false;
-		double years = period * 3.1688087814029E-8;
+
+		double years = period / TimeFormat.YEARS.multiplier;
+		boolean modifMon = (int) years <= 0;
+
+		double months = period / TimeFormat.MONTHS.multiplier;
+		boolean modifDay = (int) months <= 0;
+
+		double days = period / TimeFormat.DAYS.multiplier;
+		boolean modifHou = (int) days <= 0;
+
+		double hours = period / TimeFormat.HOURS.multiplier;
+		boolean modifMin = (int) hours <= 0;
+
+		double minutes = period / TimeFormat.MINUTES.multiplier;
 
 		if (disabledList.contains(TimeFormat.YEARS)) {
 			modifMon = true;
@@ -745,26 +750,26 @@ public class StringUtils {
 		if (disabledList.contains(TimeFormat.MONTHS)) {
 			modifDay = true;
 			days = days % TimeFormat.DAYS.cast();
-			days += (long) months * TimeFormat.DAYS.cast();
+			days += (!modifMon ? (long) months % 12 : (long) months) * TimeFormat.DAYS.cast();
 			months = 0;
 		} else if (!modifMon)
 			months = months % 12;
 		if (disabledList.contains(TimeFormat.DAYS)) {
 			modifHou = true;
 			hours = hours % 24;
-			hours += (long) days * 24;
+			hours += (!modifDay ? (long) days % 24 : (long) days) * 24;
 			days = 0;
 		} else if (!modifDay)
 			days = days % 24;
 		if (disabledList.contains(TimeFormat.HOURS)) {
 			modifMin = true;
 			minutes = minutes % 60;
-			minutes += (long) hours * 60;
+			minutes += (!modifHou ? (long) hours % 60 : (long) hours) * 60;
 			hours = 0;
 		} else if (!modifHou)
 			hours = hours % 24;
 		if (disabledList.contains(TimeFormat.MINUTES)) {
-			seconds += (long) minutes * 60;
+			seconds += (!modifMin ? (long) minutes % 60 : (long) minutes) * 60;
 			minutes = 0;
 		} else if (!modifMin)
 			minutes = minutes % 60;
