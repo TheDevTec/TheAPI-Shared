@@ -6,10 +6,13 @@ import java.util.Map;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
 
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
 public class ByteLoader extends EmptyLoader {
+
+	static char[] separator = System.lineSeparator().toCharArray();
 
 	private static void byteBuilderV3(ByteArrayDataInput bos, Map<String, DataValue> map) {
 		try {
@@ -45,7 +48,7 @@ public class ByteLoader extends EmptyLoader {
 		if (input == null)
 			return;
 		try {
-			byte[] bb = Base64.getDecoder().decode(input.replace(System.lineSeparator(), "").replace(" ", ""));
+			byte[] bb = Base64.getDecoder().decode(replace(input));
 			ByteArrayDataInput bos = ByteStreams.newDataInput(bb);
 			int version = bos.readInt();
 			if (version == 3) {
@@ -57,6 +60,26 @@ public class ByteLoader extends EmptyLoader {
 		} catch (Exception er) {
 			loaded = false;
 		}
+	}
+
+	private static String replace(String string) {
+		StringContainer builder = new StringContainer(string.length());
+		int pos = 0;
+		for (int i = 0; i < string.length(); ++i) {
+			char c = string.charAt(i);
+			if (c == ' ' || c == '	')
+				continue;
+			if (separator[pos] == c) {
+				if (++pos == separator.length) {
+					builder.delete(builder.length() - separator.length + 1, builder.length());
+					pos = 0;
+					continue;
+				}
+			} else
+				pos = 0;
+			builder.append(c);
+		}
+		return builder.toString();
 	}
 
 	public void load(byte[] byteData) {

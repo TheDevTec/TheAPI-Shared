@@ -185,7 +185,8 @@ public class YamlLoader extends EmptyLoader {
 	public static int removeSpaces(String s) {
 		int i = 0;
 		for (int d = 0; d < s.length(); ++d) {
-			if (s.charAt(d) != ' ')
+			char c = s.charAt(d);
+			if (c != ' ' && c != '	')
 				break;
 			++i;
 		}
@@ -200,7 +201,8 @@ public class YamlLoader extends EmptyLoader {
 	public static int removeLastSpaces(String s) {
 		int i = 0;
 		for (int d = s.length() - 1; d > 0; --d) {
-			if (s.charAt(d) != ' ')
+			char c = s.charAt(d);
+			if (c != ' ' && c != '	')
 				break;
 			++i;
 		}
@@ -272,7 +274,7 @@ public class YamlLoader extends EmptyLoader {
 				continue;
 			}
 
-			if (spaceCounting && posChar == ' ')
+			if (spaceCounting && (posChar == ' ' || posChar == '	'))
 				++spaces;
 			else
 				spaces = 0;
@@ -283,7 +285,8 @@ public class YamlLoader extends EmptyLoader {
 			return new String[] { builder.toString() };
 
 		String commentValue = builder.toString();
-		if (commentValue.charAt(0) == ' ')
+		char commentChar = commentValue.charAt(0);
+		if (commentChar == ' ' || commentChar == '	')
 			commentValue = commentValue.substring(1);
 		values[1] = commentValue;
 		return values;
