@@ -115,7 +115,6 @@ public class YamlLoader extends EmptyLoader {
 						key += ".";
 					key += keyr;
 
-					System.out.println(value);
 					String[] valueSplit = YamlLoader.splitFromComment(value);
 					if (valueSplit[0].trim().isEmpty() && value.indexOf('"') == -1 && value.indexOf('\'') == -1) {
 						value = null;
@@ -125,7 +124,6 @@ public class YamlLoader extends EmptyLoader {
 					}
 
 					value = valueSplit[0];
-					System.out.println(value);
 
 					if (value.equals("|")) {
 						type = BuilderType.STRING;
