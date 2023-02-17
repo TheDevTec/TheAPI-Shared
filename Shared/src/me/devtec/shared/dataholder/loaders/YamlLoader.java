@@ -115,8 +115,9 @@ public class YamlLoader extends EmptyLoader {
 						key += ".";
 					key += keyr;
 
+					System.out.println(value);
 					String[] valueSplit = YamlLoader.splitFromComment(value);
-					if (valueSplit[0].trim().isEmpty() && !value.contains("\"") && !value.contains("'")) {
+					if (valueSplit[0].trim().isEmpty() && value.indexOf('"') == -1 && value.indexOf('\'') == -1) {
 						value = null;
 						data.put(key, DataValue.of(null, null, null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
 						comments.clear();
@@ -124,6 +125,7 @@ public class YamlLoader extends EmptyLoader {
 					}
 
 					value = valueSplit[0];
+					System.out.println(value);
 
 					if (value.equals("|")) {
 						type = BuilderType.STRING;
@@ -214,7 +216,7 @@ public class YamlLoader extends EmptyLoader {
 			return new String[] { group };
 		String[] values = null;
 		StringContainer builder = new StringContainer(group.length());
-		boolean insideQuetos = false;
+		boolean insideQueto = false;
 		boolean insideJson = false;
 		boolean insideQuetosJson = false;
 		boolean comment = false;
@@ -227,7 +229,7 @@ public class YamlLoader extends EmptyLoader {
 		char posChar = group.charAt(0);
 		if (posChar == '"' || posChar == '\'') { // first char is often queto
 			quetoChar = posChar;
-			insideQuetos = true;
+			insideQueto = true;
 			spaceCounting = false;
 		}
 		if (posChar == '{' || posChar == '[') { // first char is often queto
@@ -237,7 +239,8 @@ public class YamlLoader extends EmptyLoader {
 			jsonChars.add(posChar);
 		}
 
-		for (int pos = insideQuetos ? 1 : 0; pos < group.length(); ++pos) {
+		char prev = posChar;
+		for (int pos = insideQueto ? 1 : 0; pos < group.length(); ++pos) {
 			posChar = group.charAt(pos);
 
 			if (comment) {
@@ -245,13 +248,13 @@ public class YamlLoader extends EmptyLoader {
 				continue;
 			}
 
-			if (insideJson && (posChar == '"' || posChar == '\''))
+			if (insideJson && (posChar == '"' || posChar == '\'') && prev != '\\')
 				insideQuetosJson = !insideQuetosJson;
 
 			if (!insideQuetosJson && insideJson && (posChar == '[' || posChar == '{'))
 				jsonChars.add(posChar);
 
-			if (posChar == '#' && !insideQuetos && !insideJson) {
+			if (posChar == '#' && !insideQueto && !insideJson) {
 				comment = true;
 				values = new String[2];
 				String value = builder.toString();
@@ -268,11 +271,13 @@ public class YamlLoader extends EmptyLoader {
 					spaceCounting = true;
 				}
 			}
-			if (insideQuetos && posChar == quetoChar) {
-				insideQuetos = false;
-				spaceCounting = true;
-				continue;
-			}
+			if (insideQueto && posChar == quetoChar)
+				if (prev != '\\') {
+					insideQueto = false;
+					spaceCounting = true;
+					continue;
+				} else
+					builder.deleteCharAt(builder.length() - 1);
 
 			if (spaceCounting && (posChar == ' ' || posChar == '	'))
 				++spaces;
@@ -280,6 +285,7 @@ public class YamlLoader extends EmptyLoader {
 				spaces = 0;
 
 			builder.append(posChar);
+			prev = posChar;
 		}
 		if (values == null)
 			return new String[] { builder.toString() };
