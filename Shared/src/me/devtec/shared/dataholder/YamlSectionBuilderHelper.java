@@ -202,7 +202,7 @@ class YamlSectionBuilderHelper {
 	protected static StringContainer addQuotesSplit(StringContainer b, String split, String value) {
 		b.append(split);
 		b.append('"');
-		b.append(value);
+		b.append(value.replace("\"", "\\\""));
 		b.append('"');
 		b.append(System.lineSeparator());
 		return b;
@@ -220,7 +220,7 @@ class YamlSectionBuilderHelper {
 			b.append(value);
 		else {
 			b.append(add);
-			b.append(value);
+			b.append(value.replace("" + add, "\\" + add));
 			b.append(add);
 		}
 		return b;
