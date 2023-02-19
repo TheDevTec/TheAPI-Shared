@@ -1,6 +1,6 @@
 package me.devtec.shared.dataholder.loaders;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,7 +17,7 @@ public class PropertiesLoader extends EmptyLoader {
 		reset();
 		if (input == null)
 			return;
-		List<String> comments = new LinkedList<>();
+		List<String> comments = new ArrayList<>();
 		int linePos = 0;
 		for (String s : input.split(System.lineSeparator())) {
 			String trim = s.trim();
@@ -39,7 +39,7 @@ public class PropertiesLoader extends EmptyLoader {
 			Matcher m = pattern.matcher(s);
 			if (m.find()) {
 				String[] value = YamlLoader.splitFromComment(m.group(2));
-				data.put(m.group(1), DataValue.of(m.group(2), Json.reader().read(value[0]), value.length == 2 ? value[1] : null, Config.simple(new LinkedList<>(comments))));
+				data.put(m.group(1), DataValue.of(m.group(2), Json.reader().read(value[0]), value.length == 2 ? value[1] : null, Config.simple(new ArrayList<>(comments))));
 				comments.clear();
 				continue;
 			}

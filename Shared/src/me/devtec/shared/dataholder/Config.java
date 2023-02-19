@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -100,12 +99,12 @@ public class Config {
 
 	public Config() {
 		loader = new EmptyLoader();
-		keys = new LinkedList<>();
+		keys = new ArrayList<>();
 	}
 
 	public Config(DataLoader loaded) {
 		loader = loaded;
-		keys = new LinkedList<>();
+		keys = new ArrayList<>();
 		for (String k : loader.getKeys()) {
 			String g = Config.splitFirst(k);
 			if (!keys.contains(g))
@@ -141,7 +140,7 @@ public class Config {
 		}
 		this.file = file;
 		lastUpdate = file.lastModified();
-		keys = new LinkedList<>();
+		keys = new ArrayList<>();
 		if (load)
 			this.reload(file);
 		else
@@ -152,7 +151,7 @@ public class Config {
 	// CLONE
 	public Config(Config data) {
 		file = data.file;
-		keys = new LinkedList<>(data.keys);
+		keys = new ArrayList<>(data.keys);
 		loader = data.loader.clone();
 	}
 

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -186,7 +185,7 @@ class YamlSectionBuilderHelper {
 		sectionLine.append(section.space);
 
 		// write section name
-		if (section.name.length() == 1 || section.name.contains(":") || section.name.startsWith("#"))
+		if (section.name.length() == 1 || section.name.indexOf(':') != -1 || section.name.charAt(0) == '#')
 			sectionLine.append('\'').append(section.name).append('\'').append(':');
 		else
 			sectionLine.append(section.name).append(':');
@@ -202,7 +201,7 @@ class YamlSectionBuilderHelper {
 	protected static StringContainer addQuotesSplit(StringContainer b, String split, String value) {
 		b.append(split);
 		b.append('"');
-		b.append(value.replace("\"", "\\\""));
+		replaceWithEscape(b, value, '"');
 		b.append('"');
 		b.append(System.lineSeparator());
 		return b;
@@ -220,8 +219,18 @@ class YamlSectionBuilderHelper {
 			b.append(value);
 		else {
 			b.append(add);
-			b.append(value.replace("" + add, "\\" + add));
+			replaceWithEscape(b, value, add);
 			b.append(add);
+		}
+		return b;
+	}
+
+	protected static StringContainer replaceWithEscape(StringContainer b, String value, char add) {
+		for (int i = 0; i < value.length(); ++i) {
+			char c = value.charAt(i);
+			if (c == add)
+				b.append('\\');
+			b.append(c);
 		}
 		return b;
 	}
@@ -254,7 +263,7 @@ class YamlSectionBuilderHelper {
 			SectionHolder sec = new SectionHolder(name);
 			sec.space = space + "  ";
 			if (holders == null)
-				holders = new LinkedList<>();
+				holders = new ArrayList<>();
 			holders.add(sec);
 			return sec;
 		}

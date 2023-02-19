@@ -1,8 +1,8 @@
 package me.devtec.shared.dataholder.loaders;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,8 +11,8 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
 public class EmptyLoader extends DataLoader {
 	protected Map<String, DataValue> data = new LinkedHashMap<>();
-	protected List<String> header = new LinkedList<>();
-	protected List<String> footer = new LinkedList<>();
+	protected List<String> header = new ArrayList<>();
+	protected List<String> footer = new ArrayList<>();
 	protected boolean loaded = true;
 
 	@Override
@@ -82,8 +82,8 @@ public class EmptyLoader extends DataLoader {
 		try {
 			EmptyLoader clone = getClass().newInstance();
 			clone.data = new LinkedHashMap<>(data);
-			clone.footer = new LinkedList<>(footer);
-			clone.header = new LinkedList<>(header);
+			clone.footer = new ArrayList<>(footer);
+			clone.header = new ArrayList<>(header);
 			clone.loaded = loaded;
 			return clone;
 		} catch (Exception e) {

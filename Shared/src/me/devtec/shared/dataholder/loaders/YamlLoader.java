@@ -1,8 +1,8 @@
 package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,7 +28,7 @@ public class YamlLoader extends EmptyLoader {
 			// EXTRA BUILDER TYPE
 			BuilderType type = null;
 			// LIST OR EXTRA BUILDER
-			LinkedList<Object> items = null;
+			ArrayList<Object> items = null;
 			int spaces = 0;
 			// EXTRA BUILDER
 			StringContainer builder = null;
@@ -38,7 +38,7 @@ public class YamlLoader extends EmptyLoader {
 			String value = null;
 
 			// COMMENTS
-			LinkedList<String> comments = new LinkedList<>();
+			ArrayList<String> comments = new ArrayList<>();
 
 			int linePos = 0;
 			for (String line : input.split(System.lineSeparator())) {
@@ -57,7 +57,7 @@ public class YamlLoader extends EmptyLoader {
 
 				if (!key.equals("") && e.startsWith("- ")) {
 					if (items == null)
-						items = new LinkedList<>();
+						items = new ArrayList<>();
 					items.add(Json.reader().read(YamlLoader.r(e.substring(2))));
 					continue;
 				}
@@ -73,7 +73,7 @@ public class YamlLoader extends EmptyLoader {
 								continue;
 							}
 							spaces = 0;
-							data.put(key, DataValue.of(null, new LinkedList<>(items), null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+							data.put(key, DataValue.of(null, new ArrayList<>(items), null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
 							comments.clear();
 							items = null;
 						} else {
@@ -82,13 +82,13 @@ public class YamlLoader extends EmptyLoader {
 								continue;
 							}
 							spaces = 0;
-							data.put(key, DataValue.of(null, builder.toString(), null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+							data.put(key, DataValue.of(null, builder.toString(), null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
 							comments.clear();
 							builder = null;
 						}
 						type = null;
 					} else if (items != null) {
-						data.get(key).value = new LinkedList<>(items);
+						data.get(key).value = new ArrayList<>(items);
 						items = null;
 					}
 
@@ -118,7 +118,7 @@ public class YamlLoader extends EmptyLoader {
 					String[] valueSplit = YamlLoader.splitFromComment(value);
 					if (valueSplit[0].trim().isEmpty() && value.indexOf('"') == -1 && value.indexOf('\'') == -1) {
 						value = null;
-						data.put(key, DataValue.of(null, null, null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+						data.put(key, DataValue.of(null, null, null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
 						comments.clear();
 						continue;
 					}
@@ -134,16 +134,15 @@ public class YamlLoader extends EmptyLoader {
 					if (value.equals("|-")) {
 						type = BuilderType.LIST;
 						spaces = sub + 2; // DEFAULT
-						items = new LinkedList<>();
+						items = new ArrayList<>();
 						continue;
 					}
 					if (value.equals("[]")) {
-						data.put(key,
-								DataValue.of("[]", Collections.emptyList(), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+						data.put(key, DataValue.of("[]", Collections.emptyList(), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
 						comments.clear();
 						continue;
 					}
-					data.put(key, DataValue.of(value, Json.reader().read(value), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new LinkedList<>(comments))));
+					data.put(key, DataValue.of(value, Json.reader().read(value), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
 					comments.clear();
 				} else if (type != null)
 					if (type == BuilderType.LIST) {
@@ -219,6 +218,7 @@ public class YamlLoader extends EmptyLoader {
 		boolean insideQuetosJson = false;
 		boolean comment = false;
 		boolean spaceCounting = true;
+		boolean escape = false;
 		char quetoChar = 0;
 		int spaces = 0;
 
@@ -237,16 +237,21 @@ public class YamlLoader extends EmptyLoader {
 			jsonChars.add(posChar);
 		}
 
-		char prev = posChar;
 		for (int pos = insideQueto ? 1 : 0; pos < group.length(); ++pos) {
 			posChar = group.charAt(pos);
 
-			if (comment) {
+			if (comment || escape) {
+				escape = false;
 				builder.append(posChar);
 				continue;
 			}
 
-			if (insideJson && (posChar == '"' || posChar == '\'') && prev != '\\')
+			if (posChar == '\\') {
+				escape = true;
+				continue;
+			}
+
+			if (insideJson && (posChar == '"' || posChar == '\''))
 				insideQuetosJson = !insideQuetosJson;
 
 			if (!insideQuetosJson && insideJson && (posChar == '[' || posChar == '{'))
@@ -269,13 +274,11 @@ public class YamlLoader extends EmptyLoader {
 					spaceCounting = true;
 				}
 			}
-			if (insideQueto && posChar == quetoChar)
-				if (prev != '\\') {
-					insideQueto = false;
-					spaceCounting = true;
-					continue;
-				} else
-					builder.deleteCharAt(builder.length() - 1);
+			if (insideQueto && posChar == quetoChar) {
+				insideQueto = false;
+				spaceCounting = true;
+				continue;
+			}
 
 			if (spaceCounting && (posChar == ' ' || posChar == '	'))
 				++spaces;
@@ -283,7 +286,6 @@ public class YamlLoader extends EmptyLoader {
 				spaces = 0;
 
 			builder.append(posChar);
-			prev = posChar;
 		}
 		if (values == null)
 			return new String[] { builder.toString() };
