@@ -3,6 +3,7 @@ package me.devtec.shared.dataholder.loaders;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,7 +39,7 @@ public class YamlLoader extends EmptyLoader {
 			String value = null;
 
 			// COMMENTS
-			ArrayList<String> comments = new ArrayList<>();
+			List<String> comments = new ArrayList<>();
 
 			int linePos = 0;
 			for (String line : input.split(System.lineSeparator())) {
@@ -240,10 +241,16 @@ public class YamlLoader extends EmptyLoader {
 		for (int pos = insideQueto ? 1 : 0; pos < group.length(); ++pos) {
 			posChar = group.charAt(pos);
 
-			if (comment || escape) {
-				escape = false;
+			if (comment) {
 				builder.append(posChar);
 				continue;
+			}
+
+			if (escape) {
+				escape = false;
+				if (posChar == '"' || posChar == '\'')
+					continue;
+				builder.append('\\');
 			}
 
 			if (posChar == '\\') {
