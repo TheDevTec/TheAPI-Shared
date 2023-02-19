@@ -333,4 +333,8 @@ public class StringContainer {
 		return -1;
 	}
 
+	public void increaseCount(int newCount) {
+		count += newCount;
+	}
+
 }

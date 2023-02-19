@@ -1,6 +1,5 @@
 package me.devtec.shared.utility;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -19,7 +18,7 @@ public class StreamUtils {
 		if (!file.exists())
 			return null;
 		try {
-			return fromStream(new FileInputStream(file));
+			return fromStream(new FileInputStream(file), (int) file.length());
 		} catch (Exception err) {
 			return null;
 		}
@@ -30,14 +29,24 @@ public class StreamUtils {
 	 * @return String
 	 */
 	public static String fromStream(InputStream stream) {
+		return fromStream(stream, 512);
+	}
+
+	/**
+	 * @apiNote Read InputStream and convert into String with prepared
+	 *          StringContainer size
+	 * @return String
+	 */
+	public static String fromStream(InputStream stream, int containerSize) {
 		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8), 4096);
-			StringContainer sb = new StringContainer(512);
-			String content;
-			while ((content = br.readLine()) != null) {
-				if (sb.length() != 0)
-					sb.append(System.lineSeparator());
-				sb.append(content);
+			InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+			StringContainer sb = new StringContainer(containerSize);
+			char[] buffer = new char[containerSize];
+			int res;
+			while ((res = reader.read(buffer)) != -1) {
+				sb.ensureCapacity(sb.length() + res);
+				System.arraycopy(buffer, 0, sb.getValueWithoutTrim(), sb.length(), res);
+				sb.increaseCount(res);
 			}
 			stream.close();
 			return sb.toString();
@@ -45,4 +54,10 @@ public class StreamUtils {
 			return null;
 		}
 	}
+
+	/*
+	 * 1,287,900 - 665
+	 * 
+	 * 144,500 - 2442
+	 */
 }
