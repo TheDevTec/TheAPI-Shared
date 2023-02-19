@@ -41,7 +41,7 @@ public class StreamUtils {
 		try {
 			InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
 			StringContainer sb = new StringContainer(containerSize);
-			char[] buffer = new char[containerSize];
+			char[] buffer = new char[containerSize <= 0 ? 512 : containerSize];
 			int res;
 			while ((res = reader.read(buffer)) != -1) {
 				sb.ensureCapacity(sb.length() + res);
@@ -54,10 +54,4 @@ public class StreamUtils {
 			return null;
 		}
 	}
-
-	/*
-	 * 1,287,900 - 665
-	 * 
-	 * 144,500 - 2442
-	 */
 }
