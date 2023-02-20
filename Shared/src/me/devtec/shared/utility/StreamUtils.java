@@ -49,6 +49,13 @@ public class StreamUtils {
 				sb.increaseCount(res);
 			}
 			stream.close();
+			for (int i = 0; i < sb.length(); ++i) {
+				char c = sb.charAt(i);
+				if (c == 13)
+					sb.delete(i, ++i);
+				else if (c == 10)
+					sb.replace(i, ++i, System.lineSeparator());
+			}
 			return sb.toString();
 		} catch (Exception err) {
 			return null;

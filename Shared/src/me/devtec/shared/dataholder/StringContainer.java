@@ -57,6 +57,11 @@ public class StringContainer {
 		return value[index];
 	}
 
+	public StringContainer setCharAt(int index, char newChar) {
+		value[index] = newChar;
+		return this;
+	}
+
 	public StringContainer append(StringContainer asb) {
 		if (asb == null)
 			return appendNull();
@@ -240,9 +245,11 @@ public class StringContainer {
 		char[] lookingFor = value.toCharArray();
 
 		int start = indexOf(0, lookingFor);
+		int index = start;
 		while (start != -1) {
 			replace(start, start + value.length(), replacement);
-			start = indexOf(start, lookingFor);
+			start = indexOf(index, lookingFor);
+			index += start;
 		}
 		return this;
 	}
@@ -258,6 +265,31 @@ public class StringContainer {
 		int start = lastIndexOf(value);
 		if (start != -1)
 			replace(start, start + value.length(), replacement);
+		return this;
+	}
+
+	public StringContainer replace(char value, char replacement) {
+		int start = indexOf(value, 0);
+		int index = start;
+		while (start != -1) {
+			setCharAt(start, replacement);
+			start = indexOf(value, index);
+			index += start;
+		}
+		return this;
+	}
+
+	public StringContainer replaceFirst(char value, char replacement) {
+		int start = indexOf(value);
+		if (start != -1)
+			setCharAt(start, replacement);
+		return this;
+	}
+
+	public StringContainer replaceLast(char value, char replacement) {
+		int start = lastIndexOf(value);
+		if (start != -1)
+			setCharAt(start, replacement);
 		return this;
 	}
 
