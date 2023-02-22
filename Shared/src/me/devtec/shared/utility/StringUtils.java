@@ -977,7 +977,7 @@ public class StringUtils {
 				continue;
 			}
 			if (c == '+')
-				if (container.length() != 0)
+				if (container.length() == 0)
 					continue;
 				else
 					break;
@@ -1013,13 +1013,58 @@ public class StringUtils {
 	 * @apiNote Is string, double ?
 	 * @return boolean
 	 */
-	public static boolean isDouble(String fromString) {
-		try {
-			Double.parseDouble(fromString);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
+	public static boolean isDouble(String stringToTest) {
+		int checkedNumbers = 0;
+		boolean minus = false;
+		boolean dot = false;
+		boolean esymbol = false;
+		boolean unfinishedEsymbol = false;
+		int size = stringToTest.length();
+		for (int i = 0; i < size; ++i) {
+			char c = stringToTest.charAt(i);
+			switch (c) {
+			case ' ':
+				continue;
+			case '-':
+				if (minus || checkedNumbers != 0)
+					return false;
+				minus = true;
+				continue;
+			case '+':
+				if (minus || checkedNumbers != 0)
+					return false;
+				continue;
+			case 'e':
+			case 'E':
+				if (esymbol || checkedNumbers == 0)
+					return false;
+				dot = true;
+				esymbol = true;
+				unfinishedEsymbol = true;
+				continue;
+			case '.':
+			case ',':
+				if (dot || esymbol || checkedNumbers == 0)
+					return false;
+				dot = true;
+				continue;
+			default:
+				break;
+			}
+			if (c < 48 || c > 57) {
+				if (size - 1 == i && (c == 'd' || c == 'f' || c == 'D' || c == 'F'))
+					continue;
+				if (checkedNumbers == 0 && c == 'N' && i + 3 <= size)
+					return stringToTest.charAt(++i) == 'a' && stringToTest.charAt(++i) == 'N';
+				if (checkedNumbers == 0 && c == 'I' && i + 8 <= size)
+					return stringToTest.charAt(++i) == 'n' && stringToTest.charAt(++i) == 'f' && stringToTest.charAt(++i) == 'i' && stringToTest.charAt(++i) == 'n' && stringToTest.charAt(++i) == 'i'
+							&& stringToTest.charAt(++i) == 't' && stringToTest.charAt(++i) == 'y';
+				return false;
+			}
+			++checkedNumbers;
+			unfinishedEsymbol = false;
 		}
+		return checkedNumbers > 0 && !unfinishedEsymbol;
 	}
 
 	/**
@@ -1040,7 +1085,7 @@ public class StringUtils {
 				continue;
 			}
 			if (c == '+')
-				if (container.length() != 0)
+				if (container.length() == 0)
 					continue;
 				else
 					break;
@@ -1060,13 +1105,130 @@ public class StringUtils {
 	 * @apiNote Is string, long ?
 	 * @return boolean
 	 */
-	public static boolean isLong(String fromString) {
-		try {
-			Long.parseLong(fromString);
-		} catch (NumberFormatException e) {
-			return false;
+	public static boolean isLong(String stringToTest) {
+		int checkedNumbers = 0;
+		boolean minus = false;
+		boolean skippingZeros = true;
+		int totalWidth = 0;
+		boolean atLimit = false;
+		for (int i = 0; i < stringToTest.length(); ++i) {
+			char c = stringToTest.charAt(i);
+			switch (c) {
+			case ' ':
+				continue;
+			case '-':
+				if (minus || checkedNumbers != 0)
+					return false;
+				minus = true;
+				continue;
+			case '+':
+				if (minus || checkedNumbers != 0)
+					return false;
+				continue;
+			default:
+				break;
+			}
+			if (c < 48 || c > 57 || totalWidth == 19)
+				return false;
+			if (skippingZeros) {
+				if (c == '0') {
+					++checkedNumbers;
+					continue;
+				}
+				skippingZeros = false;
+				if (c == 57)
+					atLimit = true;
+				++checkedNumbers;
+				continue;
+			}
+			byte b = (byte) (c - 48);
+			if (atLimit ? atLimit = overLongLimit(minus, atLimit, totalWidth++, b) : false)
+				if (totalWidth == 19)
+					return false;
+			++checkedNumbers;
 		}
-		return true;
+		return checkedNumbers > 0;
+	}
+
+	// 9,223,372,036,854,775,807-8
+	private static boolean overLongLimit(boolean minus, boolean atLimit, int i, byte b) {
+		switch (i) {
+		case 1:
+			if (atLimit && b > 2)
+				return true;
+			break;
+		case 2:
+			if (atLimit && b > 2)
+				return true;
+			break;
+		case 3:
+			if (atLimit && b > 3)
+				return true;
+			break;
+		case 4:
+			if (atLimit && b > 3)
+				return true;
+			break;
+		case 5:
+			if (atLimit && b > 7)
+				return true;
+			break;
+		case 6:
+			if (atLimit && b > 2)
+				return true;
+			break;
+		case 7:
+			if (atLimit && b > 0)
+				return true;
+			break;
+		case 8:
+			if (atLimit && b > 3)
+				return true;
+			break;
+		case 9:
+			if (atLimit && b > 6)
+				return true;
+			break;
+		case 10:
+			if (atLimit && b > 8)
+				return true;
+			break;
+		case 11:
+			if (atLimit && b > 5)
+				return true;
+			break;
+		case 12:
+			if (atLimit && b > 4)
+				return true;
+			break;
+		case 13:
+			if (atLimit && b > 7)
+				return true;
+			break;
+		case 14:
+			if (atLimit && b > 7)
+				return true;
+			break;
+		case 15:
+			if (atLimit && b > 5)
+				return true;
+			break;
+		case 16:
+			if (atLimit && b > 8)
+				return true;
+			break;
+		case 17:
+			if (atLimit && b > 0)
+				return true;
+			break;
+		case 18:
+			if (atLimit && b > (minus ? 8 : 7))
+				return true;
+			break;
+		default:
+			break;
+		}
+		return false;
 	}
 
 	/**
@@ -1087,7 +1249,7 @@ public class StringUtils {
 				continue;
 			}
 			if (c == '+')
-				if (container.length() != 0)
+				if (container.length() == 0)
 					continue;
 				else
 					break;
@@ -1107,26 +1269,102 @@ public class StringUtils {
 	 * @apiNote Is string, int ?
 	 * @return boolean
 	 */
-	public static boolean isInt(String fromString) {
-		try {
-			Integer.parseInt(fromString);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
+	public static boolean isInt(String stringToTest) {
+		int checkedNumbers = 0;
+		boolean minus = false;
+		boolean skippingZeros = true;
+		int totalWidth = 0;
+		boolean atLimit = false;
+		for (int i = 0; i < stringToTest.length(); ++i) {
+			char c = stringToTest.charAt(i);
+			switch (c) {
+			case ' ':
+				continue;
+			case '-':
+				if (minus || checkedNumbers != 0)
+					return false;
+				minus = true;
+				continue;
+			case '+':
+				if (minus || checkedNumbers != 0)
+					return false;
+				continue;
+			default:
+				break;
+			}
+			if (c < 48 || c > 57 || totalWidth == 10)
+				return false;
+			if (skippingZeros) {
+				if (c == '0') {
+					++checkedNumbers;
+					continue;
+				}
+				skippingZeros = false;
+				if (c == 50)
+					atLimit = true;
+				++checkedNumbers;
+				continue;
+			}
+			byte b = (byte) (c - 48);
+			if (atLimit ? atLimit = overIntLimit(minus, atLimit, totalWidth++, b) : false)
+				if (totalWidth == 10)
+					return false;
+			++checkedNumbers;
 		}
+		return checkedNumbers > 0;
+	}
+
+	// -2,147,483,647-8
+	private static boolean overIntLimit(boolean minus, boolean atLimit, int i, byte b) {
+		switch (i) {
+		case 1:
+			if (atLimit && b > 1)
+				return true;
+			break;
+		case 2:
+			if (atLimit && b > 4)
+				return true;
+			break;
+		case 3:
+			if (atLimit && b > 7)
+				return true;
+			break;
+		case 4:
+			if (atLimit && b > 4)
+				return true;
+			break;
+		case 5:
+			if (atLimit && b > 8)
+				return true;
+			break;
+		case 6:
+			if (atLimit && b > 3)
+				return true;
+			break;
+		case 7:
+			if (atLimit && b > 6)
+				return true;
+			break;
+		case 8:
+			if (atLimit && b > 4)
+				return true;
+			break;
+		case 9:
+			if (atLimit && b > (minus ? 8 : 7))
+				return true;
+			break;
+		default:
+			break;
+		}
+		return false;
 	}
 
 	/**
-	 * @apiNote Is string, float ?
+	 * @apiNote Is string, float (double) ?
 	 * @return boolean
 	 */
-	public static boolean isFloat(String fromString) {
-		try {
-			Float.parseFloat(fromString);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
-		}
+	public static boolean isFloat(String stringToTest) {
+		return isDouble(stringToTest);
 	}
 
 	/**
@@ -1150,7 +1388,7 @@ public class StringUtils {
 				continue;
 			}
 			if (c == '+')
-				if (container.length() != 0)
+				if (container.length() == 0)
 					continue;
 				else
 					break;
@@ -1186,13 +1424,66 @@ public class StringUtils {
 	 * @apiNote Is string, byte ?
 	 * @return boolean
 	 */
-	public static boolean isByte(String fromString) {
-		try {
-			Byte.parseByte(fromString);
-		} catch (NumberFormatException e) {
-			return false;
+	public static boolean isByte(String stringToTest) {
+		int checkedNumbers = 0;
+		boolean minus = false;
+		boolean skippingZeros = true;
+		int totalWidth = 0;
+		boolean atLimit = false;
+		for (int i = 0; i < stringToTest.length(); ++i) {
+			char c = stringToTest.charAt(i);
+			switch (c) {
+			case ' ':
+				continue;
+			case '-':
+				if (minus || checkedNumbers != 0)
+					return false;
+				minus = true;
+				continue;
+			case '+':
+				if (minus || checkedNumbers != 0)
+					return false;
+				continue;
+			default:
+				break;
+			}
+			if (c < 48 || c > 57 || totalWidth == 3)
+				return false;
+			if (skippingZeros) {
+				if (c == '0') {
+					++checkedNumbers;
+					continue;
+				}
+				skippingZeros = false;
+				if (c == 49)
+					atLimit = true;
+				++checkedNumbers;
+				continue;
+			}
+			byte b = (byte) (c - 48);
+			if (atLimit ? atLimit = overByteLimit(minus, atLimit, totalWidth++, b) : false)
+				if (totalWidth == 3)
+					return false;
+			++checkedNumbers;
 		}
-		return true;
+		return checkedNumbers > 0;
+	}
+
+	// 127-8
+	private static boolean overByteLimit(boolean minus, boolean atLimit, int i, byte b) {
+		switch (i) {
+		case 1:
+			if (atLimit && b > 2)
+				return true;
+			break;
+		case 2:
+			if (atLimit && b > (minus ? 8 : 7))
+				return true;
+			break;
+		default:
+			break;
+		}
+		return false;
 	}
 
 	/**
@@ -1213,7 +1504,7 @@ public class StringUtils {
 				continue;
 			}
 			if (c == '+')
-				if (container.length() != 0)
+				if (container.length() == 0)
 					continue;
 				else
 					break;
@@ -1233,13 +1524,78 @@ public class StringUtils {
 	 * @apiNote Is string, short ?
 	 * @return boolean
 	 */
-	public static boolean isShort(String fromString) {
-		try {
-			Short.parseShort(fromString);
-		} catch (NumberFormatException e) {
-			return false;
+	public static boolean isShort(String stringToTest) {
+		int checkedNumbers = 0;
+		boolean minus = false;
+		boolean skippingZeros = true;
+		int totalWidth = 0;
+		boolean atLimit = false;
+		for (int i = 0; i < stringToTest.length(); ++i) {
+			char c = stringToTest.charAt(i);
+			switch (c) {
+			case ' ':
+				continue;
+			case '-':
+				if (minus || checkedNumbers != 0)
+					return false;
+				minus = true;
+				continue;
+			case '+':
+				if (minus || checkedNumbers != 0)
+					return false;
+				continue;
+			default:
+				break;
+			}
+			if (c < 48 || c > 57 || totalWidth == 5)
+				return false;
+			if (skippingZeros) {
+				if (c == '0') {
+					++checkedNumbers;
+					continue;
+				}
+				skippingZeros = false;
+				if (c == 51)
+					atLimit = true;
+				++checkedNumbers;
+				continue;
+			}
+			byte b = (byte) (c - 48);
+			if (atLimit ? atLimit = overShortLimit(minus, atLimit, totalWidth++, b) : false)
+				if (totalWidth == 5)
+					return false;
+			++checkedNumbers;
 		}
-		return true;
+		return checkedNumbers > 0;
+	}
+
+	// 32,767-8
+	private static boolean overShortLimit(boolean minus, boolean atLimit, int i, byte b) {
+		switch (i) {
+		case 1:
+			if (atLimit && b > 2)
+				return true;
+			break;
+		case 2:
+			if (atLimit && b > 7)
+				return true;
+			break;
+		case 3:
+			if (atLimit && b > 6)
+				return true;
+			break;
+		case 4:
+			if (atLimit && b > 7)
+				return true;
+			break;
+		case 5:
+			if (atLimit && b > (minus ? 8 : 7))
+				return true;
+			break;
+		default:
+			break;
+		}
+		return false;
 	}
 
 	/**
@@ -1260,7 +1616,7 @@ public class StringUtils {
 				continue;
 			}
 			if (c == '+')
-				if (container.length() != 0)
+				if (container.length() == 0)
 					continue;
 				else
 					break;
