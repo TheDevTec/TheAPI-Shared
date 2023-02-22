@@ -722,7 +722,7 @@ public class StringUtils {
 	 * @return String
 	 */
 	public static String timeToString(long period, String split, TimeFormat... disabled) {
-		boolean digit = split.equals(":");
+		boolean digit = split.length() == 1 ? split.charAt(0) == ':' : false;
 
 		if (period == 0L)
 			return digit ? "0" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(0);
@@ -758,7 +758,7 @@ public class StringUtils {
 				}
 
 		if (skipYear && skipMonth && skipDay && skipHour && skipMinute && skipSecond)
-			return digit ? period + "" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(period);
+			return digit ? String.valueOf(period) : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(period);
 
 		long years = 0;
 		if (!skipYear) {
@@ -829,7 +829,7 @@ public class StringUtils {
 
 		String period = original;
 
-		if (StringUtils.isLong(period) && !period.endsWith("d") && !period.endsWith("e"))
+		if (StringUtils.isLong(period))
 			return StringUtils.getLong(period);
 
 		long time = 0;
@@ -873,10 +873,9 @@ public class StringUtils {
 
 		for (TimeFormat format : TimeFormat.values()) {
 			Matcher matcher = StringUtils.timeConvertor.get(format).matcher(period);
-			while (matcher.find()) {
+			while (matcher.find())
 				time += StringUtils.getLong(matcher.group()) * format.seconds();
-				period = matcher.replaceFirst("");
-			}
+			period = matcher.replaceAll("");
 		}
 		return time;
 	}
