@@ -45,7 +45,7 @@ public class StringUtils {
 	private static final Pattern normal = Pattern.compile("((^[-])?[ ]*[0-9.]+)[ ]*([+-])[ ]*(-?[ ]*[0-9.]+)");
 
 	public enum TimeFormat {
-		YEARS(31536000, 365.2420833333334, "y"), MONTHS(2628000, 12, "mon"), DAYS(86400, 30.43684027777778, "d"), HOURS(3600, 24, "h"), MINUTES(60, 60, "m"), SECONDS(1, 60, "s");
+		YEARS(31536000, 365, "y"), MONTHS(2630000, 12, "mon"), DAYS(86400, 31, "d"), HOURS(3600, 24, "h"), MINUTES(60, 60, "m"), SECONDS(1, 60, "s");
 
 		private long seconds;
 		private double cast;
@@ -733,27 +733,29 @@ public class StringUtils {
 		boolean skipHour = false;
 		boolean skipMinute = false;
 		boolean skipSecond = false;
-		for (TimeFormat format : disabled)
-			switch (format) {
-			case DAYS:
-				skipDay = true;
-				break;
-			case HOURS:
-				skipHour = true;
-				break;
-			case MINUTES:
-				skipMinute = true;
-				break;
-			case MONTHS:
-				skipMonth = true;
-				break;
-			case SECONDS:
-				skipSecond = true;
-				break;
-			case YEARS:
-				skipYear = true;
-				break;
-			}
+
+		if (disabled != null)
+			for (TimeFormat format : disabled)
+				switch (format) {
+				case DAYS:
+					skipDay = true;
+					break;
+				case HOURS:
+					skipHour = true;
+					break;
+				case MINUTES:
+					skipMinute = true;
+					break;
+				case MONTHS:
+					skipMonth = true;
+					break;
+				case SECONDS:
+					skipSecond = true;
+					break;
+				case YEARS:
+					skipYear = true;
+					break;
+				}
 
 		if (skipYear && skipMonth && skipDay && skipHour && skipMinute && skipSecond)
 			return digit ? period + "" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(period);
@@ -788,7 +790,7 @@ public class StringUtils {
 		}
 
 		long seconds = skipSecond ? 0 : period;
-		StringContainer builder = new StringContainer(split.length() + 32);
+		StringContainer builder = new StringContainer((int) (years + months + days + hours + minutes + seconds + 8));
 		StringUtils.addFormat(builder, split, TimeFormat.YEARS, digit, years);
 		StringUtils.addFormat(builder, split, TimeFormat.MONTHS, digit, months);
 		StringUtils.addFormat(builder, split, TimeFormat.DAYS, digit, days);
@@ -827,8 +829,8 @@ public class StringUtils {
 
 		String period = original;
 
-		if (StringUtils.isFloat(period) && !period.endsWith("d") && !period.endsWith("e"))
-			return (long) StringUtils.getFloat(period);
+		if (StringUtils.isLong(period) && !period.endsWith("d") && !period.endsWith("e"))
+			return StringUtils.getLong(period);
 
 		long time = 0;
 
@@ -836,34 +838,34 @@ public class StringUtils {
 			String[] split = period.split(":");
 			switch (split.length) {
 			case 2: // mm:ss
-				time += StringUtils.getFloat(split[0]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getFloat(split[1]);
+				time += StringUtils.getLong(split[0]) * TimeFormat.MINUTES.seconds();
+				time += StringUtils.getLong(split[1]);
 				break;
 			case 3: // hh:mm:ss
-				time += StringUtils.getFloat(split[0]) * TimeFormat.HOURS.seconds();
-				time += StringUtils.getFloat(split[1]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getFloat(split[2]);
+				time += StringUtils.getLong(split[0]) * TimeFormat.HOURS.seconds();
+				time += StringUtils.getLong(split[1]) * TimeFormat.MINUTES.seconds();
+				time += StringUtils.getLong(split[2]);
 				break;
 			case 4: // dd:hh:mm:ss
-				time += StringUtils.getFloat(split[0]) * TimeFormat.DAYS.seconds();
-				time += StringUtils.getFloat(split[1]) * TimeFormat.HOURS.seconds();
-				time += StringUtils.getFloat(split[2]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getFloat(split[3]);
+				time += StringUtils.getLong(split[0]) * TimeFormat.DAYS.seconds();
+				time += StringUtils.getLong(split[1]) * TimeFormat.HOURS.seconds();
+				time += StringUtils.getLong(split[2]) * TimeFormat.MINUTES.seconds();
+				time += StringUtils.getLong(split[3]);
 				break;
 			case 5: // mm:dd:hh:mm:ss
-				time += StringUtils.getFloat(split[0]) * TimeFormat.MONTHS.seconds();
-				time += StringUtils.getFloat(split[1]) * TimeFormat.DAYS.seconds();
-				time += StringUtils.getFloat(split[2]) * TimeFormat.HOURS.seconds();
-				time += StringUtils.getFloat(split[3]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getFloat(split[4]);
+				time += StringUtils.getLong(split[0]) * TimeFormat.MONTHS.seconds();
+				time += StringUtils.getLong(split[1]) * TimeFormat.DAYS.seconds();
+				time += StringUtils.getLong(split[2]) * TimeFormat.HOURS.seconds();
+				time += StringUtils.getLong(split[3]) * TimeFormat.MINUTES.seconds();
+				time += StringUtils.getLong(split[4]);
 				break;
 			default: // yy:mm:dd:hh:mm:ss
-				time += StringUtils.getFloat(split[0]) * TimeFormat.YEARS.seconds();
-				time += StringUtils.getFloat(split[1]) * TimeFormat.MONTHS.seconds();
-				time += StringUtils.getFloat(split[2]) * TimeFormat.DAYS.seconds();
-				time += StringUtils.getFloat(split[3]) * TimeFormat.HOURS.seconds();
-				time += StringUtils.getFloat(split[4]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getFloat(split[5]);
+				time += StringUtils.getLong(split[0]) * TimeFormat.YEARS.seconds();
+				time += StringUtils.getLong(split[1]) * TimeFormat.MONTHS.seconds();
+				time += StringUtils.getLong(split[2]) * TimeFormat.DAYS.seconds();
+				time += StringUtils.getLong(split[3]) * TimeFormat.HOURS.seconds();
+				time += StringUtils.getLong(split[4]) * TimeFormat.MINUTES.seconds();
+				time += StringUtils.getLong(split[5]);
 				break;
 			}
 			return time;
