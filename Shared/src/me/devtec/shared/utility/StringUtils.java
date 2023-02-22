@@ -1362,50 +1362,87 @@ public class StringUtils {
 	public static float getFloat(String fromString) {
 		if (fromString == null)
 			return 0;
-		StringContainer container = new StringContainer(fromString.length());
-		boolean minusBefore = false;
-		boolean dot = false;
-		boolean esymbol = false;
-		boolean unfinishedEsymbol = false;
-		for (int i = 0; i < fromString.length(); ++i) {
+
+		float result = 0;
+		int decimal = 0;
+		int exponent = 0;
+		boolean minusExponent = false;
+
+		boolean minus = false;
+		boolean hasDecimal = false;
+		boolean hasExponent = false;
+		byte exponentSymbol = 0;
+
+		short totalWidth = 0;
+
+		int size = fromString.length();
+		charsLoop: for (int i = 0; i < size; ++i) {
 			char c = fromString.charAt(i);
-			if (c == '-') {
-				if (minusBefore || container.length() != 0)
-					break;
-				minusBefore = true;
+			switch (c) {
+			case ' ':
+				continue charsLoop;
+			case '-':
+				if (minus) {
+					if (hasExponent && exponent == 0) {
+						minusExponent = true;
+						continue charsLoop;
+					}
+					break charsLoop;
+				}
+				if (hasExponent && exponent == 0) {
+					minusExponent = true;
+					continue charsLoop;
+				}
+				minus = true;
+				continue charsLoop;
+			case 'e':
+			case 'E':
+				if (hasExponent)
+					break charsLoop;
+				hasExponent = true;
+				exponentSymbol = 1;
+				continue charsLoop;
+			case '.':
+			case ',':
+				if (hasDecimal || hasExponent)
+					break charsLoop;
+				hasDecimal = true;
+				continue charsLoop;
+			}
+			if (c < 48 || c > 57) {
+				if (totalWidth == 0) {
+					if (c == 'N' && i + 3 <= size)
+						if (fromString.charAt(i + 1) == 'a' && fromString.charAt(i + 2) == 'N')
+							return Float.NaN;
+					if (c == 'I' && i + 8 <= size)
+						if (fromString.charAt(i + 1) == 'n' && fromString.charAt(i + 2) == 'f' && fromString.charAt(i + 3) == 'i' && fromString.charAt(i + 4) == 'n' && fromString.charAt(i + 5) == 'i'
+								&& fromString.charAt(i + 6) == 't' && fromString.charAt(i + 7) == 'y')
+							return minus ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
+				}
 				continue;
 			}
-			if (c == '+')
-				if (container.length() == 0)
-					continue;
-				else
-					break;
-			if (c == 'e' || c == 'E') {
-				if (!dot || esymbol)
-					break;
-				container.append('E');
-				dot = true;
-				esymbol = true;
-				unfinishedEsymbol = true;
+			if (totalWidth == 0 && c == 48)
 				continue;
-			}
-			if (c == '.' || c == ',') {
-				if (dot || esymbol)
-					break;
-				container.append('.');
-				dot = true;
-				continue;
-			}
-			if (c >= 48 && c <= 57) {
-				container.append(c);
-				unfinishedEsymbol = false;
+			int digit = c - 48;
+			if (++totalWidth > 39)
+				return minus ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
+
+			if (hasExponent) {
+				exponent = exponent * 10 + digit;
+				exponentSymbol = 0;
+			} else {
+				result = result * 10 + digit;
+				if (hasDecimal)
+					++decimal;
 			}
 		}
-		try {
-			return unfinishedEsymbol ? 0 : minusBefore ? -Float.parseFloat(container.toString()) : Float.parseFloat(container.toString());
-		} catch (NumberFormatException e) {
-		}
-		return 0;
+		int range = (minusExponent ? -exponent : exponent) - decimal;
+		if (range != 0)
+			if (range > 0)
+				result *= Math.pow(10, range);
+			else
+				result /= Math.pow(10, range * -1);
+		return exponentSymbol == 0 ? minus ? -result : result : 0;
 	}
 
 	/**
