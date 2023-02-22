@@ -908,7 +908,7 @@ public class StringUtils {
 				double a = StringUtils.getDouble(s.group(1));
 				String b = s.group(3);
 				double d = StringUtils.getDouble(s.group(4));
-				val = val.replace(s.group(), (a == 0 || d == 0 ? 0 : b.charAt(0) == '*' ? a * d : a / d) + "");
+				val = val.replace(s.group(), Double.toString(a == 0 || d == 0 ? 0 : b.charAt(0) == '*' ? a * d : a / d));
 				s.reset(val);
 			}
 		}
@@ -918,7 +918,7 @@ public class StringUtils {
 				double a = StringUtils.getDouble(s.group(1));
 				String b = s.group(3);
 				double d = StringUtils.getDouble(s.group(4));
-				val = val.replace(s.group(), (b.charAt(0) == '+' ? a + d : a - d) + "");
+				val = val.replace(s.group(), Double.toString(b.charAt(0) == '+' ? a + d : a - d));
 				s.reset(val);
 			}
 		}
@@ -945,7 +945,7 @@ public class StringUtils {
 					subResult.append(c);
 
 				if (--inside == 0) {
-					result.append("" + calculate(subResult.toString()));
+					result.append(Double.toString(calculate(subResult.toString())));
 					subResult.clear();
 				}
 			} else if (inside == 0)
@@ -962,13 +962,51 @@ public class StringUtils {
 	 */
 	public static double getDouble(String fromString) {
 		if (fromString == null)
-			return 0.0D;
-		String a = fromString.replaceAll("[^+0-9E.,-]+", "").replace(",", ".");
+			return 0;
+		StringContainer container = new StringContainer(fromString.length());
+		boolean minusBefore = false;
+		boolean dot = false;
+		boolean esymbol = false;
+		boolean unfinishedEsymbol = false;
+		for (int i = 0; i < fromString.length(); ++i) {
+			char c = fromString.charAt(i);
+			if (c == '-') {
+				if (minusBefore || container.length() != 0)
+					break;
+				minusBefore = true;
+				continue;
+			}
+			if (c == '+')
+				if (container.length() != 0)
+					continue;
+				else
+					break;
+			if (c == 'e' || c == 'E') {
+				if (!dot || esymbol)
+					break;
+				container.append('E');
+				dot = true;
+				esymbol = true;
+				unfinishedEsymbol = true;
+				continue;
+			}
+			if (c == '.' || c == ',') {
+				if (dot || esymbol)
+					break;
+				container.append('.');
+				dot = true;
+				continue;
+			}
+			if (c >= 48 && c <= 57) {
+				container.append(c);
+				unfinishedEsymbol = false;
+			}
+		}
 		try {
-			return Double.parseDouble(a);
+			return unfinishedEsymbol ? 0 : minusBefore ? -Double.parseDouble(container.toString()) : Double.parseDouble(container.toString());
 		} catch (NumberFormatException e) {
 		}
-		return 0.0D;
+		return 0;
 	}
 
 	/**
@@ -990,13 +1028,32 @@ public class StringUtils {
 	 */
 	public static long getLong(String fromString) {
 		if (fromString == null)
-			return 0L;
-		String a = fromString.replaceAll("[^+0-9E.,-]+", "").replace(",", ".");
+			return 0;
+		StringContainer container = new StringContainer(fromString.length());
+		boolean minusBefore = false;
+		for (int i = 0; i < fromString.length(); ++i) {
+			char c = fromString.charAt(i);
+			if (c == '-') {
+				if (minusBefore || container.length() != 0)
+					break;
+				minusBefore = true;
+				continue;
+			}
+			if (c == '+')
+				if (container.length() != 0)
+					continue;
+				else
+					break;
+			if (c == '.' || c == ',')
+				break;
+			if (c >= 48 && c <= 57)
+				container.append(c);
+		}
 		try {
-			return Long.parseLong(a);
+			return minusBefore ? -Long.parseLong(container.toString()) : Long.parseLong(container.toString());
 		} catch (NumberFormatException e) {
 		}
-		return 0L;
+		return 0;
 	}
 
 	/**
@@ -1019,26 +1076,35 @@ public class StringUtils {
 	public static int getInt(String fromString) {
 		if (fromString == null)
 			return 0;
-		String a = fromString.replaceAll("[^+0-9E.,-]+", "").replace(",", ".");
-		if (!a.contains(".")) {
-			try {
-				return Integer.parseInt(a);
-			} catch (NumberFormatException e) {
+		StringContainer container = new StringContainer(fromString.length());
+		boolean minusBefore = false;
+		for (int i = 0; i < fromString.length(); ++i) {
+			char c = fromString.charAt(i);
+			if (c == '-') {
+				if (minusBefore || container.length() != 0)
+					break;
+				minusBefore = true;
+				continue;
 			}
-			try {
-				return (int) Long.parseLong(a);
-			} catch (NumberFormatException e) {
-			}
+			if (c == '+')
+				if (container.length() != 0)
+					continue;
+				else
+					break;
+			if (c == '.' || c == ',')
+				break;
+			if (c >= 48 && c <= 57)
+				container.append(c);
 		}
 		try {
-			return (int) Double.parseDouble(a);
+			return minusBefore ? -Integer.parseInt(container.toString()) : Integer.parseInt(container.toString());
 		} catch (NumberFormatException e) {
 		}
 		return 0;
 	}
 
 	/**
-	 * @apiNote Is string, integer ?
+	 * @apiNote Is string, int ?
 	 * @return boolean
 	 */
 	public static boolean isInt(String fromString) {
@@ -1069,17 +1135,55 @@ public class StringUtils {
 	 */
 	public static float getFloat(String fromString) {
 		if (fromString == null)
-			return 0F;
-		String a = fromString.replaceAll("[^+0-9E.,-]+", "").replace(",", ".");
+			return 0;
+		StringContainer container = new StringContainer(fromString.length());
+		boolean minusBefore = false;
+		boolean dot = false;
+		boolean esymbol = false;
+		boolean unfinishedEsymbol = false;
+		for (int i = 0; i < fromString.length(); ++i) {
+			char c = fromString.charAt(i);
+			if (c == '-') {
+				if (minusBefore || container.length() != 0)
+					break;
+				minusBefore = true;
+				continue;
+			}
+			if (c == '+')
+				if (container.length() != 0)
+					continue;
+				else
+					break;
+			if (c == 'e' || c == 'E') {
+				if (!dot || esymbol)
+					break;
+				container.append('E');
+				dot = true;
+				esymbol = true;
+				unfinishedEsymbol = true;
+				continue;
+			}
+			if (c == '.' || c == ',') {
+				if (dot || esymbol)
+					break;
+				container.append('.');
+				dot = true;
+				continue;
+			}
+			if (c >= 48 && c <= 57) {
+				container.append(c);
+				unfinishedEsymbol = false;
+			}
+		}
 		try {
-			return Float.parseFloat(a);
+			return unfinishedEsymbol ? 0 : minusBefore ? -Float.parseFloat(container.toString()) : Float.parseFloat(container.toString());
 		} catch (NumberFormatException e) {
 		}
 		return 0;
 	}
 
 	/**
-	 * @apiNote Is string, float ?
+	 * @apiNote Is string, byte ?
 	 * @return boolean
 	 */
 	public static boolean isByte(String fromString) {
@@ -1093,21 +1197,40 @@ public class StringUtils {
 
 	/**
 	 * @apiNote Get float from string
-	 * @return float
+	 * @return byte
 	 */
 	public static byte getByte(String fromString) {
 		if (fromString == null)
-			return (byte) 0;
-		String a = fromString.replaceAll("[^+0-9E-]+", "");
+			return 0;
+		StringContainer container = new StringContainer(fromString.length());
+		boolean minusBefore = false;
+		for (int i = 0; i < fromString.length(); ++i) {
+			char c = fromString.charAt(i);
+			if (c == '-') {
+				if (minusBefore || container.length() != 0)
+					break;
+				minusBefore = true;
+				continue;
+			}
+			if (c == '+')
+				if (container.length() != 0)
+					continue;
+				else
+					break;
+			if (c == '.' || c == ',')
+				break;
+			if (c >= 48 && c <= 57)
+				container.append(c);
+		}
 		try {
-			return Byte.parseByte(a);
+			return minusBefore ? (byte) -Byte.parseByte(container.toString()) : Byte.parseByte(container.toString());
 		} catch (NumberFormatException e) {
 		}
 		return 0;
 	}
 
 	/**
-	 * @apiNote Is string, float ?
+	 * @apiNote Is string, short ?
 	 * @return boolean
 	 */
 	public static boolean isShort(String fromString) {
@@ -1121,14 +1244,33 @@ public class StringUtils {
 
 	/**
 	 * @apiNote Get float from string
-	 * @return float
+	 * @return short
 	 */
 	public static short getShort(String fromString) {
 		if (fromString == null)
-			return (short) 0;
-		String a = fromString.replaceAll("[^+0-9E-]+", "");
+			return 0;
+		StringContainer container = new StringContainer(fromString.length());
+		boolean minusBefore = false;
+		for (int i = 0; i < fromString.length(); ++i) {
+			char c = fromString.charAt(i);
+			if (c == '-') {
+				if (minusBefore || container.length() != 0)
+					break;
+				minusBefore = true;
+				continue;
+			}
+			if (c == '+')
+				if (container.length() != 0)
+					continue;
+				else
+					break;
+			if (c == '.' || c == ',')
+				break;
+			if (c >= 48 && c <= 57)
+				container.append(c);
+		}
 		try {
-			return Short.parseShort(a);
+			return minusBefore ? (short) -Short.parseShort(container.toString()) : Short.parseShort(container.toString());
 		} catch (NumberFormatException e) {
 		}
 		return 0;
@@ -1139,8 +1281,7 @@ public class StringUtils {
 	 * @return boolean
 	 */
 	public static boolean isNumber(String fromString) {
-		return StringUtils.isInt(fromString) || StringUtils.isDouble(fromString) || StringUtils.isLong(fromString) || StringUtils.isByte(fromString) || StringUtils.isShort(fromString)
-				|| StringUtils.isFloat(fromString);
+		return StringUtils.isInt(fromString) || StringUtils.isLong(fromString) || StringUtils.isDouble(fromString);
 	}
 
 	/**
@@ -1158,22 +1299,16 @@ public class StringUtils {
 	}
 
 	public static Number getNumber(String o) {
-		if (o == null)
+		if (o == null || o.isEmpty())
 			return null;
-		if (!o.contains(".")) {
+		if (o.indexOf('.') == -1) {
 			if (StringUtils.isInt(o))
 				return StringUtils.getInt(o);
 			if (StringUtils.isLong(o))
 				return StringUtils.getLong(o);
-			if (StringUtils.isByte(o))
-				return StringUtils.getByte(o);
-			if (StringUtils.isShort(o))
-				return StringUtils.getShort(o);
 		}
 		if (StringUtils.isDouble(o))
 			return StringUtils.getDouble(o);
-		if (StringUtils.isFloat(o))
-			return StringUtils.getFloat(o);
 		return null;
 	}
 }
