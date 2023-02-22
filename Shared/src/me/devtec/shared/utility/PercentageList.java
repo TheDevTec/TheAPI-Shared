@@ -1,72 +1,81 @@
 package me.devtec.shared.utility;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PercentageList<V> {
-	private final Map<V, Double> map = new ConcurrentHashMap<>();
+	private final List<V> keys = new ArrayList<>();
+	private final List<Double> values = new ArrayList<>();
+	private double totalChance;
 
 	public boolean isEmpty() {
-		return map.isEmpty();
+		return keys.isEmpty();
 	}
 
 	public boolean contains(V object) {
-		return map.containsKey(object);
+		return keys.contains(object);
 	}
 
 	public boolean add(V object, double chance) {
 		if (chance <= 0)
 			throw new IllegalArgumentException("Chance must be greater than 0");
-		map.put(object, chance);
+		keys.add(object);
+		values.add(chance);
+		totalChance += chance;
 		return true;
 	}
 
 	public boolean remove(V object) {
-		return map.remove(object) != null;
+		int index = keys.indexOf(object);
+		if (index != -1) {
+			keys.remove(index);
+			totalChance -= values.remove(index);
+			return true;
+		}
+		return false;
 	}
 
 	public int size() {
-		return map.size();
+		return keys.size();
 	}
 
 	public double getChance(V object) {
-		return map.getOrDefault(object, 0.0);
+		int index = keys.indexOf(object);
+		if (index != -1)
+			return values.get(index);
+		return 0;
 	}
 
 	public void clear() {
-		map.clear();
+		keys.clear();
+		values.clear();
+		totalChance = 0;
 	}
 
-	public Set<Entry<V, Double>> entrySet() {
-		return map.entrySet();
+	public List<V> keySet() {
+		return keys;
 	}
 
-	public Set<V> keySet() {
-		return map.keySet();
-	}
-
-	public Collection<Double> values() {
-		return map.values();
+	public List<Double> values() {
+		return values;
 	}
 
 	public V getRandom() {
 		if (isEmpty())
 			return null;
-		if (map.size() == 1)
-			return keySet().iterator().next();
+		if (keys.size() == 1)
+			return keys.get(0);
 
-		double total = values().stream().mapToDouble(e -> e).sum();
+		double random = StringUtils.randomDouble(totalChance);
 		double value = 0.0;
-		double random = StringUtils.randomDouble(total);
-		for (Entry<V, Double> obj : entrySet()) {
-			double upperBound = value + obj.getValue();
-			if (random <= Math.max(value, upperBound) && random >= Math.min(value, upperBound))
-				return obj.getKey();
+		for (int i = 0; i < values.size(); i++) {
+			double upperBound = value + values.get(i);
+			if (random <= upperBound)
+				return keys.get(i);
 			value = upperBound;
 		}
-		return null;
+		// If we get here, it means that random was greater than totalChance, so we
+		// return the last key
+		return keys.get(keys.size() - 1);
 	}
 }

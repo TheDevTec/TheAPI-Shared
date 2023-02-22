@@ -1,8 +1,8 @@
 package me.devtec.shared.dataholder.loaders;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -195,7 +195,9 @@ public class YamlLoader extends EmptyLoader {
 
 	protected static String r(String key) {
 		String modKey = key.substring(0, key.length() - YamlLoader.removeLastSpaces(key));
-		return modKey.length() > 1 && (modKey.startsWith("\"") && modKey.endsWith("\"") || modKey.startsWith("'") && modKey.endsWith("'")) ? modKey.substring(1, modKey.length() - 1) : modKey;
+		return modKey.length() > 1 && (modKey.charAt(0) == '"' && modKey.charAt(modKey.length() - 1) == '"' || modKey.charAt(0) == '\'' && modKey.charAt(modKey.length() - 1) == '\'')
+				? modKey.substring(1, modKey.length() - 1)
+				: modKey;
 	}
 
 	public static int removeLastSpaces(String s) {
@@ -223,7 +225,7 @@ public class YamlLoader extends EmptyLoader {
 		char quetoChar = 0;
 		int spaces = 0;
 
-		ArrayDeque<Character> jsonChars = null;
+		Deque<Character> jsonChars = null;
 
 		char posChar = group.charAt(0);
 		if (posChar == '"' || posChar == '\'') { // first char is often queto
@@ -248,7 +250,7 @@ public class YamlLoader extends EmptyLoader {
 
 			if (escape) {
 				escape = false;
-				if (posChar == '"' || posChar == '\'')
+				if (!insideJson && (posChar == '"' || posChar == '\''))
 					continue;
 				builder.append('\\');
 			}

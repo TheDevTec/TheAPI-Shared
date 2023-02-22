@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import me.devtec.shared.dataholder.StringContainer;
 
 public class StreamUtils {
+	private static final int DEFAULT_BUFFER_SIZE = 512;
 
 	/**
 	 * @apiNote Read InputStream and convert into String
@@ -29,7 +30,7 @@ public class StreamUtils {
 	 * @return String
 	 */
 	public static String fromStream(InputStream stream) {
-		return fromStream(stream, 512);
+		return fromStream(stream, DEFAULT_BUFFER_SIZE);
 	}
 
 	/**
@@ -40,8 +41,11 @@ public class StreamUtils {
 	public static String fromStream(InputStream stream, int containerSize) {
 		try {
 			InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-			StringContainer sb = new StringContainer(containerSize);
-			char[] buffer = new char[containerSize <= 0 ? 512 : containerSize];
+
+			int finalSize = containerSize <= 0 ? DEFAULT_BUFFER_SIZE : containerSize;
+
+			StringContainer sb = new StringContainer(finalSize);
+			char[] buffer = new char[finalSize];
 			int res;
 			while ((res = reader.read(buffer)) != -1) {
 				sb.ensureCapacity(sb.length() + res);
