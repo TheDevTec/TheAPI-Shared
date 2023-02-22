@@ -20,6 +20,7 @@ import me.devtec.shared.Ref.ServerType;
 import me.devtec.shared.commands.manager.CommandsRegister;
 import me.devtec.shared.commands.manager.SelectorUtils;
 import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.DataType;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.placeholders.PlaceholderAPI;
 import me.devtec.shared.utility.LibraryLoader;
@@ -130,7 +131,7 @@ public class API {
 				tags.setIfAbsent("tags.tangerine", "ef8e38");
 				tags.setIfAbsent("tags.violet", "9c6eff");
 			}
-			tags.save();
+			tags.save(DataType.YAML);
 			StringUtils.tagPrefix = tags.getString("hexTagPrefix");
 			String gradientTagPrefix = tags.getString("gradient.firstHex.prefix");
 			String gradientTagPrefixL = tags.getString("gradient.secondHex.prefix");
@@ -150,9 +151,6 @@ public class API {
 					"# >X value is higher than X", "# <X value is lower than X", "# ==X value equals to X", "# !=X value doesn't equals to X"));
 			config.setIfAbsent("timeConvertor.months.matcher", "mo|mon|months?");
 			config.setIfAbsent("timeConvertor.months.convertor", Arrays.asList("<=1  month", ">1  months"));
-			config.setIfAbsent("timeConvertor.weeks.matcher", "w|weeks?");
-			config.setIfAbsent("timeConvertor.weeks.convertor", Arrays.asList("<=1  week", ">1  weeks"),
-					Arrays.asList("# Api isn't using this convertor anywhere, but other plugins can use this convertor."));
 			config.setIfAbsent("timeConvertor.days.matcher", "d|days?");
 			config.setIfAbsent("timeConvertor.days.convertor", Arrays.asList("<=1  day", ">1  days"));
 			config.setIfAbsent("timeConvertor.hours.matcher", "h|hours?");
@@ -161,7 +159,9 @@ public class API {
 			config.setIfAbsent("timeConvertor.minutes.convertor", Arrays.asList("<=1  minute", ">1  minutes"));
 			config.setIfAbsent("timeConvertor.seconds.matcher", "s|sec|seconds?");
 			config.setIfAbsent("timeConvertor.seconds.convertor", Arrays.asList("<=1  second", ">1  seconds"));
-			config.save();
+			if (config.exists("timeConvertor.weeks"))
+				config.remove("timeConvertor.weeks");
+			config.save(DataType.YAML);
 
 			StringUtils.timeSplit = config.getString("timeConvertor.settings.defaultSplit");
 
