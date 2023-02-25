@@ -21,9 +21,9 @@ public class StreamUtils {
 	 * @return String
 	 */
 	public static String fromStream(File file) {
-		if (file == null || !file.exists())
+		if (file == null)
 			return null;
-		try (RandomAccessFile reader = new RandomAccessFile(file, "r")) {
+		try (RandomAccessFile reader = new RandomAccessFile(file, "rw")) {
 			try (FileChannel channel = reader.getChannel()) {
 				MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
 				return charset.decode(buffer).toString();

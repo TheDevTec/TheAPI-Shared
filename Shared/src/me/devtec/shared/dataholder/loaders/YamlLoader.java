@@ -86,6 +86,7 @@ public class YamlLoader extends EmptyLoader {
 				DataValue data = this.data.get(key.toString());
 				if (data == null)
 					this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
+				comments = null;
 				data.value = list;
 				list = null;
 			} else if (stringContainer != null) {
@@ -93,6 +94,7 @@ public class YamlLoader extends EmptyLoader {
 				DataValue data = this.data.get(key.toString());
 				if (data == null)
 					this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
+				comments = null;
 				data.writtenValue = stringContainer.toString();
 				data.value = data.writtenValue;
 				stringContainer = null;
@@ -103,22 +105,26 @@ public class YamlLoader extends EmptyLoader {
 				if (currentDepth == 0)
 					key.clear();
 				else
-					for (int i = 0; i < depth - currentDepth; ++i) {
-						int lastPos = key.lastIndexOf('.');
-						key.delete(lastPos + 1, key.length()); // Don't remove dot
-					}
+					key.delete(key.lastIndexOf('.', key.length(), depth - currentDepth + 1) + 1, key.length()); // Don't remove dot
 			} else if (currentDepth == 0)
 				key.clear();
-			else {
-				int lastPos = key.lastIndexOf('.');
-				key.delete(lastPos + 1, key.length()); // Don't remove dot
-			}
+			else
+				key.delete(key.lastIndexOf('.') + 1, key.length()); // Don't remove dot
 			if (currentDepth == 0)
 				primaryKeys.add(currentKey);
 			key.append(currentKey);
 			depth = currentDepth;
-			if (parts.length == 1)
+			if (parts.length == 1) {
+				if (comments != null) {
+					String inString = key.toString();
+					DataValue data = this.data.get(inString);
+					if (data == null)
+						this.data.put(inString, data = DataValue.of(null, null, null, null));
+					data.comments = comments;
+					comments = null;
+				}
 				continue;
+			}
 			String[] readerValue = splitFromComment(0, parts[1]);
 			String value = readerValue[0];
 			String comment = readerValue.length == 1 ? null : readerValue[1];
@@ -190,7 +196,7 @@ public class YamlLoader extends EmptyLoader {
 		int len = input.length();
 		if (len <= 1)
 			return new String[] { input };
-		char firstChar = input.charAt(0);
+		char firstChar = input.charAt(posFromStart);
 		if (firstChar == '[' || firstChar == '{')
 			return splitFromCommentJson(posFromStart, input);
 

@@ -331,6 +331,20 @@ public class StringContainer {
 		return -1;
 	}
 
+	public int lastIndexOf(char val, int start) {
+		for (int i = start; i > -1; --i)
+			if (value.length > i && value[i] == val)
+				return i;
+		return -1;
+	}
+
+	public int lastIndexOf(char val, int start, int limit) {
+		for (int i = start; i > -1; --i)
+			if (value.length > i && value[i] == val && --limit <= 0)
+				return i;
+		return -1;
+	}
+
 	public int indexOf(String value) {
 		return indexOf(value, 0);
 	}

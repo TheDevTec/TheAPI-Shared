@@ -105,7 +105,7 @@ public abstract class DataLoader implements Cloneable {
 
 	public static DataLoader findLoaderFor(File input) {
 		String inputString = null;
-		for (LoaderPriority priority : LoaderPriority.values())
+		loadersLoop: for (LoaderPriority priority : LoaderPriority.values())
 			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
 				DataLoader loader = constructor.construct();
 				if (inputString == null && loader.loadingFromFile())
@@ -114,14 +114,16 @@ public abstract class DataLoader implements Cloneable {
 					if (inputString == null) {
 						inputString = StreamUtils.fromStream(input);
 						if (inputString == null)
-							return null;
+							break loadersLoop;
 					}
 					loader.load(inputString);
 				}
 				if (loader.isLoaded())
 					return loader;
 			}
-		return null;
+		EmptyLoader empty = new EmptyLoader();
+		empty.load(input);
+		return empty;
 	}
 
 	public static DataLoader findLoaderFor(String inputString) {

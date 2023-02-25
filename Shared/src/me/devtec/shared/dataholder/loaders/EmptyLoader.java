@@ -2,8 +2,8 @@ package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,7 +12,7 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
 public class EmptyLoader extends DataLoader {
 	protected Map<String, DataValue> data = new LinkedHashMap<>();
-	protected Set<String> primaryKeys = new HashSet<>();
+	protected Set<String> primaryKeys = new LinkedHashSet<>();
 	protected List<String> header = new ArrayList<>();
 	protected List<String> footer = new ArrayList<>();
 	protected boolean loaded = false;
