@@ -1,309 +1,290 @@
 package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import com.google.common.collect.Queues;
-
-import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
 public class YamlLoader extends EmptyLoader {
-	private static final Pattern pattern = Pattern.compile("( *)(['\"][^'\"]+['\"]|[^\"']?\\w+[^\"']?|.*?): ?(.*)");
+	private static final int READER_TYPE_NONE = 0;
+	private static final int READER_TYPE_STRING = 1;
+	private static final int READER_TYPE_LIST = 2;
+	private static int LINE_SEPARATOR_LENGTH = System.lineSeparator().length();
+	private static String LINE_SEPARATOR = System.lineSeparator();
+
+	private int startIndex;
+	private int endIndex;
+	private String lines;
+
+	private final String readLine() {
+		try {
+			return startIndex == -1 ? null : endIndex == -1 ? lines.substring(startIndex) : lines.substring(startIndex, endIndex);
+		} finally {
+			startIndex = endIndex == -1 ? -1 : endIndex + LINE_SEPARATOR_LENGTH;
+			endIndex = startIndex == -1 ? -1 : lines.indexOf(LINE_SEPARATOR, startIndex);
+		}
+	}
 
 	@Override
 	public void load(String input) {
-		reset();
-		if (input == null)
+		if (input == null || input.length() == 0)
 			return;
-		try {
-			// SPACES - POSITION
-			int last = 0;
+		reset();
+		lines = input;
+		if (lines == null)
+			startIndex = -1;
+		else {
+			startIndex = 0;
+			endIndex = lines.indexOf(LINE_SEPARATOR);
+		}
 
-			// EXTRA BUILDER TYPE
-			BuilderType type = null;
-			// LIST OR EXTRA BUILDER
-			ArrayList<Object> items = null;
-			int spaces = 0;
-			// EXTRA BUILDER
-			StringContainer builder = null;
+		List<String> comments = null;
+		List<Object> list = null;
+		int readerType = READER_TYPE_NONE;
+		StringContainer stringContainer = null;
 
-			// BUILDER
-			String key = "";
-			String value = null;
-
-			// COMMENTS
-			List<String> comments = new ArrayList<>();
-
-			int linePos = 0;
-			for (String line : input.split(System.lineSeparator())) {
-				String trim = line.trim();
-				if (trim.isEmpty()) {
-					if (linePos != 0)
-						comments.add("");
-					continue;
-				}
-				++linePos;
-				String e = line.substring(YamlLoader.removeSpaces(line));
-				if (trim.charAt(0) == '#') {
-					comments.add(e);
-					continue;
-				}
-
-				if (!key.equals("") && e.startsWith("- ")) {
-					if (items == null)
-						items = new ArrayList<>();
-					items.add(Json.reader().read(YamlLoader.r(e.substring(2))));
-					continue;
-				}
-
-				Matcher match = YamlLoader.pattern.matcher(line);
-				if (match.find()) {
-					int sub = match.group(1).length();
-
-					if (type != null) {
-						if (type == BuilderType.LIST) {
-							if (sub == spaces) {
-								items.add(Json.reader().read(YamlLoader.r(line.substring(sub))));
-								continue;
-							}
-							spaces = 0;
-							data.put(key, DataValue.of(null, new ArrayList<>(items), null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
-							comments.clear();
-							items = null;
-						} else {
-							if (sub == spaces) {
-								builder.append(line.substring(sub));
-								continue;
-							}
-							spaces = 0;
-							data.put(key, DataValue.of(null, builder.toString(), null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
-							comments.clear();
-							builder = null;
-						}
-						type = null;
-					} else if (items != null) {
-						data.get(key).value = new ArrayList<>(items);
-						items = null;
-					}
-
-					String keyr = YamlLoader.r(match.group(2));
-					value = match.group(3);
-
-					if (sub <= last)
-						if (sub == 0)
-							key = "";
-						else if (sub == last) {
-							int remove = key.lastIndexOf('.');
-							if (remove > 0)
-								key = key.substring(0, remove);
-						} else
-							for (int i = 0; i < Math.abs(last - sub) / 2 + 1; ++i) {
-								int remove = key.lastIndexOf('.');
-								if (remove < 0)
-									break;
-								key = key.substring(0, remove);
-							}
-
-					last = sub;
-					if (!key.isEmpty())
-						key += ".";
-					key += keyr;
-
-					String[] valueSplit = YamlLoader.splitFromComment(value);
-					if (valueSplit[0].trim().isEmpty() && value.indexOf('"') == -1 && value.indexOf('\'') == -1) {
-						value = null;
-						data.put(key, DataValue.of(null, null, null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
-						comments.clear();
-						continue;
-					}
-
-					value = valueSplit[0];
-
-					if (value.equals("|")) {
-						type = BuilderType.STRING;
-						spaces = sub + 2; // DEFAULT
-						builder = new StringContainer(32);
-						continue;
-					}
-					if (value.equals("|-")) {
-						type = BuilderType.LIST;
-						spaces = sub + 2; // DEFAULT
-						items = new ArrayList<>();
-						continue;
-					}
-					if (value.equals("[]")) {
-						data.put(key, DataValue.of("[]", Collections.emptyList(), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
-						comments.clear();
-						continue;
-					}
-					data.put(key, DataValue.of(value, Json.reader().read(value), valueSplit.length == 2 ? valueSplit[1] : null, comments.isEmpty() ? null : Config.simple(new ArrayList<>(comments))));
-					comments.clear();
-				} else if (type != null)
-					if (type == BuilderType.LIST) {
-						int space = YamlLoader.removeSpaces(line);
-						spaces = space;
-						items.add(Json.reader().read(YamlLoader.r(line.substring(space))));
-					} else {
-						int space = YamlLoader.removeSpaces(line);
-						spaces = space;
-						builder.append(line.substring(space));
-					}
+		StringContainer key = new StringContainer(16);
+		int depth = 0;
+		String line;
+		while ((line = readLine()) != null) {
+			String trimmed = line.trim();
+			if (trimmed.isEmpty() || trimmed.charAt(0) == '#') {
+				if (comments == null)
+					comments = new ArrayList<>();
+				comments.add(trimmed);
+				continue;
 			}
-			loaded = true;
-			if (type != null) {
-				if (type == BuilderType.LIST)
-					data.put(key, DataValue.of(null, items, null, comments.isEmpty() ? null : Config.simple(comments)));
+			// list
+			if (trimmed.length() > 2 && trimmed.charAt(0) == '-' && trimmed.charAt(1) == ' ') {
+				if (list == null)
+					list = new ArrayList<>();
+				list.add(Json.reader().read(splitFromComment(2, trimmed)[0]));
+				continue;
+			}
+			int currentDepth = getDepth(line);
+			String[] parts = readConfigLine(trimmed);
+			if (parts == null) {
+				switch (readerType) {
+				case READER_TYPE_NONE:
+					break;
+				case READER_TYPE_STRING:
+					stringContainer.append(splitFromComment(0, trimmed)[0]);
+					break;
+				case READER_TYPE_LIST:
+					if (list == null)
+						list = new ArrayList<>();
+					list.add(Json.reader().read(splitFromComment(0, trimmed)[0]));
+					break;
+				}
+				continue;
+			}
+			String currentKey = parts[0];
+			if (list != null) {
+				readerType = READER_TYPE_NONE;
+				DataValue data = this.data.get(key.toString());
+				if (data == null)
+					this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
+				data.value = list;
+				list = null;
+			} else if (stringContainer != null) {
+				readerType = READER_TYPE_NONE;
+				DataValue data = this.data.get(key.toString());
+				if (data == null)
+					this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
+				data.writtenValue = stringContainer.toString();
+				data.value = data.writtenValue;
+				stringContainer = null;
+			}
+			if (currentDepth > depth) // Up
+				key.append('.');
+			else if (currentDepth < depth) { // Down
+				if (currentDepth == 0)
+					key.clear();
 				else
-					data.put(key, DataValue.of(builder.toString(), builder.toString(), null, comments.isEmpty() ? null : Config.simple(comments)));
-				return;
+					for (int i = 0; i < depth - currentDepth; ++i) {
+						int lastPos = key.lastIndexOf('.');
+						key.delete(lastPos + 1, key.length()); // Don't remove dot
+					}
+			} else if (currentDepth == 0)
+				key.clear();
+			else {
+				int lastPos = key.lastIndexOf('.');
+				key.delete(lastPos + 1, key.length()); // Don't remove dot
 			}
-			if (items != null) {
-				data.put(key, DataValue.of(null, items, null, comments.isEmpty() ? null : Config.simple(comments)));
-				return;
-			}
-			if (data.isEmpty())
-				header.addAll(Config.simple(comments));
-			else
-				footer.addAll(Config.simple(comments));
-		} catch (Exception er) {
-			er.printStackTrace();
-			loaded = false;
-		}
-	}
-
-	public enum BuilderType {
-		STRING, LIST
-	}
-
-	public static int removeSpaces(String s) {
-		int i = 0;
-		for (int d = 0; d < s.length(); ++d) {
-			char c = s.charAt(d);
-			if (c != ' ' && c != '	')
-				break;
-			++i;
-		}
-		return i;
-	}
-
-	protected static String r(String key) {
-		String modKey = key.substring(0, key.length() - YamlLoader.removeLastSpaces(key));
-		return modKey.length() > 1 && (modKey.charAt(0) == '"' && modKey.charAt(modKey.length() - 1) == '"' || modKey.charAt(0) == '\'' && modKey.charAt(modKey.length() - 1) == '\'')
-				? modKey.substring(1, modKey.length() - 1)
-				: modKey;
-	}
-
-	public static int removeLastSpaces(String s) {
-		int i = 0;
-		for (int d = s.length() - 1; d > 0; --d) {
-			char c = s.charAt(d);
-			if (c != ' ' && c != '	')
-				break;
-			++i;
-		}
-		return i;
-	}
-
-	public static String[] splitFromComment(String group) {
-		if (group.isEmpty() || group.length() == 1)
-			return new String[] { group };
-		String[] values = null;
-		StringContainer builder = new StringContainer(group.length());
-		boolean insideQueto = false;
-		boolean insideJson = false;
-		boolean insideQuetosJson = false;
-		boolean comment = false;
-		boolean spaceCounting = true;
-		boolean escape = false;
-		char quetoChar = 0;
-		int spaces = 0;
-
-		Deque<Character> jsonChars = null;
-
-		char posChar = group.charAt(0);
-		if (posChar == '"' || posChar == '\'') { // first char is often queto
-			quetoChar = posChar;
-			insideQueto = true;
-			spaceCounting = false;
-		}
-		if (posChar == '{' || posChar == '[') { // first char is often queto
-			insideJson = true;
-			spaceCounting = false;
-			jsonChars = Queues.newArrayDeque();
-			jsonChars.add(posChar);
-		}
-
-		for (int pos = insideQueto ? 1 : 0; pos < group.length(); ++pos) {
-			posChar = group.charAt(pos);
-
-			if (comment) {
-				builder.append(posChar);
+			if (currentDepth == 0)
+				primaryKeys.add(currentKey);
+			key.append(currentKey);
+			if (parts.length == 1)
 				continue;
-			}
-
-			if (escape) {
-				escape = false;
-				if (!insideJson && (posChar == '"' || posChar == '\''))
+			String[] readerValue = splitFromComment(0, parts[1]);
+			String value = readerValue[0];
+			String comment = readerValue.length == 1 ? null : readerValue[1];
+			if (value.length() > 0) {
+				if (value.length() == 1 && parts[1].length() == 1 && value.charAt(0) == '|') {
+					readerType = READER_TYPE_STRING;
+					data.put(key.toString(), DataValue.of(null, value, comment, comments));
+					stringContainer = new StringContainer(64);
+					comments = null;
 					continue;
-				builder.append('\\');
-			}
-
-			if (posChar == '\\') {
-				escape = true;
-				continue;
-			}
-
-			if (insideJson && (posChar == '"' || posChar == '\''))
-				insideQuetosJson = !insideQuetosJson;
-
-			if (!insideQuetosJson && insideJson && (posChar == '[' || posChar == '{'))
-				jsonChars.add(posChar);
-
-			if (posChar == '#' && !insideQueto && !insideJson) {
-				comment = true;
-				values = new String[2];
-				String value = builder.toString();
-				values[0] = value.substring(0, value.length() - spaces);
-				builder.clear();
-				builder.append(posChar);
-				continue;
-			}
-
-			if (!insideQuetosJson && insideJson && posChar == jsonChars.getLast()) {
-				jsonChars.peekLast();
-				if (jsonChars.isEmpty()) {
-					insideJson = false;
-					spaceCounting = true;
 				}
-			}
-			if (insideQueto && posChar == quetoChar) {
-				insideQueto = false;
-				spaceCounting = true;
-				continue;
-			}
-
-			if (spaceCounting && (posChar == ' ' || posChar == '	'))
-				++spaces;
-			else
-				spaces = 0;
-
-			builder.append(posChar);
+				if (value.length() == 2 && parts[1].length() == 2 && value.charAt(0) == '|' && value.charAt(1) == '-') {
+					readerType = READER_TYPE_LIST;
+					data.put(key.toString(), DataValue.of(null, value, comment, comments));
+					comments = null;
+					continue;
+				}
+				data.put(key.toString(), DataValue.of(value, Json.reader().read(value), comment, comments));
+			} else
+				data.put(key.toString(), DataValue.of(parts[0].length() >= 1 && !(parts[0].charAt(0) == '"' || parts[0].charAt(0) == '\'') ? null : value,
+						parts[0].length() >= 1 && !(parts[0].charAt(0) == '"' || parts[0].charAt(0) == '\'') ? null : value, comment, comments));
+			comments = null;
 		}
-		if (values == null)
-			return new String[] { builder.toString() };
+		if (list != null) {
+			DataValue data = this.data.get(key.toString());
+			if (data == null)
+				this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
+			data.value = list;
+		} else if (stringContainer != null) {
+			DataValue data = this.data.get(key.toString());
+			if (data == null)
+				this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
+			data.writtenValue = stringContainer.toString();
+			data.value = data.writtenValue;
+		}
+		if (comments != null)
+			if (data.isEmpty())
+				header = comments;
+			else
+				footer = comments;
+		loaded = comments != null || !data.isEmpty();
+	}
 
-		String commentValue = builder.toString();
-		char commentChar = commentValue.charAt(0);
-		if (commentChar == ' ' || commentChar == '	')
-			commentValue = commentValue.substring(1);
-		values[1] = commentValue;
-		return values;
+	public static String[] readConfigLine(String input) {
+		int index = -1;
+
+		for (int i = 0; i < input.length() - 1; i++)
+			if (input.charAt(i) == ':' && input.charAt(i + 1) == ' ') {
+				index = i;
+				break;
+			}
+
+		if (index != -1) {
+			String[] result = new String[2];
+			result[0] = input.substring(0, index);
+			result[1] = input.substring(index + 2);
+			return result;
+		}
+		int length = input.length() - 1;
+		if (input.charAt(length) == ':') {
+			String[] result = new String[1];
+			result[0] = input.substring(0, length);
+			return result;
+		}
+		return null;
+	}
+
+	public static String[] splitFromComment(int posFromStart, String input) {
+		int len = input.length();
+		if (len <= 1)
+			return new String[] { input };
+		char firstChar = input.charAt(0);
+		if (firstChar == '[' || firstChar == '{')
+			return splitFromCommentJson(posFromStart, input);
+
+		int i = posFromStart;
+		int quoteCount = 0;
+		char currentQueto = 0;
+		boolean inQuotes = firstChar == '"' || firstChar == '\'';
+		if (inQuotes) {
+			currentQueto = firstChar;
+			++quoteCount;
+			++i;
+		}
+		boolean escaped = false;
+		boolean foundHash = false;
+		int lastQuotePos = 0;
+		int splitIndexEnd = 0;
+		int splitIndexStart = 0;
+		while (i < len) {
+			char c = input.charAt(i);
+			if (!escaped && c == '\\')
+				escaped = true;
+			else if (inQuotes && c == currentQueto && !escaped) {
+				lastQuotePos = i;
+				quoteCount--;
+				if (!(inQuotes = quoteCount > 0))
+					splitIndexEnd = i;
+			} else if (!inQuotes && c == '#' && !escaped) {
+				foundHash = true;
+				splitIndexStart = i;
+				if (splitIndexEnd == 0)
+					splitIndexEnd = i;
+				break;
+			} else
+				escaped = false;
+			i++;
+		}
+		if (!foundHash)
+			return new String[] { lastQuotePos == 0 || quoteCount != 0 ? posFromStart == 0 ? input.trim() : input.substring(posFromStart).trim() : input.substring(1 + posFromStart, lastQuotePos) };
+		return new String[] { currentQueto == 0 || quoteCount != 0 ? input.substring(posFromStart, splitIndexEnd).trim() : input.substring(1 + posFromStart, splitIndexEnd),
+				input.substring(splitIndexStart) };
+	}
+
+	private static String[] splitFromCommentJson(int posFromStart, String input) {
+		int len = input.length();
+		int i = posFromStart;
+		int braceCount = 0;
+		int bracketCount = 0;
+		boolean inQuotes = false;
+		boolean escaped = false;
+		int splitIndex = -1;
+		while (i < len) {
+			char c = input.charAt(i);
+			if (!escaped && c == '\\')
+				escaped = true;
+			else if (!inQuotes && c == '{' && !escaped)
+				braceCount++;
+			else if (!inQuotes && c == '}' && !escaped) {
+				braceCount--;
+				if (braceCount == 0 && bracketCount == 0) {
+					splitIndex = i + 1;
+					break;
+				}
+			} else if (!inQuotes && c == '[' && !escaped)
+				bracketCount++;
+			else if (!inQuotes && c == ']' && !escaped) {
+				bracketCount--;
+				if (braceCount == 0 && bracketCount == 0) {
+					splitIndex = i + 1;
+					break;
+				}
+			} else if (!inQuotes && c == '#' && !escaped) {
+				if (braceCount == 0 && bracketCount == 0) {
+					splitIndex = i;
+					break;
+				}
+			} else if ((c == '"' || c == '\'') && !escaped)
+				inQuotes = !inQuotes;
+			else if (escaped)
+				escaped = false;
+			i++;
+		}
+		String[] result = new String[2];
+		if (splitIndex == -1)
+			result[0] = input;
+		else {
+			result[0] = input.substring(posFromStart, splitIndex).trim();
+			result[1] = input.substring(splitIndex);
+		}
+		return result;
+	}
+
+	private static int getDepth(String line) {
+		int depth = 0;
+		while (line.charAt(depth) == ' ')
+			depth++;
+		return depth / 2;
 	}
 }

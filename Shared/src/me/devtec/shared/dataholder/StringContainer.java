@@ -117,10 +117,22 @@ public class StringContainer {
 		return this;
 	}
 
+	public StringContainer appendInternal(char c) {
+		value[count++] = c;
+		return this;
+	}
+
 	public char[] getValue() {
 		if (count < value.length)
 			value = Arrays.copyOf(value, count);
 		return value;
+	}
+
+	public byte[] getBytes() {
+		byte[] bytes = new byte[count];
+		for (int i = 0; i < count; i++)
+			bytes[i] = (byte) value[i];
+		return bytes;
 	}
 
 	public char[] getValueWithoutTrim() {
@@ -307,14 +319,14 @@ public class StringContainer {
 
 	public int indexOf(char c, int start) {
 		for (int i = start; i < count; ++i)
-			if (value[i] == c)
+			if (value.length > i && value[i] == c)
 				return i;
 		return -1;
 	}
 
 	public int lastIndexOf(char val) {
 		for (int i = count; i > -1; --i)
-			if (value[i] == val)
+			if (value.length > i && value[i] == val)
 				return i;
 		return -1;
 	}

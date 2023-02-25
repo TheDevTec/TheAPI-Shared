@@ -29,6 +29,8 @@ public class JsonUtils {
 		try {
 			if (s == null)
 				return null;
+			if (s instanceof String || s instanceof CharSequence || s instanceof Boolean || s instanceof Number || s instanceof Character)
+				return s;
 			Object result = Json.processDataWriters(s);
 			if (result != null)
 				return result;
@@ -39,8 +41,6 @@ public class JsonUtils {
 				object.put("t", "enum");
 				return object;
 			}
-			if (s instanceof String || s instanceof CharSequence || s instanceof Boolean || s instanceof Number || s instanceof Character)
-				return s;
 			if (s instanceof Map) {
 				Map<String, Object> object = new HashMap<>();
 				object.put("c", s.getClass().getName());

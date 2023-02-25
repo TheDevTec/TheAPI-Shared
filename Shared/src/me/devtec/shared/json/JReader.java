@@ -8,7 +8,7 @@ import me.devtec.shared.utility.StringUtils;
 public interface JReader {
 	// For complex objects
 	public default Object read(String json) {
-		if (json == null || json.trim().isEmpty())
+		if (json == null || json.isEmpty())
 			return json;
 		Object simpleRead = simpleRead(json);
 		if (simpleRead instanceof Map)
@@ -20,26 +20,33 @@ public interface JReader {
 	public default Object simpleRead(String json) {
 		if (json == null || json.trim().isEmpty())
 			return json;
-		if (json.equals("null"))
+		char first = json.charAt(0);
+		if (first == 'n' && json.equals("null"))
 			return null;
-		if (json.equalsIgnoreCase("true"))
+		if (first == 't' && json.equalsIgnoreCase("true"))
 			return true;
-		if (json.equalsIgnoreCase("false"))
+		if (first == 'f' && json.equalsIgnoreCase("false"))
 			return false;
-		if (StringUtils.isNumber(json))
-			return StringUtils.getNumber(json);
-		Object read = null;
-		try {
-			read = fromGson(json, Map.class);
-		} catch (Exception er) {
+		if (first >= 48 && first <= 57 || first == '+' || first == '-') {
+			Number number = StringUtils.getNumber(json);
+			if (number != null)
+				return number;
 		}
-		if (read == null)
+		if (first == '{' || first == '[') {
+			Object read = null;
 			try {
-				read = fromGson(json, Collection.class);
-			} catch (Exception err) {
-
+				read = fromGson(json, Map.class);
+			} catch (Exception er) {
 			}
-		return read == null ? json : read;
+			if (read == null)
+				try {
+					read = fromGson(json, Collection.class);
+				} catch (Exception err) {
+
+				}
+			return read == null ? json : read;
+		}
+		return json;
 	}
 
 	public Object fromGson(String json, Class<?> clazz);

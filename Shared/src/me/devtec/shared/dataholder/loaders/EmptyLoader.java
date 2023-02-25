@@ -2,6 +2,7 @@ package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,9 +12,10 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
 public class EmptyLoader extends DataLoader {
 	protected Map<String, DataValue> data = new LinkedHashMap<>();
+	protected Set<String> primaryKeys = new HashSet<>();
 	protected List<String> header = new ArrayList<>();
 	protected List<String> footer = new ArrayList<>();
-	protected boolean loaded = true;
+	protected boolean loaded = false;
 
 	@Override
 	public boolean loadingFromFile() {
@@ -23,6 +25,11 @@ public class EmptyLoader extends DataLoader {
 	@Override
 	public Map<String, DataValue> get() {
 		return data;
+	}
+
+	@Override
+	public Set<String> getPrimaryKeys() {
+		return primaryKeys;
 	}
 
 	@Override
@@ -53,6 +60,7 @@ public class EmptyLoader extends DataLoader {
 		data.clear();
 		header.clear();
 		footer.clear();
+		primaryKeys.clear();
 		loaded = false;
 	}
 

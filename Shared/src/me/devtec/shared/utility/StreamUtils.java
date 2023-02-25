@@ -4,23 +4,31 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 
 import me.devtec.shared.dataholder.StringContainer;
 
 public class StreamUtils {
 	private static final int DEFAULT_BUFFER_SIZE = 512;
+	private static final CharsetDecoder charset = StandardCharsets.UTF_8.newDecoder();
 
 	/**
 	 * @apiNote Read InputStream and convert into String
 	 * @return String
 	 */
 	public static String fromStream(File file) {
-		if (!file.exists())
+		if (file == null || !file.exists())
 			return null;
-		try {
-			return fromStream(new FileInputStream(file), (int) file.length());
-		} catch (Exception err) {
+		try (RandomAccessFile reader = new RandomAccessFile(file, "r")) {
+			try (FileChannel channel = reader.getChannel()) {
+				MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
+				return charset.decode(buffer).toString();
+			}
+		} catch (Exception e) {
 			return null;
 		}
 	}
@@ -30,7 +38,14 @@ public class StreamUtils {
 	 * @return String
 	 */
 	public static String fromStream(InputStream stream) {
-		return fromStream(stream, DEFAULT_BUFFER_SIZE);
+		try {
+			return fromStream(stream, DEFAULT_BUFFER_SIZE);
+		} finally {
+			try {
+				stream.close();
+			} catch (Exception e) {
+			}
+		}
 	}
 
 	/**
@@ -39,8 +54,7 @@ public class StreamUtils {
 	 * @return String
 	 */
 	public static String fromStream(InputStream stream, int containerSize) {
-		try {
-			InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+		try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
 
 			int finalSize = containerSize <= 0 ? DEFAULT_BUFFER_SIZE : containerSize;
 
@@ -60,7 +74,6 @@ public class StreamUtils {
 					}
 				}
 			}
-			stream.close();
 			return sb.toString();
 		} catch (Exception err) {
 			return null;

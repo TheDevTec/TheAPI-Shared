@@ -18,7 +18,7 @@ public class DataValue {
 		DataValue data = new DataValue();
 		data.value = value;
 		data.writtenValue = writtenValue;
-		data.commentAfterValue = commentAfterValue != null && !commentAfterValue.isEmpty() ? commentAfterValue : null;
+		data.commentAfterValue = commentAfterValue;
 		data.comments = comments;
 		return data;
 	}
@@ -27,7 +27,7 @@ public class DataValue {
 		DataValue data = new DataValue();
 		data.value = value;
 		data.writtenValue = writtenValue;
-		data.commentAfterValue = commentAfterValue != null && !commentAfterValue.isEmpty() ? commentAfterValue : null;
+		data.commentAfterValue = commentAfterValue;
 		return data;
 	}
 

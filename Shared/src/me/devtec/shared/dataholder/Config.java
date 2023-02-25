@@ -1,16 +1,12 @@
 package me.devtec.shared.dataholder;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -25,7 +21,6 @@ import com.google.common.io.ByteStreams;
 
 import me.devtec.shared.dataholder.loaders.DataLoader;
 import me.devtec.shared.dataholder.loaders.EmptyLoader;
-import me.devtec.shared.dataholder.loaders.YamlLoader;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.dataholder.merge.MergeSetting;
 import me.devtec.shared.dataholder.merge.MergeStandards;
@@ -37,7 +32,6 @@ import me.devtec.shared.utility.StringUtils;
 
 public class Config {
 	protected DataLoader loader;
-	protected List<String> keys;
 	protected File file;
 	protected boolean isSaving; // LOCK
 	protected boolean requireSave;
@@ -99,17 +93,10 @@ public class Config {
 
 	public Config() {
 		loader = new EmptyLoader();
-		keys = new ArrayList<>();
 	}
 
 	public Config(DataLoader loaded) {
 		loader = loaded;
-		keys = new ArrayList<>();
-		for (String k : loader.getKeys()) {
-			String g = Config.splitFirst(k);
-			if (!keys.contains(g))
-				keys.add(g);
-		}
 		requireSave = true;
 	}
 
@@ -126,23 +113,9 @@ public class Config {
 	}
 
 	public Config(File file, boolean load) {
-		if (!file.exists()) {
-			try {
-				if (file.getParentFile() != null)
-					file.getParentFile().mkdirs();
-			} catch (Exception err) {
-			}
-			try {
-				file.createNewFile();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
 		this.file = file;
-		lastUpdate = file.lastModified();
-		keys = new ArrayList<>();
 		if (load)
-			this.reload(file);
+			loader = DataLoader.findLoaderFor(file); // get & load
 		else
 			loader = new EmptyLoader();
 		markNonModified();
@@ -151,7 +124,6 @@ public class Config {
 	// CLONE
 	public Config(Config data) {
 		file = data.file;
-		keys = new ArrayList<>(data.keys);
 		loader = data.loader.clone();
 	}
 
@@ -179,18 +151,6 @@ public class Config {
 		if (file == this.file)
 			return this;
 		markModified();
-		if (!file.exists()) {
-			try {
-				if (file.getParentFile() != null)
-					file.getParentFile().mkdirs();
-			} catch (Exception err) {
-			}
-			try {
-				file.createNewFile();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
 		this.file = file;
 		return this;
 	}
@@ -198,11 +158,9 @@ public class Config {
 	public DataValue getOrCreateData(String key) {
 		DataValue h = loader.get().get(key);
 		if (h == null) {
-			String ss = Config.splitFirst(key);
-			if (!keys.contains(ss)) {
-				keys.add(ss);
-				removedKeys.remove(ss);
-			}
+			String firstKey = Config.splitFirst(key);
+			if (loader.getPrimaryKeys().add(firstKey))
+				removedKeys.remove(firstKey);
 			removedKeys.remove(key);
 			loader.get().put(key, h = DataValue.empty());
 		}
@@ -259,7 +217,7 @@ public class Config {
 			return this;
 		if (value == null) {
 			String sf = Config.splitFirst(key);
-			boolean removeFromkeys = keys.remove(sf);
+			boolean removeFromkeys = loader.getPrimaryKeys().remove(sf);
 			boolean removeFromMap = loader.remove(key);
 			if (removeFromkeys && removeFromMap)
 				markModified();
@@ -280,7 +238,7 @@ public class Config {
 			return this;
 		boolean removed = false;
 		String sf = Config.splitFirst(key);
-		if (keys.remove(sf)) {
+		if (loader.getPrimaryKeys().remove(sf)) {
 			removed = true;
 			removedKeys.add(sf);
 		}
@@ -362,7 +320,7 @@ public class Config {
 		markModified();
 		loader.getHeader().clear();
 		if (lines != null)
-			loader.getHeader().addAll(Config.simple(lines));
+			loader.getHeader().addAll(lines);
 		return this;
 	}
 
@@ -370,7 +328,7 @@ public class Config {
 		markModified();
 		loader.getFooter().clear();
 		if (lines != null)
-			loader.getFooter().addAll(Config.simple(lines));
+			loader.getFooter().addAll(lines);
 		return this;
 	}
 
@@ -384,13 +342,7 @@ public class Config {
 
 	public Config reload(String input) {
 		markModified();
-		keys.clear();
 		loader = DataLoader.findLoaderFor(input); // get & load
-		for (String k : loader.getKeys()) {
-			String g = Config.splitFirst(k);
-			if (!keys.contains(g))
-				keys.add(g);
-		}
 		return this;
 	}
 
@@ -398,22 +350,9 @@ public class Config {
 		return this.reload(getFile());
 	}
 
-	public Config reload(File f) {
-		lastUpdate = f.lastModified();
-		if (!f.exists()) {
-			markModified();
-			loader = new EmptyLoader();
-			keys.clear();
-			return this;
-		}
+	public Config reload(File file) {
 		markModified();
-		keys.clear();
-		loader = DataLoader.findLoaderFor(f); // get & load
-		for (String k : loader.getKeys()) {
-			String g = Config.splitFirst(k);
-			if (!keys.contains(g))
-				keys.add(g);
-		}
+		loader = DataLoader.findLoaderFor(file); // get & load
 		return this;
 	}
 
@@ -703,22 +642,9 @@ public class Config {
 	public Config save(DataType type) {
 		if (file == null || isSaving || !isModified())
 			return this;
-		if (!file.exists()) {
-			try {
-				if (file.getParentFile() != null)
-					file.getParentFile().mkdirs();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			try {
-				file.createNewFile();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
 		isSaving = true;
-		try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
-			writer.write(toString(type, true));
+		try (RandomAccessFile writer = new RandomAccessFile(file, "rws")) {
+			writer.write(toConfigString(type, true));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -732,7 +658,7 @@ public class Config {
 	}
 
 	public Set<String> getKeys() {
-		return new HashSet<>(keys);
+		return loader.getPrimaryKeys();
 	}
 
 	public Set<String> getKeys(boolean subkeys) {
@@ -845,7 +771,7 @@ public class Config {
 				}
 
 			// BUILD KEYS & SECTIONS
-			YamlSectionBuilderHelper.write(builder, keys, loader.get(), markSaved);
+			YamlSectionBuilderHelper.write(builder, loader.getPrimaryKeys(), loader.get(), markSaved);
 
 			if (loader.getFooter() != null)
 				try {
@@ -855,6 +781,80 @@ public class Config {
 					er.printStackTrace();
 				}
 			return builder.getValue();
+		}
+		return null;
+	}
+
+	public byte[] toConfigString(DataType type, boolean markSaved) {
+		if (markSaved)
+			removedKeys.clear();
+		switch (type) {
+		case PROPERTIES: {
+			int size = loader.get().size();
+			StringContainer builder = new StringContainer(size * 20);
+			if (loader.getHeader() != null)
+				try {
+					for (String h : loader.getHeader())
+						builder.append(h).append(System.lineSeparator());
+				} catch (Exception er) {
+					er.printStackTrace();
+				}
+			boolean first = true;
+			for (Entry<String, DataValue> key : loader.get().entrySet()) {
+				if (first)
+					first = false;
+				else
+					builder.append(System.lineSeparator());
+				if (markSaved)
+					key.getValue().modified = false;
+				if (key.getValue().value == null) {
+					if (key.getValue().commentAfterValue != null)
+						builder.append(key.getKey() + ": " + key.getValue().commentAfterValue);
+					continue;
+				}
+				builder.append(key.getKey() + ": " + Json.writer().write(key.getValue().value));
+				if (key.getValue().commentAfterValue != null)
+					builder.append(' ').append(key.getValue().commentAfterValue);
+			}
+			if (loader.getFooter() != null)
+				try {
+					for (String h : loader.getFooter())
+						builder.append(h).append(System.lineSeparator());
+				} catch (Exception er) {
+					er.printStackTrace();
+				}
+			return builder.getBytes();
+		}
+		case BYTE: {
+			return Base64.getEncoder().encode(toByteArray(markSaved));
+		}
+		case JSON:
+			List<Map<String, String>> list = new ArrayList<>();
+			for (String key : getKeys())
+				addKeys(list, key, markSaved);
+			return Json.writer().simpleWrite(list).getBytes();
+		case YAML:
+			int size = loader.get().size();
+			StringContainer builder = new StringContainer(size * 20);
+			if (loader.getHeader() != null)
+				try {
+					for (String h : loader.getHeader())
+						builder.append(h).append(System.lineSeparator());
+				} catch (Exception er) {
+					er.printStackTrace();
+				}
+
+			// BUILD KEYS & SECTIONS
+			YamlSectionBuilderHelper.write(builder, loader.getPrimaryKeys(), loader.get(), markSaved);
+
+			if (loader.getFooter() != null)
+				try {
+					for (String h : loader.getFooter())
+						builder.append(h).append(System.lineSeparator());
+				} catch (Exception er) {
+					er.printStackTrace();
+				}
+			return builder.getBytes();
 		}
 		return null;
 	}
@@ -917,13 +917,12 @@ public class Config {
 	}
 
 	public Config clear() {
-		keys.clear();
+		loader.getPrimaryKeys().clear();
 		loader.get().clear();
 		return this;
 	}
 
 	public Config reset() {
-		keys.clear();
 		loader.reset();
 		return this;
 	}
@@ -943,10 +942,7 @@ public class Config {
 		ListIterator<String> s = list.listIterator();
 		while (s.hasNext()) {
 			String next = s.next();
-			if (next.trim().isEmpty())
-				s.set("");
-			else
-				s.set(next.substring(YamlLoader.removeSpaces(next)));
+			s.set(next.trim());
 		}
 		return list;
 	}
@@ -962,21 +958,6 @@ public class Config {
 		}
 		for (String keyer : this.getKeys(key))
 			addKeys(list, key + "." + keyer, markSaved);
-	}
-
-	private static List<String> simple(Collection<String> list) {
-		if (list instanceof List)
-			return Config.simple((List<String>) list);
-		List<String> fix = new ArrayList<>(list.size());
-		Iterator<String> s = list.iterator();
-		while (s.hasNext()) {
-			String next = s.next();
-			if (next.trim().isEmpty())
-				fix.add("");
-			else
-				fix.add(next.substring(YamlLoader.removeSpaces(next)));
-		}
-		return fix;
 	}
 
 	public DataLoader getDataLoader() {
@@ -1001,7 +982,7 @@ public class Config {
 				@Override
 				public void run() {
 					long lastModify = file.lastModified();
-					if (lastModify != lastUpdate) {
+					if (lastUpdate == 0 || lastModify != lastUpdate) {
 						lastUpdate = file.lastModified();
 						Config read = new Config(file);
 						for (Entry<String, DataValue> key : read.getDataLoader().get().entrySet()) {

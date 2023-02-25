@@ -12,21 +12,33 @@ public class JsonLoader extends EmptyLoader {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void load(String input) {
-		this.reset();
-		if (input == null || !input.startsWith("[") && !input.endsWith("]") && !input.startsWith("{") && !input.endsWith("}"))
+		if (input == null || input.length() == 0)
 			return;
+		char startChar = input.charAt(0);
+		if (!(startChar == '{' || startChar == '['))
+			return;
+		reset();
 		try {
 			Object read = Json.reader().read(input.replace(System.lineSeparator(), ""));
 			if (read instanceof Map)
-				for (Entry<Object, Object> keyed : ((Map<Object, Object>) read).entrySet())
-					this.data.put(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue().toString()), null));
+				for (Entry<Object, Object> keyed : ((Map<Object, Object>) read).entrySet()) {
+					primaryKeys.add(splitFirst(keyed.getKey() + ""));
+					data.put(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
+				}
 			else
 				for (Object o : (Collection<Object>) read)
-					for (Entry<Object, Object> keyed : ((Map<Object, Object>) o).entrySet())
-						this.data.put(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue().toString()), null));
-			this.loaded = true;
+					for (Entry<Object, Object> keyed : ((Map<Object, Object>) o).entrySet()) {
+						primaryKeys.add(splitFirst(keyed.getKey() + ""));
+						data.put(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
+					}
+			loaded = true;
 		} catch (Exception er) {
-			this.reset();
+			loaded = false;
 		}
+	}
+
+	private static String splitFirst(String text) {
+		int next = text.indexOf('.');
+		return next != -1 ? text.substring(0, next) : text;
 	}
 }

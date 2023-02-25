@@ -17,16 +17,51 @@ public abstract class DataLoader implements Cloneable {
 
 	// Data loaders hierarchy
 	public static Map<LoaderPriority, Set<DataLoaderConstructor>> dataLoaders = new ConcurrentHashMap<>();
-	static final LoaderPriority[] priorities = { LoaderPriority.LOWEST, LoaderPriority.LOW, LoaderPriority.NORMAL, LoaderPriority.HIGH, LoaderPriority.HIGHEST };
 	static {
-		for (LoaderPriority priority : DataLoader.priorities)
+		for (LoaderPriority priority : LoaderPriority.values())
 			DataLoader.dataLoaders.put(priority, new HashSet<>());
 
 		// BUILT-IN LOADERS
-		DataLoader.dataLoaders.get(LoaderPriority.LOW).add(ByteLoader::new);
-		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(JsonLoader::new);
-		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(PropertiesLoader::new);
-		DataLoader.dataLoaders.get(LoaderPriority.HIGH).add(YamlLoader::new);
+		DataLoader.dataLoaders.get(LoaderPriority.LOW).add(new DataLoaderConstructor() {
+			DataLoader notUsed;
+
+			@Override
+			public DataLoader construct() {
+				if (notUsed == null || notUsed.isLoaded())
+					notUsed = new ByteLoader();
+				return notUsed;
+			}
+		});
+		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
+			DataLoader notUsed;
+
+			@Override
+			public DataLoader construct() {
+				if (notUsed == null || notUsed.isLoaded())
+					notUsed = new JsonLoader();
+				return notUsed;
+			}
+		});
+		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
+			DataLoader notUsed;
+
+			@Override
+			public DataLoader construct() {
+				if (notUsed == null || notUsed.isLoaded())
+					notUsed = new PropertiesLoader();
+				return notUsed;
+			}
+		});
+		DataLoader.dataLoaders.get(LoaderPriority.HIGH).add(new DataLoaderConstructor() {
+			DataLoader notUsed;
+
+			@Override
+			public DataLoader construct() {
+				if (notUsed == null || notUsed.isLoaded())
+					notUsed = new YamlLoader();
+				return notUsed;
+			}
+		});
 		DataLoader.dataLoaders.get(LoaderPriority.HIGHEST).add(EmptyLoader::new);
 	}
 
@@ -35,18 +70,16 @@ public abstract class DataLoader implements Cloneable {
 	}
 
 	public void unregister(DataLoaderConstructor constructor) {
-		LoaderPriority priority = null;
 		for (Entry<LoaderPriority, Set<DataLoaderConstructor>> entry : DataLoader.dataLoaders.entrySet())
-			if (entry.getValue().contains(constructor)) {
-				priority = entry.getKey();
+			if (entry.getValue().remove(constructor))
 				break;
-			}
-		if (priority != null)
-			DataLoader.dataLoaders.get(priority).remove(constructor);
 	}
 
 	// Does DataLoader have own loader from file?
+
 	public abstract boolean loadingFromFile();
+
+	public abstract Set<String> getPrimaryKeys();
 
 	public abstract Map<String, DataValue> get();
 
@@ -67,21 +100,22 @@ public abstract class DataLoader implements Cloneable {
 	public abstract boolean isLoaded();
 
 	public void load(File file) {
-		if (file == null || !file.exists())
-			return;
 		this.load(StreamUtils.fromStream(file));
 	}
 
 	public static DataLoader findLoaderFor(File input) {
 		String inputString = null;
-		for (LoaderPriority priority : DataLoader.priorities)
+		for (LoaderPriority priority : LoaderPriority.values())
 			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
 				DataLoader loader = constructor.construct();
-				if (loader.loadingFromFile())
+				if (inputString == null && loader.loadingFromFile())
 					loader.load(input);
 				else {
-					if (inputString == null)
+					if (inputString == null) {
 						inputString = StreamUtils.fromStream(input);
+						if (inputString == null)
+							return null;
+					}
 					loader.load(inputString);
 				}
 				if (loader.isLoaded())
@@ -91,7 +125,7 @@ public abstract class DataLoader implements Cloneable {
 	}
 
 	public static DataLoader findLoaderFor(String inputString) {
-		for (LoaderPriority priority : DataLoader.priorities)
+		for (LoaderPriority priority : LoaderPriority.values())
 			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
 				DataLoader loader = constructor.construct();
 				loader.load(inputString);

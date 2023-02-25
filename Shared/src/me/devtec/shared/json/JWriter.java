@@ -11,7 +11,8 @@ public interface JWriter {
 			Object parsed = writeWithoutParse(s);
 			if (parsed == null)
 				return "null";
-			return toGson(parsed);
+			return s instanceof String || s instanceof CharSequence ? s instanceof Boolean || s instanceof Number || s instanceof Character ? '\'' + s.toString() + '\'' : '"' + s.toString() + '"'
+					: toGson(parsed);
 		} catch (Exception err) {
 		}
 		return null;

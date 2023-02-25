@@ -7,13 +7,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
 class YamlSectionBuilderHelper {
 
-	public static void write(StringContainer builder, List<String> keys, Map<String, DataValue> map, boolean markSaved) {
+	public static void write(StringContainer builder, Set<String> keys, Map<String, DataValue> map, boolean markSaved) {
 		Map<String, SectionHolder> secs = new LinkedHashMap<>(map.size()); // correct size of map
 
 		// Prepare sections in map
@@ -82,6 +83,8 @@ class YamlSectionBuilderHelper {
 
 	public synchronized static void start(SectionHolder section, StringContainer b) {
 		try {
+			if (section.name.isEmpty())
+				return;
 			DataValue dataVal = section.val;
 			if (dataVal == null) {
 				appendName(b, section).append(System.lineSeparator());
@@ -186,15 +189,6 @@ class YamlSectionBuilderHelper {
 		if (commentAfterValue == null)
 			return append;
 		return append.append(' ').append(commentAfterValue);
-	}
-
-	protected static StringContainer writeQuotesSplit(StringContainer b, String split, String value) {
-		b.append(split);
-		b.append('"');
-		replaceWithEscape(b, value, '"');
-		b.append('"');
-		b.append(System.lineSeparator());
-		return b;
 	}
 
 	protected static StringContainer writeWithoutQuotesSplit(StringContainer b, String split, Object value) {
