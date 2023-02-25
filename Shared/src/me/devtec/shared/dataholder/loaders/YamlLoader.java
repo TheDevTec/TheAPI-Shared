@@ -63,7 +63,6 @@ public class YamlLoader extends EmptyLoader {
 				list.add(Json.reader().read(splitFromComment(2, trimmed)[0]));
 				continue;
 			}
-			int currentDepth = getDepth(line);
 			String[] parts = readConfigLine(trimmed);
 			if (parts == null) {
 				switch (readerType) {
@@ -80,6 +79,7 @@ public class YamlLoader extends EmptyLoader {
 				}
 				continue;
 			}
+			int currentDepth = getDepth(line);
 			String currentKey = parts[0];
 			if (list != null) {
 				readerType = READER_TYPE_NONE;
@@ -116,6 +116,7 @@ public class YamlLoader extends EmptyLoader {
 			if (currentDepth == 0)
 				primaryKeys.add(currentKey);
 			key.append(currentKey);
+			depth = currentDepth;
 			if (parts.length == 1)
 				continue;
 			String[] readerValue = splitFromComment(0, parts[1]);

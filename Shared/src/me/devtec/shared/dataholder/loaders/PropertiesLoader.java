@@ -53,6 +53,11 @@ public class PropertiesLoader extends EmptyLoader {
 				break;
 			}
 			String[] parts = readConfigLine(trimmed);
+			if (parts == null) { // Didn't find = symbol.. Maybe this is YAML file.
+				data.clear();
+				comments = null;
+				break;
+			}
 			String[] value = YamlLoader.splitFromComment(0, parts[1]);
 			primaryKeys.add(parts[0]);
 			data.put(parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length == 2 ? value[1] : null, comments));
@@ -69,8 +74,9 @@ public class PropertiesLoader extends EmptyLoader {
 
 	public static String[] readConfigLine(String input) {
 		int index = input.indexOf('=');
-
-		if (index != -1 && input.length() - index > 0) {
+		if (index == -1)
+			return null;
+		if (input.length() - index > 0) {
 			String[] result = new String[2];
 			result[0] = input.substring(0, index);
 			result[1] = input.substring(index + 1);
