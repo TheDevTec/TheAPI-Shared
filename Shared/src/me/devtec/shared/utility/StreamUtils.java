@@ -23,7 +23,7 @@ public class StreamUtils {
 	public static String fromStream(File file) {
 		if (file == null)
 			return null;
-		try (RandomAccessFile reader = new RandomAccessFile(file, "rw")) {
+		try (RandomAccessFile reader = new RandomAccessFile(file, "r")) {
 			try (FileChannel channel = reader.getChannel()) {
 				MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
 				return charset.decode(buffer).toString();

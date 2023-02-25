@@ -45,7 +45,7 @@ public class YamlLoader extends EmptyLoader {
 		int readerType = READER_TYPE_NONE;
 		StringContainer stringContainer = null;
 
-		StringContainer key = new StringContainer(16);
+		StringContainer key = new StringContainer(32);
 		int depth = 0;
 		String line;
 		while ((line = readLine()) != null) {
@@ -106,21 +106,16 @@ public class YamlLoader extends EmptyLoader {
 					key.clear();
 				else
 					key.delete(key.lastIndexOf('.', key.length(), depth - currentDepth + 1) + 1, key.length()); // Don't remove dot
-			} else if (currentDepth == 0)
+			} else if (currentDepth == 0) {
 				key.clear();
-			else
-				key.delete(key.lastIndexOf('.') + 1, key.length()); // Don't remove dot
-			if (currentDepth == 0)
 				primaryKeys.add(currentKey);
+			} else
+				key.delete(key.lastIndexOf('.') + 1, key.length()); // Don't remove dot
 			key.append(currentKey);
 			depth = currentDepth;
 			if (parts.length == 1) {
 				if (comments != null) {
-					String inString = key.toString();
-					DataValue data = this.data.get(inString);
-					if (data == null)
-						this.data.put(inString, data = DataValue.of(null, null, null, null));
-					data.comments = comments;
+					data.put(key.toString(), DataValue.of(null, null, null, comments));
 					comments = null;
 				}
 				continue;

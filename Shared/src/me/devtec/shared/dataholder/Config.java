@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -101,11 +100,11 @@ public class Config {
 	}
 
 	public Config(String filePath) {
-		this(new File(filePath.startsWith("/") ? filePath.substring(1) : filePath), true);
+		this(new File(filePath.charAt(0) == '/' ? filePath.substring(1) : filePath), true);
 	}
 
 	public Config(String filePath, boolean load) {
-		this(new File(filePath.startsWith("/") ? filePath.substring(1) : filePath), load);
+		this(new File(filePath.charAt(0) == '/' ? filePath.substring(1) : filePath), load);
 	}
 
 	public Config(File file) {
@@ -118,7 +117,6 @@ public class Config {
 			loader = DataLoader.findLoaderFor(file); // get & load
 		else
 			loader = new EmptyLoader();
-		markNonModified();
 	}
 
 	// CLONE
@@ -195,7 +193,7 @@ public class Config {
 		if (!existsKey(key)) {
 			DataValue data = getOrCreateData(key);
 			data.value = value;
-			data.comments = Config.simple(new ArrayList<>(comments));
+			data.comments = comments;
 			data.modified = true;
 			markModified();
 			return true;
@@ -203,7 +201,7 @@ public class Config {
 		if (comments != null && !comments.isEmpty()) {
 			DataValue data = getOrCreateData(key);
 			if (data.comments == null || data.comments.isEmpty()) {
-				data.comments = Config.simple(new ArrayList<>(comments));
+				data.comments = comments;
 				data.modified = true;
 				markModified();
 				return true;
@@ -282,10 +280,9 @@ public class Config {
 			return this;
 		}
 		DataValue val = getOrCreateData(key);
-		List<String> simple = Config.simple(new ArrayList<>(value));
-		if (val.comments == null || !simple.containsAll(val.comments)) {
+		if (val.comments == null || !value.containsAll(val.comments)) {
 			val.modified = true;
-			val.comments = simple;
+			val.comments = value;
 			markModified();
 		}
 		return this;
@@ -304,7 +301,7 @@ public class Config {
 		if (key == null)
 			return null;
 		DataValue val = getOrCreateData(key);
-		if (comment != null && !comment.equals(val.commentAfterValue)) {
+		if (val != null && (comment == null ? val.commentAfterValue != null : !comment.equals(val.commentAfterValue))) {
 			val.modified = true;
 			val.commentAfterValue = comment;
 			markModified();
@@ -643,7 +640,7 @@ public class Config {
 		if (file == null || isSaving || !isModified())
 			return this;
 		isSaving = true;
-		try (RandomAccessFile writer = new RandomAccessFile(file, "rws")) {
+		try (RandomAccessFile writer = new RandomAccessFile(file, "rw")) {
 			writer.write(toConfigString(type, true));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -936,15 +933,6 @@ public class Config {
 			if (setting.merge(this, merge))
 				markModified();
 		return isModified();
-	}
-
-	public static List<String> simple(List<String> list) {
-		ListIterator<String> s = list.listIterator();
-		while (s.hasNext()) {
-			String next = s.next();
-			s.set(next.trim());
-		}
-		return list;
 	}
 
 	protected void addKeys(List<Map<String, String>> list, String key, boolean markSaved) {
