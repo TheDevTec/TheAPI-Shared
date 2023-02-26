@@ -99,16 +99,16 @@ public class YamlLoader extends EmptyLoader {
 				data.value = data.writtenValue;
 				stringContainer = null;
 			}
-			if (currentDepth > depth) // Up
+			if (currentDepth == 0) {
+				key.clear();
+				primaryKeys.add(currentKey);
+			} else if (currentDepth > depth) // Up
 				key.append('.');
 			else if (currentDepth < depth) { // Down
 				if (currentDepth == 0)
 					key.clear();
 				else
 					key.delete(key.lastIndexOf('.', key.length(), depth - currentDepth + 1) + 1, key.length()); // Don't remove dot
-			} else if (currentDepth == 0) {
-				key.clear();
-				primaryKeys.add(currentKey);
 			} else
 				key.delete(key.lastIndexOf('.') + 1, key.length()); // Don't remove dot
 			key.append(currentKey);
@@ -269,7 +269,7 @@ public class YamlLoader extends EmptyLoader {
 				}
 			} else if ((c == '"' || c == '\'') && !escaped)
 				inQuotes = !inQuotes;
-			else if (escaped)
+			else
 				escaped = false;
 			i++;
 		}
