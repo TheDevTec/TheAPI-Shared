@@ -1,12 +1,13 @@
 package me.devtec.shared.dataholder;
 
-import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class StringContainer {
 	private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
+	private static final Charset charset = StandardCharsets.UTF_8;
 
 	// long utils
 	final static char[] DigitTens = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3',
@@ -131,10 +132,8 @@ public class StringContainer {
 		return value;
 	}
 
-	private static final Charset charset = StandardCharsets.UTF_8;
-
 	public byte[] getBytes() {
-		return charset.encode(CharBuffer.wrap(value, 0, count)).array();
+		return toString().getBytes(charset);
 	}
 
 	public char[] getValueWithoutTrim() {
