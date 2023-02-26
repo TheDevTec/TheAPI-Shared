@@ -1,5 +1,8 @@
 package me.devtec.shared.dataholder;
 
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class StringContainer {
@@ -128,11 +131,10 @@ public class StringContainer {
 		return value;
 	}
 
+	private static final Charset charset = StandardCharsets.UTF_8;
+
 	public byte[] getBytes() {
-		byte[] bytes = new byte[count];
-		for (int i = 0; i < count; i++)
-			bytes[i] = (byte) value[i];
-		return bytes;
+		return charset.encode(CharBuffer.wrap(value, 0, count)).array();
 	}
 
 	public char[] getValueWithoutTrim() {
