@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -70,8 +69,8 @@ public abstract class DataLoader implements Cloneable {
 	}
 
 	public void unregister(DataLoaderConstructor constructor) {
-		for (Entry<LoaderPriority, Set<DataLoaderConstructor>> entry : DataLoader.dataLoaders.entrySet())
-			if (entry.getValue().remove(constructor))
+		for (Set<DataLoaderConstructor> entry : DataLoader.dataLoaders.values())
+			if (entry.remove(constructor))
 				break;
 	}
 
@@ -85,7 +84,11 @@ public abstract class DataLoader implements Cloneable {
 
 	public abstract void set(String key, DataValue value);
 
-	public abstract boolean remove(String key);
+	public abstract boolean remove(String key, boolean withSubKeys);
+
+	public boolean remove(String key) {
+		return remove(key, false);
+	}
 
 	public abstract Collection<String> getHeader();
 
@@ -98,6 +101,10 @@ public abstract class DataLoader implements Cloneable {
 	public abstract void load(String input);
 
 	public abstract boolean isLoaded();
+
+	public abstract DataValue get(String key);
+
+	public abstract DataValue getOrCreate(String key);
 
 	public void load(File file) {
 		this.load(StreamUtils.fromStream(file));
@@ -139,4 +146,6 @@ public abstract class DataLoader implements Cloneable {
 
 	@Override
 	public abstract DataLoader clone();
+
+	public abstract Set<String> keySet(String key, boolean subkeys);
 }

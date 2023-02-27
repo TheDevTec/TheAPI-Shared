@@ -13,6 +13,7 @@ public class DataValue {
 	public String commentAfterValue;
 	public List<String> comments;
 	public boolean modified;
+	public boolean removed;
 
 	public static DataValue of(String writtenValue, Object value, String commentAfterValue, List<String> comments) {
 		DataValue data = new DataValue();

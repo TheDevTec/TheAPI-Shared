@@ -1,6 +1,6 @@
 package me.devtec.shared.dataholder.merge;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map.Entry;
 
 import me.devtec.shared.dataholder.Config;
@@ -49,25 +49,18 @@ public class MergeStandards {
 		public boolean merge(Config config, Config merge) {
 			boolean change = false;
 			try {
-				boolean first = true;
-				for (Entry<String, DataValue> s : merge.getDataLoader().get().entrySet()) {
-					DataValue value = config.getData(s.getKey());
-					if (value == null)
-						continue;
-					if (value.commentAfterValue == null && s.getValue().commentAfterValue != null && !s.getValue().commentAfterValue.equals(value.commentAfterValue)) {
-						value.commentAfterValue = s.getValue().commentAfterValue;
+				Iterator<Entry<String, DataValue>> iterator = merge.getDataLoader().get().entrySet().iterator();
+				while (iterator.hasNext()) {
+					Entry<String, DataValue> key = iterator.next();
+					DataValue val = key.getValue();
+					if (val.commentAfterValue == null ? key.getValue().commentAfterValue != null : !val.commentAfterValue.equals(key.getValue().commentAfterValue)) {
+						val.commentAfterValue = key.getValue().commentAfterValue;
 						change = true;
 					}
-					if (s.getValue().comments != null && !s.getValue().comments.isEmpty()) {
-						List<String> comments = value.comments;
-						if (comments == null || comments.isEmpty()) {
-							if (first && config.getHeader() != null && !config.getHeader().isEmpty() && config.getHeader().containsAll(s.getValue().comments))
-								continue;
-							value.comments = s.getValue().comments;
-							change = true;
-						}
+					if (val.comments == null ? key.getValue().comments != null && !key.getValue().comments.isEmpty() : !val.comments.containsAll(key.getValue().comments)) {
+						val.comments = key.getValue().comments;
+						change = true;
 					}
-					first = false;
 				}
 			} catch (Exception err) {
 			}
@@ -80,11 +73,13 @@ public class MergeStandards {
 		public boolean merge(Config config, Config merge) {
 			boolean change = false;
 			try {
-				for (Entry<String, DataValue> s : merge.getDataLoader().get().entrySet()) {
-					DataValue value = config.getOrCreateData(s.getKey());
-					if (value.value == null && s.getValue().value != null) {
-						value.value = s.getValue().value;
-						value.writtenValue = s.getValue().writtenValue;
+				Iterator<Entry<String, DataValue>> iterator = merge.getDataLoader().get().entrySet().iterator();
+				while (iterator.hasNext()) {
+					Entry<String, DataValue> key = iterator.next();
+					DataValue val = key.getValue();
+					if (val.value == null && key.getValue().value != null) {
+						val.value = key.getValue().value;
+						val.writtenValue = key.getValue().writtenValue;
 						change = true;
 					}
 				}

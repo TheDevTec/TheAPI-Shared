@@ -83,26 +83,20 @@ public class YamlLoader extends EmptyLoader {
 			String currentKey = parts[0];
 			if (list != null) {
 				readerType = READER_TYPE_NONE;
-				DataValue data = this.data.get(key.toString());
-				if (data == null)
-					this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
-				comments = null;
+				DataValue data = getOrCreate(key.toString());
 				data.value = list;
 				list = null;
 			} else if (stringContainer != null) {
 				readerType = READER_TYPE_NONE;
-				DataValue data = this.data.get(key.toString());
-				if (data == null)
-					this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
-				comments = null;
-				data.writtenValue = stringContainer.toString();
-				data.value = data.writtenValue;
+				String writtenValue = stringContainer.toString();
+				DataValue data = getOrCreate(key.toString());
+				data.value = writtenValue;
+				data.writtenValue = writtenValue;
 				stringContainer = null;
 			}
-			if (currentDepth == 0) {
+			if (currentDepth == 0)
 				key.clear();
-				primaryKeys.add(currentKey);
-			} else if (currentDepth > depth) // Up
+			else if (currentDepth > depth) // Up
 				key.append('.');
 			else if (currentDepth < depth) { // Down
 				if (currentDepth == 0)
@@ -115,7 +109,8 @@ public class YamlLoader extends EmptyLoader {
 			depth = currentDepth;
 			if (parts.length == 1) {
 				if (comments != null) {
-					data.put(key.toString(), DataValue.of(null, null, null, comments));
+					DataValue data = getOrCreate(key.toString());
+					data.comments = comments;
 					comments = null;
 				}
 				continue;
@@ -126,36 +121,36 @@ public class YamlLoader extends EmptyLoader {
 			if (value.length() > 0) {
 				if (value.length() == 1 && parts[1].length() == 1 && value.charAt(0) == '|') {
 					readerType = READER_TYPE_STRING;
-					data.put(key.toString(), DataValue.of(null, value, comment, comments));
+					set(key.toString(), DataValue.of(null, value, comment, comments));
 					stringContainer = new StringContainer(64);
 					comments = null;
 					continue;
 				}
 				if (value.length() == 2 && parts[1].length() == 2 && value.charAt(0) == '|' && value.charAt(1) == '-') {
 					readerType = READER_TYPE_LIST;
-					data.put(key.toString(), DataValue.of(null, value, comment, comments));
+					set(key.toString(), DataValue.of(null, value, comment, comments));
 					comments = null;
 					continue;
 				}
-				data.put(key.toString(), DataValue.of(value, Json.reader().read(value), comment, comments));
+				set(key.toString(), DataValue.of(value, Json.reader().read(value), comment, comments));
 			} else
-				data.put(key.toString(), DataValue.of(parts[0].length() >= 1 && !(parts[0].charAt(0) == '"' || parts[0].charAt(0) == '\'') ? null : value,
+				set(key.toString(), DataValue.of(parts[0].length() >= 1 && !(parts[0].charAt(0) == '"' || parts[0].charAt(0) == '\'') ? null : value,
 						parts[0].length() >= 1 && !(parts[0].charAt(0) == '"' || parts[0].charAt(0) == '\'') ? null : value, comment, comments));
 			comments = null;
 		}
 		if (list != null) {
-			DataValue data = this.data.get(key.toString());
-			if (data == null)
-				this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
+			readerType = READER_TYPE_NONE;
+			DataValue data = getOrCreate(key.toString());
 			data.value = list;
+			data.comments = comments;
 		} else if (stringContainer != null) {
-			DataValue data = this.data.get(key.toString());
-			if (data == null)
-				this.data.put(key.toString(), data = DataValue.of(null, null, null, comments));
-			data.writtenValue = stringContainer.toString();
-			data.value = data.writtenValue;
-		}
-		if (comments != null)
+			readerType = READER_TYPE_NONE;
+			String writtenValue = stringContainer.toString();
+			DataValue data = getOrCreate(key.toString());
+			data.value = writtenValue;
+			data.writtenValue = writtenValue;
+			data.comments = comments;
+		} else if (comments != null)
 			if (data.isEmpty())
 				header = comments;
 			else

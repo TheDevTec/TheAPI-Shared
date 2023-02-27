@@ -59,8 +59,7 @@ public class PropertiesLoader extends EmptyLoader {
 				break;
 			}
 			String[] value = YamlLoader.splitFromComment(0, parts[1]);
-			primaryKeys.add(parts[0]);
-			data.put(parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length == 2 ? value[1] : null, comments));
+			set(parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length == 2 ? value[1] : null, comments));
 			comments = null;
 			continue;
 		}

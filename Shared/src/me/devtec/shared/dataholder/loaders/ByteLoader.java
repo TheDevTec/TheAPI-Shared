@@ -1,7 +1,6 @@
 package me.devtec.shared.dataholder.loaders;
 
 import java.util.Base64;
-import java.util.Map;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
@@ -14,7 +13,7 @@ public class ByteLoader extends EmptyLoader {
 
 	static char[] separator = System.lineSeparator().toCharArray();
 
-	private static void byteBuilderV3(ByteLoader loader, ByteArrayDataInput bos, Map<String, DataValue> map) {
+	private static void byteBuilderV3(ByteLoader loader, ByteArrayDataInput bos) {
 		try {
 			String key = bos.readUTF();
 			String value = null;
@@ -31,22 +30,15 @@ public class ByteLoader extends EmptyLoader {
 				}
 			} catch (Exception err) {
 				value = YamlLoader.splitFromComment(0, value)[0];
-				loader.primaryKeys.add(splitFirst(key));
-				map.put(key, DataValue.of(value, Json.reader().read(value), null));
+				loader.set(key, DataValue.of(value, Json.reader().read(value), null));
 				return;
 			}
 			value = YamlLoader.splitFromComment(0, value)[0];
-			loader.primaryKeys.add(splitFirst(key));
-			map.put(key, DataValue.of(value, Json.reader().read(value), null));
+			loader.set(key, DataValue.of(value, Json.reader().read(value), null));
 			if (result == 0)
-				ByteLoader.byteBuilderV3(loader, bos, map);
+				ByteLoader.byteBuilderV3(loader, bos);
 		} catch (Exception err) {
 		}
-	}
-
-	private static String splitFirst(String text) {
-		int next = text.indexOf('.');
-		return next != -1 ? text.substring(0, next) : text;
 	}
 
 	@Override
@@ -60,7 +52,7 @@ public class ByteLoader extends EmptyLoader {
 			int version = bos.readInt();
 			if (version == 3) {
 				bos.readInt();
-				ByteLoader.byteBuilderV3(this, bos, data);
+				ByteLoader.byteBuilderV3(this, bos);
 			}
 			if (!data.isEmpty())
 				loaded = true;
@@ -98,7 +90,7 @@ public class ByteLoader extends EmptyLoader {
 			int version = bos.readInt();
 			if (version == 3) {
 				bos.readInt();
-				ByteLoader.byteBuilderV3(this, bos, data);
+				ByteLoader.byteBuilderV3(this, bos);
 			}
 			if (!data.isEmpty())
 				loaded = true;
@@ -116,7 +108,7 @@ public class ByteLoader extends EmptyLoader {
 			int version = bos.readInt();
 			if (version == 3) {
 				bos.readInt();
-				ByteLoader.byteBuilderV3(loader, bos, loader.data);
+				ByteLoader.byteBuilderV3(loader, bos);
 			}
 			loader.loaded = true;
 		} catch (Exception er) {

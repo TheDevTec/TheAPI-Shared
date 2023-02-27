@@ -2,6 +2,8 @@ package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -38,29 +40,74 @@ public class EmptyLoader extends DataLoader {
 	}
 
 	@Override
-	public void set(String key, DataValue holder) {
-		if (key == null)
-			return;
-		if (holder == null) {
-			data.remove(key);
-			return;
-		}
-		data.put(key, holder);
+	public DataValue get(String key) {
+		return data.get(key);
 	}
 
 	@Override
-	public boolean remove(String key) {
-		if (key == null)
-			return false;
+	public DataValue getOrCreate(String key) {
+		DataValue v = data.get(key);
+		if (v == null)
+			set(key, v = DataValue.empty());
+		return v;
+	}
+
+	@Override
+	public void set(String key, DataValue holder) {
+		if (data.put(key, holder) == null) {
+			int pos = key.indexOf('.');
+			String primaryKey = pos == -1 ? key : key.substring(0, pos);
+			primaryKeys.add(primaryKey);
+		}
+	}
+
+	@Override
+	public boolean remove(String key, boolean withSubKeys) {
+		if (withSubKeys) {
+			int pos = key.indexOf('.');
+			String primaryKey = pos == -1 ? key : key.substring(0, pos);
+			key = key + '.';
+			if (pos == -1) {
+				boolean modified = false;
+				if (primaryKeys.remove(primaryKey))
+					modified = true;
+				if (data.remove(key) != null)
+					modified = true;
+				Iterator<String> itr = data.keySet().iterator();
+				while (itr.hasNext()) {
+					String section = itr.next();
+					if (section.startsWith(key)) {
+						itr.remove();
+						modified = true;
+					}
+				}
+				return modified;
+			}
+			boolean onlyOne = true;
+			boolean modified = false;
+
+			Iterator<String> itr = data.keySet().iterator();
+			while (itr.hasNext()) {
+				String section = itr.next();
+				if (section.startsWith(key)) {
+					itr.remove();
+					modified = true;
+				} else if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.'))
+					onlyOne = false;
+			}
+			if (onlyOne && primaryKeys.remove(primaryKey))
+				modified = true;
+			return modified;
+		}
 		return data.remove(key) != null;
 	}
 
 	@Override
 	public void reset() {
+		primaryKeys.clear();
 		data.clear();
 		header.clear();
 		footer.clear();
-		primaryKeys.clear();
 		loaded = false;
 	}
 
@@ -90,6 +137,7 @@ public class EmptyLoader extends DataLoader {
 		try {
 			EmptyLoader clone = getClass().newInstance();
 			clone.data = new LinkedHashMap<>(data);
+			clone.primaryKeys = new LinkedHashSet<>(primaryKeys);
 			clone.footer = new ArrayList<>(footer);
 			clone.header = new ArrayList<>(header);
 			clone.loaded = loaded;
@@ -97,5 +145,18 @@ public class EmptyLoader extends DataLoader {
 		} catch (Exception e) {
 		}
 		return null;
+	}
+
+	@Override
+	public Set<String> keySet(String key, boolean subkeys) {
+		Set<String> keys = new HashSet<>();
+		key = key + '.';
+		for (String section : data.keySet())
+			if (section.startsWith(key)) {
+				int pos;
+				section = section.substring(key.length());
+				keys.add(subkeys ? section : (pos = section.indexOf('.')) == -1 ? section : section.substring(0, pos));
+			}
+		return keys;
 	}
 }

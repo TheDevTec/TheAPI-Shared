@@ -21,24 +21,15 @@ public class JsonLoader extends EmptyLoader {
 		try {
 			Object read = Json.reader().read(input.replace(System.lineSeparator(), ""));
 			if (read instanceof Map)
-				for (Entry<Object, Object> keyed : ((Map<Object, Object>) read).entrySet()) {
-					primaryKeys.add(splitFirst(keyed.getKey() + ""));
-					data.put(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
-				}
+				for (Entry<Object, Object> keyed : ((Map<Object, Object>) read).entrySet())
+					set(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
 			else
 				for (Object o : (Collection<Object>) read)
-					for (Entry<Object, Object> keyed : ((Map<Object, Object>) o).entrySet()) {
-						primaryKeys.add(splitFirst(keyed.getKey() + ""));
-						data.put(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
-					}
+					for (Entry<Object, Object> keyed : ((Map<Object, Object>) o).entrySet())
+						set(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
 			loaded = true;
 		} catch (Exception er) {
 			loaded = false;
 		}
-	}
-
-	private static String splitFirst(String text) {
-		int next = text.indexOf('.');
-		return next != -1 ? text.substring(0, next) : text;
 	}
 }

@@ -3,19 +3,21 @@ package me.devtec.shared.dataholder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import me.devtec.shared.dataholder.loaders.DataLoader;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
 class YamlSectionBuilderHelper {
 
-	public static void write(StringContainer builder, Set<String> keys, Map<String, DataValue> map, boolean markSaved) {
-		Map<String, SectionHolder> secs = new LinkedHashMap<>(map.size()); // correct size of map
+	public static void write(StringContainer builder, Set<String> keys, DataLoader map, boolean markSaved) {
+		Map<String, SectionHolder> secs = new LinkedHashMap<>(map.get().size()); // correct size of map
 
 		// Prepare sections in map
 		for (String d : keys) {
@@ -25,12 +27,14 @@ class YamlSectionBuilderHelper {
 		}
 
 		// Build subkeys
-		for (Entry<String, DataValue> e : map.entrySet()) {
-			if (markSaved && e.getValue() != null)
-				e.getValue().modified = false;
-			int startPos = e.getKey().indexOf('.');
+		Iterator<Entry<String, DataValue>> iterator = map.get().entrySet().iterator();
+		while (iterator.hasNext()) {
+			Entry<String, DataValue> key = iterator.next();
+			if (markSaved && key.getValue() != null)
+				key.getValue().modified = false;
+			int startPos = key.getKey().indexOf('.');
 			if (startPos > -1) {
-				List<String> split = YamlSectionBuilderHelper.split(e.getKey(), startPos);
+				List<String> split = YamlSectionBuilderHelper.split(key.getKey(), startPos);
 				String first = split.get(0);
 				SectionHolder holder = secs.get(first);
 				if (holder == null) {
@@ -47,12 +51,12 @@ class YamlSectionBuilderHelper {
 					holder = f;
 				}
 				// SET VALUE
-				holder.val = e.getValue();
+				holder.val = key.getValue();
 			} else {
-				SectionHolder holder = secs.get(e.getKey());
+				SectionHolder holder = secs.get(key.getKey());
 				if (holder != null) // Fix for random errors.. maybe caused by wrong section name ".something" or
 									// "something."
-					holder.val = e.getValue();
+					holder.val = key.getValue();
 			}
 		}
 		for (SectionHolder section : secs.values())
