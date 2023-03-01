@@ -134,8 +134,8 @@ public class YamlLoader extends EmptyLoader {
 				}
 				set(key.toString(), DataValue.of(value, Json.reader().read(value), comment, comments));
 			} else
-				set(key.toString(), DataValue.of(parts[0].length() >= 1 && !(parts[0].charAt(0) == '"' || parts[0].charAt(0) == '\'') ? null : value,
-						parts[0].length() >= 1 && !(parts[0].charAt(0) == '"' || parts[0].charAt(0) == '\'') ? null : value, comment, comments));
+				set(key.toString(), DataValue.of(parts[1].length() >= 1 && !(parts[1].charAt(0) == '"' || parts[1].charAt(0) == '\'') ? null : value,
+						parts[1].length() >= 1 && !(parts[1].charAt(0) == '"' || parts[1].charAt(0) == '\'') ? null : value, comment, comments));
 			comments = null;
 		}
 		if (list != null) {
