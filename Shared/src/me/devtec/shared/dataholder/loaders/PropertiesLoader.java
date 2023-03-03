@@ -1,8 +1,12 @@
 package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
+import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
@@ -71,6 +75,55 @@ public class PropertiesLoader extends EmptyLoader {
 		loaded = comments != null || !data.isEmpty();
 	}
 
+	@Override
+	public String saveAsString(Config config, boolean markSaved) {
+		return saveAsContainer(config, markSaved).toString();
+	}
+
+	@Override
+	public byte[] save(Config config, boolean markSaved) {
+		return saveAsContainer(config, markSaved).getBytes();
+	}
+
+	public StringContainer saveAsContainer(Config config, boolean markSaved) {
+		int size = config.getDataLoader().get().size();
+		StringContainer builder = new StringContainer(size * 20);
+		if (config.getDataLoader().getHeader() != null)
+			try {
+				for (String h : config.getDataLoader().getHeader())
+					builder.append(h).append(System.lineSeparator());
+			} catch (Exception er) {
+				er.printStackTrace();
+			}
+		boolean first = true;
+		Iterator<Entry<String, DataValue>> iterator = config.getDataLoader().get().entrySet().iterator();
+		while (iterator.hasNext()) {
+			Entry<String, DataValue> key = iterator.next();
+			if (first)
+				first = false;
+			else
+				builder.append(System.lineSeparator());
+			if (markSaved)
+				key.getValue().modified = false;
+			if (key.getValue().value == null) {
+				if (key.getValue().commentAfterValue != null)
+					builder.append(key.getKey() + ": " + key.getValue().commentAfterValue);
+				continue;
+			}
+			builder.append(key.getKey() + ": " + Json.writer().write(key.getValue().value));
+			if (key.getValue().commentAfterValue != null)
+				builder.append(' ').append(key.getValue().commentAfterValue);
+		}
+		if (config.getDataLoader().getFooter() != null)
+			try {
+				for (String h : config.getDataLoader().getFooter())
+					builder.append(h).append(System.lineSeparator());
+			} catch (Exception er) {
+				er.printStackTrace();
+			}
+		return builder;
+	}
+
 	public static String[] readConfigLine(String input) {
 		int index = input.indexOf('=');
 		if (index == -1)
@@ -85,5 +138,10 @@ public class PropertiesLoader extends EmptyLoader {
 		result[0] = input;
 		result[1] = "";
 		return result;
+	}
+
+	@Override
+	public String name() {
+		return "properties";
 	}
 }

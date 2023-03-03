@@ -4,9 +4,11 @@ import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataLoaderConstructor;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.dataholder.loaders.constructor.LoaderPriority;
@@ -30,6 +32,11 @@ public abstract class DataLoader implements Cloneable {
 					notUsed = new ByteLoader();
 				return notUsed;
 			}
+
+			@Override
+			public String name() {
+				return "byte";
+			}
 		});
 		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
 			DataLoader notUsed;
@@ -39,6 +46,11 @@ public abstract class DataLoader implements Cloneable {
 				if (notUsed == null || notUsed.isLoaded())
 					notUsed = new JsonLoader();
 				return notUsed;
+			}
+
+			@Override
+			public String name() {
+				return "json";
 			}
 		});
 		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
@@ -50,6 +62,11 @@ public abstract class DataLoader implements Cloneable {
 					notUsed = new PropertiesLoader();
 				return notUsed;
 			}
+
+			@Override
+			public String name() {
+				return "properties";
+			}
 		});
 		DataLoader.dataLoaders.get(LoaderPriority.HIGH).add(new DataLoaderConstructor() {
 			DataLoader notUsed;
@@ -60,8 +77,24 @@ public abstract class DataLoader implements Cloneable {
 					notUsed = new YamlLoader();
 				return notUsed;
 			}
+
+			@Override
+			public String name() {
+				return "yaml";
+			}
 		});
-		DataLoader.dataLoaders.get(LoaderPriority.HIGHEST).add(EmptyLoader::new);
+		DataLoader.dataLoaders.get(LoaderPriority.HIGHEST).add(new DataLoaderConstructor() {
+
+			@Override
+			public String name() {
+				return "empty";
+			}
+
+			@Override
+			public DataLoader construct() {
+				return new EmptyLoader();
+			}
+		});
 	}
 
 	public static void register(LoaderPriority priority, DataLoaderConstructor constructor) {
@@ -106,8 +139,27 @@ public abstract class DataLoader implements Cloneable {
 
 	public abstract DataValue getOrCreate(String key);
 
+	public abstract byte[] save(Config config, boolean markSaved);
+
+	public abstract String saveAsString(Config config, boolean markSaved);
+
+	public abstract String name();
+
+	@Override
+	public abstract DataLoader clone();
+
+	public abstract Set<String> keySet(String key, boolean subkeys);
+
 	public void load(File file) {
 		this.load(StreamUtils.fromStream(file));
+	}
+
+	public static DataLoader findLoaderByName(String type) {
+		for (LoaderPriority priority : LoaderPriority.values())
+			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority))
+				if (constructor.name().equalsIgnoreCase(type))
+					return constructor.construct();
+		return null;
 	}
 
 	public static DataLoader findLoaderFor(File input) {
@@ -144,8 +196,5 @@ public abstract class DataLoader implements Cloneable {
 		return null;
 	}
 
-	@Override
-	public abstract DataLoader clone();
-
-	public abstract Set<String> keySet(String key, boolean subkeys);
+	public abstract Set<Entry<String, DataValue>> entrySet();
 }

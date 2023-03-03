@@ -1,9 +1,13 @@
 package me.devtec.shared.dataholder.loaders;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
@@ -31,5 +35,36 @@ public class JsonLoader extends EmptyLoader {
 		} catch (Exception er) {
 			loaded = false;
 		}
+	}
+
+	@Override
+	public String saveAsString(Config config, boolean markSaved) {
+		List<Map<String, String>> list = new ArrayList<>();
+		for (String key : config.getDataLoader().getPrimaryKeys())
+			addKeys(config, list, key, markSaved);
+		return Json.writer().simpleWrite(list);
+	}
+
+	@Override
+	public byte[] save(Config config, boolean markSaved) {
+		return saveAsString(config, markSaved).getBytes();
+	}
+
+	protected void addKeys(Config config, List<Map<String, String>> list, String key, boolean markSaved) {
+		DataValue data = config.getDataLoader().get(key);
+		if (data != null) {
+			if (markSaved)
+				data.modified = false;
+			Map<String, String> a = new HashMap<>();
+			a.put(key, Json.writer().write(data.value));
+			list.add(a);
+		}
+		for (String keyer : config.getDataLoader().keySet(key, false))
+			addKeys(config, list, key + '.' + keyer, markSaved);
+	}
+
+	@Override
+	public String name() {
+		return "json";
 	}
 }

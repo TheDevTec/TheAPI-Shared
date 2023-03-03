@@ -1,6 +1,10 @@
 package me.devtec.shared.dataholder;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -133,7 +137,16 @@ public class StringContainer {
 	}
 
 	public byte[] getBytes() {
-		return toString().getBytes(charset);
+		if (count == 0)
+			return new byte[0];
+
+		CharsetEncoder encoder = charset.newEncoder();
+		ByteBuffer bb = ByteBuffer.allocate((int) (count * (double) encoder.maxBytesPerChar()));
+		encoder.onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+		CharBuffer cb = CharBuffer.wrap(value, 0, count);
+		encoder.encode(cb, bb, true);
+		encoder.flush(bb);
+		return Arrays.copyOf(bb.array(), bb.position());
 	}
 
 	public char[] getValueWithoutTrim() {
@@ -395,5 +408,4 @@ public class StringContainer {
 	public void increaseCount(int newCount) {
 		count += newCount;
 	}
-
 }

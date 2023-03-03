@@ -4,18 +4,13 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 
 import me.devtec.shared.dataholder.loaders.DataLoader;
 import me.devtec.shared.dataholder.loaders.EmptyLoader;
@@ -560,12 +555,22 @@ public class Config {
 		return list;
 	}
 
+	public synchronized boolean isSaving() {
+		return isSaving;
+	}
+
 	public Config save(DataType type) {
-		if (file == null || isSaving || !isModified())
+		return save(type.name());
+	}
+
+	public Config save(String name) {
+		if (name == null || file == null || isSaving() || !isModified())
 			return this;
 		isSaving = true;
 		try (RandomAccessFile writer = new RandomAccessFile(file, "rw")) {
-			writer.write(toByteArray(type, true));
+			byte[] bytes = toByteArray(name, true);
+			writer.setLength(bytes.length);
+			writer.write(bytes);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -575,7 +580,10 @@ public class Config {
 	}
 
 	public void save() {
-		this.save(DataType.YAML);
+		if (getDataLoader().name().equals("empty"))
+			this.save("yaml");
+		else
+			save(getDataLoader().name());
 	}
 
 	public Set<String> getKeys() {
@@ -604,225 +612,28 @@ public class Config {
 
 	@Override
 	public String toString() {
-		return toString(DataType.BYTE);
+		return toString(getDataLoader().name().equals("empty") ? DataType.BYTE.name() : getDataLoader().name(), false);
 	}
 
-	public String toString(DataType type) {
-		return new String(toString(type, false));
-	}
-
-	// TODO
-	public String toString(DataType type, boolean markSaved) {
-		switch (type) {
-		case PROPERTIES: {
-			int size = loader.get().size();
-			StringContainer builder = new StringContainer(size * 20);
-			if (loader.getHeader() != null)
-				try {
-					for (String h : loader.getHeader())
-						builder.append(h).append(System.lineSeparator());
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
-			boolean first = true;
-			Iterator<Entry<String, DataValue>> iterator = loader.get().entrySet().iterator();
-			while (iterator.hasNext()) {
-				Entry<String, DataValue> key = iterator.next();
-				if (first)
-					first = false;
-				else
-					builder.append(System.lineSeparator());
-				if (markSaved)
-					key.getValue().modified = false;
-				if (key.getValue().value == null) {
-					if (key.getValue().commentAfterValue != null)
-						builder.append(key.getKey() + ": " + key.getValue().commentAfterValue);
-					continue;
-				}
-				builder.append(key.getKey() + ": " + Json.writer().write(key.getValue().value));
-				if (key.getValue().commentAfterValue != null)
-					builder.append(' ').append(key.getValue().commentAfterValue);
-			}
-			if (loader.getFooter() != null)
-				try {
-					for (String h : loader.getFooter())
-						builder.append(h).append(System.lineSeparator());
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
-			return builder.toString();
-		}
-		case BYTE: {
-			return new String(Base64.getEncoder().encode(toByteArray(markSaved)));
-		}
-		case JSON:
-			List<Map<String, String>> list = new ArrayList<>();
-			for (String key : getKeys())
-				addKeys(list, key, markSaved);
-			return Json.writer().simpleWrite(list);
-		case YAML:
-			int size = loader.get().size();
-			StringContainer builder = new StringContainer(size * 20);
-			if (loader.getHeader() != null)
-				try {
-					for (String h : loader.getHeader())
-						builder.append(h).append(System.lineSeparator());
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
-
-			// BUILD KEYS & SECTIONS
-			YamlSectionBuilderHelper.write(builder, loader.getPrimaryKeys(), loader, markSaved);
-
-			if (loader.getFooter() != null)
-				try {
-					for (String h : loader.getFooter())
-						builder.append(h).append(System.lineSeparator());
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
-			return builder.toString();
-		}
+	public String toString(String type, boolean markSaved) {
+		if (getDataLoader().name().equalsIgnoreCase(type))
+			return getDataLoader().saveAsString(this, markSaved);
+		DataLoader loader = DataLoader.findLoaderByName(type);
+		if (loader != null)
+			return loader.saveAsString(this, markSaved);
 		return null;
 	}
 
-	public byte[] toByteArray() {
-		return toByteArray(true);
-	}
-
-	public byte[] toByteArray(boolean markSaved) {
-		try {
-			ByteArrayDataOutput in = ByteStreams.newDataOutput();
-			in.writeInt(3);
-			Iterator<Entry<String, DataValue>> iterator = loader.get().entrySet().iterator();
-			while (iterator.hasNext()) {
-				Entry<String, DataValue> key = iterator.next();
-				try {
-					if (markSaved)
-						key.getValue().modified = false;
-					in.writeInt(0);
-					in.writeUTF(key.getKey());
-					if (key.getValue().value == null) {
-						in.writeInt(3);
-						continue;
-					}
-					if (key.getValue().writtenValue != null) {
-						String write = key.getValue().writtenValue;
-						if (write == null) {
-							in.writeInt(3);
-							continue;
-						}
-						while (write.length() > 40000) {
-							String wr = write.substring(0, 39999);
-							in.writeInt(1);
-							in.writeUTF(wr);
-							write = write.substring(39999);
-						}
-						in.writeInt(1);
-						in.writeUTF(write);
-						continue;
-					}
-					String write = Json.writer().write(key.getValue().value);
-					if (write == null) {
-						in.writeInt(3);
-						continue;
-					}
-					while (write.length() > 40000) {
-						String wr = write.substring(0, 39999);
-						in.writeInt(1);
-						in.writeUTF(wr);
-						write = write.substring(39999);
-					}
-					in.writeInt(1);
-					in.writeUTF(write);
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
-			}
-			return in.toByteArray();
-		} catch (Exception error) {
-			error.printStackTrace();
-			return new byte[0];
-		}
-	}
-
-	public byte[] toByteArray(DataType type) {
-		return toByteArray(type, false);
-	}
-
-	// TODO
 	public byte[] toByteArray(DataType type, boolean markSaved) {
-		switch (type) {
-		case PROPERTIES: {
-			int size = loader.get().size();
-			StringContainer builder = new StringContainer(size * 20);
-			if (loader.getHeader() != null)
-				try {
-					for (String h : loader.getHeader())
-						builder.append(h).append(System.lineSeparator());
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
-			boolean first = true;
-			Iterator<Entry<String, DataValue>> iterator = loader.get().entrySet().iterator();
-			while (iterator.hasNext()) {
-				Entry<String, DataValue> key = iterator.next();
-				if (first)
-					first = false;
-				else
-					builder.append(System.lineSeparator());
-				if (markSaved)
-					key.getValue().modified = false;
-				if (key.getValue().value == null) {
-					if (key.getValue().commentAfterValue != null)
-						builder.append(key.getKey() + ": " + key.getValue().commentAfterValue);
-					continue;
-				}
-				builder.append(key.getKey() + ": " + Json.writer().write(key.getValue().value));
-				if (key.getValue().commentAfterValue != null)
-					builder.append(' ').append(key.getValue().commentAfterValue);
-			}
-			if (loader.getFooter() != null)
-				try {
-					for (String h : loader.getFooter())
-						builder.append(h).append(System.lineSeparator());
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
-			return builder.getBytes();
-		}
-		case BYTE: {
-			return Base64.getEncoder().encode(toByteArray(markSaved));
-		}
-		case JSON: {
-			List<Map<String, String>> list = new ArrayList<>();
-			for (String key : getKeys())
-				addKeys(list, key, markSaved);
-			return Json.writer().simpleWrite(list).getBytes();
-		}
-		case YAML:
-			int size = loader.get().size();
-			StringContainer builder = new StringContainer(size * 20);
-			if (loader.getHeader() != null)
-				try {
-					for (String h : loader.getHeader())
-						builder.append(h).append(System.lineSeparator());
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
+		return toByteArray(type.name(), markSaved);
+	}
 
-			// BUILD KEYS & SECTIONS
-			YamlSectionBuilderHelper.write(builder, loader.getPrimaryKeys(), loader, markSaved);
-
-			if (loader.getFooter() != null)
-				try {
-					for (String h : loader.getFooter())
-						builder.append(h).append(System.lineSeparator());
-				} catch (Exception er) {
-					er.printStackTrace();
-				}
-			return builder.getBytes();
-		}
+	public byte[] toByteArray(String type, boolean markSaved) {
+		if (getDataLoader().name().equalsIgnoreCase(type))
+			return getDataLoader().save(this, markSaved);
+		DataLoader loader = DataLoader.findLoaderByName(type);
+		if (loader != null)
+			return loader.save(this, markSaved);
 		return null;
 	}
 
@@ -848,19 +659,6 @@ public class Config {
 			if (setting.merge(this, merge))
 				markModified();
 		return isModified();
-	}
-
-	protected void addKeys(List<Map<String, String>> list, String key, boolean markSaved) {
-		DataValue data = getDataLoader().get(key);
-		if (data != null) {
-			if (markSaved)
-				data.modified = false;
-			Map<String, String> a = new HashMap<>();
-			a.put(key, Json.writer().write(data.value));
-			list.add(a);
-		}
-		for (String keyer : this.getKeys(key))
-			addKeys(list, key + "." + keyer, markSaved);
 	}
 
 	public DataLoader getDataLoader() {

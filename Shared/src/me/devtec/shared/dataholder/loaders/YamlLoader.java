@@ -3,7 +3,9 @@ package me.devtec.shared.dataholder.loaders;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.dataholder.YamlSectionBuilderHelper;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
@@ -80,7 +82,7 @@ public class YamlLoader extends EmptyLoader {
 				continue;
 			}
 			int currentDepth = getDepth(line);
-			String currentKey = parts[0];
+			String currentKey = getFromQuotes(parts[0]);
 			if (list != null) {
 				readerType = READER_TYPE_NONE;
 				DataValue data = getOrCreate(key.toString());
@@ -158,6 +160,40 @@ public class YamlLoader extends EmptyLoader {
 		loaded = comments != null || !data.isEmpty();
 	}
 
+	@Override
+	public String saveAsString(Config config, boolean markSaved) {
+		return saveAsContainer(config, markSaved).toString();
+	}
+
+	@Override
+	public byte[] save(Config config, boolean markSaved) {
+		return saveAsContainer(config, markSaved).getBytes();
+	}
+
+	public StringContainer saveAsContainer(Config config, boolean markSaved) {
+		int size = config.getDataLoader().get().size();
+		StringContainer builder = new StringContainer(size * 20);
+		if (config.getDataLoader().getHeader() != null)
+			try {
+				for (String h : config.getDataLoader().getHeader())
+					builder.append(h).append(System.lineSeparator());
+			} catch (Exception er) {
+				er.printStackTrace();
+			}
+
+		// BUILD KEYS & SECTIONS
+		YamlSectionBuilderHelper.write(builder, config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
+
+		if (config.getDataLoader().getFooter() != null)
+			try {
+				for (String h : config.getDataLoader().getFooter())
+					builder.append(h).append(System.lineSeparator());
+			} catch (Exception er) {
+				er.printStackTrace();
+			}
+		return builder;
+	}
+
 	public static String[] readConfigLine(String input) {
 		int index = -1;
 
@@ -180,6 +216,17 @@ public class YamlLoader extends EmptyLoader {
 			return result;
 		}
 		return null;
+	}
+
+	public static String getFromQuotes(String input) {
+		int len = input.length();
+		if (len <= 2)
+			return input;
+		char firstChar = input.charAt(0);
+		char lastChar = input.charAt(input.length() - 1);
+		if (firstChar == '\'' && lastChar == '\'' || firstChar == '"' && lastChar == '"')
+			return input.substring(1, input.length() - 1);
+		return input;
 	}
 
 	public static String[] splitFromComment(int posFromStart, String input) {
@@ -283,5 +330,10 @@ public class YamlLoader extends EmptyLoader {
 		while (line.charAt(depth) == ' ')
 			depth++;
 		return depth / 2;
+	}
+
+	@Override
+	public String name() {
+		return "yaml";
 	}
 }

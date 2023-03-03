@@ -8,11 +8,10 @@ public interface JWriter {
 
 	public default String write(Object s) {
 		try {
-			Object parsed = writeWithoutParse(s);
-			if (parsed == null)
+			if (s == null)
 				return "null";
-			return s instanceof String || s instanceof CharSequence ? s instanceof Boolean || s instanceof Number || s instanceof Character ? '\'' + s.toString() + '\'' : '"' + s.toString() + '"'
-					: toGson(parsed);
+			return s instanceof String || s instanceof CharSequence ? '"' + s.toString() + '"'
+					: s instanceof Number || s instanceof Character ? '\'' + s.toString() + '\'' : toGson(writeWithoutParse(s));
 		} catch (Exception err) {
 		}
 		return null;

@@ -8,8 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
 public class EmptyLoader extends DataLoader {
@@ -18,6 +20,9 @@ public class EmptyLoader extends DataLoader {
 	protected List<String> header = new ArrayList<>();
 	protected List<String> footer = new ArrayList<>();
 	protected boolean loaded = false;
+
+	protected Set<String> keySet;
+	protected Set<Entry<String, DataValue>> entrySet;
 
 	@Override
 	public boolean loadingFromFile() {
@@ -36,7 +41,16 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public Set<String> getKeys() {
-		return data.keySet();
+		if (keySet == null)
+			keySet = data.keySet();
+		return keySet;
+	}
+
+	@Override
+	public Set<Entry<String, DataValue>> entrySet() {
+		if (entrySet == null)
+			entrySet = data.entrySet();
+		return entrySet;
 	}
 
 	@Override
@@ -58,6 +72,8 @@ public class EmptyLoader extends DataLoader {
 			int pos = key.indexOf('.');
 			String primaryKey = pos == -1 ? key : key.substring(0, pos);
 			primaryKeys.add(primaryKey);
+			keySet = null;
+			entrySet = null;
 		}
 	}
 
@@ -66,14 +82,14 @@ public class EmptyLoader extends DataLoader {
 		if (withSubKeys) {
 			int pos = key.indexOf('.');
 			String primaryKey = pos == -1 ? key : key.substring(0, pos);
-			key = key + '.';
 			if (pos == -1) {
 				boolean modified = false;
 				if (primaryKeys.remove(primaryKey))
 					modified = true;
 				if (data.remove(key) != null)
 					modified = true;
-				Iterator<String> itr = data.keySet().iterator();
+				key = key + '.';
+				Iterator<String> itr = getKeys().iterator();
 				while (itr.hasNext()) {
 					String section = itr.next();
 					if (section.startsWith(key)) {
@@ -85,8 +101,13 @@ public class EmptyLoader extends DataLoader {
 			}
 			boolean onlyOne = true;
 			boolean modified = false;
+			if (data.remove(key) != null)
+				modified = true;
+			keySet = null;
+			entrySet = null;
 
-			Iterator<String> itr = data.keySet().iterator();
+			key = key + '.';
+			Iterator<String> itr = getKeys().iterator();
 			while (itr.hasNext()) {
 				String section = itr.next();
 				if (section.startsWith(key)) {
@@ -97,13 +118,19 @@ public class EmptyLoader extends DataLoader {
 			}
 			if (onlyOne && primaryKeys.remove(primaryKey))
 				modified = true;
+			keySet = null;
+			entrySet = null;
 			return modified;
 		}
+		keySet = null;
+		entrySet = null;
 		return data.remove(key) != null;
 	}
 
 	@Override
 	public void reset() {
+		keySet = null;
+		entrySet = null;
 		primaryKeys.clear();
 		data.clear();
 		header.clear();
@@ -151,12 +178,27 @@ public class EmptyLoader extends DataLoader {
 	public Set<String> keySet(String key, boolean subkeys) {
 		Set<String> keys = new HashSet<>();
 		key = key + '.';
-		for (String section : data.keySet())
+		for (String section : getKeys())
 			if (section.startsWith(key)) {
 				int pos;
 				section = section.substring(key.length());
 				keys.add(subkeys ? section : (pos = section.indexOf('.')) == -1 ? section : section.substring(0, pos));
 			}
 		return keys;
+	}
+
+	@Override
+	public byte[] save(Config config, boolean markSaved) {
+		throw new UnsupportedOperationException("Method isn't implemented");
+	}
+
+	@Override
+	public String saveAsString(Config config, boolean markSaved) {
+		throw new UnsupportedOperationException("Method isn't implemented");
+	}
+
+	@Override
+	public String name() {
+		return "empty";
 	}
 }

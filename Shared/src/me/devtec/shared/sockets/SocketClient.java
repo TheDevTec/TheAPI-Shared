@@ -94,12 +94,12 @@ public interface SocketClient {
 			return;
 		if (shouldAddToQueue()) {
 			actionsAfterUnlock().add(new SocketAction(data == null ? ClientResponde.RECEIVE_FILE.getResponde() : ClientResponde.RECEIVE_DATA_AND_FILE.getResponde(),
-					data == null ? null : data.toByteArray(), file, fileName));
+					data == null ? null : data.toByteArray("byte", true), file, fileName));
 			return;
 		}
 		int taskId = ID_GEN.incrementAndGet();
 		getWriteActions().put(taskId, new SocketAction(data == null ? ClientResponde.RECEIVE_FILE.getResponde() : ClientResponde.RECEIVE_DATA_AND_FILE.getResponde(),
-				data == null ? null : data.toByteArray(), file, fileName));
+				data == null ? null : data.toByteArray("byte", true), file, fileName));
 		DataOutputStream out = getOutputStream();
 		try {
 			lock();
@@ -112,7 +112,7 @@ public interface SocketClient {
 			if (shouldAddToQueue()) {
 				getWriteActions().remove(taskId);
 				actionsAfterUnlock().add(new SocketAction(data == null ? ClientResponde.RECEIVE_FILE.getResponde() : ClientResponde.RECEIVE_DATA_AND_FILE.getResponde(),
-						data == null ? null : data.toByteArray(), file, fileName));
+						data == null ? null : data.toByteArray("byte", true), file, fileName));
 			}
 			if (canReconnect())
 				try {
@@ -126,11 +126,11 @@ public interface SocketClient {
 		if (data == null)
 			return;
 		if (shouldAddToQueue()) {
-			actionsAfterUnlock().add(new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray(), null, null));
+			actionsAfterUnlock().add(new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray("byte", true), null, null));
 			return;
 		}
 		int taskId = ID_GEN.incrementAndGet();
-		getWriteActions().put(taskId, new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray(), null, null));
+		getWriteActions().put(taskId, new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray("byte", true), null, null));
 		DataOutputStream out = getOutputStream();
 		try {
 			lock();
@@ -142,7 +142,7 @@ public interface SocketClient {
 			stop();
 			if (shouldAddToQueue()) {
 				getWriteActions().remove(taskId);
-				actionsAfterUnlock().add(new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray(), null, null));
+				actionsAfterUnlock().add(new SocketAction(ClientResponde.RECEIVE_DATA.getResponde(), data.toByteArray("byte", true), null, null));
 			}
 			if (canReconnect())
 				try {
