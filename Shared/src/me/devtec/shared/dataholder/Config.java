@@ -282,7 +282,7 @@ public class Config {
 
 	public Config reload(File file) {
 		loader = DataLoader.findLoaderFor(file);
-		markModified();
+		markNonModified();
 		return this;
 	}
 
