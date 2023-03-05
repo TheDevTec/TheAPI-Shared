@@ -14,8 +14,7 @@ public class MergeStandards {
 			boolean change = false;
 			try {
 				if (config.getDataLoader().getHeader() != null /** Is header supported? **/
-						&& merge.getDataLoader().getHeader() != null && !merge.getDataLoader().getHeader().isEmpty()
-						&& (config.getDataLoader().getHeader().isEmpty() || !config.getDataLoader().getHeader().containsAll(merge.getDataLoader().getHeader()))) {
+						&& merge.getDataLoader().getHeader() != null && !merge.getDataLoader().getHeader().isEmpty() && config.getDataLoader().getHeader().isEmpty()) {
 					config.getDataLoader().getHeader().clear();
 					config.getDataLoader().getHeader().addAll(merge.getDataLoader().getHeader());
 					change = true;
@@ -32,8 +31,7 @@ public class MergeStandards {
 			boolean change = false;
 			try {
 				if (config.getDataLoader().getFooter() != null /** Is footer supported? **/
-						&& merge.getDataLoader().getFooter() != null && !merge.getDataLoader().getFooter().isEmpty()
-						&& (config.getDataLoader().getFooter().isEmpty() || !config.getDataLoader().getFooter().containsAll(merge.getDataLoader().getFooter()))) {
+						&& merge.getDataLoader().getFooter() != null && !merge.getDataLoader().getFooter().isEmpty() && config.getDataLoader().getFooter().isEmpty()) {
 					config.getDataLoader().getFooter().clear();
 					config.getDataLoader().getFooter().addAll(merge.getDataLoader().getFooter());
 					change = true;
@@ -53,13 +51,23 @@ public class MergeStandards {
 				while (iterator.hasNext()) {
 					Entry<String, DataValue> key = iterator.next();
 					DataValue val = key.getValue();
-					if (val.commentAfterValue == null ? key.getValue().commentAfterValue != null : !val.commentAfterValue.equals(key.getValue().commentAfterValue)) {
-						val.commentAfterValue = key.getValue().commentAfterValue;
-						change = true;
+					DataValue configVal = null;
+					if (val.commentAfterValue != null) {
+						configVal = config.getDataLoader().getOrCreate(key.getKey());
+						if (configVal.commentAfterValue == null) {
+							configVal.commentAfterValue = val.commentAfterValue;
+							configVal.modified = true;
+							change = true;
+						}
 					}
-					if (val.comments == null ? key.getValue().comments != null && !key.getValue().comments.isEmpty() : !val.comments.containsAll(key.getValue().comments)) {
-						val.comments = key.getValue().comments;
-						change = true;
+					if (val.comments != null && !val.comments.isEmpty()) {
+						if (configVal == null)
+							configVal = config.getDataLoader().getOrCreate(key.getKey());
+						if (configVal.comments == null || configVal.comments.isEmpty()) {
+							configVal.comments = val.comments;
+							configVal.modified = true;
+							change = true;
+						}
 					}
 				}
 			} catch (Exception err) {
@@ -77,9 +85,13 @@ public class MergeStandards {
 				while (iterator.hasNext()) {
 					Entry<String, DataValue> key = iterator.next();
 					DataValue val = key.getValue();
-					if (val.value == null && key.getValue().value != null) {
-						val.value = key.getValue().value;
-						val.writtenValue = key.getValue().writtenValue;
+					DataValue configVal = config.getDataLoader().get(key.getKey());
+					if (configVal == null || configVal.value == null) {
+						if (configVal == null)
+							configVal = config.getDataLoader().getOrCreate(key.getKey());
+						configVal.value = val.value;
+						configVal.writtenValue = val.writtenValue;
+						configVal.modified = true;
 						change = true;
 					}
 				}
