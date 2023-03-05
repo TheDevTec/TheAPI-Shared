@@ -281,6 +281,8 @@ public class Config {
 	}
 
 	public Config reload(File file) {
+		if (file == null)
+			return this;
 		loader = DataLoader.findLoaderFor(file);
 		markNonModified();
 		return this;
