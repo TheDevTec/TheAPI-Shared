@@ -21,7 +21,7 @@ public class StreamUtils {
 	 * @return String
 	 */
 	public static String fromStream(File file) {
-		if (file == null)
+		if (file == null || !file.exists())
 			return null;
 		try (RandomAccessFile reader = new RandomAccessFile(file, "r")) {
 			try (FileChannel channel = reader.getChannel()) {
