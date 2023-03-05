@@ -615,6 +615,14 @@ public class Config {
 		return toString(getDataLoader().name().equals("empty") ? DataType.BYTE.name() : getDataLoader().name(), false);
 	}
 
+	public String toString(String type) {
+		return toString(type, false);
+	}
+
+	public String toString(DataType type) {
+		return toString(type.name(), false);
+	}
+
 	public String toString(String type, boolean markSaved) {
 		if (getDataLoader().name().equalsIgnoreCase(type))
 			return getDataLoader().saveAsString(this, markSaved);
@@ -622,6 +630,14 @@ public class Config {
 		if (loader != null)
 			return loader.saveAsString(this, markSaved);
 		return null;
+	}
+
+	public byte[] toByteArray(String type) {
+		return toByteArray(type, false);
+	}
+
+	public byte[] toByteArray(DataType type) {
+		return toByteArray(type.name(), false);
 	}
 
 	public byte[] toByteArray(DataType type, boolean markSaved) {
