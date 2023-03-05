@@ -2,7 +2,6 @@ package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -176,7 +175,7 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public Set<String> keySet(String key, boolean subkeys) {
-		Set<String> keys = new HashSet<>();
+		Set<String> keys = new LinkedHashSet<>();
 		key = key + '.';
 		for (String section : getKeys())
 			if (section.startsWith(key)) {
