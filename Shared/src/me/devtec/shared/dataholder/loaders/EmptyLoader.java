@@ -187,6 +187,45 @@ public class EmptyLoader extends DataLoader {
 	}
 
 	@Override
+	public Iterator<String> keySetIterator(String key, boolean subkeys) {
+		String finalKey = key + '.';
+		Iterator<String> keySet = getKeys().iterator();
+		return new Iterator<String>() {
+			String currentKey = null;
+
+			@Override
+			public boolean hasNext() {
+				return currentKey != null;
+			}
+
+			@Override
+			public String next() {
+				step();
+				return currentKey;
+			}
+
+			@Override
+			public void remove() {
+				EmptyLoader.this.remove(currentKey);
+			}
+
+			public Iterator<String> step() {
+				currentKey = null;
+				while (keySet.hasNext()) {
+					String section = keySet.next();
+					if (section.startsWith(finalKey)) {
+						int pos;
+						section = section.substring(finalKey.length());
+						currentKey = subkeys ? section : (pos = section.indexOf('.')) == -1 ? section : section.substring(0, pos);
+						break;
+					}
+				}
+				return this;
+			}
+		}.step();
+	}
+
+	@Override
 	public byte[] save(Config config, boolean markSaved) {
 		throw new UnsupportedOperationException("Method isn't implemented");
 	}

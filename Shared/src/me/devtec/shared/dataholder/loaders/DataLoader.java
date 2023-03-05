@@ -3,6 +3,7 @@ package me.devtec.shared.dataholder.loaders;
 import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -149,6 +150,8 @@ public abstract class DataLoader implements Cloneable {
 	public abstract DataLoader clone();
 
 	public abstract Set<String> keySet(String key, boolean subkeys);
+
+	public abstract Iterator<String> keySetIterator(String key, boolean subkeys);
 
 	public void load(File file) {
 		this.load(StreamUtils.fromStream(file));

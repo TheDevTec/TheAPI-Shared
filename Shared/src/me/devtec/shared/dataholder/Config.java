@@ -600,6 +600,10 @@ public class Config {
 		return this.getKeys(key, false);
 	}
 
+	public Iterator<String> getIteratorKeys(String key) {
+		return this.getIteratorKeys(key, false);
+	}
+
 	public boolean isKey(String key) {
 		for (String section : loader.getKeys())
 			if (section.startsWith(key))
@@ -610,6 +614,10 @@ public class Config {
 
 	public Set<String> getKeys(String key, boolean subkeys) {
 		return getDataLoader().keySet(key, subkeys);
+	}
+
+	public Iterator<String> getIteratorKeys(String key, boolean subkeys) {
+		return getDataLoader().keySetIterator(key, subkeys);
 	}
 
 	@Override
