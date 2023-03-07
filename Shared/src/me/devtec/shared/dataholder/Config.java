@@ -569,6 +569,18 @@ public class Config {
 		if (name == null || file == null || isSaving() || !isModified())
 			return this;
 		isSaving = true;
+		if (!file.exists()) {
+			File folder = file.getParentFile();
+			if (folder != null && !folder.exists())
+				folder.mkdir();
+			try {
+				file.createNewFile();
+			} catch (Exception e) {
+				isSaving = false;
+				e.printStackTrace();
+				return this;
+			}
+		}
 		try (RandomAccessFile writer = new RandomAccessFile(file, "rw")) {
 			byte[] bytes = toByteArray(name, true);
 			writer.setLength(bytes.length);
