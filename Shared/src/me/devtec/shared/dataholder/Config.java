@@ -571,8 +571,8 @@ public class Config {
 		isSaving = true;
 		if (!file.exists()) {
 			File folder = file.getParentFile();
-			if (folder != null && !folder.exists())
-				folder.mkdir();
+			if (folder != null)
+				folder.mkdirs();
 			try {
 				file.createNewFile();
 			} catch (Exception e) {
