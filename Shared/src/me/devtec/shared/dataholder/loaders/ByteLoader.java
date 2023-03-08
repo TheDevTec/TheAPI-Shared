@@ -42,7 +42,7 @@ public class ByteLoader extends EmptyLoader {
 		try {
 			ByteArrayDataOutput in = ByteStreams.newDataOutput();
 			in.writeInt(3);
-			Iterator<Entry<String, DataValue>> iterator = config.getDataLoader().get().entrySet().iterator();
+			Iterator<Entry<String, DataValue>> iterator = config.getDataLoader().entrySet().iterator();
 			while (iterator.hasNext()) {
 				Entry<String, DataValue> key = iterator.next();
 				try {

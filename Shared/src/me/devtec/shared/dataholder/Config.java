@@ -725,7 +725,7 @@ public class Config {
 					if (lastUpdate == 0 || lastModify != lastUpdate) {
 						lastUpdate = file.lastModified();
 						Config read = new Config(file);
-						Iterator<Entry<String, DataValue>> iterator = read.getDataLoader().get().entrySet().iterator();
+						Iterator<Entry<String, DataValue>> iterator = read.getDataLoader().entrySet().iterator();
 						while (iterator.hasNext()) {
 							Entry<String, DataValue> key = iterator.next();
 							DataValue val = loader.get(key.getKey());
