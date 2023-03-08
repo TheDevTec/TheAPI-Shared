@@ -581,8 +581,8 @@ public class Config {
 				return this;
 			}
 		}
+		byte[] bytes = toByteArray(name, true);
 		try (RandomAccessFile writer = new RandomAccessFile(file, "rw")) {
-			byte[] bytes = toByteArray(name, true);
 			writer.setLength(bytes.length);
 			writer.write(bytes);
 		} catch (Exception e) {
