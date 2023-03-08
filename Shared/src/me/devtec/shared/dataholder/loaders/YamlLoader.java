@@ -13,8 +13,6 @@ public class YamlLoader extends EmptyLoader {
 	private static final int READER_TYPE_NONE = 0;
 	private static final int READER_TYPE_STRING = 1;
 	private static final int READER_TYPE_LIST = 2;
-	private static int LINE_SEPARATOR_LENGTH = System.lineSeparator().length();
-	private static String LINE_SEPARATOR = System.lineSeparator();
 
 	private int startIndex;
 	private int endIndex;
@@ -24,8 +22,12 @@ public class YamlLoader extends EmptyLoader {
 		try {
 			return startIndex == -1 ? null : endIndex == -1 ? lines.substring(startIndex) : lines.substring(startIndex, endIndex);
 		} finally {
-			startIndex = endIndex == -1 ? -1 : endIndex + LINE_SEPARATOR_LENGTH;
-			endIndex = startIndex == -1 ? -1 : lines.indexOf(LINE_SEPARATOR, startIndex);
+			startIndex = endIndex == -1 ? -1 : endIndex + 1;
+			if (startIndex < lines.length() && startIndex != -1 && lines.charAt(startIndex) == '\r')
+				++startIndex;
+			endIndex = startIndex == -1 ? -1 : lines.indexOf('\n', startIndex);
+			if (endIndex < lines.length() && endIndex != -1 && lines.charAt(endIndex) == '\r')
+				++endIndex;
 		}
 	}
 
@@ -39,7 +41,9 @@ public class YamlLoader extends EmptyLoader {
 			startIndex = -1;
 		else {
 			startIndex = 0;
-			endIndex = lines.indexOf(LINE_SEPARATOR);
+			endIndex = lines.indexOf('\n');
+			if (endIndex < lines.length() && endIndex != -1 && lines.charAt(endIndex) == '\r')
+				++endIndex;
 		}
 
 		List<String> comments = null;

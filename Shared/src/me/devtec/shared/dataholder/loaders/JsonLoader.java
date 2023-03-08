@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
@@ -23,7 +24,7 @@ public class JsonLoader extends EmptyLoader {
 			return;
 		reset();
 		try {
-			Object read = Json.reader().read(input.replace(System.lineSeparator(), ""));
+			Object read = Json.reader().read(replace(input));
 			if (read instanceof Map)
 				for (Entry<Object, Object> keyed : ((Map<Object, Object>) read).entrySet())
 					set(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
@@ -35,6 +36,17 @@ public class JsonLoader extends EmptyLoader {
 		} catch (Exception er) {
 			loaded = false;
 		}
+	}
+
+	private static String replace(String string) {
+		StringContainer builder = new StringContainer(string.length());
+		for (int i = 0; i < string.length(); ++i) {
+			char c = string.charAt(i);
+			if (c == '\n' || c == '\r')
+				continue;
+			builder.append(c);
+		}
+		return builder.toString();
 	}
 
 	@Override

@@ -15,8 +15,6 @@ import me.devtec.shared.json.Json;
 
 public class ByteLoader extends EmptyLoader {
 
-	static char[] separator = System.lineSeparator().toCharArray();
-
 	@Override
 	public void load(String input) {
 		if (input == null || input.length() == 0)
@@ -127,19 +125,10 @@ public class ByteLoader extends EmptyLoader {
 
 	private static String replace(String string) {
 		StringContainer builder = new StringContainer(string.length());
-		int pos = 0;
 		for (int i = 0; i < string.length(); ++i) {
 			char c = string.charAt(i);
-			if (c == ' ' || c == '	')
+			if (c == ' ' || c == '	' || c == '\n' || c == '\r')
 				continue;
-			if (separator[pos] == c) {
-				if (++pos == separator.length) {
-					builder.delete(builder.length() - separator.length + 1, builder.length());
-					pos = 0;
-					continue;
-				}
-			} else
-				pos = 0;
 			builder.append(c);
 		}
 		return builder.toString();
