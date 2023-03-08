@@ -619,7 +619,7 @@ public class Config {
 	public boolean isKey(String key) {
 		for (String section : loader.getKeys())
 			if (section.startsWith(key))
-				if (section.length() == key.length() || section.length() > key.length() && section.charAt(key.length()) == '.')
+				if (section.length() == key.length() || section.charAt(key.length()) == '.')
 					return true;
 		return false;
 	}
