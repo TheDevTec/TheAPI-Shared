@@ -107,6 +107,14 @@ public class StringContainer {
 		return this;
 	}
 
+	public StringContainer append(char[] array) {
+		int len = array.length;
+		ensureCapacityInternal(count + len);
+		System.arraycopy(array, 0, value, count, array.length);
+		count += len;
+		return this;
+	}
+
 	private StringContainer appendNull() {
 		int c = count;
 		ensureCapacityInternal(c + 4);
