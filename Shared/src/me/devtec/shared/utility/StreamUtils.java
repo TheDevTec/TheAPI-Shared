@@ -4,11 +4,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.RandomAccessFile;
-import java.nio.MappedByteBuffer;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardOpenOption;
 
 import me.devtec.shared.dataholder.StringContainer;
 
@@ -23,11 +23,12 @@ public class StreamUtils {
 	public static String fromStream(File file) {
 		if (file == null || !file.exists())
 			return null;
-		try (RandomAccessFile reader = new RandomAccessFile(file, "r")) {
-			try (FileChannel channel = reader.getChannel()) {
-				MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
-				return charset.decode(buffer).toString();
-			}
+		try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
+			ByteBuffer buffer = ByteBuffer.allocateDirect((int) channel.size());
+			channel.read(buffer);
+			channel.close();
+			buffer.flip();
+			return charset.decode(buffer).toString();
 		} catch (Exception e) {
 			return null;
 		}

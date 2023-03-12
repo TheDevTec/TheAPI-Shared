@@ -2,7 +2,9 @@ package me.devtec.shared.dataholder;
 
 import java.io.File;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -581,10 +583,9 @@ public class Config {
 				return this;
 			}
 		}
-		byte[] bytes = toByteArray(name, true);
-		try (RandomAccessFile writer = new RandomAccessFile(file, "rw")) {
-			writer.setLength(bytes.length);
-			writer.write(bytes);
+		ByteBuffer bytes = ByteBuffer.wrap(toByteArray(name, true));
+		try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+			channel.write(bytes);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
