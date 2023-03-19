@@ -19,8 +19,14 @@ public class PercentageList<V> {
 	public boolean add(V object, double chance) {
 		if (chance <= 0)
 			throw new IllegalArgumentException("Chance must be greater than 0");
-		keys.add(object);
-		values.add(chance);
+		int index = keys.indexOf(object);
+		if (index != -1) {
+			totalChance -= values.get(index);
+			values.set(index, chance);
+		} else {
+			keys.add(object);
+			values.add(chance);
+		}
 		totalChance += chance;
 		return true;
 	}
