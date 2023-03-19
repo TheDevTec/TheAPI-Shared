@@ -87,7 +87,7 @@ public class StringUtils {
 		 * @apiNote Generates random color depends on software & version
 		 */
 		public default String generateColor() {
-			StringContainer b = new StringContainer(7).append("#");
+			StringContainer b = new StringContainer(7).append('#');
 			for (int i = 0; i < 6; ++i)
 				b.append(characters[random.nextInt(16)]);
 			return b.toString();
@@ -104,41 +104,30 @@ public class StringUtils {
 		 * @apiNote Replace #RRGGBB hex color depends on software
 		 */
 		public default String replaceHex(String text) {
-			StringContainer container = new StringContainer(text.length() + 14 * 6);
-
-			boolean HEX_CHAR = false;
-			StringContainer hex = new StringContainer(6);
+			StringContainer container = new StringContainer(text.length() + 14 * 2);
 			for (int i = 0; i < text.length(); ++i) {
 				char c = text.charAt(i);
-				if (c == '#') {
-					if (HEX_CHAR) {
-						container.append('#').append(hex);
-						hex.clear();
-						continue;
+				if (c == '#' && i + 6 < text.length()) {
+					boolean isHex = true;
+					for (int ic = 1; ic < 7; ++ic) {
+						char cn = text.charAt(i + ic);
+						if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57)
+							continue;
+						isHex = false;
+						break;
 					}
-					HEX_CHAR = true;
-					continue;
-				}
-				if (HEX_CHAR) {
-					if (c >= 64 && c <= 70 || c >= 97 && c <= 102 || c >= 48 && c <= 57) { // color
-						hex.append(c);
-						if (hex.length() == 6) {
-							HEX_CHAR = false;
-							container.append('§').append('x');
-							for (int hexPos = 0; hexPos < 6; ++hexPos)
-								container.append('§').append(hex.charAt(hexPos));
-							hex.clear();
+					if (isHex) {
+						container.append('§').append('x');
+						for (int ic = 1; ic < 7; ++ic) {
+							char cn = text.charAt(i + ic);
+							container.append('§').append(cn);
 						}
+						i += 6;
 						continue;
 					}
-					HEX_CHAR = false;
-					container.append('#').append(hex);
-					hex.clear();
 				}
 				container.append(c);
 			}
-			if (HEX_CHAR)
-				container.append('#').append(hex);
 			return container.toString();
 		}
 
@@ -229,7 +218,7 @@ public class StringUtils {
 			if (s.length >= 4)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E9) + "b";
 			if (s.length >= 3)
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1000000) + "m";
+				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E6) + "m";
 			if (s.length >= 2)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1000) + "k";
 			return formatted;
