@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,7 +23,10 @@ import me.devtec.shared.commands.manager.SelectorUtils;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.DataType;
 import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.dataholder.cache.TempList;
 import me.devtec.shared.placeholders.PlaceholderAPI;
+import me.devtec.shared.scheduler.Scheduler;
+import me.devtec.shared.scheduler.Tasker;
 import me.devtec.shared.utility.LibraryLoader;
 import me.devtec.shared.utility.OfflineCache;
 import me.devtec.shared.utility.StringUtils;
@@ -41,6 +45,9 @@ public class API {
 	// Offline users cache
 	private static OfflineCache cache;
 	private static Map<UUID, Config> users = new ConcurrentHashMap<>();
+	private static List<Pair> savingQueue = new TempList<Pair>(600).setCallback(pair -> ((Config) pair.getValue()).save("yaml")); // 30s
+	private static int savingScheduler;
+	public static boolean AUTOMATICALLY_USER_SAVING_TASK;
 
 	// Other cool things
 	private static final Basics basics = new Basics();
@@ -63,29 +70,62 @@ public class API {
 		if (API.cache == null)
 			return null;
 		UUID id = API.cache.lookupId(playerName);
-		Config cached = API.users.get(id);
-		if (cached == null)
-			API.users.put(id, cached = new Config("plugins/TheAPI/Users/" + id + ".yml"));
-		return cached;
+		return getUser(id);
 	}
 
 	public static Config getUser(UUID id) {
-		if (API.cache == null)
+		if (API.cache == null || id == null)
 			return null;
+
 		Config cached = API.users.get(id);
-		if (cached == null)
+		if (cached == null) {
+			Iterator<Pair> itr = savingQueue.iterator();
+			while (itr.hasNext()) {
+				Pair pair = itr.next();
+				if (pair.getKey().equals(id)) {
+					itr.remove();
+					API.users.put(id, cached = (Config) pair.getValue());
+					return cached;
+				}
+			}
 			API.users.put(id, cached = new Config("plugins/TheAPI/Users/" + id + ".yml"));
+		}
 		return cached;
 	}
 
 	public static Config removeCache(UUID id) {
-		return API.users.remove(id);
+		Config file = API.users.remove(id);
+		if (file != null)
+			savingQueue.add(Pair.of(id, file));
+		return file;
 	}
 
 	public static void setEnabled(boolean status) {
 		API.enabled = status;
-		if (!status)
+		if (!status) {
+			if (savingScheduler != 0)
+				Scheduler.cancelTask(savingScheduler);
+			savingScheduler = 0;
+			// Save all players
+			for (Config config : API.users.values())
+				config.save("yaml");
+			// Clear cache
+			API.users.clear();
+			// Saving queue
+			while (!savingQueue.isEmpty())
+				((Config) savingQueue.remove(0).getValue()).save("yaml");
+			// Unregister placeholders
 			PlaceholderAPI.unregisterAll();
+		} else if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
+			savingScheduler = new Tasker() {
+
+				@Override
+				public void run() {
+					// Save all players
+					for (Config config : API.users.values())
+						config.save("yaml");
+				}
+			}.runRepeating(432000, 432000); // Every 6 hours
 	}
 
 	public static boolean isEnabled() {
@@ -161,13 +201,25 @@ public class API {
 			config.setIfAbsent("timeConvertor.seconds.convertor", Arrays.asList("<=1  second", ">1  seconds"));
 			if (config.exists("timeConvertor.weeks"))
 				config.remove("timeConvertor.weeks");
+			config.setIfAbsent("automatically-save-user-files", true, Arrays.asList("", "# Save all loaded user files (in memory) every 6 hours"));
+			AUTOMATICALLY_USER_SAVING_TASK = config.getBoolean("automatically-save-user-files");
 			if (Ref.serverType().isBukkit())
 				config.setIfAbsent("fallback-scoreboard-support", false,
-						Arrays.asList("# Scoreboard lines will be split into 3 parts as it is on version 1.12.2 or lower,",
+						Arrays.asList("", "# Scoreboard lines will be split into 3 parts as it is on version 1.12.2 or lower,",
 								"# so that players with older client (1.12.2-) can see the scoreboard as well as players with client 1.13+ (text length is limited to 48 chars)",
 								"# This requires a bit more CPU usage and sends more packets as a result.",
 								"# Enable this only if you have installed ViaVersion/ProtocolSupport and allows connection for 1.12.2 and older clients"));
 			config.save(DataType.YAML);
+			if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
+				savingScheduler = new Tasker() {
+
+					@Override
+					public void run() {
+						// Save all players
+						for (Config config : API.users.values())
+							config.save("yaml");
+					}
+				}.runRepeating(432000, 432000); // Every 6 hours
 
 			StringUtils.timeSplit = config.getString("timeConvertor.settings.defaultSplit");
 
@@ -218,13 +270,36 @@ public class API {
 			return false; // invalid
 		}
 
+		private static char toLowerCase(int c) {
+			switch (c) {
+			case 65:
+			case 66:
+			case 67:
+			case 68:
+			case 69:
+			case 70:
+			case 75:
+			case 76:
+			case 77:
+			case 78:
+			case 79:
+			case 82:
+			case 'U':
+				return (char) (c + 32);
+			case 120:
+				return (char) 88;
+			default:
+				return (char) c;
+			}
+		}
+
 		public String[] getLastColors(String input) {
 			StringContainer color = new StringContainer(14);
 			StringContainer formats = new StringContainer(14);
 			for (int i = 0; i < input.length(); i++) {
 				char c = input.charAt(i);
 				if (c == '§' && i + 1 < input.length()) {
-					c = Character.toLowerCase(input.charAt(++i));
+					c = toLowerCase(input.charAt(++i));
 					switch (c) {
 					case 'r':
 						formats.clear();
@@ -256,9 +331,33 @@ public class API {
 						formats.clear();
 						color.append(c);
 						break;
+					case 'x':
+						color.clear();
+						formats.clear();
+						if (i + 12 < input.length()) {
+							color.append('x');
+							for (int count = 0; count < 6; ++count) {
+								char cn = input.charAt(++i);
+								if (cn != '§') { // invalid hex
+									--i;
+									color.clear();
+									break;
+								}
+								cn = input.charAt(++i);
+								if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
+									color.append(cn);
+									continue;
+								}
+								// invalid hex
+								--i;
+								color.clear();
+								break;
+							}
+						}
+						break;
 					}
 				} else if (c == '&' && i + 1 < input.length()) {
-					c = Character.toLowerCase(input.charAt(++i));
+					c = toLowerCase(input.charAt(++i));
 					switch (c) {
 					case 'u':
 						color.clear();
