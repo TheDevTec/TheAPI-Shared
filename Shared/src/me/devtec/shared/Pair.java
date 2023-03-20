@@ -21,4 +21,8 @@ public class Pair {
 	public String toString() {
 		return "Pair{" + key + "=" + value + "}";
 	}
+
+	public static Pair of(Object key, Object value) {
+		return new Pair(key, value);
+	}
 }
