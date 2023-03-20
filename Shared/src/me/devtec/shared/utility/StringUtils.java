@@ -1,8 +1,10 @@
 package me.devtec.shared.utility;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -36,13 +38,7 @@ public class StringUtils {
 	public static String timeSplit = " ";
 
 	// DO NOT TOUCH
-
 	public static final Random random = new Random();
-	// SPECIAL CHARS
-	private static final Pattern special = Pattern.compile("[^A-Z-a-z0-9_]+");
-	// CALCULATOR
-	private static final Pattern extra = Pattern.compile("((^[-])?[ ]*[0-9.]+)[ ]*([*/])[ ]*(-?[ ]*[0-9.]+)");
-	private static final Pattern normal = Pattern.compile("((^[-])?[ ]*[0-9.]+)[ ]*([+-])[ ]*(-?[ ]*[0-9.]+)");
 
 	public enum TimeFormat {
 		YEARS(31556952, 365, "y"), MONTHS(2629746, 12, "mon"), DAYS(86400, 31, "d"), HOURS(3600, 24, "h"), MINUTES(60, 60, "m"), SECONDS(1, 60, "s");
@@ -81,7 +77,6 @@ public class StringUtils {
 
 	public interface ColormaticFactory {
 		char[] characters = "abcdef0123456789".toCharArray();
-		Pattern getLast = Pattern.compile("(&?#[A-Fa-f0-9k-oK-ORrXxUu]{6}|§[Xx](§[A-Fa-f0-9k-oK-ORrXxUu]){6}|§[A-Fa-f0-9k-oK-ORrXxUu]|&[Uu])");
 
 		/**
 		 * @apiNote Generates random color depends on software & version
@@ -97,7 +92,7 @@ public class StringUtils {
 		 * @apiNote @see {@link API#basics()}
 		 */
 		public default String[] getLastColors(String text) {
-			return API.basics().getLastColors(getLast, text);
+			return API.basics().getLastColors(text);
 		}
 
 		/**
@@ -307,23 +302,45 @@ public class StringUtils {
 	public static List<String> fixedSplit(String text, int lengthOfSplit) {
 		if (text == null)
 			return null;
+
 		List<String> splitted = new ArrayList<>();
-		String split = text;
-		String prefix = "";
-		while (split.length() > lengthOfSplit) {
-			int length = lengthOfSplit - 1 - prefix.length();
-			String a = prefix + split.substring(0, length);
-			if (a.endsWith("§")) {
-				--length;
-				a = prefix + split.substring(0, length);
+		if (text.length() <= lengthOfSplit)
+			splitted.add(text);
+		else if (Ref.serverType().isBukkit() && Ref.isOlderThan(16)) {
+			int start = 0;
+			for (int i = lengthOfSplit; i < text.length(); i += lengthOfSplit)
+				if (text.charAt(i) == '§' || text.charAt(i - 1) == '§') {
+					splitted.add(text.substring(start, i - 1));
+					start = i - 1;
+				} else {
+					splitted.add(text.substring(start, i));
+					start = i;
+				}
+			splitted.add(text.substring(start));
+		} else { // Hex mode
+			int start = 0;
+
+			int steps = lengthOfSplit;
+			for (int i = 0; i < text.length(); ++i) {
+				char c = text.charAt(i);
+				--steps;
+				if (i != 0 && c == '§' && text.charAt(i + 1) == 'x' && steps - 13 < 0) {
+					steps = 0;
+					splitted.add(text.substring(start, i - 1));
+					start = i - 1;
+					continue;
+				}
+				if (steps == 0)
+					if (c == '§' || text.charAt(i - 1) == '§') {
+						splitted.add(text.substring(start, i - 1));
+						start = i - 1;
+					} else {
+						splitted.add(text.substring(start, i));
+						start = i;
+					}
 			}
-			String[] last = StringUtils.getLastColorsSplitFormats(a);
-			prefix = (!last[0].isEmpty() ? "§" + last[0] : "") + (!last[1].isEmpty() ? "§" + last[1] : "");
-			splitted.add(a);
-			split = split.substring(length);
+			splitted.add(text.substring(start));
 		}
-		if (!(prefix + split).isEmpty())
-			splitted.add(prefix + split);
 		return splitted;
 	}
 
@@ -555,22 +572,16 @@ public class StringUtils {
 			return original;
 
 		StringBuilder builder = new StringBuilder(original.length());
-		boolean charColor = false;
 		for (int i = 0; i < original.length(); ++i) {
 			char c = original.charAt(i);
-			if (charColor) {
-				if (StringUtils.has(c))
-					builder.append('§').append(StringUtils.lower(c));
+			if (c == '&' && original.length() > i + 1) {
+				char next = original.charAt(++i);
+				if (StringUtils.has(next))
+					builder.append('§').append(StringUtils.lower(next));
 				else
-					builder.append('&').append(c);
-				charColor = false;
+					builder.append(c).append(next);
 				continue;
 			}
-			if (c == '&') {
-				charColor = true;
-				continue;
-			}
-			charColor = false;
 			builder.append(c);
 		}
 		String msg = builder.toString();
@@ -865,74 +876,101 @@ public class StringUtils {
 	}
 
 	/**
-	 * @apiNote Convert String to Math and Calculate exempt
+	 * @apiNote his method takes a String argument that represents a mathematical
+	 *          expression and returns a double value that represents the result of
+	 *          evaluating the expression. The expression can contain the usual
+	 *          arithmetic operators (+, -, *, /) as well as parentheses to control
+	 *          the order of operations. The method uses a stack to keep track of
+	 *          intermediate results and operators, and follows the standard rules
+	 *          of operator precedence and associativity.
 	 * @return double
 	 */
-	public static double calculate(String original) {
-		String val = original;
 
-		if (val.indexOf('(') != -1 && val.indexOf(')') != -1)
-			val = splitter(val);
-
-		if (val.indexOf('*') != -1 || val.indexOf('/') != -1) {
-			Matcher s = extra.matcher(val);
-			while (s.find()) {
-				double a = StringUtils.getDouble(s.group(1));
-				String b = s.group(3);
-				double d = StringUtils.getDouble(s.group(4));
-				val = val.replace(s.group(), Double.toString(a == 0 || d == 0 ? 0 : b.charAt(0) == '*' ? a * d : a / d));
-				s.reset(val);
-			}
+	public static double calculate(String expression) {
+		Deque<Double> operands = new ArrayDeque<>();
+		Deque<Character> operators = new ArrayDeque<>();
+		int i = 0;
+		while (i < expression.length()) {
+			char c = expression.charAt(i);
+			if (isReadable(c)) {
+				int j = i + 1;
+				while (j < expression.length() && isReadable(expression.charAt(j)))
+					j++;
+				double value = StringUtils.getDouble(expression, i, j);
+				operands.push(value);
+				i = j;
+			} else
+				switch (c) {
+				case '+':
+				case '-':
+				case '*':
+				case '/':
+					while (!operators.isEmpty() && hasPrecedence(c, operators.peek()))
+						operands.push(applyOperator(operators.pop(), operands.pop(), operands.pop()));
+					operators.push(c);
+					i++;
+					break;
+				case '(':
+					operators.push(c);
+					i++;
+					break;
+				case ')':
+					while (!operators.isEmpty() && operators.peek() != '(')
+						operands.push(applyOperator(operators.pop(), operands.pop(), operands.pop()));
+					if (operators.isEmpty())
+						return 0;
+					operators.pop(); // pop the '('
+					i++;
+					break;
+				default:
+					i++;
+					break;
+				}
 		}
-		if (val.indexOf('+') != -1 || val.indexOf('-') != -1) {
-			Matcher s = normal.matcher(val);
-			while (s.find()) {
-				double a = StringUtils.getDouble(s.group(1));
-				String b = s.group(3);
-				double d = StringUtils.getDouble(s.group(4));
-				val = val.replace(s.group(), Double.toString(b.charAt(0) == '+' ? a + d : a - d));
-				s.reset(val);
-			}
+		while (!operators.isEmpty()) {
+			if (operators.peek() == '(')
+				return 0;
+			operands.push(applyOperator(operators.pop(), operands.pop(), operands.pop()));
 		}
-		return StringUtils.getDouble(val);
+		if (operands.size() != 1)
+			return 0;
+		return operands.pop();
 	}
 
-	private static String splitter(String s) {
-		StringContainer result = new StringContainer(s.length());
-		StringContainer subResult = null;
+	private static boolean hasPrecedence(char op1, char op2) {
+		if (op2 == '(' || op2 == ')')
+			return false;
+		if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-'))
+			return false;
+		return true;
+	}
 
-		int inside = 0;
-
-		for (int pos = 0; pos < s.length(); ++pos) {
-			char c = s.charAt(pos);
-			if (c == '(') {
-				if (inside == 0)
-					subResult = new StringContainer(s.length());
-				else
-					subResult.append(c);
-
-				++inside;
-			} else if (c == ')') {
-				if (inside > 1)
-					subResult.append(c);
-
-				if (--inside == 0) {
-					result.append(Double.toString(calculate(subResult.toString())));
-					subResult.clear();
-				}
-			} else if (inside == 0)
-				result.append(c);
-			else
-				subResult.append(c);
+	private static double applyOperator(char operator, double operand2, double operand1) {
+		switch (operator) {
+		case '+':
+			return operand1 + operand2;
+		case '-':
+			return operand1 - operand2;
+		case '*':
+			return operand1 * operand2;
+		case '/':
+			if (operand2 == 0)
+				return 0;
+			return operand1 / operand2;
+		default:
+			return 0;
 		}
-		return result.toString();
+	}
+
+	private static boolean isReadable(char c) {
+		return c >= '0' && c <= '9' || c == '.' || c == 'e' || c == 'E' || c == ',';
 	}
 
 	/**
 	 * @apiNote Get double from string
 	 * @return double
 	 */
-	public static double getDouble(String fromString) {
+	public static double getDouble(String fromString, int start, int end) {
 		if (fromString == null)
 			return 0;
 
@@ -948,8 +986,8 @@ public class StringUtils {
 
 		short totalWidth = 0;
 
-		int size = fromString.length();
-		charsLoop: for (int i = 0; i < size; ++i) {
+		int size = end;
+		charsLoop: for (int i = start; i < size; ++i) {
 			char c = fromString.charAt(i);
 			switch (c) {
 			case ' ':
@@ -1016,6 +1054,17 @@ public class StringUtils {
 			else
 				result /= Math.pow(10, range * -1);
 		return exponentSymbol == 0 ? minus ? -result : result : 0;
+	}
+
+	/**
+	 * @apiNote Get double from string
+	 * @return double
+	 */
+	public static double getDouble(String fromString) {
+		if (fromString == null)
+			return 0;
+
+		return getDouble(fromString, 0, fromString.length());
 	}
 
 	/**
@@ -1674,10 +1723,6 @@ public class StringUtils {
 		if (fromString == null)
 			return false;
 		return fromString.equalsIgnoreCase("true") || fromString.equalsIgnoreCase("false");
-	}
-
-	public static boolean containsSpecial(String value) {
-		return StringUtils.special.matcher(value).find();
 	}
 
 	public static Number getNumber(String o) {

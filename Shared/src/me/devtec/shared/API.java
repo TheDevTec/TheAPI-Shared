@@ -161,6 +161,12 @@ public class API {
 			config.setIfAbsent("timeConvertor.seconds.convertor", Arrays.asList("<=1  second", ">1  seconds"));
 			if (config.exists("timeConvertor.weeks"))
 				config.remove("timeConvertor.weeks");
+			if (Ref.serverType().isBukkit())
+				config.setIfAbsent("fallback-scoreboard-support", false,
+						Arrays.asList("# Scoreboard lines will be split into 3 parts as it is on version 1.12.2 or lower,",
+								"# so that players with older client (1.12.2-) can see the scoreboard as well as players with client 1.13+ (text length is limited to 48 chars)",
+								"# This requires a bit more CPU usage and sends more packets as a result.",
+								"# Enable this only if you have installed ViaVersion/ProtocolSupport and allows connection for 1.12.2 and older clients"));
 			config.save(DataType.YAML);
 
 			StringUtils.timeSplit = config.getString("timeConvertor.settings.defaultSplit");
@@ -212,24 +218,88 @@ public class API {
 			return false; // invalid
 		}
 
-		public String[] getLastColors(Pattern pattern, String text) {
-			Matcher m = pattern.matcher(text);
-			String color = null;
-			StringContainer formats = new StringContainer(8);
-			while (m.find()) {
-				String last = m.group(1).toLowerCase();
-				if (last.charAt(1) != 'x' && isFormat(last.charAt(1))) {
-					if (last.charAt(1) == 'r') {
+		public String[] getLastColors(String input) {
+			StringContainer color = new StringContainer(14);
+			StringContainer formats = new StringContainer(14);
+			for (int i = 0; i < input.length(); i++) {
+				char c = input.charAt(i);
+				if (c == '§' && i + 1 < input.length()) {
+					c = Character.toLowerCase(input.charAt(++i));
+					switch (c) {
+					case 'r':
 						formats.clear();
-						continue;
+						break;
+					case 'k':
+					case 'l':
+					case 'm':
+					case 'n':
+					case 'o':
+						if (formats.indexOf(c) == -1)
+							formats.append(c);
+						break;
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '7':
+					case '8':
+					case '9':
+					case 'a':
+					case 'b':
+					case 'c':
+					case 'd':
+					case 'e':
+					case 'f':
+						color.clear();
+						formats.clear();
+						color.append(c);
+						break;
 					}
-					formats.append(last.charAt(1));
-					continue;
+				} else if (c == '&' && i + 1 < input.length()) {
+					c = Character.toLowerCase(input.charAt(++i));
+					switch (c) {
+					case 'u':
+						color.clear();
+						formats.clear();
+						color.append('u');
+						break;
+					case '#':
+						color.clear();
+						formats.clear();
+						if (i + 6 < input.length()) {
+							color.append('#');
+							for (int count = 0; count < 6; ++count) {
+								char cn = input.charAt(++i);
+								if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
+									color.append(cn);
+									continue;
+								}
+								--i;
+								color.clear();
+								break;
+							}
+						}
+						break;
+					default:
+						break;
+					}
+				} else if (c == '#' && i + 6 < input.length()) {
+					color.append('#');
+					for (int count = 0; count < 6; ++count) {
+						char cn = input.charAt(++i);
+						if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
+							color.append(cn);
+							continue;
+						}
+						--i;
+						color.clear();
+						break;
+					}
 				}
-				color = last.replace("§", "").replace("&", "");
-				formats.clear();
 			}
-			return new String[] { color, formats.length() == 0 ? null : formats.toString() };
+			return new String[] { color.length() == 0 ? null : color.toString(), formats.length() == 0 ? null : formats.toString() };
 		}
 
 		public String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings) {
@@ -254,7 +324,6 @@ public class API {
 
 		private String rawGradient(String msg, String from, String to, boolean defaultRainbow, List<String> protectedStrings) {
 			boolean inRainbow = defaultRainbow;
-			char prev = 0;
 			String formats = "";
 
 			int[][] skipRegions = EMPTY_ARRAY;
@@ -325,29 +394,29 @@ public class API {
 					continue;
 				}
 
-				if (prev == '&' || prev == '§') {
-					char inLower = c;
-					if (prev == '&' && inLower == 'u') {
-						builder.deleteCharAt(builder.length() - 1); // remove & char
+				if (c == '&' && i + 1 < msg.length()) {
+					c = msg.charAt(++i);
+					if (c == 'u')
 						inRainbow = true;
-						prev = c;
+					else
+						builder.append('&').append(c);
+					continue;
+				}
+				if (inRainbow && c == '§' && i + 1 < msg.length()) {
+					c = msg.charAt(++i);
+					if (isFormat(c)) {
+						if (c == 'r')
+							formats = "§r";
+						else
+							formats += "§" + c;
 						continue;
 					}
-					if (inRainbow && prev == '§' && (isColor(inLower) || isFormat(inLower))) { // color,
-						// destroy
-						// rainbow here
-						if (isFormat(inLower)) {
-							if (inLower == 'r')
-								formats = "§r";
-							else
-								formats += "§" + inLower;
-							prev = inLower;
-							builder.deleteCharAt(builder.length() - 1); // remove &<random color> string
-							continue;
-						}
-						builder.delete(builder.length() - 14, builder.length()); // remove &<random color> string
+					if (isColor(c)) {
 						inRainbow = false;
+						continue;
 					}
+					builder.append('§').append(c);
+					continue;
 				}
 				if (inRainbow)
 					if (c != ' ') {
@@ -385,7 +454,6 @@ public class API {
 						formats = "";
 					}
 				builder.append(c);
-				prev = c;
 			}
 			return builder.toString();
 		}
