@@ -576,8 +576,8 @@ public class StringUtils {
 			char c = original.charAt(i);
 			if (c == '&' && original.length() > i + 1) {
 				char next = original.charAt(++i);
-				if (StringUtils.has(next))
-					builder.append('§').append(StringUtils.lower(next));
+				if (isColorChar(next))
+					builder.append('§').append(toLowerCase(next));
 				else
 					builder.append(c).append(next);
 				continue;
@@ -585,22 +585,23 @@ public class StringUtils {
 			builder.append(c);
 		}
 		String msg = builder.toString();
-		if (StringUtils.color != null && /** Fast check for working #RRGGBB symbol **/
-				(!Ref.serverType().isBukkit() || Ref.isNewerThan(15))) {
-			msg = StringUtils.gradient(msg, protectedStrings);
-			if (msg.contains("#"))
-				msg = StringUtils.color.replaceHex(msg);
+		if (StringUtils.color != null) {
+			if (!Ref.serverType().isBukkit() || Ref.isNewerThan(15)) { // Non bukkit software or 1.16+
+				msg = StringUtils.gradient(msg, protectedStrings);
+				if (msg.indexOf('#') != -1)
+					msg = StringUtils.color.replaceHex(msg);
+			}
+			if (msg.contains("&u"))
+				msg = StringUtils.color.rainbow(msg, StringUtils.color.generateColor(), StringUtils.color.generateColor(), protectedStrings);
 		}
-		if (msg.contains("&u") && StringUtils.color != null)
-			msg = StringUtils.color.rainbow(msg, StringUtils.color.generateColor(), StringUtils.color.generateColor(), protectedStrings);
 		return msg;
 	}
 
-	private static boolean has(int c) {
+	private static boolean isColorChar(int c) {
 		return c <= 102 && c >= 97 || c <= 57 && c >= 48 || c <= 70 && c >= 65 || c <= 79 && c >= 75 || c <= 111 && c >= 107 || c == 114 || c == 82 || c == 88 || c == 120;
 	}
 
-	private static char lower(int c) {
+	private static char toLowerCase(int c) {
 		switch (c) {
 		case 65:
 		case 66:
