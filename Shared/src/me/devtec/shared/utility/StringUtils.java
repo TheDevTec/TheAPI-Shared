@@ -1,10 +1,8 @@
 package me.devtec.shared.utility;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -16,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.devtec.shared.API;
+import me.devtec.shared.Pair;
 import me.devtec.shared.Ref;
 import me.devtec.shared.dataholder.StringContainer;
 
@@ -886,85 +885,104 @@ public class StringUtils {
 	 *          of operator precedence and associativity.
 	 * @return double
 	 */
-
 	public static double calculate(String expression) {
-		Deque<Double> operands = new ArrayDeque<>();
-		Deque<Character> operators = new ArrayDeque<>();
-		int i = 0;
-		while (i < expression.length()) {
+		return calculate(expression, 0, expression.length());
+	}
+
+	public static double calculate(String expression, int startPos, int endPos) {
+		List<Pair> operation = new ArrayList<>();
+		int start = -1;
+		int brackets = 0;
+
+		char prevOperation = 0;
+		boolean minus = false;
+		for (int i = startPos; i < endPos; ++i) {
 			char c = expression.charAt(i);
-			if (isReadable(c)) {
-				int j = i + 1;
-				while (j < expression.length() && isReadable(expression.charAt(j)))
-					j++;
-				double value = StringUtils.getDouble(expression, i, j);
-				operands.push(value);
-				i = j;
+			if (brackets == 0 && c >= '0' && c <= '9' || c == '.' || c == ',' || c == 'e' || c == 'E') {
+				if (start == -1)
+					start = i;
 			} else
 				switch (c) {
-				case '+':
 				case '-':
+				case '+':
 				case '*':
 				case '/':
-					while (!operators.isEmpty() && hasPrecedence(c, operators.peek()))
-						operands.push(applyOperator(operators.pop(), operands.pop(), operands.pop()));
-					operators.push(c);
-					i++;
+					if (brackets != 0)
+						break;
+					if (start == -1)
+						if (prevOperation != '-' ? c == '-' : c == '+')
+							minus = true;
+						else if (c == '-' && prevOperation == '-')
+							minus = false;
+
+					if (start != -1) {
+						operation.add(Pair.of(c, minus ? -getDouble(expression, start, i) : getDouble(expression, start, i)));
+						minus = c == '-';
+						start = -1;
+					}
+					prevOperation = c;
 					break;
 				case '(':
-					operators.push(c);
-					i++;
+					if (++brackets == 1) {
+						if (prevOperation == 0)
+							prevOperation = '+';
+						if (start != -1) {
+							operation.add(Pair.of(prevOperation, minus ? -getDouble(expression, start, i) : getDouble(expression, start, i)));
+							prevOperation = '+';
+							minus = false;
+						}
+						start = i + 1;
+					}
 					break;
 				case ')':
-					while (!operators.isEmpty() && operators.peek() != '(')
-						operands.push(applyOperator(operators.pop(), operands.pop(), operands.pop()));
-					if (operators.isEmpty())
-						return 0;
-					operators.pop(); // pop the '('
-					i++;
+					if (--brackets <= 0) {
+						operation.add(Pair.of(prevOperation, minus ? -calculate(expression, start, i) : calculate(expression, start, i)));
+						start = -1;
+						prevOperation = '+';
+						minus = false;
+					}
 					break;
 				default:
-					i++;
 					break;
 				}
 		}
-		while (!operators.isEmpty()) {
-			if (operators.peek() == '(')
-				return 0;
-			operands.push(applyOperator(operators.pop(), operands.pop(), operands.pop()));
+		if (start != -1)
+			operation.add(Pair.of(prevOperation, minus ? -getDouble(expression, start, endPos) : getDouble(expression, start, endPos)));
+		// *, /
+		for (int i = 0; i < operation.size() - 1; ++i) {
+			Pair pair = operation.get(i);
+			switch ((char) pair.getKey()) {
+			case '*': {
+				operation.remove(i);
+				Pair current = operation.get(i);
+				current.setValue((double) current.getValue() * (double) pair.getValue());
+				break;
+			}
+			case '/': {
+				operation.remove(i);
+				Pair current = operation.get(i);
+				current.setValue((double) current.getValue() / (double) pair.getValue());
+				break;
+			}
+			}
 		}
-		if (operands.size() != 1)
-			return 0;
-		return operands.pop();
-	}
-
-	private static boolean hasPrecedence(char op1, char op2) {
-		if (op2 == '(' || op2 == ')')
-			return false;
-		if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-'))
-			return false;
-		return true;
-	}
-
-	private static double applyOperator(char operator, double operand2, double operand1) {
-		switch (operator) {
-		case '+':
-			return operand1 + operand2;
-		case '-':
-			return operand1 - operand2;
-		case '*':
-			return operand1 * operand2;
-		case '/':
-			if (operand2 == 0)
-				return 0;
-			return operand1 / operand2;
-		default:
-			return 0;
+		// -, +
+		for (int i = 0; i < operation.size() - 1; ++i) {
+			Pair pair = operation.remove(i);
+			switch ((char) pair.getKey()) {
+			case '-':
+			case '+':
+				Pair current = operation.get(i);
+				current.setValue((double) current.getValue() + (double) pair.getValue());
+				break;
+			}
 		}
-	}
-
-	private static boolean isReadable(char c) {
-		return c >= '0' && c <= '9' || c == '.' || c == 'e' || c == 'E' || c == ',';
+		double result = 0;
+		for (int i = 0; i < operation.size(); ++i) {
+			Pair pair = operation.get(i);
+			result += (double) pair.getValue();
+		}
+		return result;
 	}
 
 	/**
@@ -1033,7 +1051,7 @@ public class StringUtils {
 				}
 				continue;
 			}
-			if (totalWidth == 0 && c == 48)
+			if (!hasDecimal && totalWidth == 0 && c == 48)
 				continue;
 			int digit = c - 48;
 			if (++totalWidth > 308)
@@ -1077,9 +1095,9 @@ public class StringUtils {
 		boolean minus = false;
 		short totalWidth = 0;
 
-		boolean dot = false;
-		boolean esymbol = false;
-		byte unfinishedEsymbol = 0;
+		boolean hasDecimal = false;
+		boolean hasExponent = false;
+		byte exponentSymbol = 0;
 
 		int size = stringToTest.length();
 		for (int i = 0; i < size; ++i) {
@@ -1094,17 +1112,16 @@ public class StringUtils {
 				continue;
 			case 'e':
 			case 'E':
-				if (esymbol || totalWidth == 0)
+				if (hasExponent || totalWidth == 0)
 					return false;
-				dot = true;
-				esymbol = true;
-				unfinishedEsymbol = 1;
+				hasExponent = true;
+				exponentSymbol = 1;
 				continue;
 			case '.':
 			case ',':
-				if (dot || esymbol || totalWidth == 0)
+				if (hasDecimal || hasExponent || totalWidth == 0)
 					return false;
-				dot = true;
+				hasDecimal = true;
 				continue;
 			}
 			if (c < 48 || c > 57) {
@@ -1117,14 +1134,14 @@ public class StringUtils {
 							&& stringToTest.charAt(++i) == 't' && stringToTest.charAt(++i) == 'y';
 				return false;
 			}
-			if (totalWidth == 0 && c == 48) {
+			if (!hasDecimal && totalWidth == 0 && c == 48) {
 				foundZero = true;
 				continue;
 			}
 			++totalWidth;
-			unfinishedEsymbol = 0;
+			exponentSymbol = 0;
 		}
-		return (totalWidth > 0 || foundZero) && unfinishedEsymbol == 0;
+		return (totalWidth > 0 || foundZero) && exponentSymbol == 0;
 	}
 
 	/**
@@ -1460,7 +1477,7 @@ public class StringUtils {
 				}
 				continue;
 			}
-			if (totalWidth == 0 && c == 48)
+			if (!hasDecimal && totalWidth == 0 && c == 48)
 				continue;
 			int digit = c - 48;
 			if (++totalWidth > 39)
