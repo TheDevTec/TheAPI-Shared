@@ -13,8 +13,20 @@ public class Pair {
 		return key;
 	}
 
+	public Object setKey(Object key) {
+		Object prev = this.key;
+		this.key = key;
+		return prev;
+	}
+
 	public Object getValue() {
 		return value;
+	}
+
+	public Object setValue(Object value) {
+		Object prev = this.value;
+		this.value = value;
+		return prev;
 	}
 
 	@Override
