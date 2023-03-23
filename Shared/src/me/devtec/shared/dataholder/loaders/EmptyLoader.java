@@ -59,7 +59,7 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public DataValue getOrCreate(String key) {
-		DataValue v = data.get(key);
+		DataValue v = get(key);
 		if (v == null)
 			set(key, v = DataValue.empty());
 		return v;
@@ -96,15 +96,16 @@ public class EmptyLoader extends DataLoader {
 						modified = true;
 					}
 				}
+				if (modified) {
+					keySet = null;
+					entrySet = null;
+				}
 				return modified;
 			}
 			boolean onlyOne = true;
 			boolean modified = false;
 			if (data.remove(key) != null)
 				modified = true;
-			keySet = null;
-			entrySet = null;
-
 			key = key + '.';
 			Iterator<String> itr = getKeys().iterator();
 			while (itr.hasNext()) {
@@ -117,13 +118,30 @@ public class EmptyLoader extends DataLoader {
 			}
 			if (onlyOne && primaryKeys.remove(primaryKey))
 				modified = true;
-			keySet = null;
-			entrySet = null;
+			if (modified) {
+				keySet = null;
+				entrySet = null;
+			}
 			return modified;
 		}
-		keySet = null;
-		entrySet = null;
-		return data.remove(key) != null;
+		if (data.remove(key) != null) {
+			int pos = key.indexOf('.');
+			String primaryKey = pos == -1 ? key : key.substring(0, pos);
+			Iterator<String> itr = getKeys().iterator();
+			while (itr.hasNext()) {
+				String section = itr.next();
+				if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.')) {
+					keySet = null;
+					entrySet = null;
+					return true;
+				}
+			}
+			primaryKeys.remove(primaryKey);
+			keySet = null;
+			entrySet = null;
+			return true;
+		}
+		return false;
 	}
 
 	@Override
