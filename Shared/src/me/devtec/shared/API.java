@@ -116,6 +116,7 @@ public class API {
 				((Config) savingQueue.remove(0).getValue()).save("yaml");
 			// Unregister placeholders
 			PlaceholderAPI.unregisterAll();
+			Scheduler.cancelAll();
 		} else if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
 			savingScheduler = new Tasker() {
 
@@ -284,10 +285,9 @@ public class API {
 			case 78:
 			case 79:
 			case 82:
-			case 'U':
+			case 85:
+			case 88:
 				return (char) (c + 32);
-			case 120:
-				return (char) 88;
 			default:
 				return (char) c;
 			}
@@ -295,7 +295,7 @@ public class API {
 
 		public String[] getLastColors(String input) {
 			StringContainer color = new StringContainer(14);
-			StringContainer formats = new StringContainer(14);
+			StringContainer formats = new StringContainer(5);
 			for (int i = 0; i < input.length(); i++) {
 				char c = input.charAt(i);
 				if (c == '§' && i + 1 < input.length()) {
@@ -343,7 +343,7 @@ public class API {
 									color.clear();
 									break;
 								}
-								cn = input.charAt(++i);
+								cn = toLowerCase(input.charAt(++i));
 								if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
 									color.append(cn);
 									continue;
@@ -427,7 +427,6 @@ public class API {
 
 			int[][] skipRegions = EMPTY_ARRAY;
 			int allocated = 0;
-
 			int currentSkipAt = -1;
 			int skipId = 0;
 

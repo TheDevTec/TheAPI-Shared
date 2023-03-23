@@ -1,10 +1,17 @@
 package me.devtec.shared.dataholder;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,8 +39,8 @@ public class Config {
 	protected boolean requireSave;
 
 	// Config updater
-	protected long lastUpdate;
 	protected int updaterTask;
+	protected Runnable updaterWatcher;
 
 	public static Config loadFromInput(InputStream input) {
 		return new Config().reload(StreamUtils.fromStream(input));
@@ -708,39 +715,73 @@ public class Config {
 		return updaterTask != 0;
 	}
 
-	// TODO
 	public Config setAutoUpdating(long checkEvery) {
 		if (file == null)
 			return this;
 		if (checkEvery <= 0) {
 			if (updaterTask != 0) {
 				Scheduler.cancelTask(updaterTask);
+				Scheduler.getManager().unregister(updaterWatcher);
+				updaterWatcher.run();
 				updaterTask = 0;
-				lastUpdate = 0;
+				updaterWatcher = null;
 			}
 		} else
-			new Tasker() {
-				@Override
-				public void run() {
-					long lastModify = file.lastModified();
-					if (lastUpdate == 0 || lastModify != lastUpdate) {
-						lastUpdate = file.lastModified();
-						Config read = new Config(file);
-						Iterator<Entry<String, DataValue>> iterator = read.getDataLoader().entrySet().iterator();
-						while (iterator.hasNext()) {
-							Entry<String, DataValue> key = iterator.next();
-							DataValue val = loader.get(key.getKey());
-							if (val == null || val.modified)
-								continue;
-							val.value = key.getValue().value;
-							val.writtenValue = key.getValue().writtenValue;
-							val.comments = key.getValue().comments;
-							val.commentAfterValue = key.getValue().commentAfterValue;
-							val.modified = true;
+			try {
+				if (!file.exists())
+					return this;
+				WatchService watchService = FileSystems.getDefault().newWatchService();
+				System.out.println(file.getAbsoluteFile().toPath().getParent());
+				Path path = file.getAbsoluteFile().toPath();
+
+				Scheduler.getManager().register(updaterWatcher = () -> {
+					try {
+						watchService.close();
+					} catch (IOException e) {
+					}
+				});
+
+				path.getParent().register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+				updaterTask = new Tasker() {
+					@Override
+					public void run() {
+						WatchKey wkey;
+						try {
+							wkey = watchService.poll();
+						} catch (Exception e) {
+							return;
+						}
+						while (wkey != null) {
+							for (WatchEvent<?> event : wkey.pollEvents())
+								if (((Path) event.context()).toAbsolutePath().equals(path)) {
+									Config read = new Config(file);
+									Iterator<Entry<String, DataValue>> iterator = read.getDataLoader().entrySet().iterator();
+									while (iterator.hasNext()) {
+										Entry<String, DataValue> key = iterator.next();
+										DataValue val = loader.get(key.getKey());
+										if (val == null || val.modified)
+											continue;
+										val.value = key.getValue().value;
+										val.writtenValue = key.getValue().writtenValue;
+										val.comments = key.getValue().comments;
+										val.commentAfterValue = key.getValue().commentAfterValue;
+										val.modified = true;
+									}
+									wkey.reset();
+									return;
+								}
+							wkey.reset();
+							try {
+								wkey = watchService.poll();
+							} catch (Exception e) {
+								return;
+							}
 						}
 					}
-				}
-			}.runRepeating(updaterTask, updaterTask);
+				}.runRepeating(checkEvery, checkEvery);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		return this;
 	}
 }

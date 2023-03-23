@@ -597,7 +597,7 @@ public class StringUtils {
 	}
 
 	private static boolean isColorChar(int c) {
-		return c <= 102 && c >= 97 || c <= 57 && c >= 48 || c <= 70 && c >= 65 || c <= 79 && c >= 75 || c <= 111 && c >= 107 || c == 114 || c == 82 || c == 88 || c == 120;
+		return c <= 102 && c >= 97 || c <= 57 && c >= 48 || c <= 70 && c >= 65 || c <= 79 && c >= 75 || c <= 111 && c >= 107 || c == 114 || c == 82 || c == 120;
 	}
 
 	private static char toLowerCase(int c) {
@@ -614,9 +614,9 @@ public class StringUtils {
 		case 78:
 		case 79:
 		case 82:
+		case 85:
+		case 88:
 			return (char) (c + 32);
-		case 120:
-			return (char) 88;
 		default:
 			return (char) c;
 		}

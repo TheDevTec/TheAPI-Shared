@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThreadManager implements Executor {
 	protected final Map<Integer, Thread> threads = new ConcurrentHashMap<>();
+	protected final List<Runnable> onKill = new ArrayList<>();
 	protected final AtomicInteger i = new AtomicInteger();
 
 	public void kill() {
@@ -23,10 +24,13 @@ public class ThreadManager implements Executor {
 				check.add(tht);
 			}
 		}
+		for (Runnable runnable : onKill)
+			runnable.run();
+		onKill.clear();
 		if (!check.isEmpty())
 			new Thread(() -> {
 				try {
-					Thread.sleep(3000);
+					Thread.sleep(2000);
 				} catch (InterruptedException e) {
 					return;
 				}
@@ -37,6 +41,16 @@ public class ThreadManager implements Executor {
 					}
 				check.clear();
 			}).start();
+	}
+
+	public ThreadManager register(Runnable runnable) {
+		onKill.add(runnable);
+		return this;
+	}
+
+	public ThreadManager unregister(Runnable runnable) {
+		onKill.remove(runnable);
+		return this;
 	}
 
 	public boolean isAlive(int id) {

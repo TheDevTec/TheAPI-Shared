@@ -5,6 +5,10 @@ import me.devtec.shared.API;
 public class Scheduler {
 	private static final ThreadManager thread = new ThreadManager();
 
+	public static ThreadManager getManager() {
+		return thread;
+	}
+
 	public static void cancelAll() {
 		Scheduler.thread.kill();
 	}
