@@ -777,6 +777,7 @@ public class Config {
 		DataLoader read = DataLoader.findLoaderFor(file);
 		Iterator<Entry<String, DataValue>> iterator = read.entrySet().iterator();
 
+		// Add added sections & modified values
 		while (iterator.hasNext()) {
 			Entry<String, DataValue> key = iterator.next();
 			DataValue val = loader.getOrCreate(key.getKey());
@@ -786,6 +787,17 @@ public class Config {
 			val.writtenValue = key.getValue().writtenValue;
 			val.comments = key.getValue().comments;
 			val.commentAfterValue = key.getValue().commentAfterValue;
+		}
+
+		iterator = loader.entrySet().iterator();
+
+		// Remove removed sections
+		while (iterator.hasNext()) {
+			Entry<String, DataValue> key = iterator.next();
+			if (key.getValue().modified)
+				continue;
+			if (read.get(key.getKey()) == null)
+				iterator.remove();
 		}
 	}
 }
