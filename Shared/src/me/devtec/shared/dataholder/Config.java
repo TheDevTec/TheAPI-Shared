@@ -754,19 +754,7 @@ public class Config {
 						while (wkey != null) {
 							for (WatchEvent<?> event : wkey.pollEvents())
 								if (((Path) event.context()).toAbsolutePath().equals(path)) {
-									Config read = new Config(file);
-									Iterator<Entry<String, DataValue>> iterator = read.getDataLoader().entrySet().iterator();
-									while (iterator.hasNext()) {
-										Entry<String, DataValue> key = iterator.next();
-										DataValue val = loader.get(key.getKey());
-										if (val == null || val.modified)
-											continue;
-										val.value = key.getValue().value;
-										val.writtenValue = key.getValue().writtenValue;
-										val.comments = key.getValue().comments;
-										val.commentAfterValue = key.getValue().commentAfterValue;
-										val.modified = true;
-									}
+									processAutoUpdate();
 									wkey.reset();
 									return;
 								}
@@ -783,5 +771,21 @@ public class Config {
 				e.printStackTrace();
 			}
 		return this;
+	}
+
+	public void processAutoUpdate() {
+		DataLoader read = DataLoader.findLoaderFor(file);
+		Iterator<Entry<String, DataValue>> iterator = read.entrySet().iterator();
+
+		while (iterator.hasNext()) {
+			Entry<String, DataValue> key = iterator.next();
+			DataValue val = loader.getOrCreate(key.getKey());
+			if (val.modified)
+				continue;
+			val.value = key.getValue().value;
+			val.writtenValue = key.getValue().writtenValue;
+			val.comments = key.getValue().comments;
+			val.commentAfterValue = key.getValue().commentAfterValue;
+		}
 	}
 }
