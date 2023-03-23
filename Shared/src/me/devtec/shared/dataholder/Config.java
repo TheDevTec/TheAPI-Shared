@@ -15,6 +15,7 @@ import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -792,12 +793,22 @@ public class Config {
 		iterator = loader.entrySet().iterator();
 
 		// Remove removed sections
+
+		Set<String> sectionsToRemove = null;
+
 		while (iterator.hasNext()) {
 			Entry<String, DataValue> key = iterator.next();
 			if (key.getValue().modified)
 				continue;
-			if (read.get(key.getKey()) == null)
-				iterator.remove();
+			if (read.get(key.getKey()) == null) {
+				if (sectionsToRemove == null)
+					sectionsToRemove = new HashSet<>();
+				sectionsToRemove.add(key.getKey());
+			}
 		}
+
+		if (sectionsToRemove != null)
+			for (String section : sectionsToRemove)
+				loader.remove(section);
 	}
 }
