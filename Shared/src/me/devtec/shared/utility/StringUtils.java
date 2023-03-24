@@ -3,42 +3,22 @@ package me.devtec.shared.utility;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import me.devtec.shared.API;
-import me.devtec.shared.Pair;
 import me.devtec.shared.Ref;
+import me.devtec.shared.annotations.ScheduledForRemoval;
 import me.devtec.shared.dataholder.StringContainer;
 
 public class StringUtils {
 
-	// INIT THIS
-
-	public static ColormaticFactory color;
-	public static Pattern rainbowSplit;
-	// TIME UTILS
-	// string -> time
-	// time -> string
-	public static final Map<TimeFormat, TimeFormatter> timeConvertor = new HashMap<>();
-	// COLOR UTILS
-	public static Pattern gradientFinder;
-
-	// VARRIABLE INIT
-	public static Map<String, String> colorMap = new HashMap<>();
-	public static String tagPrefix = "!";
-	public static String timeSplit = " ";
-
 	// DO NOT TOUCH
 	public static final Random random = new Random();
 
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
 	public enum TimeFormat {
 		YEARS(31556952, 365, "y"), MONTHS(2629746, 12, "mon"), DAYS(86400, 31, "d"), HOURS(3600, 24, "h"), MINUTES(60, 60, "m"), SECONDS(1, 60, "s");
 
@@ -65,90 +45,17 @@ public class StringUtils {
 		}
 	}
 
-	public interface TimeFormatter {
-		/**
-		 * @apiNote Nullable if settings isn't supported
-		 */
-		public String toString(long value);
-
-		public Matcher matcher(String text);
-	}
-
-	public interface ColormaticFactory {
-		char[] characters = "abcdef0123456789".toCharArray();
-
-		/**
-		 * @apiNote Generates random color depends on software & version
-		 */
-		public default String generateColor() {
-			StringContainer b = new StringContainer(7).append('#');
-			for (int i = 0; i < 6; ++i)
-				b.append(characters[random.nextInt(16)]);
-			return b.toString();
-		}
-
-		/**
-		 * @apiNote @see {@link API#basics()}
-		 */
-		public default String[] getLastColors(String text) {
-			return API.basics().getLastColors(text);
-		}
-
-		/**
-		 * @apiNote Replace #RRGGBB hex color depends on software
-		 */
-		public default String replaceHex(String text) {
-			StringContainer container = new StringContainer(text.length() + 14 * 2);
-			for (int i = 0; i < text.length(); ++i) {
-				char c = text.charAt(i);
-				if (c == '#' && i + 6 < text.length()) {
-					boolean isHex = true;
-					for (int ic = 1; ic < 7; ++ic) {
-						char cn = text.charAt(i + ic);
-						if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57)
-							continue;
-						isHex = false;
-						break;
-					}
-					if (isHex) {
-						container.append('§').append('x');
-						for (int ic = 1; ic < 7; ++ic) {
-							char cn = text.charAt(i + ic);
-							container.append('§').append(cn);
-						}
-						i += 6;
-						continue;
-					}
-				}
-				container.append(c);
-			}
-			return container.toString();
-		}
-
-		/**
-		 * @param protectedStrings List of strings which not be colored via gradient
-		 * @apiNote @see {@link API#basics()}
-		 */
-		public default String gradient(String msg, String fromHex, String toHex, List<String> protectedStrings) {
-			return API.basics().gradient(msg, fromHex, toHex, protectedStrings);
-		}
-
-		/**
-		 * @param protectedStrings List of strings which not be colored via gradient
-		 * @apiNote @see {@link API#basics()}
-		 */
-		public default String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings) {
-			return API.basics().rainbow(msg, fromHex, toHex, protectedStrings);
-		}
-
-	}
-
 	public enum FormatType {
-		BASIC, // Basic format - xxx.xx
-		NORMAL, // Improved BASIS format - xxx,xxx.xx
-		COMPLEX // NORMAL format + balance type
+		BASIC, NORMAL, COMPLEX
 	}
 
+	/**
+	 * @apiNote Format double and remove unused zeros on the end
+	 * 
+	 *          Format types: {@link FormatType#BASIC} 1000.01
+	 *          {@link FormatType#NORMAL} 1,000.01 {@link FormatType#COMPLEX}
+	 *          {Normal type} + BalanceType (k, m, b, t...)
+	 */
 	public static String formatDouble(FormatType type, double value) {
 		switch (type) {
 		case BASIC: {
@@ -221,78 +128,6 @@ public class StringUtils {
 			break;
 		}
 		return value + "";
-	}
-
-	/**
-	 * @apiNote Generates a random chance and compares it to the specified chance
-	 * @param percent Inserted chance
-	 */
-	public static boolean checkProbability(double percent) {
-		return checkProbability(percent, 100);
-	}
-
-	/**
-	 * @apiNote Generates a random chance and compares it to the specified chance
-	 * @param percent       Inserted chance
-	 * @param maximumChance Based chance
-	 */
-	public static boolean checkProbability(double percent, double basedChance) {
-		return StringUtils.randomDouble(basedChance) <= percent;
-	}
-
-	/**
-	 * @apiNote Generate random int within limits
-	 * @param max Maximum int
-	 */
-	public static int randomInt(int max) {
-		return StringUtils.randomInt(0, max);
-	}
-
-	/**
-	 * @apiNote Generate random double within limits
-	 * @param max Maximum double
-	 */
-	public static double randomDouble(double max) {
-		return StringUtils.randomDouble(0, max);
-	}
-
-	/**
-	 * @apiNote Generate random double within limits
-	 * @param min Minimum double
-	 * @param max Maximum double
-	 * @return double
-	 */
-	public static double randomDouble(double min, double max) {
-		double range = max - min;
-		if (range <= 0)
-			return min;
-		double randomValue = Math.random() * range + min;
-		if (randomValue >= max)
-			return Math.nextDown(max);
-		return randomValue;
-	}
-
-	/**
-	 * @apiNote Generate random int within limits
-	 * @param min Minimum int
-	 * @param max Maximum int
-	 * @return int
-	 */
-	public static int randomInt(int min, int max) {
-		if (min == max)
-			return min;
-
-		boolean isNegative = max < 0;
-		if (isNegative) {
-			max *= -1;
-			min *= -1;
-		}
-
-		int range = max - min;
-		if (range <= 0)
-			throw new IllegalArgumentException("Invalid range: min > max");
-		int randomValue = (int) (Math.random() * range) + min;
-		return isNegative ? randomValue * -1 : randomValue;
 	}
 
 	/**
@@ -461,168 +296,6 @@ public class StringUtils {
 	}
 
 	/**
-	 * @apiNote Return joined strings ([0] + [1]) from
-	 *          {@link StringUtils#getLastColorsSplitFormats(String)}
-	 * @param text Input string
-	 * @return String
-	 */
-	public static String getLastColors(String text) {
-		String[] split = StringUtils.color.getLastColors(text);
-		return (split[0] == null ? "" : split[0]) + (split[1] == null ? "" : split[1]);
-	}
-
-	/**
-	 * @apiNote Get last colors from String (HEX SUPPORT!)
-	 * @param text Input string
-	 * @return String[]
-	 */
-	public static String[] getLastColorsSplitFormats(String text) {
-		return StringUtils.color.getLastColors(text);
-	}
-
-	/**
-	 * @apiNote Replace gradients in the List of strings
-	 * @param list Input list of strings to colorize
-	 * @return List<String>
-	 */
-	public static List<String> gradient(List<String> list) {
-		list.replaceAll(StringUtils::gradient);
-		return list;
-	}
-
-	/**
-	 * @apiNote Replace gradients in the String
-	 * @param originalMsg Input string to colorize
-	 * @return String
-	 */
-	public static String gradient(String originalMsg) {
-		return gradient(originalMsg, null);
-	}
-
-	/**
-	 * @apiNote Replace gradients in the String
-	 * @param originalMsg      Input string to colorize
-	 * @param protectedStrings List of strings which not be colored via gradient
-	 * @return String
-	 */
-	public static String gradient(String originalMsg, List<String> protectedStrings) {
-		if (originalMsg == null || StringUtils.gradientFinder == null)
-			return originalMsg;
-
-		String legacyMsg = originalMsg;
-
-		String low = legacyMsg.toLowerCase();
-		for (Entry<String, String> code : StringUtils.colorMap.entrySet()) {
-			String rawCode = (StringUtils.tagPrefix + code.getKey()).toLowerCase();
-			if (!low.contains(rawCode))
-				continue;
-			legacyMsg = legacyMsg.replace(rawCode, code.getValue());
-		}
-		Matcher matcher = StringUtils.gradientFinder.matcher(legacyMsg);
-		while (matcher.find()) {
-			if (matcher.groupCount() == 0 || matcher.group().isEmpty())
-				continue;
-			String replace = StringUtils.color.gradient(matcher.group(2), matcher.group(1), matcher.group(3), protectedStrings);
-			if (replace == null)
-				continue;
-			legacyMsg = legacyMsg.replace(matcher.group(), replace);
-		}
-		return legacyMsg;
-	}
-
-	/**
-	 * @apiNote Colorize List of strings with colors
-	 * @param list Texts to colorize
-	 * @return List<String>
-	 */
-	public static List<String> colorize(List<String> list) {
-		list.replaceAll(StringUtils::colorize);
-		return list;
-	}
-
-	/**
-	 * @apiNote Colorize List of strings with colors
-	 * @param list             Texts to colorize
-	 * @param protectedStrings List of strings which not be colored via gradient
-	 * @return List<String>
-	 */
-	public static List<String> colorize(List<String> list, List<String> protectedStrings) {
-		list.replaceAll(string -> colorize(string, protectedStrings));
-		return list;
-	}
-
-	/**
-	 * @apiNote Colorize string with colors
-	 * @param original Text to colorize
-	 * @return String
-	 */
-	public static String colorize(String original) {
-		return colorize(original, null);
-	}
-
-	/**
-	 * @apiNote Colorize string with colors
-	 * @param original         Text to colorize
-	 * @param protectedStrings List of strings which not be colored via gradient
-	 * @return String
-	 */
-	public static String colorize(String original, List<String> protectedStrings) {
-		if (original == null || original.trim().isEmpty())
-			return original;
-
-		StringBuilder builder = new StringBuilder(original.length());
-		for (int i = 0; i < original.length(); ++i) {
-			char c = original.charAt(i);
-			if (c == '&' && original.length() > i + 1) {
-				char next = original.charAt(++i);
-				if (isColorChar(next))
-					builder.append('§').append(toLowerCase(next));
-				else
-					builder.append(c).append(next);
-				continue;
-			}
-			builder.append(c);
-		}
-		String msg = builder.toString();
-		if (StringUtils.color != null) {
-			if (!Ref.serverType().isBukkit() || Ref.isNewerThan(15)) { // Non bukkit software or 1.16+
-				msg = StringUtils.gradient(msg, protectedStrings);
-				if (msg.indexOf('#') != -1)
-					msg = StringUtils.color.replaceHex(msg);
-			}
-			if (msg.contains("&u"))
-				msg = StringUtils.color.rainbow(msg, StringUtils.color.generateColor(), StringUtils.color.generateColor(), protectedStrings);
-		}
-		return msg;
-	}
-
-	private static boolean isColorChar(int c) {
-		return c <= 102 && c >= 97 || c <= 57 && c >= 48 || c <= 70 && c >= 65 || c <= 79 && c >= 75 || c <= 111 && c >= 107 || c == 114 || c == 82 || c == 120;
-	}
-
-	private static char toLowerCase(int c) {
-		switch (c) {
-		case 65:
-		case 66:
-		case 67:
-		case 68:
-		case 69:
-		case 70:
-		case 75:
-		case 76:
-		case 77:
-		case 78:
-		case 79:
-		case 82:
-		case 85:
-		case 88:
-			return (char) (c + 32);
-		default:
-			return (char) c;
-		}
-	}
-
-	/**
 	 * @apiNote Join strings to one String with split ' ' @see
 	 *          {@link StringUtils#join(Object[], String, int, int)}
 	 * @param args Arguments
@@ -680,1080 +353,362 @@ public class StringUtils {
 	}
 
 	/**
-	 * @apiNote Convert long time to String
-	 * @param period long Time to convert
-	 * @return String
+	 * @apiNote Use {@link ParseUtils#getBoolean(String)} method instead.
 	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean getBoolean(String text) {
+		return ParseUtils.getBoolean(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#getDouble(String, int, int)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static double getDouble(String text, int start, int end) {
+		return ParseUtils.getDouble(text, start, end);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#getDouble(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static double getDouble(String text) {
+		return ParseUtils.getDouble(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#isDouble(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean isDouble(String text) {
+		return ParseUtils.isDouble(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#getLong(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static long getLong(String text) {
+		return ParseUtils.getLong(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#isLong(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean isLong(String text) {
+		return ParseUtils.isInt(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#getInt(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static int getInt(String text) {
+		return ParseUtils.getInt(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#isInt(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean isInt(String text) {
+		return ParseUtils.isInt(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#isFloat(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean isFloat(String text) {
+		return ParseUtils.isFloat(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#getFloat(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static float getFloat(String text) {
+		return ParseUtils.getFloat(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#isByte(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean isByte(String text) {
+		return ParseUtils.isByte(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#getByte(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static byte getByte(String text) {
+		return ParseUtils.getByte(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#isShort(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean isShort(String text) {
+		return ParseUtils.isShort(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#getShort(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static short getShort(String text) {
+		return ParseUtils.getShort(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#isNumber(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean isNumber(String text) {
+		return ParseUtils.isNumber(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#isBoolean(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean isBoolean(String text) {
+		return ParseUtils.isBoolean(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ParseUtils#getNumber(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static Number getNumber(String text) {
+		return ParseUtils.getNumber(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#getLastColors(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static String getLastColors(String text) {
+		return ColorUtils.getLastColors(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#getLastColorsSplitFormats(String)} method
+	 *          instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static String[] getLastColorsSplitFormats(String text) {
+		return ColorUtils.getLastColorsSplitFormats(text);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#gradient(List<String>)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static List<String> gradient(List<String> list) {
+		return ColorUtils.gradient(list);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#gradient(String)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static String gradient(String originalMsg) {
+		return ColorUtils.gradient(originalMsg);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#gradient(String, List<String>)} method
+	 *          instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static String gradient(String originalMsg, List<String> protectedStrings) {
+		return ColorUtils.gradient(originalMsg, protectedStrings);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#colorize(List<String>)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static List<String> colorize(List<String> list) {
+		return ColorUtils.colorize(list);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#colorize(List<String>, List<String>)} method
+	 *          instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static List<String> colorize(List<String> list, List<String> protectedStrings) {
+		return ColorUtils.colorize(list, protectedStrings);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#colorize(String, List<String>)} method
+	 *          instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static String colorize(String original) {
+		return ColorUtils.colorize(original);
+	}
+
+	/**
+	 * @apiNote Use {@link ColorUtils#colorize(String, List<String>)} method
+	 *          instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static String colorize(String original, List<String> protectedStrings) {
+		return ColorUtils.colorize(original, protectedStrings);
+	}
+
+	/**
+	 * @apiNote Use {@link TimeUtils#timeToString(long)} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
 	public static String timeToString(long period) {
-		return StringUtils.timeToString(period, StringUtils.timeSplit);
+		return TimeUtils.timeToString(period);
 	}
 
 	/**
-	 * @apiNote Convert long time to String
-	 * @param period long Time to convert
-	 * @return String
+	 * @apiNote Use {@link TimeUtils#timeToString(long, TimeFormat...))} method
+	 *          instead.
 	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
 	public static String timeToString(long period, TimeFormat... disabled) {
-		return StringUtils.timeToString(period, StringUtils.timeSplit, disabled);
+		return TimeUtils.timeToString(period, convertToNewClass(disabled));
 	}
 
 	/**
-	 * @apiNote Convert long time to String
-	 * @param period   long Time to convert
-	 * @param split    String Split between time
-	 * @param disabled TimeFormat... disabled time formats
-	 * @return String
+	 * @apiNote Use {@link TimeUtils#timeToString(long, String, TimeFormat...))}
+	 *          method instead.
 	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
 	public static String timeToString(long period, String split, TimeFormat... disabled) {
-		boolean digit = split.length() == 1 ? split.charAt(0) == ':' : false;
-
-		if (period == 0L)
-			return digit ? "0" : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(0);
-
-		boolean skipYear = false;
-		boolean skipMonth = false;
-		boolean skipDay = false;
-		boolean skipHour = false;
-		boolean skipMinute = false;
-		boolean skipSecond = false;
-
-		if (disabled != null)
-			for (TimeFormat format : disabled)
-				switch (format) {
-				case DAYS:
-					skipDay = true;
-					break;
-				case HOURS:
-					skipHour = true;
-					break;
-				case MINUTES:
-					skipMinute = true;
-					break;
-				case MONTHS:
-					skipMonth = true;
-					break;
-				case SECONDS:
-					skipSecond = true;
-					break;
-				case YEARS:
-					skipYear = true;
-					break;
-				}
-
-		if (skipYear && skipMonth && skipDay && skipHour && skipMinute && skipSecond)
-			return digit ? String.valueOf(period) : StringUtils.timeConvertor.get(TimeFormat.SECONDS).toString(period);
-
-		long years = 0;
-		if (!skipYear) {
-			years = period / TimeFormat.YEARS.seconds();
-			period = period % TimeFormat.YEARS.seconds();
-		}
-
-		long months = 0;
-		if (!skipMonth) {
-			months = period / TimeFormat.MONTHS.seconds();
-			period = period % TimeFormat.MONTHS.seconds();
-		}
-
-		long days = 0;
-		if (!skipDay) {
-			days = period / TimeFormat.DAYS.seconds();
-			period = period % TimeFormat.DAYS.seconds();
-		}
-		long hours = 0;
-		if (!skipHour) {
-			hours = period / TimeFormat.HOURS.seconds();
-			period = period % TimeFormat.HOURS.seconds();
-		}
-
-		long minutes = 0;
-		if (!skipMinute) {
-			minutes = period / TimeFormat.MINUTES.seconds();
-			period = period % TimeFormat.MINUTES.seconds();
-		}
-
-		long seconds = skipSecond ? 0 : period;
-		StringContainer builder = new StringContainer((int) (years + months + days + hours + minutes + seconds + 8));
-		StringUtils.addFormat(builder, split, TimeFormat.YEARS, digit, years);
-		StringUtils.addFormat(builder, split, TimeFormat.MONTHS, digit, months);
-		StringUtils.addFormat(builder, split, TimeFormat.DAYS, digit, days);
-		StringUtils.addFormat(builder, split, TimeFormat.HOURS, digit, hours);
-		StringUtils.addFormat(builder, split, TimeFormat.MINUTES, digit, minutes);
-		StringUtils.addFormat(builder, split, TimeFormat.SECONDS, digit, seconds);
-		return builder.toString();
+		return TimeUtils.timeToString(period, split, convertToNewClass(disabled));
 	}
 
-	private static void addFormat(StringContainer builder, String split, TimeFormat format, boolean digit, long time) {
-		if (time > 0) {
-			boolean notFirst = builder.length() != 0;
-			if (notFirst)
-				builder.append(split);
-			if (digit) {
-				if (time < 10 && notFirst)
-					builder.append('0');
-				builder.append(time);
-			} else
-				builder.append(StringUtils.timeConvertor.get(format).toString(time));
-		} else if (digit) {
-			boolean notFirst = builder.length() != 0;
-			if (notFirst)
-				builder.append(split).append("00");
-		}
+	private static TimeUtils.TimeFormat[] convertToNewClass(TimeFormat[] disabled) {
+		if (disabled == null || disabled.length == 0)
+			return new TimeUtils.TimeFormat[0];
+		TimeUtils.TimeFormat[] converted = new TimeUtils.TimeFormat[disabled.length];
+		for (int i = 0; i < disabled.length; ++i)
+			converted[i] = TimeUtils.TimeFormat.valueOf(disabled[i].name());
+		return converted;
 	}
 
 	/**
-	 * @apiNote Get long from string
-	 * @param period String
-	 * @return long
+	 * @apiNote Use {@link TimeUtils#timeFromString(String))} method instead.
 	 */
-	public static long timeFromString(String original) {
-		if (original == null || original.isEmpty())
-			return 0;
-
-		String period = original;
-
-		if (StringUtils.isLong(period))
-			return StringUtils.getLong(period);
-
-		long time = 0;
-
-		if (period.contains(":")) {
-			String[] split = period.split(":");
-			switch (split.length) {
-			case 2: // mm:ss
-				time += StringUtils.getLong(split[0]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getLong(split[1]);
-				break;
-			case 3: // hh:mm:ss
-				time += StringUtils.getLong(split[0]) * TimeFormat.HOURS.seconds();
-				time += StringUtils.getLong(split[1]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getLong(split[2]);
-				break;
-			case 4: // dd:hh:mm:ss
-				time += StringUtils.getLong(split[0]) * TimeFormat.DAYS.seconds();
-				time += StringUtils.getLong(split[1]) * TimeFormat.HOURS.seconds();
-				time += StringUtils.getLong(split[2]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getLong(split[3]);
-				break;
-			case 5: // mm:dd:hh:mm:ss
-				time += StringUtils.getLong(split[0]) * TimeFormat.MONTHS.seconds();
-				time += StringUtils.getLong(split[1]) * TimeFormat.DAYS.seconds();
-				time += StringUtils.getLong(split[2]) * TimeFormat.HOURS.seconds();
-				time += StringUtils.getLong(split[3]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getLong(split[4]);
-				break;
-			default: // yy:mm:dd:hh:mm:ss
-				time += StringUtils.getLong(split[0]) * TimeFormat.YEARS.seconds();
-				time += StringUtils.getLong(split[1]) * TimeFormat.MONTHS.seconds();
-				time += StringUtils.getLong(split[2]) * TimeFormat.DAYS.seconds();
-				time += StringUtils.getLong(split[3]) * TimeFormat.HOURS.seconds();
-				time += StringUtils.getLong(split[4]) * TimeFormat.MINUTES.seconds();
-				time += StringUtils.getLong(split[5]);
-				break;
-			}
-			return time;
-		}
-
-		for (TimeFormat format : TimeFormat.values()) {
-			Matcher matcher = StringUtils.timeConvertor.get(format).matcher(period);
-			while (matcher.find())
-				time += StringUtils.getLong(matcher.group()) * format.seconds();
-			period = matcher.replaceAll("");
-		}
-		return time;
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static long timeFromString(String text) {
+		return TimeUtils.timeFromString(text);
 	}
 
 	/**
-	 * @apiNote Get boolean from string
-	 * @return boolean
+	 * @apiNote Use {@link MathUtils#checkProbability(double))} method instead.
 	 */
-	public static boolean getBoolean(String fromString) {
-		try {
-			return fromString.equalsIgnoreCase("true");
-		} catch (Exception er) {
-			return false;
-		}
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean checkProbability(double percent) {
+		return MathUtils.checkProbability(percent, 100);
 	}
 
 	/**
-	 * @apiNote his method takes a String argument that represents a mathematical
-	 *          expression and returns a double value that represents the result of
-	 *          evaluating the expression. The expression can contain the usual
-	 *          arithmetic operators (+, -, *, /) as well as parentheses to control
-	 *          the order of operations. The method uses a stack to keep track of
-	 *          intermediate results and operators, and follows the standard rules
-	 *          of operator precedence and associativity.
-	 * @return double
+	 * @apiNote Use {@link MathUtils#checkProbability(double, double))} method
+	 *          instead.
 	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static boolean checkProbability(double percent, double basedChance) {
+		return MathUtils.checkProbability(percent, basedChance);
+	}
+
+	/**
+	 * @apiNote Use {@link MathUtils#randomInt(int))} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static int randomInt(int max) {
+		return MathUtils.randomInt(max);
+	}
+
+	/**
+	 * @apiNote Use {@link MathUtils#randomInt(int, int))} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static int randomInt(int min, int max) {
+		return MathUtils.randomInt(min, max);
+	}
+
+	/**
+	 * @apiNote Use {@link MathUtils#randomDouble(double))} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static double randomDouble(double max) {
+		return MathUtils.randomDouble(max);
+	}
+
+	/**
+	 * @apiNote Use {@link MathUtils#randomDouble(double, double))} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
+	public static double randomDouble(double min, double max) {
+		return MathUtils.randomDouble(min, max);
+	}
+
+	/**
+	 * @apiNote Use {@link MathUtils#calculate(String))} method instead.
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
 	public static double calculate(String expression) {
-		return calculate(expression, 0, expression.length());
+		return MathUtils.calculate(expression);
 	}
 
+	/**
+	 * @apiNote Use {@link MathUtils#calculate(String, int, int))} method instead.
+	 * 
+	 */
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "11.2")
 	public static double calculate(String expression, int startPos, int endPos) {
-		List<Pair> operation = new ArrayList<>();
-		int start = -1;
-		int brackets = 0;
-
-		char prevOperation = 0;
-		boolean minus = false;
-		for (int i = startPos; i < endPos; ++i) {
-			char c = expression.charAt(i);
-			if (brackets == 0 && c >= '0' && c <= '9' || c == '.' || c == ',' || c == 'e' || c == 'E') {
-				if (start == -1)
-					start = i;
-			} else
-				switch (c) {
-				case '-':
-				case '+':
-				case '*':
-				case '/':
-					if (brackets != 0)
-						break;
-					if (start == -1)
-						if (prevOperation != '-' ? c == '-' : c == '+')
-							minus = true;
-						else if (c == '-' && prevOperation == '-')
-							minus = false;
-
-					if (start != -1) {
-						operation.add(Pair.of(c, minus ? -getDouble(expression, start, i) : getDouble(expression, start, i)));
-						minus = c == '-';
-						start = -1;
-					}
-					prevOperation = c;
-					break;
-				case '(':
-					if (++brackets == 1) {
-						if (prevOperation == 0)
-							prevOperation = '+';
-						if (start != -1) {
-							operation.add(Pair.of(prevOperation, minus ? -getDouble(expression, start, i) : getDouble(expression, start, i)));
-							prevOperation = '+';
-							minus = false;
-						}
-						start = i + 1;
-					}
-					break;
-				case ')':
-					if (--brackets <= 0) {
-						operation.add(Pair.of(prevOperation, minus ? -calculate(expression, start, i) : calculate(expression, start, i)));
-						start = -1;
-						prevOperation = '+';
-						minus = false;
-					}
-					break;
-				default:
-					break;
-				}
-		}
-		if (start != -1)
-			operation.add(Pair.of(prevOperation, minus ? -getDouble(expression, start, endPos) : getDouble(expression, start, endPos)));
-		// *, /
-		for (int i = 0; i < operation.size() - 1; ++i) {
-			Pair pair = operation.get(i);
-			switch ((char) pair.getKey()) {
-			case '*': {
-				operation.remove(i);
-				Pair current = operation.get(i);
-				current.setValue((double) current.getValue() * (double) pair.getValue());
-				break;
-			}
-			case '/': {
-				operation.remove(i);
-				Pair current = operation.get(i);
-				current.setValue((double) current.getValue() / (double) pair.getValue());
-				break;
-			}
-			}
-		}
-		// -, +
-		for (int i = 0; i < operation.size() - 1; ++i) {
-			Pair pair = operation.remove(i);
-			switch ((char) pair.getKey()) {
-			case '-':
-			case '+':
-				Pair current = operation.get(i);
-				current.setValue((double) current.getValue() + (double) pair.getValue());
-				break;
-			}
-		}
-		double result = 0;
-		for (int i = 0; i < operation.size(); ++i) {
-			Pair pair = operation.get(i);
-			result += (double) pair.getValue();
-		}
-		return result;
-	}
-
-	/**
-	 * @apiNote Get double from string
-	 * @return double
-	 */
-	public static double getDouble(String fromString, int start, int end) {
-		if (fromString == null)
-			return 0;
-
-		double result = 0.0;
-		int decimal = 0;
-		int exponent = 0;
-		boolean minusExponent = false;
-
-		boolean minus = false;
-		boolean hasDecimal = false;
-		boolean hasExponent = false;
-		byte exponentSymbol = 0;
-
-		short totalWidth = 0;
-
-		int size = end;
-		charsLoop: for (int i = start; i < size; ++i) {
-			char c = fromString.charAt(i);
-			switch (c) {
-			case ' ':
-				continue charsLoop;
-			case '-':
-				if (minus) {
-					if (hasExponent && exponent == 0) {
-						minusExponent = true;
-						continue charsLoop;
-					}
-					break charsLoop;
-				}
-				if (hasExponent && exponent == 0) {
-					minusExponent = true;
-					continue charsLoop;
-				}
-				minus = true;
-				continue charsLoop;
-			case 'e':
-			case 'E':
-				if (hasExponent)
-					break charsLoop;
-				hasExponent = true;
-				exponentSymbol = 1;
-				continue charsLoop;
-			case '.':
-			case ',':
-				if (hasDecimal || hasExponent)
-					break charsLoop;
-				hasDecimal = true;
-				continue charsLoop;
-			}
-			if (c < 48 || c > 57) {
-				if (totalWidth == 0) {
-					if (c == 'N' && i + 3 <= size)
-						if (fromString.charAt(i + 1) == 'a' && fromString.charAt(i + 2) == 'N')
-							return Double.NaN;
-					if (c == 'I' && i + 8 <= size)
-						if (fromString.charAt(i + 1) == 'n' && fromString.charAt(i + 2) == 'f' && fromString.charAt(i + 3) == 'i' && fromString.charAt(i + 4) == 'n' && fromString.charAt(i + 5) == 'i'
-								&& fromString.charAt(i + 6) == 't' && fromString.charAt(i + 7) == 'y')
-							return minus ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
-				}
-				continue;
-			}
-			if (!hasDecimal && totalWidth == 0 && c == 48)
-				continue;
-			int digit = c - 48;
-			if (++totalWidth > 308)
-				return minus ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
-
-			if (hasExponent) {
-				exponent = exponent * 10 + digit;
-				exponentSymbol = 0;
-			} else {
-				result = result * 10 + digit;
-				if (hasDecimal)
-					++decimal;
-			}
-		}
-		int range = (minusExponent ? -exponent : exponent) - decimal;
-		if (range != 0)
-			if (range > 0)
-				result *= Math.pow(10, range);
-			else
-				result /= Math.pow(10, range * -1);
-		return exponentSymbol == 0 ? minus ? -result : result : 0;
-	}
-
-	/**
-	 * @apiNote Get double from string
-	 * @return double
-	 */
-	public static double getDouble(String fromString) {
-		if (fromString == null)
-			return 0;
-
-		return getDouble(fromString, 0, fromString.length());
-	}
-
-	/**
-	 * @apiNote Is string, double ?
-	 * @return boolean
-	 */
-	public static boolean isDouble(String stringToTest) {
-		boolean foundZero = false;
-		boolean minus = false;
-		short totalWidth = 0;
-
-		boolean hasDecimal = false;
-		boolean hasExponent = false;
-		byte exponentSymbol = 0;
-
-		int size = stringToTest.length();
-		for (int i = 0; i < size; ++i) {
-			char c = stringToTest.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				continue;
-			case 'e':
-			case 'E':
-				if (hasExponent || totalWidth == 0)
-					return false;
-				hasExponent = true;
-				exponentSymbol = 1;
-				continue;
-			case '.':
-			case ',':
-				if (hasDecimal || hasExponent || totalWidth == 0)
-					return false;
-				hasDecimal = true;
-				continue;
-			}
-			if (c < 48 || c > 57) {
-				if (size - 1 == i && (c == 'd' || c == 'f' || c == 'D' || c == 'F'))
-					continue;
-				if (!foundZero && totalWidth == 0 && c == 'N' && i + 3 <= size)
-					return stringToTest.charAt(++i) == 'a' && stringToTest.charAt(++i) == 'N';
-				if (!foundZero && totalWidth == 0 && c == 'I' && i + 8 <= size)
-					return stringToTest.charAt(++i) == 'n' && stringToTest.charAt(++i) == 'f' && stringToTest.charAt(++i) == 'i' && stringToTest.charAt(++i) == 'n' && stringToTest.charAt(++i) == 'i'
-							&& stringToTest.charAt(++i) == 't' && stringToTest.charAt(++i) == 'y';
-				return false;
-			}
-			if (!hasDecimal && totalWidth == 0 && c == 48) {
-				foundZero = true;
-				continue;
-			}
-			++totalWidth;
-			exponentSymbol = 0;
-		}
-		return (totalWidth > 0 || foundZero) && exponentSymbol == 0;
-	}
-
-	/**
-	 * @apiNote Get long from string
-	 * @return long
-	 */
-	public static long getLong(String fromString) {
-		if (fromString == null)
-			return 0;
-		long result = 0;
-		boolean minus = false;
-		byte totalWidth = 0;
-		byte overLimit = 0;
-		boolean onLimit = false;
-		int limit = 0;
-
-		for (int i = 0; i < fromString.length(); ++i) {
-			char c = fromString.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				result = -result;
-				continue;
-			}
-			if (c < 48 || c > 57)
-				continue;
-			if (totalWidth == 0) {
-				if (c == 48)
-					continue;
-				onLimit = c == 57;
-			}
-			int digit = c - 48;
-
-			if (onLimit) {
-				limit = overLongLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
-						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
-			}
-			if (++totalWidth > 19 || totalWidth == 19 && overLimit == 1)
-				return 0;
-
-			result = result * 10 + (minus ? -digit : digit);
-		}
-		return result;
-	}
-
-	/**
-	 * @apiNote Is string, long ?
-	 * @return boolean
-	 */
-	public static boolean isLong(String stringToTest) {
-		boolean foundZero = false;
-		boolean minus = false;
-		byte totalWidth = 0;
-		byte overLimit = 0;
-		boolean onLimit = false;
-		int limit = 0;
-
-		for (int i = 0; i < stringToTest.length(); ++i) {
-			char c = stringToTest.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				continue;
-			}
-			if (c < 48 || c > 57)
-				return false;
-			if (totalWidth == 0) {
-				if (c == 48) {
-					foundZero = true;
-					continue;
-				}
-				onLimit = c == 57;
-			}
-			int digit = c - 48;
-
-			if (onLimit) {
-				limit = overLongLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
-						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
-			}
-			if (++totalWidth > 19 || totalWidth == 19 && overLimit == 1)
-				return false;
-		}
-		return totalWidth > 0 || foundZero;
-	}
-
-	// 9,223,372,036,854,775,807-8
-	private static int overLongLimit(boolean minus, int pos) {
-		switch (pos) {
-		case 1:
-		case 2:
-		case 6:
-			return 2;
-		case 3:
-		case 4:
-		case 8:
-			return 3;
-		case 5:
-		case 13:
-		case 14:
-			return 7;
-		case 7:
-		case 17:
-			return 0;
-		case 9:
-			return 6;
-		case 10:
-		case 16:
-			return 8;
-		case 11:
-		case 15:
-			return 5;
-		case 12:
-			return 4;
-		case 18:
-			return minus ? 8 : 7;
-		default:
-			break;
-		}
-		return 9;
-	}
-
-	/**
-	 * @apiNote Get int from string
-	 * @return int
-	 */
-	public static int getInt(String fromString) {
-		if (fromString == null)
-			return 0;
-		int result = 0;
-		boolean minus = false;
-		byte totalWidth = 0;
-		byte overLimit = 0;
-		boolean onLimit = false;
-		int limit = 0;
-
-		for (int i = 0; i < fromString.length(); ++i) {
-			char c = fromString.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				result = -result;
-				continue;
-			}
-			if (c < 48 || c > 57)
-				continue;
-			if (totalWidth == 0) {
-				if (c == 48)
-					continue;
-				onLimit = c == 50;
-			}
-			int digit = c - 48;
-
-			if (onLimit) {
-				limit = overIntLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
-						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
-			}
-			if (++totalWidth > 10 || totalWidth == 10 && overLimit == 1)
-				return 0;
-
-			result = result * 10 + (minus ? -digit : digit);
-		}
-		return result;
-	}
-
-	/**
-	 * @apiNote Is string, int ?
-	 * @return boolean
-	 */
-	public static boolean isInt(String stringToTest) {
-		boolean foundZero = false;
-		boolean minus = false;
-		byte totalWidth = 0;
-		byte overLimit = 0;
-		boolean onLimit = false;
-		int limit = 0;
-
-		for (int i = 0; i < stringToTest.length(); ++i) {
-			char c = stringToTest.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				continue;
-			}
-			if (c < 48 || c > 57)
-				return false;
-			if (totalWidth == 0) {
-				if (c == 48) {
-					foundZero = true;
-					continue;
-				}
-				onLimit = c == 50;
-			}
-			int digit = c - 48;
-
-			if (onLimit) {
-				limit = overIntLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
-						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
-			}
-			if (++totalWidth > 10 || totalWidth == 10 && overLimit == 1)
-				return false;
-		}
-		return totalWidth > 0 || foundZero;
-	}
-
-	// -2,147,483,647-8
-	private static int overIntLimit(boolean minus, int pos) {
-		switch (pos) {
-		case 1:
-			return 1;
-		case 2:
-		case 4:
-		case 8:
-			return 4;
-		case 3:
-			return 7;
-		case 5:
-			return 8;
-		case 6:
-			return 3;
-		case 7:
-			return 6;
-		case 9:
-			return minus ? 8 : 7;
-		default:
-			break;
-		}
-		return 2;
-	}
-
-	/**
-	 * @apiNote Is string, float (double) ?
-	 * @return boolean
-	 */
-	public static boolean isFloat(String stringToTest) {
-		return isDouble(stringToTest);
-	}
-
-	/**
-	 * @apiNote Get float from string
-	 * @return float
-	 */
-	public static float getFloat(String fromString) {
-		if (fromString == null)
-			return 0;
-
-		float result = 0;
-		int decimal = 0;
-		int exponent = 0;
-		boolean minusExponent = false;
-
-		boolean minus = false;
-		boolean hasDecimal = false;
-		boolean hasExponent = false;
-		byte exponentSymbol = 0;
-
-		short totalWidth = 0;
-
-		int size = fromString.length();
-		charsLoop: for (int i = 0; i < size; ++i) {
-			char c = fromString.charAt(i);
-			switch (c) {
-			case ' ':
-				continue charsLoop;
-			case '-':
-				if (minus) {
-					if (hasExponent && exponent == 0) {
-						minusExponent = true;
-						continue charsLoop;
-					}
-					break charsLoop;
-				}
-				if (hasExponent && exponent == 0) {
-					minusExponent = true;
-					continue charsLoop;
-				}
-				minus = true;
-				continue charsLoop;
-			case 'e':
-			case 'E':
-				if (hasExponent)
-					break charsLoop;
-				hasExponent = true;
-				exponentSymbol = 1;
-				continue charsLoop;
-			case '.':
-			case ',':
-				if (hasDecimal || hasExponent)
-					break charsLoop;
-				hasDecimal = true;
-				continue charsLoop;
-			}
-			if (c < 48 || c > 57) {
-				if (totalWidth == 0) {
-					if (c == 'N' && i + 3 <= size)
-						if (fromString.charAt(i + 1) == 'a' && fromString.charAt(i + 2) == 'N')
-							return Float.NaN;
-					if (c == 'I' && i + 8 <= size)
-						if (fromString.charAt(i + 1) == 'n' && fromString.charAt(i + 2) == 'f' && fromString.charAt(i + 3) == 'i' && fromString.charAt(i + 4) == 'n' && fromString.charAt(i + 5) == 'i'
-								&& fromString.charAt(i + 6) == 't' && fromString.charAt(i + 7) == 'y')
-							return minus ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
-				}
-				continue;
-			}
-			if (!hasDecimal && totalWidth == 0 && c == 48)
-				continue;
-			int digit = c - 48;
-			if (++totalWidth > 39)
-				return minus ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
-
-			if (hasExponent) {
-				exponent = exponent * 10 + digit;
-				exponentSymbol = 0;
-			} else {
-				result = result * 10 + digit;
-				if (hasDecimal)
-					++decimal;
-			}
-		}
-		int range = (minusExponent ? -exponent : exponent) - decimal;
-		if (range != 0)
-			if (range > 0)
-				result *= Math.pow(10, range);
-			else
-				result /= Math.pow(10, range * -1);
-		return exponentSymbol == 0 ? minus ? -result : result : 0;
-	}
-
-	/**
-	 * @apiNote Is string, byte ?
-	 * @return boolean
-	 */
-	public static boolean isByte(String stringToTest) {
-		boolean foundZero = false;
-		boolean minus = false;
-		byte totalWidth = 0;
-		byte overLimit = 0;
-		boolean onLimit = false;
-		int limit = 0;
-
-		for (int i = 0; i < stringToTest.length(); ++i) {
-			char c = stringToTest.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				continue;
-			}
-			if (c < 48 || c > 57)
-				return false;
-			if (totalWidth == 0) {
-				if (c == 48) {
-					foundZero = true;
-					continue;
-				}
-				onLimit = c == 49;
-			}
-			int digit = c - 48;
-
-			if (onLimit) {
-				limit = overByteLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
-						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
-			}
-			if (++totalWidth > 3 || totalWidth == 3 && overLimit == 1)
-				return false;
-		}
-		return totalWidth > 0 || foundZero;
-	}
-
-	// 127-8
-	private static int overByteLimit(boolean minus, int pos) {
-		switch (pos) {
-		case 1:
-			return 2;
-		case 2:
-			return minus ? 8 : 7;
-		}
-		return 1;
-	}
-
-	/**
-	 * @apiNote Get float from string
-	 * @return byte
-	 */
-	public static byte getByte(String fromString) {
-		if (fromString == null)
-			return 0;
-		byte result = 0;
-		boolean minus = false;
-		byte totalWidth = 0;
-		byte overLimit = 0;
-		boolean onLimit = false;
-		int limit = 0;
-
-		for (int i = 0; i < fromString.length(); ++i) {
-			char c = fromString.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				result = (byte) -result;
-				continue;
-			}
-			if (c < 48 || c > 57)
-				continue;
-			if (totalWidth == 0) {
-				if (c == 48)
-					continue;
-				onLimit = c == 51;
-			}
-			int digit = c - 48;
-
-			if (onLimit) {
-				limit = overByteLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
-						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
-			}
-			if (++totalWidth > 5 || totalWidth == 5 && overLimit == 1)
-				return 0;
-
-			result = (byte) (result * 10 + (minus ? -digit : digit));
-		}
-		return result;
-	}
-
-	/**
-	 * @apiNote Is string, short ?
-	 * @return boolean
-	 */
-	public static boolean isShort(String stringToTest) {
-		boolean foundZero = false;
-		boolean minus = false;
-		byte totalWidth = 0;
-		byte overLimit = 0;
-		boolean onLimit = false;
-		int limit = 0;
-
-		for (int i = 0; i < stringToTest.length(); ++i) {
-			char c = stringToTest.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				continue;
-			}
-			if (c < 48 || c > 57)
-				return false;
-			if (totalWidth == 0) {
-				if (c == 48) {
-					foundZero = true;
-					continue;
-				}
-				onLimit = c == 51;
-			}
-			int digit = c - 48;
-
-			if (onLimit) {
-				limit = overShortLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
-						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
-			}
-			if (++totalWidth > 5 || totalWidth == 5 && overLimit == 1)
-				return false;
-		}
-		return totalWidth > 0 || foundZero;
-	}
-
-	// 32,767-8
-	private static int overShortLimit(boolean minus, int pos) {
-		switch (pos) {
-		case 1:
-			return 2;
-		case 2:
-			return 7;
-		case 3:
-			return 6;
-		case 4:
-			return minus ? 8 : 7;
-		}
-		return 3;
-	}
-
-	/**
-	 * @apiNote Get float from string
-	 * @return short
-	 */
-	public static short getShort(String fromString) {
-		if (fromString == null)
-			return 0;
-		short result = 0;
-		boolean minus = false;
-		byte totalWidth = 0;
-		byte overLimit = 0;
-		boolean onLimit = false;
-		int limit = 0;
-
-		for (int i = 0; i < fromString.length(); ++i) {
-			char c = fromString.charAt(i);
-			switch (c) {
-			case ' ':
-				continue;
-			case '-':
-				if (minus)
-					break;
-				minus = true;
-				result = (short) -result;
-				continue;
-			}
-			if (c < 48 || c > 57)
-				continue;
-			if (totalWidth == 0) {
-				if (c == 48)
-					continue;
-				onLimit = c == 51;
-			}
-			int digit = c - 48;
-
-			if (onLimit) {
-				limit = overShortLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
-						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
-			}
-			if (++totalWidth > 5 || totalWidth == 5 && overLimit == 1)
-				return 0;
-
-			result = (short) (result * 10 + (minus ? -digit : digit));
-		}
-		return result;
-	}
-
-	/**
-	 * @apiNote Is string, number ?
-	 * @return boolean
-	 */
-	public static boolean isNumber(String fromString) {
-		return StringUtils.isInt(fromString) || StringUtils.isLong(fromString) || StringUtils.isDouble(fromString);
-	}
-
-	/**
-	 * @apiNote Is string, boolean ?
-	 * @return boolean
-	 */
-	public static boolean isBoolean(String fromString) {
-		if (fromString == null)
-			return false;
-		return fromString.equalsIgnoreCase("true") || fromString.equalsIgnoreCase("false");
-	}
-
-	public static Number getNumber(String o) {
-		if (o == null || o.isEmpty())
-			return null;
-		if (o.indexOf('.') == -1) {
-			if (StringUtils.isInt(o))
-				return StringUtils.getInt(o);
-			if (StringUtils.isLong(o))
-				return StringUtils.getLong(o);
-		}
-		if (StringUtils.isDouble(o))
-			return StringUtils.getDouble(o);
-		return null;
+		return MathUtils.calculate(expression, startPos, endPos);
 	}
 }

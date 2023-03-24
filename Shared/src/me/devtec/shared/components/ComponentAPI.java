@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 import me.devtec.shared.Ref;
 import me.devtec.shared.components.ClickEvent.Action;
 import me.devtec.shared.dataholder.StringContainer;
-import me.devtec.shared.utility.StringUtils;
+import me.devtec.shared.utility.ColorUtils;
 
 public class ComponentAPI {
 	static Map<String, ComponentTransformer<?>> transformers = new HashMap<>();
@@ -504,7 +504,7 @@ public class ComponentAPI {
 			if (text instanceof Map)
 				builder.append(ComponentAPI.getColor(((Map<String, Object>) text).get("color"))).append(String.valueOf(((Map<String, Object>) text).get("text")));
 			else
-				builder.append(StringUtils.colorize(text + ""));
+				builder.append(ColorUtils.colorize(text + ""));
 		return builder.toString();
 	}
 
@@ -512,7 +512,7 @@ public class ComponentAPI {
 		if (color == null)
 			return "";
 		if (color.toString().startsWith("#"))
-			return StringUtils.color.replaceHex(color.toString());
+			return ColorUtils.color.replaceHex(color.toString());
 		return "§" + Component.colorToChar(color.toString());
 	}
 

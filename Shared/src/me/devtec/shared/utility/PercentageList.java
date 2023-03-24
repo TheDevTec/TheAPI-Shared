@@ -107,7 +107,7 @@ public class PercentageList<V> {
 		if (entries.size() == 1)
 			return entries.get(0).getKey();
 
-		double random = StringUtils.randomDouble(totalChance);
+		double random = MathUtils.randomDouble(totalChance);
 		double value = 0.0;
 		for (int i = 0; i < entries.size(); i++) {
 			Entry<V, Double> entry = entries.get(i);

@@ -27,11 +27,13 @@ import me.devtec.shared.dataholder.cache.TempList;
 import me.devtec.shared.placeholders.PlaceholderAPI;
 import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
+import me.devtec.shared.utility.ColorUtils;
 import me.devtec.shared.utility.LibraryLoader;
 import me.devtec.shared.utility.OfflineCache;
-import me.devtec.shared.utility.StringUtils;
-import me.devtec.shared.utility.StringUtils.TimeFormat;
-import me.devtec.shared.utility.StringUtils.TimeFormatter;
+import me.devtec.shared.utility.ParseUtils;
+import me.devtec.shared.utility.TimeUtils;
+import me.devtec.shared.utility.TimeUtils.TimeFormat;
+import me.devtec.shared.utility.TimeUtils.TimeFormatter;
 
 public class API {
 	// Commands api
@@ -173,16 +175,16 @@ public class API {
 				tags.setIfAbsent("tags.violet", "9c6eff");
 			}
 			tags.save(DataType.YAML);
-			StringUtils.tagPrefix = tags.getString("hexTagPrefix");
+			ColorUtils.tagPrefix = tags.getString("hexTagPrefix");
 			String gradientTagPrefix = tags.getString("gradient.firstHex.prefix");
 			String gradientTagPrefixL = tags.getString("gradient.secondHex.prefix");
 			String gradientTagSuffix = tags.getString("gradient.firstHex.suffix");
 			String gradientTagSuffixL = tags.getString("gradient.secondHex.suffix");
 
 			for (String tag : tags.getKeys("tags"))
-				StringUtils.colorMap.put(tag.toLowerCase(), "#" + tags.getString("tags." + tag));
+				ColorUtils.colorMap.put(tag.toLowerCase(), "#" + tags.getString("tags." + tag));
 
-			StringUtils.gradientFinder = Pattern.compile(gradientTagPrefix + "(#[A-Fa-f0-9]{6})" + gradientTagSuffix + "(.*?)" + gradientTagPrefixL + "(#[A-Fa-f0-9]{6})" + gradientTagSuffixL
+			ColorUtils.gradientFinder = Pattern.compile(gradientTagPrefix + "(#[A-Fa-f0-9]{6})" + gradientTagSuffix + "(.*?)" + gradientTagPrefixL + "(#[A-Fa-f0-9]{6})" + gradientTagSuffixL
 					+ "|.*?(?=(?:" + gradientTagPrefix + "#[A-Fa-f0-9]{6}" + gradientTagSuffix + ".*?" + gradientTagPrefixL + "#[A-Fa-f0-9]{6}" + gradientTagSuffixL + "))");
 			Config config = new Config(path + "config.yml");
 			config.setIfAbsent("timeConvertor.settings.defaultlyDigits", false, Arrays.asList("# If plugin isn't using own split, use defaulty digitals? 300 -> 5:00"));
@@ -222,10 +224,10 @@ public class API {
 					}
 				}.runRepeating(432000, 432000); // Every 6 hours
 
-			StringUtils.timeSplit = config.getString("timeConvertor.settings.defaultSplit");
+			TimeUtils.timeSplit = config.getString("timeConvertor.settings.defaultSplit");
 
 			for (TimeFormat format : TimeFormat.values())
-				StringUtils.timeConvertor.put(format, new TimeFormatter() {
+				TimeUtils.timeConvertor.put(format, new TimeFormatter() {
 					Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor." + format.name().toLowerCase() + ".matcher") + ")");
 
 					@Override
@@ -257,17 +259,17 @@ public class API {
 		private boolean matchAction(String action, long value) {
 			String[] split = action.split(" ");
 			if (action.startsWith("=="))
-				return value == StringUtils.getLong(split[0]);
+				return value == ParseUtils.getLong(split[0]);
 			if (action.startsWith("!="))
-				return value != StringUtils.getLong(split[0]);
+				return value != ParseUtils.getLong(split[0]);
 			if (action.startsWith(">="))
-				return value >= StringUtils.getLong(split[0]);
+				return value >= ParseUtils.getLong(split[0]);
 			if (action.startsWith("<="))
-				return value <= StringUtils.getLong(split[0]);
+				return value <= ParseUtils.getLong(split[0]);
 			if (action.startsWith(">"))
-				return value > StringUtils.getLong(split[0]);
+				return value > ParseUtils.getLong(split[0]);
 			if (action.startsWith("<"))
-				return value < StringUtils.getLong(split[0]);
+				return value < ParseUtils.getLong(split[0]);
 			return false; // invalid
 		}
 

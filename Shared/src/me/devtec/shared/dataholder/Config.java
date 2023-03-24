@@ -30,8 +30,8 @@ import me.devtec.shared.dataholder.merge.MergeStandards;
 import me.devtec.shared.json.Json;
 import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
+import me.devtec.shared.utility.ParseUtils;
 import me.devtec.shared.utility.StreamUtils;
-import me.devtec.shared.utility.StringUtils;
 
 public class Config {
 	protected DataLoader loader;
@@ -361,7 +361,7 @@ public class Config {
 			return defaultValue;
 		if (value instanceof Number)
 			return ((Number) value).intValue();
-		return StringUtils.getInt(getString(key));
+		return ParseUtils.getInt(getString(key));
 	}
 
 	public double getDouble(String key) {
@@ -374,7 +374,7 @@ public class Config {
 			return defaultValue;
 		if (value instanceof Number)
 			return ((Number) value).doubleValue();
-		return StringUtils.getDouble(getString(key));
+		return ParseUtils.getDouble(getString(key));
 	}
 
 	public long getLong(String key) {
@@ -387,7 +387,7 @@ public class Config {
 			return defaultValue;
 		if (value instanceof Number)
 			return ((Number) value).longValue();
-		return StringUtils.getLong(getString(key));
+		return ParseUtils.getLong(getString(key));
 	}
 
 	public float getFloat(String key) {
@@ -400,7 +400,7 @@ public class Config {
 			return defaultValue;
 		if (value instanceof Number)
 			return ((Number) value).floatValue();
-		return StringUtils.getFloat(getString(key));
+		return ParseUtils.getFloat(getString(key));
 	}
 
 	public byte getByte(String key) {
@@ -413,7 +413,7 @@ public class Config {
 			return defaultValue;
 		if (value instanceof Number)
 			return ((Number) value).byteValue();
-		return StringUtils.getByte(getString(key));
+		return ParseUtils.getByte(getString(key));
 	}
 
 	public short getShort(String key) {
@@ -426,7 +426,7 @@ public class Config {
 			return defaultValue;
 		if (value instanceof Number)
 			return ((Number) value).shortValue();
-		return StringUtils.getShort(getString(key));
+		return ParseUtils.getShort(getString(key));
 	}
 
 	public boolean getBoolean(String key) {
@@ -439,7 +439,7 @@ public class Config {
 			return defaultValue;
 		if (value instanceof Boolean)
 			return (Boolean) value;
-		return StringUtils.getBoolean(getString(key));
+		return ParseUtils.getBoolean(getString(key));
 	}
 
 	public Collection<Object> getList(String key) {
@@ -485,7 +485,7 @@ public class Config {
 			return Collections.emptyList();
 		List<Boolean> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o != null && (o instanceof Boolean ? (Boolean) o : StringUtils.getBoolean(o.toString())));
+			list.add(o != null && (o instanceof Boolean ? (Boolean) o : ParseUtils.getBoolean(o.toString())));
 		return list;
 	}
 
@@ -495,7 +495,7 @@ public class Config {
 			return Collections.emptyList();
 		List<Integer> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).intValue() : StringUtils.getInt(o.toString()));
+			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).intValue() : ParseUtils.getInt(o.toString()));
 		return list;
 	}
 
@@ -505,7 +505,7 @@ public class Config {
 			return Collections.emptyList();
 		List<Double> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0.0 : o instanceof Number ? ((Number) o).doubleValue() : StringUtils.getDouble(o.toString()));
+			list.add(o == null ? 0.0 : o instanceof Number ? ((Number) o).doubleValue() : ParseUtils.getDouble(o.toString()));
 		return list;
 	}
 
@@ -515,7 +515,7 @@ public class Config {
 			return Collections.emptyList();
 		List<Short> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).shortValue() : StringUtils.getShort(o.toString()));
+			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).shortValue() : ParseUtils.getShort(o.toString()));
 		return list;
 	}
 
@@ -525,7 +525,7 @@ public class Config {
 			return Collections.emptyList();
 		List<Byte> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).byteValue() : StringUtils.getByte(o.toString()));
+			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).byteValue() : ParseUtils.getByte(o.toString()));
 		return list;
 	}
 
@@ -535,7 +535,7 @@ public class Config {
 			return Collections.emptyList();
 		List<Float> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).floatValue() : StringUtils.getFloat(o.toString()));
+			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).floatValue() : ParseUtils.getFloat(o.toString()));
 		return list;
 	}
 
@@ -545,7 +545,7 @@ public class Config {
 			return Collections.emptyList();
 		List<Long> list = new ArrayList<>(collection.size());
 		for (Object o : collection)
-			list.add(o == null ? 0 : StringUtils.getLong(o.toString()));
+			list.add(o == null ? 0 : ParseUtils.getLong(o.toString()));
 		return list;
 	}
 

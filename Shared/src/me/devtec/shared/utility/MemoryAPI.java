@@ -6,8 +6,8 @@ public class MemoryAPI {
 
 	public static double getFreeMemory(boolean inPercentage) {
 		if (!inPercentage)
-			return StringUtils.getDouble(String.format("%2.02f", MemoryAPI.getMaxMemory() - MemoryAPI.getRawUsedMemory(false)).replaceFirst("\\.00", ""));
-		return StringUtils.getDouble(String.format("%2.02f", (MemoryAPI.getMaxMemory() - MemoryAPI.getRawUsedMemory(false)) / MemoryAPI.getMaxMemory() * 100).replaceFirst("\\.00", ""));
+			return ParseUtils.getDouble(String.format("%2.02f", MemoryAPI.getMaxMemory() - MemoryAPI.getRawUsedMemory(false)).replaceFirst("\\.00", ""));
+		return ParseUtils.getDouble(String.format("%2.02f", (MemoryAPI.getMaxMemory() - MemoryAPI.getRawUsedMemory(false)) / MemoryAPI.getMaxMemory() * 100).replaceFirst("\\.00", ""));
 	}
 
 	public static double getMaxMemory() {
@@ -16,8 +16,8 @@ public class MemoryAPI {
 
 	public static double getUsedMemory(boolean inPercents) {
 		if (!inPercents)
-			return StringUtils.getDouble(String.format("%2.02f", MemoryAPI.getRawUsedMemory(false)).replaceFirst("\\.00", ""));
-		return StringUtils.getDouble(String.format("%2.02f", MemoryAPI.getRawUsedMemory(false) / MemoryAPI.getMaxMemory() * 100).replaceFirst("\\.00", ""));
+			return ParseUtils.getDouble(String.format("%2.02f", MemoryAPI.getRawUsedMemory(false)).replaceFirst("\\.00", ""));
+		return ParseUtils.getDouble(String.format("%2.02f", MemoryAPI.getRawUsedMemory(false) / MemoryAPI.getMaxMemory() * 100).replaceFirst("\\.00", ""));
 	}
 
 	public static double getRawUsedMemory(boolean inPercents) {

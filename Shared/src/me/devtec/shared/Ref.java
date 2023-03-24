@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import me.devtec.shared.utility.StringUtils;
+import me.devtec.shared.utility.ParseUtils;
 
 public class Ref {
 
@@ -33,8 +33,8 @@ public class Ref {
 	public static void init(ServerType type, String serverVersion) {
 		Ref.ver = serverVersion;
 		if (type.isBukkit()) {
-			Ref.intVer = StringUtils.getInt(Ref.ver.split("_")[1]);
-			Ref.intRelease = StringUtils.getInt(Ref.ver.split("_")[2]);
+			Ref.intVer = ParseUtils.getInt(Ref.ver.split("_")[1]);
+			Ref.intRelease = ParseUtils.getInt(Ref.ver.split("_")[2]);
 		}
 		Ref.type = type;
 	}
