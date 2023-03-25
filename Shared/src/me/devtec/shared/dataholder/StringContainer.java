@@ -340,29 +340,26 @@ public class StringContainer {
 	}
 
 	public int indexOf(char c, int start) {
-		for (int i = start; i < count; ++i)
-			if (value.length > i && value[i] == c)
+		for (int i = Math.min(start, count); i < count; ++i)
+			if (value[i] == c)
 				return i;
 		return -1;
 	}
 
 	public int lastIndexOf(char val) {
-		for (int i = count; i > -1; --i)
-			if (value.length > i && value[i] == val)
-				return i;
-		return -1;
+		return lastIndexOf(val, count);
 	}
 
 	public int lastIndexOf(char val, int start) {
-		for (int i = start; i > -1; --i)
-			if (value.length > i && value[i] == val)
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
+			if (value[i] == val)
 				return i;
 		return -1;
 	}
 
 	public int lastIndexOf(char val, int start, int limit) {
-		for (int i = start; i > -1; --i)
-			if (value.length > i && value[i] == val && --limit <= 0)
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
+			if (value[i] == val && --limit <= 0)
 				return i;
 		return -1;
 	}
@@ -378,10 +375,10 @@ public class StringContainer {
 	protected int indexOf(int start, char[] lookingFor) {
 		int foundPos = 0;
 
-		if (start + lookingFor.length > count)
+		if (Math.min(start, count) + lookingFor.length > count)
 			return -1;
 
-		for (int i = start; i < count; ++i)
+		for (int i = Math.min(start, count); i < count; ++i)
 			if (value[i] == lookingFor[foundPos]) {
 				if (++foundPos == lookingFor.length)
 					return i - (lookingFor.length - 1);
@@ -401,10 +398,10 @@ public class StringContainer {
 	protected int lastIndexOf(int start, char[] lookingFor) {
 		int foundPos = lookingFor.length - 1;
 
-		if (start - lookingFor.length < 0)
+		if (Math.min(start, count - 1) - lookingFor.length < 0)
 			return -1;
 
-		for (int i = start; i > -1; --i)
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
 			if (value[i] == lookingFor[foundPos]) {
 				if (--foundPos == -1)
 					return i;
