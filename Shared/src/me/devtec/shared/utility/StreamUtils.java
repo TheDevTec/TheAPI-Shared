@@ -27,8 +27,7 @@ public class StreamUtils {
 			ByteBuffer buffer = ByteBuffer.allocateDirect((int) channel.size());
 			channel.read(buffer);
 			channel.close();
-			buffer.limit(buffer.position());
-			buffer.position(0);
+			buffer.flip();
 			return charset.decode(buffer).toString();
 		} catch (Exception e) {
 			return null;
