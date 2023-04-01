@@ -6,10 +6,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.security.SecureClassLoader;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.tools.FileObject;
@@ -24,9 +22,6 @@ import javax.tools.ToolProvider;
 import me.devtec.shared.Ref;
 
 public class MemoryCompiler {
-
-	public static String allJars = "./" + new File(System.getProperty("java.class.path")).getPath();
-
 	private JavaFileManager fileManager;
 	private String fullName;
 	private String sourceCode;
@@ -65,10 +60,7 @@ public class MemoryCompiler {
 
 	private void compile() {
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		List<JavaFileObject> files = new ArrayList<>();
-		files.add(new CharSequenceJavaFileObject(fullName, sourceCode));
-
-		compiler.getTask(null, fileManager, null, Arrays.asList("-classpath", allJars), null, files).call();
+		compiler.getTask(null, fileManager, null, Arrays.asList("-nowarn"), null, Arrays.asList(new CharSequenceJavaFileObject(fullName, sourceCode))).call();
 	}
 
 	public Class<?> buildClass() {
