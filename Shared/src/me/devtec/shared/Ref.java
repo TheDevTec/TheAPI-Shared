@@ -88,6 +88,14 @@ public class Ref {
 		}
 	}
 
+	public static Class<?> getClass(String name, ClassLoader loader) {
+		try {
+			return Class.forName(name, true, loader);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
 	public static boolean existsMethod(Class<?> c, String name) {
 		boolean a = false;
 		for (Method d : Ref.getMethods(c))

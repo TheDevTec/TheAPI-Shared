@@ -30,6 +30,7 @@ public class MemoryCompiler {
 	private JavaFileManager fileManager;
 	private String fullName;
 	private String sourceCode;
+	private ClassLoader original;
 
 	public MemoryCompiler(String fullName, File pathToJavaFile) {
 		if (!pathToJavaFile.exists())
@@ -38,6 +39,7 @@ public class MemoryCompiler {
 		if (ToolProvider.getSystemJavaCompiler() == null)
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
 
+		original = getClass().getClassLoader();
 		this.fullName = fullName;
 		sourceCode = StreamUtils.fromStream(pathToJavaFile);
 		fileManager = initFileManager();
@@ -47,6 +49,7 @@ public class MemoryCompiler {
 		if (ToolProvider.getSystemJavaCompiler() == null)
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
 
+		original = getClass().getClassLoader();
 		this.fullName = fullName;
 		sourceCode = srcCode;
 		fileManager = initFileManager();
@@ -112,7 +115,7 @@ public class MemoryCompiler {
 				protected Class<?> findClass(String name) throws ClassNotFoundException {
 					JavaClassObject javaClassObject = loaded.get(name);
 					if (javaClassObject == null)
-						return Ref.getClass(name);
+						return Ref.getClass(name, original);
 
 					byte[] b = javaClassObject.getBytes();
 					return super.defineClass(name, javaClassObject.getBytes(), 0, b.length);
