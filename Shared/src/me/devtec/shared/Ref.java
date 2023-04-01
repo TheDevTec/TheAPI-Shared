@@ -92,7 +92,11 @@ public class Ref {
 		try {
 			return Class.forName(name, true, loader);
 		} catch (Exception e) {
-			return null;
+			try {
+				return Class.forName(name);
+			} catch (Exception err) {
+				return null;
+			}
 		}
 	}
 

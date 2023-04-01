@@ -39,7 +39,7 @@ public class MemoryCompiler {
 		if (ToolProvider.getSystemJavaCompiler() == null)
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
 
-		original = getClass().getClassLoader();
+		original = Thread.currentThread().getContextClassLoader();
 		this.fullName = fullName;
 		sourceCode = StreamUtils.fromStream(pathToJavaFile);
 		fileManager = initFileManager();
@@ -49,7 +49,7 @@ public class MemoryCompiler {
 		if (ToolProvider.getSystemJavaCompiler() == null)
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
 
-		original = getClass().getClassLoader();
+		original = Thread.currentThread().getContextClassLoader();
 		this.fullName = fullName;
 		sourceCode = srcCode;
 		fileManager = initFileManager();
@@ -110,12 +110,12 @@ public class MemoryCompiler {
 
 		@Override
 		public ClassLoader getClassLoader(Location location) {
-			return new SecureClassLoader() {
+			return new SecureClassLoader(original) {
 				@Override
 				protected Class<?> findClass(String name) throws ClassNotFoundException {
 					JavaClassObject javaClassObject = loaded.get(name);
 					if (javaClassObject == null)
-						return Ref.getClass(name, original);
+						return Ref.getClass(name);
 
 					byte[] b = javaClassObject.getBytes();
 					return super.defineClass(name, javaClassObject.getBytes(), 0, b.length);
