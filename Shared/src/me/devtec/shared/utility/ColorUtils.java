@@ -24,7 +24,7 @@ public class ColorUtils {
 	public static String tagPrefix = "!";
 
 	public interface ColormaticFactory {
-		char[] characters = "abcdef0123456789".toCharArray();
+		char[] characters = { 'a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 
 		/**
 		 * @apiNote Generates random color depends on software & version
