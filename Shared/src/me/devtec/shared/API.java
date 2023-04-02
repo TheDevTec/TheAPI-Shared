@@ -2,7 +2,6 @@ package me.devtec.shared;
 
 import java.awt.Color;
 import java.io.File;
-import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -11,11 +10,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.management.Attribute;
-import javax.management.AttributeList;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 
 import me.devtec.shared.Ref.ServerType;
 import me.devtec.shared.commands.manager.CommandsRegister;
@@ -69,7 +63,7 @@ public class API {
 	}
 
 	public static Config getUser(String playerName) {
-		if (API.cache == null)
+		if (API.cache == null || playerName == null || playerName.isEmpty())
 			return null;
 		UUID id = API.cache.lookupId(playerName);
 		return getUser(id);
@@ -96,6 +90,8 @@ public class API {
 	}
 
 	public static Config removeCache(UUID id) {
+		if (id == null)
+			return null;
 		Config file = API.users.remove(id);
 		if (file != null)
 			savingQueue.add(Pair.of(id, file));
@@ -274,25 +270,9 @@ public class API {
 		}
 
 		private static char toLowerCase(int c) {
-			switch (c) {
-			case 65:
-			case 66:
-			case 67:
-			case 68:
-			case 69:
-			case 70:
-			case 75:
-			case 76:
-			case 77:
-			case 78:
-			case 79:
-			case 82:
-			case 85:
-			case 88:
+			if (c >= 65 && c <= 90)
 				return (char) (c + 32);
-			default:
-				return (char) c;
-			}
+			return (char) c;
 		}
 
 		public String[] getLastColors(String input) {
@@ -538,19 +518,16 @@ public class API {
 						finalColor = new Color(red, green, blue);
 						if (formats.equals("§r")) {
 							builder.append(formats); // add formats
-							replaceHex(builder, String.format("%08x", finalColor.getRGB())); // add
-							// color
+							addHex(builder, finalColor.getRGB()); // color
 							formats = "";
 						} else {
-							replaceHex(builder, String.format("%08x", finalColor.getRGB())); // add
-							// color
+							addHex(builder, finalColor.getRGB()); // color
 							if (!formats.isEmpty())
 								builder.append(formats); // add formats
 						}
 					} else if (formats.equals("§r")) {
 						builder.append(formats); // add formats
-						replaceHex(builder, String.format("%08x", finalColor.getRGB())); // add
-						// color
+						addHex(builder, finalColor.getRGB()); // color
 						formats = "";
 					}
 				builder.append(c);
@@ -558,39 +535,16 @@ public class API {
 			return builder.toString();
 		}
 
-		private void replaceHex(StringContainer builder, String color) {
+		private void addHex(StringContainer builder, int rgb) {
 			builder.append('§').append('x');
-			for (int i = 2; i < color.length(); ++i)
-				builder.append('§').append(color.charAt(i));
+			for (int i = 0; i < 6; i++) {
+				int nibble = rgb >> (5 - i) * 4 & 0xF;
+				builder.append('§').append((char) (nibble < 10 ? nibble + '0' : nibble - 10 + 'a'));
+			}
 		}
 	}
 
 	public static Basics basics() {
 		return API.basics;
-	}
-
-	public static double getProcessCpuLoad() {
-		try {
-			MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-			ObjectName name = ObjectName.getInstance("java.lang:type=OperatingSystem");
-			AttributeList list = mbs.getAttributes(name, new String[] { "ProcessCpuLoad" });
-			if (list.isEmpty())
-				return 0.0;
-			Attribute att = (Attribute) list.get(0);
-			Double value = (Double) att.getValue();
-			if (value == -1.0)
-				return 0;
-			return value * 1000.0 / 10.0;
-		} catch (Exception e) {
-			return 0;
-		}
-	}
-
-	/**
-	 * @see see Server up time in long
-	 * @return long
-	 */
-	public static long getServerUpTime() {
-		return ManagementFactory.getRuntimeMXBean().getUptime();
 	}
 }
