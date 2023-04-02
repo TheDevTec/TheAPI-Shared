@@ -8,6 +8,31 @@ import me.devtec.shared.Pair;
 public class MathUtils {
 
 	/**
+	 * @apiNote The method first casts the double value to an int using a simple
+	 *          cast operation. If the cast value is equal to the original double
+	 *          value, it is returned directly as the int value. If not, the method
+	 *          calculates the difference between the cast value and the bitwise
+	 *          representation of the original double value. The result of this
+	 *          calculation is either 0 or 1, which is then subtracted from the cast
+	 *          value and returned as the final result.
+	 * @param value
+	 * @return int
+	 */
+	public static int floor(double value) {
+		int floor = (int) value;
+		return floor == value ? floor : floor - (int) (Double.doubleToRawLongBits(value) >>> 63);
+	}
+
+	/**
+	 * @apiNote The method checks if number has decimals (number.decimals)
+	 * @param num
+	 * @return boolean
+	 */
+	public static boolean hasDecimal(double num) {
+		return num - floor(num) > 0;
+	}
+
+	/**
 	 * @apiNote Generate random int within limits
 	 * @param max Maximum int
 	 */
@@ -201,5 +226,11 @@ public class MathUtils {
 			result += (double) pair.getValue();
 		}
 		return result;
+	}
+
+	public static int getLongLength(long num) {
+		if (num == 0)
+			return 1;
+		return (int) (Math.log10(Math.abs(num)) + 1);
 	}
 }
