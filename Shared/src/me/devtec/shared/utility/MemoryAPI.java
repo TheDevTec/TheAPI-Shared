@@ -1,13 +1,15 @@
 package me.devtec.shared.utility;
 
+import me.devtec.shared.utility.StringUtils.FormatType;
+
 public class MemoryAPI {
 	private static double mb = 1048576;
 	private static double max = Runtime.getRuntime().maxMemory() / MemoryAPI.mb;
 
 	public static double getFreeMemory(boolean inPercentage) {
 		if (!inPercentage)
-			return ParseUtils.getDouble(String.format("%2.02f", MemoryAPI.getMaxMemory() - MemoryAPI.getRawUsedMemory(false)).replaceFirst("\\.00", ""));
-		return ParseUtils.getDouble(String.format("%2.02f", (MemoryAPI.getMaxMemory() - MemoryAPI.getRawUsedMemory(false)) / MemoryAPI.getMaxMemory() * 100).replaceFirst("\\.00", ""));
+			return ParseUtils.getDouble(StringUtils.formatDouble(FormatType.BASIC, MemoryAPI.getMaxMemory() - MemoryAPI.getRawUsedMemory(false)));
+		return ParseUtils.getDouble(StringUtils.formatDouble(FormatType.BASIC, (MemoryAPI.getMaxMemory() - MemoryAPI.getRawUsedMemory(false)) / MemoryAPI.getMaxMemory() * 100));
 	}
 
 	public static double getMaxMemory() {
@@ -16,8 +18,8 @@ public class MemoryAPI {
 
 	public static double getUsedMemory(boolean inPercents) {
 		if (!inPercents)
-			return ParseUtils.getDouble(String.format("%2.02f", MemoryAPI.getRawUsedMemory(false)).replaceFirst("\\.00", ""));
-		return ParseUtils.getDouble(String.format("%2.02f", MemoryAPI.getRawUsedMemory(false) / MemoryAPI.getMaxMemory() * 100).replaceFirst("\\.00", ""));
+			return ParseUtils.getDouble(StringUtils.formatDouble(FormatType.BASIC, MemoryAPI.getRawUsedMemory(false)));
+		return ParseUtils.getDouble(StringUtils.formatDouble(FormatType.BASIC, MemoryAPI.getRawUsedMemory(false) / MemoryAPI.getMaxMemory() * 100));
 	}
 
 	public static double getRawUsedMemory(boolean inPercents) {
