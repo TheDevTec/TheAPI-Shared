@@ -22,29 +22,32 @@ import javax.tools.ToolProvider;
 import me.devtec.shared.Ref;
 
 public class MemoryCompiler {
+
+	public static String allJars = "./" + new File(System.getProperty("java.class.path")).getPath();
+
 	private JavaFileManager fileManager;
 	private String fullName;
 	private String sourceCode;
 	private ClassLoader original;
 
-	public MemoryCompiler(String fullName, File pathToJavaFile) {
+	public MemoryCompiler(ClassLoader loader, String fullName, File pathToJavaFile) {
 		if (!pathToJavaFile.exists())
 			throw new RuntimeException("File doesn't exist.");
 
 		if (ToolProvider.getSystemJavaCompiler() == null)
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
 
-		original = Thread.currentThread().getContextClassLoader();
+		original = loader == null ? Thread.currentThread().getContextClassLoader() : loader;
 		this.fullName = fullName;
 		sourceCode = StreamUtils.fromStream(pathToJavaFile);
 		fileManager = initFileManager();
 	}
 
-	public MemoryCompiler(String fullName, String srcCode) {
+	public MemoryCompiler(ClassLoader loader, String fullName, String srcCode) {
 		if (ToolProvider.getSystemJavaCompiler() == null)
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
 
-		original = Thread.currentThread().getContextClassLoader();
+		original = loader == null ? Thread.currentThread().getContextClassLoader() : loader;
 		this.fullName = fullName;
 		sourceCode = srcCode;
 		fileManager = initFileManager();
@@ -60,7 +63,7 @@ public class MemoryCompiler {
 
 	private void compile() {
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		compiler.getTask(null, fileManager, null, Arrays.asList("-nowarn"), null, Arrays.asList(new CharSequenceJavaFileObject(fullName, sourceCode))).call();
+		compiler.getTask(null, fileManager, null, Arrays.asList("-nowarn", "-cp", allJars), null, Arrays.asList(new CharSequenceJavaFileObject(fullName, sourceCode))).call();
 	}
 
 	public Class<?> buildClass() {
@@ -103,6 +106,7 @@ public class MemoryCompiler {
 		@Override
 		public ClassLoader getClassLoader(Location location) {
 			return new SecureClassLoader(original) {
+
 				@Override
 				protected Class<?> findClass(String name) throws ClassNotFoundException {
 					JavaClassObject javaClassObject = loaded.get(name);
