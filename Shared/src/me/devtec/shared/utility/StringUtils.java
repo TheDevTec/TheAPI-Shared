@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 
 import me.devtec.shared.Ref;
@@ -59,70 +58,129 @@ public class StringUtils {
 	public static String formatDouble(FormatType type, double value) {
 		switch (type) {
 		case BASIC: {
-			String formatted = String.format(Locale.ENGLISH, "%.2f", value);
-			if (formatted.endsWith("00"))
-				formatted = formatted.substring(0, formatted.length() - 3); // .00
-			else if (formatted.endsWith("0"))
-				formatted = formatted.substring(0, formatted.length() - 1); // .X0
-			return formatted;
+			boolean minus = false;
+			if (value < 0) {
+				minus = true;
+				value *= -1;
+			}
+
+			long integerPart = (long) value;
+			long decimalPart = Math.round(Math.abs(value - integerPart) * 100);
+			StringContainer sb = new StringContainer(MathUtils.getLongLength(integerPart) + 3);
+			if (decimalPart == 100) {
+				++integerPart;
+				decimalPart = 0;
+			}
+			sb.append(integerPart);
+			if (decimalPart != 0) {
+				sb.append('.');
+				if (decimalPart < 10) {
+					sb.append('0');
+					sb.append(decimalPart);
+				} else {
+					double smaller = (double) decimalPart / 10;
+					if (MathUtils.hasDecimal(smaller))
+						sb.append(decimalPart);
+					else
+						sb.append((long) smaller);
+				}
+			}
+			if (minus)
+				sb.insert(0, '-');
+			return sb.toString();
 		}
 		case NORMAL: {
-			String formatted = String.format(Locale.ENGLISH, "%,.2f", value);
-			if (formatted.endsWith("00"))
-				formatted = formatted.substring(0, formatted.length() - 3); // .00
-			else if (formatted.endsWith("0"))
-				formatted = formatted.substring(0, formatted.length() - 1); // .X0
-			return formatted;
+			boolean minus = false;
+			if (value < 0) {
+				minus = true;
+				value *= -1;
+			}
+
+			long integerPart = (long) value;
+			long decimalPart = Math.round(Math.abs(value - integerPart) * 100);
+
+			int width = MathUtils.getLongLength(integerPart);
+			StringContainer sb = new StringContainer(width + width / 3 + 3);
+			if (decimalPart == 100) {
+				++integerPart;
+				decimalPart = 0;
+			}
+
+			int count = 0;
+			do {
+				if (count == 3) {
+					sb.insert(0, ',');
+					count = 0;
+				}
+				sb.insert(0, integerPart % 10);
+				integerPart /= 10;
+				count++;
+			} while (integerPart > 0);
+			if (decimalPart != 0) {
+				sb.append('.');
+				if (decimalPart < 10) {
+					sb.append('0');
+					sb.append(decimalPart);
+				} else {
+					double smaller = (double) decimalPart / 10;
+					if (MathUtils.hasDecimal(smaller))
+						sb.append(decimalPart);
+					else
+						sb.append((long) smaller);
+				}
+			}
+			if (minus)
+				sb.insert(0, '-');
+			return sb.toString();
 		}
 		case COMPLEX: {
-			String formatted = String.format(Locale.ENGLISH, "%,.2f", value);
-			String[] s = formatted.split(",");
-			if (s.length >= 22) { // Why?...
-				if (formatted.startsWith("-"))
+			double testValue = value < 0 ? value * -1 : value;
+			if (testValue >= 1.0E63) {
+				if (value < 0)
 					return "-∞";
 				return "∞";
 			}
-			if (s.length >= 21)
+			if (testValue >= 1.0E60 && testValue <= 1.0E63)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E60) + "NOV";
-			if (s.length >= 20)
+			if (testValue >= 1.0E57 && testValue <= 1.0E60)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E57) + "OCT";
-			if (s.length >= 19)
+			if (testValue >= 1.0E54 && testValue <= 1.0E57)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E54) + "SEP";
-			if (s.length >= 18)
+			if (testValue >= 1.0E51 && testValue <= 1.0E54)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E51) + "SED";
-			if (s.length >= 17)
+			if (testValue >= 1.0E48 && testValue <= 1.0E51)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E48) + "QUI";
-			if (s.length >= 16)
+			if (testValue >= 1.0E45 && testValue <= 1.0E48)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E45) + "QUA";
-			if (s.length >= 15)
+			if (testValue >= 1.0E42 && testValue <= 1.0E45)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E42) + "tre";
-			if (s.length >= 14)
+			if (testValue >= 1.0E39 && testValue <= 1.0E42)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E39) + "duo";
-			if (s.length >= 13)
+			if (testValue >= 1.0E36 && testValue <= 1.0E39)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E36) + "und";
-			if (s.length >= 12)
+			if (testValue >= 1.0E33 && testValue <= 1.0E36)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E33) + "dec";
-			if (s.length >= 11)
+			if (testValue >= 1.0E30 && testValue <= 1.0E33)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E30) + "non";
-			if (s.length >= 10)
+			if (testValue >= 1.0E27 && testValue <= 1.0E30)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E27) + "oct";
-			if (s.length >= 9)
+			if (testValue >= 1.0E24 && testValue <= 1.0E27)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E24) + "sep";
-			if (s.length >= 8) // No, it's not "sex"...
+			if (testValue >= 1.0E21 && testValue <= 1.0E24) // No, it's not "sex"...
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E21) + "sex";
-			if (s.length >= 7)
+			if (testValue >= 1.0E18 && testValue <= 1.0E21)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E18) + "qui";
-			if (s.length >= 6)
+			if (testValue >= 1.0E15 && testValue <= 1.0E18)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E15) + "qua";
-			if (s.length >= 5)
+			if (testValue >= 1.0E12 && testValue <= 1.0E15)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E12) + "t";
-			if (s.length >= 4)
+			if (testValue >= 1.0E9 && testValue <= 1.0E12)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E9) + "b";
-			if (s.length >= 3)
+			if (testValue >= 1.0E6 && testValue <= 1.0E9)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E6) + "m";
-			if (s.length >= 2)
+			if (testValue >= 1000 && testValue <= 1.0E6)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1000) + "k";
-			return formatted;
+			return StringUtils.formatDouble(FormatType.NORMAL, value);
 		}
 		default:
 			break;
