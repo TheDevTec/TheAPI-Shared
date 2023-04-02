@@ -1,16 +1,32 @@
 package me.devtec.shared.utility;
 
 public class ParseUtils {
+
 	/**
 	 * @apiNote Parse boolean from the String
 	 * @return boolean
 	 */
 	public static boolean getBoolean(String text) {
-		try {
-			return text.equalsIgnoreCase("true");
-		} catch (Exception er) {
+		return text == null || text.length() != 4 ? false
+				: toLowerCase(text.charAt(0)) == 't' && toLowerCase(text.charAt(1)) == 'r' && toLowerCase(text.charAt(2)) == 'u' && toLowerCase(text.charAt(3)) == 'e';
+	}
+
+	/**
+	 * @apiNote Checks if the String is Boolean
+	 * @return boolean
+	 */
+	public static boolean isBoolean(String text) {
+		if (text == null || text.length() > 5 || text.length() < 4)
 			return false;
-		}
+		if (text.length() == 5)
+			return toLowerCase(text.charAt(0)) == 'f' && toLowerCase(text.charAt(1)) == 'a' && toLowerCase(text.charAt(2)) == 'l' && toLowerCase(text.charAt(3)) == 's'
+					&& toLowerCase(text.charAt(4)) == 'e';
+		// true
+		return toLowerCase(text.charAt(0)) == 't' && toLowerCase(text.charAt(1)) == 'r' && toLowerCase(text.charAt(2)) == 'u' && toLowerCase(text.charAt(3)) == 'e';
+	}
+
+	private static char toLowerCase(int character) {
+		return (char) (character <= 90 ? character + 32 : character);
 	}
 
 	/**
@@ -927,16 +943,6 @@ public class ParseUtils {
 	 */
 	public static boolean isNumber(String text, int start, int end) {
 		return isInt(text, start, end) || isLong(text, start, end) || isDouble(text, start, end);
-	}
-
-	/**
-	 * @apiNote Checks if the String is Boolean
-	 * @return boolean
-	 */
-	public static boolean isBoolean(String text) {
-		if (text == null)
-			return false;
-		return text.equalsIgnoreCase("true") || text.equalsIgnoreCase("false");
 	}
 
 	/**
