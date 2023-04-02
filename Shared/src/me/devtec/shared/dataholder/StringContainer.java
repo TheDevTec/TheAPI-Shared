@@ -118,7 +118,6 @@ public class StringContainer {
 	private StringContainer appendNull() {
 		int c = count;
 		ensureCapacityInternal(c + 4);
-		final char[] value = this.value;
 		value[c++] = 'n';
 		value[c++] = 'u';
 		value[c++] = 'l';
@@ -131,6 +130,30 @@ public class StringContainer {
 		ensureCapacityInternal(count + 1);
 		value[count++] = c;
 		return this;
+	}
+
+	public StringContainer insert(int offset, char c) {
+		ensureCapacityInternal(count + 1);
+		System.arraycopy(value, offset, value, offset + 1, ++count - offset - 1);
+		value[offset] = c;
+		return this;
+	}
+
+	public StringContainer insert(int offset, String str) {
+		if (offset < 0 || offset > length())
+			throw new StringIndexOutOfBoundsException(offset);
+		if (str == null)
+			str = "null";
+		int len = str.length();
+		ensureCapacityInternal(count + len);
+		System.arraycopy(value, offset, value, offset + len, count - offset);
+		str.getChars(0, len, value, offset);
+		count += len;
+		return this;
+	}
+
+	public StringContainer insert(int pos, long l) {
+		return insert(pos, String.valueOf(l));
 	}
 
 	public StringContainer appendInternal(char c) {
