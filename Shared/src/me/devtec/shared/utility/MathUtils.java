@@ -24,6 +24,35 @@ public class MathUtils {
 	}
 
 	/**
+	 * @apiNote The method takes a double value as input and returns a long value
+	 *          that represents the floor or ceiling of the input value. If the
+	 *          input value is less than the nearest integer value, the floor value
+	 *          is returned, otherwise, the ceiling value is returned. The method
+	 *          first casts the input value to a long and assigns it to the variable
+	 *          l. If the input value is less than the casted long value, then it
+	 *          subtracts 1 from the casted long value to return the floor value,
+	 *          otherwise, it returns the casted long value which represents the
+	 *          ceiling value.
+	 * @param value
+	 * @return long
+	 */
+	public static long floorOrCeilLong(double value) {
+		long l = (long) value;
+		return value < l ? l - 1L : l;
+	}
+
+	/**
+	 * @apiNote The method always returns a non-negative integer that is the
+	 *          smallest integer greater than or equal to the absolute value of the
+	 *          input value.
+	 * @param value
+	 * @return int
+	 */
+	public static int absRoundUp(double value) {
+		return (int) (value >= 0.0D ? value : -value + 1.0D);
+	}
+
+	/**
 	 * @apiNote The method checks if number has decimals (number.decimals)
 	 * @param num
 	 * @return boolean
