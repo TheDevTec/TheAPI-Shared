@@ -172,16 +172,16 @@ public class API {
 			}
 			tags.save(DataType.YAML);
 			ColorUtils.tagPrefix = tags.getString("hexTagPrefix");
-			String gradientTagPrefix = tags.getString("gradient.firstHex.prefix");
-			String gradientTagPrefixL = tags.getString("gradient.secondHex.prefix");
-			String gradientTagSuffix = tags.getString("gradient.firstHex.suffix");
-			String gradientTagSuffixL = tags.getString("gradient.secondHex.suffix");
+			String firstPrefix = tags.getString("gradient.firstHex.prefix");
+			String secondPrefix = tags.getString("gradient.secondHex.prefix");
+			String firstSuffix = tags.getString("gradient.firstHex.suffix");
+			String secondSuffix = tags.getString("gradient.secondHex.suffix");
 
 			for (String tag : tags.getKeys("tags"))
 				ColorUtils.colorMap.put(tag.toLowerCase(), "#" + tags.getString("tags." + tag));
-
-			ColorUtils.gradientFinder = Pattern.compile(gradientTagPrefix + "(#[A-Fa-f0-9]{6})" + gradientTagSuffix + "(.*?)" + gradientTagPrefixL + "(#[A-Fa-f0-9]{6})" + gradientTagSuffixL
-					+ "|.*?(?=(?:" + gradientTagPrefix + "#[A-Fa-f0-9]{6}" + gradientTagSuffix + ".*?" + gradientTagPrefixL + "#[A-Fa-f0-9]{6}" + gradientTagSuffixL + "))");
+			ColorUtils.gradientFinder = Pattern
+					.compile(firstPrefix + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + firstSuffix + "(.*?)" + secondPrefix + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + secondSuffix + "|.*?(?=(?:"
+							+ firstPrefix + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + firstSuffix + ".*?" + secondPrefix + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + secondSuffix + "))");
 			Config config = new Config(path + "config.yml");
 			config.setIfAbsent("timeConvertor.settings.defaultlyDigits", false, Arrays.asList("# If plugin isn't using own split, use defaulty digitals? 300 -> 5:00"));
 			config.setIfAbsent("timeConvertor.settings.defaultSplit", " ", Arrays.asList("# If plugin isn't using own split, api'll use this split"));
@@ -384,13 +384,13 @@ public class API {
 		}
 
 		public String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings) {
-			if (msg == null || fromHex == null || toHex == null)
+			if (msg == null)
 				return msg;
 			return rawGradient(msg, fromHex, toHex, false, protectedStrings);
 		}
 
 		public String gradient(String msg, String fromHex, String toHex, List<String> protectedStrings) {
-			if (msg == null || fromHex == null || toHex == null)
+			if (msg == null)
 				return msg;
 			return rawGradient(msg, fromHex, toHex, true, protectedStrings);
 		}
@@ -441,19 +441,36 @@ public class API {
 
 			StringContainer builder = new StringContainer(fixedSize);
 
-			Color fromRGB = Color.decode(from);
-			Color toRGB = Color.decode(to);
-			double rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / rgbSize);
-			double gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / rgbSize);
-			double bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / rgbSize);
-			if (fromRGB.getRed() > toRGB.getRed())
-				rStep = -rStep;
-			if (fromRGB.getGreen() > toRGB.getGreen())
-				gStep = -gStep;
-			if (fromRGB.getBlue() > toRGB.getBlue())
-				bStep = -bStep;
+			Color fromRGB = null;
+			Color toRGB = null;
+			double rStep = 0;
+			double gStep = 0;
+			double bStep = 0;
 
-			Color finalColor = new Color(fromRGB.getRGB());
+			Color finalColor = null;
+
+			if (inRainbow) {
+				if (from == null || to == null) {
+					from = ColorUtils.color.generateColor();
+					to = ColorUtils.color.generateColor();
+				}
+
+				fromRGB = Color.decode(from.charAt(0) == '§' ? toHex(from) : from);
+				toRGB = Color.decode(to.charAt(0) == '§' ? toHex(to) : to);
+				from = null;
+				to = null;
+				rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / rgbSize);
+				gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / rgbSize);
+				bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / rgbSize);
+				if (fromRGB.getRed() > toRGB.getRed())
+					rStep = -rStep;
+				if (fromRGB.getGreen() > toRGB.getGreen())
+					gStep = -gStep;
+				if (fromRGB.getBlue() > toRGB.getBlue())
+					bStep = -bStep;
+
+				finalColor = new Color(fromRGB.getRGB());
+			}
 
 			int skipForChars = 0;
 			for (int i = 0; i < msg.length(); ++i) {
@@ -476,9 +493,30 @@ public class API {
 
 				if (c == '&' && i + 1 < msg.length()) {
 					c = msg.charAt(++i);
-					if (c == 'u')
+					if (c == 'u') {
 						inRainbow = true;
-					else
+						if (from == null || to == null) {
+							from = ColorUtils.color.generateColor();
+							to = ColorUtils.color.generateColor();
+						}
+						fromRGB = Color.decode(from.charAt(0) == '§' ? toHex(from) : from);
+						toRGB = Color.decode(to.charAt(0) == '§' ? toHex(to) : to);
+
+						from = null;
+						to = null;
+
+						rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / rgbSize);
+						gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / rgbSize);
+						bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / rgbSize);
+						if (fromRGB.getRed() > toRGB.getRed())
+							rStep = -rStep;
+						if (fromRGB.getGreen() > toRGB.getGreen())
+							gStep = -gStep;
+						if (fromRGB.getBlue() > toRGB.getBlue())
+							bStep = -bStep;
+
+						finalColor = new Color(fromRGB.getRGB());
+					} else
 						builder.append('&').append(c);
 					continue;
 				}
@@ -491,7 +529,8 @@ public class API {
 							formats += "§" + c;
 						continue;
 					}
-					if (isColor(c)) {
+					if (isColor(c) || c == 'x') {
+						builder.append('§').append(c);
 						inRainbow = false;
 						continue;
 					}
@@ -535,11 +574,17 @@ public class API {
 			return builder.toString();
 		}
 
+		private String toHex(String from) {
+			if (from.length() != 14)
+				return "#000000";
+			return "#" + from.charAt(3) + from.charAt(5) + from.charAt(7) + from.charAt(9) + from.charAt(11) + from.charAt(13);
+		}
+
 		private void addHex(StringContainer builder, int rgb) {
 			builder.append('§').append('x');
 			for (int i = 0; i < 6; i++) {
 				int nibble = rgb >> (5 - i) * 4 & 0xF;
-				builder.append('§').append((char) (nibble < 10 ? nibble + '0' : nibble - 10 + 'a'));
+				builder.append('§').append(toLowerCase((char) (nibble < 10 ? nibble + '0' : nibble - 10 + 'a')));
 			}
 		}
 	}

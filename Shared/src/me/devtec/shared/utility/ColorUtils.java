@@ -63,7 +63,7 @@ public class ColorUtils {
 						container.append('§').append('x');
 						for (int ic = 1; ic < 7; ++ic) {
 							char cn = text.charAt(i + ic);
-							container.append('§').append(cn);
+							container.append('§').append(toLowerCase(cn));
 						}
 						i += 6;
 						continue;
@@ -148,13 +148,13 @@ public class ColorUtils {
 			String rawCode = (ColorUtils.tagPrefix + code.getKey()).toLowerCase();
 			if (!low.contains(rawCode))
 				continue;
-			legacyMsg = legacyMsg.replace(rawCode, code.getValue());
+			legacyMsg = legacyMsg.replace(rawCode, ColorUtils.color.replaceHex(code.getValue()));
 		}
 		Matcher matcher = ColorUtils.gradientFinder.matcher(legacyMsg);
 		while (matcher.find()) {
 			if (matcher.groupCount() == 0 || matcher.group().isEmpty())
 				continue;
-			String replace = ColorUtils.color.gradient(matcher.group(2), matcher.group(1), matcher.group(3), protectedStrings);
+			String replace = ColorUtils.color.gradient(matcher.group(3), matcher.group(1), matcher.group(4), protectedStrings);
 			if (replace == null)
 				continue;
 			legacyMsg = legacyMsg.replace(matcher.group(), replace);
@@ -223,7 +223,7 @@ public class ColorUtils {
 					msg = ColorUtils.color.replaceHex(msg);
 			}
 			if (msg.contains("&u"))
-				msg = ColorUtils.color.rainbow(msg, ColorUtils.color.generateColor(), ColorUtils.color.generateColor(), protectedStrings);
+				msg = ColorUtils.color.rainbow(msg, null, null, protectedStrings);
 		}
 		return msg;
 	}
