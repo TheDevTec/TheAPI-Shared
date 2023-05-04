@@ -70,11 +70,8 @@ public class CommandHolder<S> {
 				return;
 			}
 			boolean destroy = false;
-			if (nextStructures.isEmpty()) {
-				if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args))
-					;
-				return;
-			}
+			if (nextStructures.isEmpty())
+				break;
 			for (CommandStructure<S> next : nextStructures) {
 				if (next == null && this.maybeArgs(s, cmd, args, args.length - pos)) {
 					destroy = true;
