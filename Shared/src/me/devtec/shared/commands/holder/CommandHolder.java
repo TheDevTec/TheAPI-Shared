@@ -60,7 +60,7 @@ public class CommandHolder<S> {
 		S s = (S) obj;
 		CommandStructure<S> cmd = this.structure;
 		int pos = 0;
-		for (String arg : args) {
+		argsLoop: for (String arg : args) {
 			++pos;
 			Object[] finder = cmd.findStructure(s, arg, args, false);
 			List<CommandStructure<S>> nextStructures = (List<CommandStructure<S>>) finder[0];
@@ -69,19 +69,14 @@ public class CommandHolder<S> {
 					cmd.getFallback().execute(s, cmd, args);
 				return;
 			}
-			boolean destroy = false;
 			if (nextStructures.isEmpty())
 				break;
 			for (CommandStructure<S> next : nextStructures) {
-				if (next == null && this.maybeArgs(s, cmd, args, args.length - pos)) {
-					destroy = true;
-					break;
-				}
+				if (next == null && this.maybeArgs(s, cmd, args, args.length - pos))
+					break argsLoop;
 				if (next != null)
 					cmd = next;
 			}
-			if (destroy)
-				break;
 		}
 		if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args))
 			return;
