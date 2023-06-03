@@ -210,7 +210,7 @@ public class Config {
 	public Config setComments(String key, List<String> value) {
 		if (value == null || value.isEmpty()) {
 			DataValue val = loader.get(key);
-			if (val.comments != null && !val.comments.isEmpty()) {
+			if (val != null && val.comments != null && !val.comments.isEmpty()) {
 				val.comments = null;
 				val.modified = true;
 				markModified();
@@ -236,13 +236,11 @@ public class Config {
 	public Config setCommentAfterValue(String key, String comment) {
 		if (comment == null || comment.isEmpty()) {
 			DataValue val = loader.get(key);
-			if (val == null)
+			if (val == null || val.commentAfterValue == null)
 				return this;
-			if (val.commentAfterValue != null) {
-				val.commentAfterValue = null;
-				val.modified = true;
-				markModified();
-			}
+			val.commentAfterValue = null;
+			val.modified = true;
+			markModified();
 			return this;
 		}
 		DataValue val = loader.getOrCreate(key);
