@@ -227,13 +227,13 @@ public class MathUtils {
 			case '*': {
 				operation.remove(i);
 				Pair current = operation.get(i);
-				current.setValue((double) current.getValue() * (double) pair.getValue());
+				current.setValue((double) pair.getValue() * (double) current.getValue());
 				break;
 			}
 			case '/': {
 				operation.remove(i);
 				Pair current = operation.get(i);
-				current.setValue((double) current.getValue() / (double) pair.getValue());
+				current.setValue((double) pair.getValue() / (double) current.getValue());
 				break;
 			}
 			}
@@ -245,7 +245,12 @@ public class MathUtils {
 			case '-':
 			case '+':
 				Pair current = operation.get(i);
-				current.setValue((double) current.getValue() + (double) pair.getValue());
+				if ((char) current.getKey() == '/')
+					current.setValue((double) pair.getValue() / (double) current.getValue());
+				else if ((char) current.getKey() == '*')
+					current.setValue((double) pair.getValue() * (double) current.getValue());
+				else
+					current.setValue((double) current.getValue() + (double) pair.getValue());
 				break;
 			}
 		}

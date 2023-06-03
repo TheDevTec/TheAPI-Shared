@@ -331,7 +331,8 @@ public class YamlLoader extends EmptyLoader {
 
 	private static int getDepth(String line) {
 		int depth = 0;
-		while (line.charAt(depth) == ' ')
+		char c;
+		while ((c = line.charAt(depth)) == ' ' || c == '	')
 			depth++;
 		return depth / 2;
 	}

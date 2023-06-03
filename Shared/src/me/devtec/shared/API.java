@@ -201,6 +201,8 @@ public class API {
 			if (config.exists("timeConvertor.weeks"))
 				config.remove("timeConvertor.weeks");
 			config.setIfAbsent("automatically-save-user-files", true, Arrays.asList("", "# Save all loaded user files (in memory) every 6 hours"));
+			config.setIfAbsent("default-json-handler", "Guava",
+					Arrays.asList("", "# Default Json reader & writer for reading & writing Config files", "# Guava - From Google (Default)", "# TheAPI - Our own project (Experimental)"));
 			AUTOMATICALLY_USER_SAVING_TASK = config.getBoolean("automatically-save-user-files");
 			if (Ref.serverType().isBukkit())
 				config.setIfAbsent("fallback-scoreboard-support", false,

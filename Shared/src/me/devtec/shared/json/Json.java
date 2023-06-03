@@ -4,13 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import me.devtec.shared.json.custom.CustomJsonReader;
+import me.devtec.shared.json.custom.CustomJsonWriter;
+
 public class Json {
 
 	private static List<DataReader> readers = new ArrayList<>();
 	private static List<DataWriter> writers = new ArrayList<>();
 
-	private static JReader reader;
-	private static JWriter writer;
+	private static JReader reader = new CustomJsonReader();
+	private static JWriter writer = new CustomJsonWriter();
 
 	public static void init(JReader reader, JWriter writer) {
 		Json.reader = reader;

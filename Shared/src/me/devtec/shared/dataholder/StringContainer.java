@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class StringContainer {
+	private static final int DEFAULT_CAPACITY = 16;
+
 	private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
 	private static final Charset charset = StandardCharsets.UTF_8;
@@ -24,12 +26,21 @@ public class StringContainer {
 	final static char[] digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
 			'x', 'y', 'z' };
 
-	private char[] value;
+	private transient char[] value;
 
 	private int count;
 
+	public StringContainer() {
+		value = new char[DEFAULT_CAPACITY];
+	}
+
 	public StringContainer(int capacity) {
-		value = new char[capacity <= 0 ? 16 : capacity];
+		value = new char[capacity <= 0 ? DEFAULT_CAPACITY : capacity];
+	}
+
+	public StringContainer(String text) {
+		value = new char[count = text.length()];
+		text.getChars(0, count, value, 0);
 	}
 
 	public int length() {
@@ -115,7 +126,7 @@ public class StringContainer {
 		return this;
 	}
 
-	private StringContainer appendNull() {
+	public StringContainer appendNull() {
 		int c = count;
 		ensureCapacityInternal(c + 4);
 		value[c++] = 'n';
@@ -185,8 +196,9 @@ public class StringContainer {
 	}
 
 	public void clear() {
-		count = 0;
-		value = new char[32];
+		if (count == 0)
+			return;
+		delete(0, count);
 	}
 
 	public void deleteCharAt(int index) {
@@ -435,5 +447,9 @@ public class StringContainer {
 
 	public void increaseCount(int newCount) {
 		count += newCount;
+	}
+
+	public boolean isEmpty() {
+		return length() == 0;
 	}
 }
