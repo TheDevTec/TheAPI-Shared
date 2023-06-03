@@ -236,12 +236,14 @@ public class Config {
 	public Config setCommentAfterValue(String key, String comment) {
 		if (comment == null || comment.isEmpty()) {
 			DataValue val = loader.get(key);
-			if (val == null || val.value == null) {
+			if (val == null)
+				return this;
+			if (val.commentAfterValue != null) {
 				val.commentAfterValue = null;
 				val.modified = true;
 				markModified();
 			}
-			return null;
+			return this;
 		}
 		DataValue val = loader.getOrCreate(key);
 		if (val.commentAfterValue == null || !comment.equals(val.commentAfterValue)) {
