@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,7 +115,7 @@ public class JsonUtils {
 			return null;
 		if (type.isArray()) {
 			Collection<?> o = (Collection<?>) value;
-			List<Object> c = new ArrayList<>();
+			List<Object> c = new ArrayList<>(o.size());
 			for (Object a : o)
 				c.add(JsonUtils.read(a));
 			return c.toArray();
@@ -147,7 +148,11 @@ public class JsonUtils {
 				if (result != null)
 					return result;
 				String className = (String) map.get("c");
+				if (className == null)
+					return s;
 				Class<?> c = JsonUtils.getClassByName(className);
+				if (c == null)
+					return s;
 				String type = (String) map.get("t");
 				if (type != null) { // collection, array or map
 					if (type.equals("map")) {
@@ -158,21 +163,24 @@ public class JsonUtils {
 							object = Unsafe.getUnsafe().allocateInstance(c);
 						}
 						Map o = (Map) object;
-						for (Object cc : (List<?>) map.get("s")) {
+						for (Object cc : (List<?>) map.getOrDefault("s", Collections.emptyList())) {
 							Pair pair = (Pair) JsonUtils.read(cc);
 							o.put(pair.getKey(), pair.getValue());
 						}
 						return o;
 					}
 					if (type.equals("array")) {
-						Object array = ArrayUtils.newInstance(c, ((List<?>) map.get("s")).size());
+						List<?> collection = (List<?>) map.getOrDefault("s", Collections.emptyList());
+						Object array = ArrayUtils.newInstance(c, collection.size());
 						int i = 0;
-						for (Object cc : (List<?>) map.get("s"))
+						for (Object cc : collection)
 							Array.set(array, i++, JsonUtils.cast(JsonUtils.read(cc), c));
 						return array;
 					}
-					if (type.equals("enum"))
-						return Ref.getNulled(c, map.get("e").toString());
+					if (type.equals("enum")) {
+						Object obj = map.get("e");
+						return obj == null ? s : Ref.getNulled(c, type.toString());
+					}
 					if (type.equals("collection")) {
 						Object object;
 						try {
@@ -181,7 +189,7 @@ public class JsonUtils {
 							object = Unsafe.getUnsafe().allocateInstance(c);
 						}
 						Collection<Object> o = (Collection<Object>) object;
-						for (Object cc : (List<?>) map.get("s"))
+						for (Object cc : (List<?>) map.getOrDefault("s", Collections.emptyList()))
 							o.add(JsonUtils.read(cc));
 						return o;
 					}
@@ -194,8 +202,8 @@ public class JsonUtils {
 					object = JsonUtils.unsafe.allocateInstance(c);
 				}
 
-				Map<String, Object> fields = (Map<String, Object>) map.get("f");
-				Map<String, Object> sub_fields = (Map<String, Object>) map.get("sf");
+				Map<String, Object> fields = (Map<String, Object>) map.getOrDefault("f", Collections.emptyMap());
+				Map<String, Object> sub_fields = (Map<String, Object>) map.getOrDefault("sf", Collections.emptyMap());
 				for (Map.Entry<String, Object> e : fields.entrySet()) {
 					if (e.getKey().startsWith("~")) {
 						Field f = c.getDeclaredField(e.getKey().substring(1));
