@@ -223,6 +223,7 @@ public class JsonUtils {
 				return object;
 			}
 		} catch (Exception err) {
+			err.printStackTrace();
 		}
 		return s;
 	}
