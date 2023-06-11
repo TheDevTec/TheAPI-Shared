@@ -85,6 +85,8 @@ public class YamlLoader extends EmptyLoader {
 				}
 				continue;
 			}
+			if (parts[0].equals("noRegistration"))
+				System.out.println(parts[1]);
 			int currentDepth = getDepth(line);
 			String currentKey = getFromQuotes(parts[0]);
 			if (list != null) {
@@ -260,6 +262,11 @@ public class YamlLoader extends EmptyLoader {
 			if (!escaped && c == '\\')
 				escaped = true;
 			else if (inQuotes && c == currentQueto && !escaped) {
+				if (currentQueto == c && i + 1 < len && input.charAt(i + 1) == c) {
+					--len;
+					input = input.substring(posFromStart, i) + input.substring(++i);
+					continue;
+				}
 				lastQuotePos = i;
 				quoteCount--;
 				if (!(inQuotes = quoteCount > 0))
@@ -270,8 +277,8 @@ public class YamlLoader extends EmptyLoader {
 				if (splitIndexEnd == 0)
 					splitIndexEnd = i;
 				break;
-			} else
-				escaped = false;
+			}
+			escaped = false;
 			i++;
 		}
 		if (!foundHash)
