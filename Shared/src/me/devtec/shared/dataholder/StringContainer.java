@@ -452,4 +452,27 @@ public class StringContainer {
 	public boolean isEmpty() {
 		return length() == 0;
 	}
+
+	public StringContainer trim() {
+		int i = 0;
+		for (; i < count; ++i) {
+			char c = charAt(i);
+			if (c == ' ' || c == '	')
+				continue;
+			break;
+		}
+		if (i != 0)
+			delete(0, i);
+
+		i = count;
+		for (; i > 0; --i) {
+			char c = charAt(i);
+			if (c == ' ' || c == '	')
+				continue;
+			break;
+		}
+		if (i != count)
+			delete(i, count);
+		return this;
+	}
 }
