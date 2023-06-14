@@ -39,7 +39,7 @@ public class StringContainer {
 	}
 
 	public StringContainer(String text) {
-		value = new char[count = text.length()];
+		value = new char[(count = text.length()) + 16];
 		text.getChars(0, count, value, 0);
 	}
 
@@ -311,15 +311,9 @@ public class StringContainer {
 	}
 
 	public StringContainer replace(String value, String replacement) {
-		char[] lookingFor = value.toCharArray();
-
-		int start = indexOf(0, lookingFor);
-		int index = start;
-		while (start != -1) {
-			replace(start, start + value.length(), replacement);
-			start = indexOf(index, lookingFor);
-			index += start;
-		}
+		int index;
+		while ((index = indexOf(value)) != -1)
+			replace(index, index + value.length(), replacement);
 		return this;
 	}
 
@@ -338,27 +332,23 @@ public class StringContainer {
 	}
 
 	public StringContainer replace(char value, char replacement) {
-		int start = indexOf(value, 0);
-		int index = start;
-		while (start != -1) {
-			setCharAt(start, replacement);
-			start = indexOf(value, index);
-			index += start;
-		}
+		for (int i = 0; i < count; ++i)
+			if (charAt(i) == value)
+				setCharAt(i, replacement);
 		return this;
 	}
 
 	public StringContainer replaceFirst(char value, char replacement) {
-		int start = indexOf(value);
-		if (start != -1)
-			setCharAt(start, replacement);
+		for (int i = 0; i < count; ++i)
+			if (charAt(i) == value)
+				return setCharAt(i, replacement);
 		return this;
 	}
 
 	public StringContainer replaceLast(char value, char replacement) {
-		int start = lastIndexOf(value);
-		if (start != -1)
-			setCharAt(start, replacement);
+		for (int i = count; i >= 0; --i)
+			if (charAt(i) == value)
+				return setCharAt(i, replacement);
 		return this;
 	}
 
@@ -404,21 +394,28 @@ public class StringContainer {
 	}
 
 	public int indexOf(String value, int start) {
-		return indexOf(start, value.toCharArray());
+		return indexOf(start, value);
 	}
 
-	protected int indexOf(int start, char[] lookingFor) {
-		int foundPos = 0;
+	protected int indexOf(int start, String lookingFor) {
+		int min = Math.min(start, count);
+		int size = lookingFor.length();
 
-		if (Math.min(start, count) + lookingFor.length > count)
+		if (min + size > count)
 			return -1;
 
-		for (int i = Math.min(start, count); i < count; ++i)
-			if (value[i] == lookingFor[foundPos]) {
-				if (++foundPos == lookingFor.length)
-					return i - (lookingFor.length - 1);
-			} else
-				foundPos = 0;
+		char firstChar = lookingFor.charAt(0);
+		for (int i = min; i < count; ++i)
+			if (value[i] == firstChar) {
+				++i;
+				int foundPos = 1;
+				for (; i < count; ++i)
+					if (value[i] == lookingFor.charAt(foundPos)) {
+						if (++foundPos == size)
+							return i - (size - 1);
+					} else
+						break;
+			}
 		return -1;
 	}
 
@@ -427,21 +424,28 @@ public class StringContainer {
 	}
 
 	public int lastIndexOf(String value, int start) {
-		return lastIndexOf(start, value.toCharArray());
+		return lastIndexOf(start, value);
 	}
 
-	protected int lastIndexOf(int start, char[] lookingFor) {
-		int foundPos = lookingFor.length - 1;
+	protected int lastIndexOf(int start, String lookingFor) {
+		int min = Math.min(start, count - 1);
+		int size = lookingFor.length();
 
-		if (Math.min(start, count - 1) - lookingFor.length < 0)
+		if (min - size < 0)
 			return -1;
 
-		for (int i = Math.min(start, count - 1); i >= 0; i--)
-			if (value[i] == lookingFor[foundPos]) {
-				if (--foundPos == -1)
-					return i;
-			} else
-				foundPos = lookingFor.length - 1;
+		char firstChar = lookingFor.charAt(0);
+		for (int i = min; i >= 0; i--)
+			if (value[i] == firstChar) {
+				++i;
+				int foundPos = 1;
+				for (; i >= 0; i--)
+					if (value[i] == lookingFor.charAt(foundPos)) {
+						if (++foundPos == size)
+							return i - (size - 1);
+					} else
+						break;
+			}
 		return -1;
 	}
 

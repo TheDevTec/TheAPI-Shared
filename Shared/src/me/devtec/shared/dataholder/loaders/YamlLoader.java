@@ -85,8 +85,6 @@ public class YamlLoader extends EmptyLoader {
 				}
 				continue;
 			}
-			if (parts[0].equals("noRegistration"))
-				System.out.println(parts[1]);
 			int currentDepth = getDepth(line);
 			String currentKey = getFromQuotes(parts[0]);
 			if (list != null) {
