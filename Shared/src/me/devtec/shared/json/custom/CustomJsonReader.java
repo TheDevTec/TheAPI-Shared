@@ -552,6 +552,7 @@ public class CustomJsonReader implements JReader {
 	}
 
 	public static Object fromJson(StringContainer text) {
+		text.replace("\\u003d", "=");
 		char first = text.charAt(0);
 		switch (first) {
 		case OPEN_BRACKET:
