@@ -106,6 +106,7 @@ public class JsonUtils {
 				object.put("sf", sub_fields);
 			return object;
 		} catch (Exception err) {
+			err.printStackTrace();
 		}
 		return null;
 	}

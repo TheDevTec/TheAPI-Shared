@@ -46,8 +46,6 @@ public class CustomJsonReader implements JReader {
 	static final char EIGHT = '8';
 	static final char NINE = '9';
 
-	// TODO read texts which are not inside "
-
 	@Override
 	public Object fromGson(String json, Class<?> clazz) {
 		return CustomJsonReader.fromJson(json);
@@ -58,7 +56,7 @@ public class CustomJsonReader implements JReader {
 		// 0=", [, {, numbers, true, false or null
 		// 1=, or :
 		// 2=numbers, , or :
-		// TODO 3=regular text, , or :
+		// 3=regular text, , or :
 		int awaitingAction = 0;
 
 		for (; pos < to; ++pos) {
@@ -391,6 +389,8 @@ public class CustomJsonReader implements JReader {
 						Object result = container.toString();
 						mapResult.put(key, result);
 					}
+					if (mapResult.isEmpty() && to > 2)
+						return Pair.of('{' + container.append(CLOSED_BRACE).toString(), pos);
 					return Pair.of(mapResult, pos);
 				case COLON:
 					if (container.length() > 0) {
@@ -420,6 +420,8 @@ public class CustomJsonReader implements JReader {
 						Object result = ParseUtils.getNumber(container);
 						mapResult.put(key, result);
 					}
+					if (mapResult.isEmpty() && to > 2)
+						return Pair.of('{' + container.append(CLOSED_BRACE).toString(), pos);
 					return Pair.of(mapResult, pos);
 				case COLON:
 					if (container.length() > 0) {
@@ -466,6 +468,8 @@ public class CustomJsonReader implements JReader {
 						Object result = container.trim().toString();
 						mapResult.put(key, result);
 					}
+					if (mapResult.isEmpty() && to > 2)
+						return Pair.of('{' + container.append(CLOSED_BRACE).toString(), pos);
 					return Pair.of(mapResult, pos);
 				case COLON:
 					if (container.length() > 0) {
