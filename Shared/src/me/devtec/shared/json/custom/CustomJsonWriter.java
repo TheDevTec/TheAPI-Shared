@@ -60,7 +60,7 @@ public class CustomJsonWriter implements JWriter {
 			container.append(CustomJsonReader.CLOSED_BRACKET);
 			return container.toString();
 		}
-		return CustomJsonReader.QUOTES + obj.toString() + CustomJsonReader.QUOTES;
+		return CustomJsonReader.QUOTES + String.valueOf(obj) + CustomJsonReader.QUOTES;
 	}
 
 	private static void toJson(StringContainer container, Object obj) {
@@ -112,7 +112,7 @@ public class CustomJsonWriter implements JWriter {
 			container.append(CustomJsonReader.CLOSED_BRACKET);
 			return;
 		}
-		container.append(CustomJsonReader.QUOTES + obj.toString() + CustomJsonReader.QUOTES);
+		container.append(CustomJsonReader.QUOTES + String.valueOf(obj) + CustomJsonReader.QUOTES);
 	}
 
 	@Override
