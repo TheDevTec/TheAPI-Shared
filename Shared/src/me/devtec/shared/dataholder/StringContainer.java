@@ -459,24 +459,18 @@ public class StringContainer {
 
 	public StringContainer trim() {
 		int i = 0;
-		for (; i < count; ++i) {
-			char c = charAt(i);
-			if (c == ' ' || c == '	')
-				continue;
-			break;
-		}
-		if (i != 0)
+		char c;
+		while (i < count && ((c = charAt(i)) == ' ' || c == '\t'))
+			i++;
+		if (i > 0)
 			delete(0, i);
 
-		i = count;
-		for (; i > 0; --i) {
-			char c = charAt(i);
-			if (c == ' ' || c == '	')
-				continue;
-			break;
-		}
-		if (i != count)
-			delete(i, count);
+		i = count - 1;
+		while (i >= 0 && ((c = charAt(i)) == ' ' || c == '\t'))
+			i--;
+		if (i < count - 1)
+			delete(i + 1, count);
+
 		return this;
 	}
 }
