@@ -211,6 +211,29 @@ public class ColorUtils {
 	}
 
 	/**
+	 * @apiNote Strip colors from the String
+	 * @param original Text with colorize
+	 * @return String
+	 */
+	public static String strip(String original) {
+		if (original == null || original.trim().isEmpty())
+			return original;
+
+		StringContainer builder = new StringContainer(original.length());
+		for (int i = 0; i < original.length(); ++i) {
+			char c = original.charAt(i);
+			if (c == '§' && original.length() > i + 1) {
+				char next = original.charAt(++i);
+				if (!isColorChar(next))
+					builder.append(c).append(next);
+				continue;
+			}
+			builder.append(c);
+		}
+		return builder.toString();
+	}
+
+	/**
 	 * @apiNote Colorize string with colors
 	 * @param original         Text to colorize
 	 * @param protectedStrings List of strings which not be colored via gradient
@@ -220,7 +243,7 @@ public class ColorUtils {
 		if (original == null || original.trim().isEmpty())
 			return original;
 
-		StringBuilder builder = new StringBuilder(original.length());
+		StringContainer builder = new StringContainer(original.length() + 16);
 		for (int i = 0; i < original.length(); ++i) {
 			char c = original.charAt(i);
 			if (c == '&' && original.length() > i + 1) {
