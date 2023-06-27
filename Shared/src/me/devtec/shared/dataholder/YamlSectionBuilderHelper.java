@@ -24,7 +24,7 @@ public class YamlSectionBuilderHelper {
 		public Section(Section parent, String key, DataValue val) {
 			fullName = parent.fullName + '.' + key;
 			this.parent = parent;
-			space = parent.space + ' ' + ' ';
+			space = parent.space + "  ";
 			keyName = key;
 			value = val;
 		}
@@ -45,22 +45,45 @@ public class YamlSectionBuilderHelper {
 
 		public Section create(String name) {
 			Section current = this;
-			while (true) {
-				int pos = name.indexOf('.');
-				String key = pos == -1 ? name : name.substring(0, pos);
-				if (current.sub != null) {
-					Section sec = current.sub.get(key);
-					if (sec == null)
-						current.add(current = new Section(current, key, null));
-					else
+			StringContainer sb = new StringContainer(name);
+
+			int pos;
+			int lastPos = 0;
+			while ((pos = sb.indexOf('.', lastPos)) != -1) {
+				String key = sb.substring(lastPos, pos);
+				Map<String, Section> subSections = current.sub;
+				if (subSections != null) {
+					Section sec = subSections.get(key);
+					if (sec == null) {
+						Section newMade = new Section(current, key, null);
+						current.add(newMade);
+						current = newMade;
+					} else
 						current = sec;
-				} else
-					current.add(current = new Section(current, key, null));
-				if (pos == -1)
-					return current;
-				name = name.substring(pos + 1);
+				} else {
+					Section newMade = new Section(current, key, null);
+					current.add(newMade);
+					current = newMade;
+				}
+				lastPos = pos + 1;
 			}
+			// Final
+			String key = sb.substring(lastPos, sb.length());
+			Map<String, Section> subSections = current.sub;
+			if (subSections == null) {
+				Section newMade = new Section(current, key, null);
+				current.add(newMade);
+				return newMade;
+			}
+			Section sec = subSections.get(key);
+			if (sec == null) {
+				Section newMade = new Section(current, key, null);
+				current.add(newMade);
+				return newMade;
+			}
+			return sec;
 		}
+
 	}
 
 	public static void write(StringContainer builder, Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
@@ -89,20 +112,21 @@ public class YamlSectionBuilderHelper {
 		}
 		for (String primaryKey : primaryKeys) {
 			Section sec = map.get(primaryKey);
-			YamlSectionBuilderHelper.start(dataLoader, primaryKey, sec.value, builder, sec);
+			YamlSectionBuilderHelper.start(dataLoader, primaryKey, sec.value, builder, sec, markSaved);
 		}
-		map.clear();
 	}
 
-	public static void start(DataLoader config, String section, DataValue dataVal, StringContainer b, Section linked) {
+	public static void start(DataLoader config, String section, DataValue dataVal, StringContainer b, Section linked, boolean markSaved) {
 		try {
 			if (dataVal == null) {
 				appendName(b, linked.space, section).append(System.lineSeparator());
 				if (linked.sub != null)
 					for (Section sub : linked.sub.values())
-						start(config, sub.keyName, sub.value, b, sub);
+						start(config, sub.keyName, sub.value, b, sub, markSaved);
 				return;
 			}
+			if (markSaved)
+				dataVal.modified = false;
 			String commentAfterValue = dataVal.commentAfterValue;
 			Collection<String> comments = dataVal.comments;
 			Object value = dataVal.value;
@@ -175,7 +199,7 @@ public class YamlSectionBuilderHelper {
 		}
 		if (linked.sub != null)
 			for (Section sub : linked.sub.values())
-				start(config, sub.keyName, sub.value, b, sub);
+				start(config, sub.keyName, sub.value, b, sub, markSaved);
 	}
 
 	private static StringContainer appendName(StringContainer sectionLine, String space, String section) {
