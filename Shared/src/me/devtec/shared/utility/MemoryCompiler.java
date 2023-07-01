@@ -23,7 +23,7 @@ import me.devtec.shared.Ref;
 
 public class MemoryCompiler {
 
-	public static String allJars = "./" + new File(System.getProperty("java.class.path")).getPath();
+	public static String allJars = System.getProperty("java.class.path").charAt(0) == '/' ? System.getProperty("java.class.path") : "./" + System.getProperty("java.class.path");
 
 	private JavaFileManager fileManager;
 	private String fullName;
