@@ -1,9 +1,9 @@
 package me.devtec.shared.versioning;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
+
+import me.devtec.shared.utility.StreamUtils;
 
 public class SpigotUpdateChecker {
 
@@ -21,12 +21,12 @@ public class SpigotUpdateChecker {
 	}
 
 	public int getId() {
-		return this.id;
+		return id;
 	}
 
 	public SpigotUpdateChecker reconnect() {
 		try {
-			this.checkURL = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + this.id);
+			checkURL = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + id);
 		} catch (Exception e) {
 		}
 		return this;
@@ -36,20 +36,17 @@ public class SpigotUpdateChecker {
 	// 1 == NEW VERSION
 	// 2 == BETA VERSION
 	public VersionUtils.Version checkForUpdates() {
-		if (this.checkURL == null)
-			this.reconnect();
-		String[] readerr = null;
+		if (checkURL == null)
+			reconnect();
+		String reader;
 		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(this.checkURL.openConnection().getInputStream()));
-			ArrayList<String> s = new ArrayList<>();
-			String read;
-			while ((read = reader.readLine()) != null)
-				s.add(read);
-			readerr = s.toArray(new String[s.size()]);
-		} catch (Exception e) {
-		}
-		if (readerr == null)
+			reader = StreamUtils.fromStream(checkURL.openStream(), 64);
+		} catch (IOException e) {
+			e.printStackTrace();
 			return VersionUtils.Version.UKNOWN;
-		return VersionUtils.getVersion(this.pluginVersion, readerr[0]);
+		}
+		if (reader == null)
+			return VersionUtils.Version.UKNOWN;
+		return VersionUtils.getVersion(pluginVersion, reader);
 	}
 }
