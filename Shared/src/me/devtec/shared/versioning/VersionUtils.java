@@ -20,10 +20,14 @@ public class VersionUtils {
 		String[] primaryVersion = version.split("\\.");
 		String[] compareToVersion = compareVersion.split("\\.");
 
-		for (int i = 0; i < Math.max(primaryVersion.length, compareToVersion.length); ++i) {
+		int max = Math.max(primaryVersion.length, compareToVersion.length);
+		for (int i = 0; i <= max; ++i) {
 			String number = i >= primaryVersion.length ? "0" : "1" + primaryVersion[i];
-			if (compareToVersion.length <= i)
+			if (compareToVersion.length <= i) {
+				if(compareToVersion.length == i && compareToVersion.length == max)
+					break;
 				return Version.NEWER_VERSION;
+			}
 			if (ParseUtils.getInt(number) > ParseUtils.getInt("1" + compareToVersion[i]))
 				return Version.NEWER_VERSION;
 			if (ParseUtils.getInt(number) < ParseUtils.getInt("1" + compareToVersion[i]))
