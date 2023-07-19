@@ -23,7 +23,7 @@ public class VersionUtils {
 		for (int i = 0; i < Math.max(primaryVersion.length, compareToVersion.length); ++i) {
 			String number = i >= primaryVersion.length ? "0" : "1" + primaryVersion[i];
 			if (compareToVersion.length <= i)
-				break;
+				return Version.NEWER_VERSION;
 			if (ParseUtils.getInt(number) > ParseUtils.getInt("1" + compareToVersion[i]))
 				return Version.NEWER_VERSION;
 			if (ParseUtils.getInt(number) < ParseUtils.getInt("1" + compareToVersion[i]))
