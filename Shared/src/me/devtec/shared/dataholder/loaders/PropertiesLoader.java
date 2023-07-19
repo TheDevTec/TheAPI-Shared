@@ -130,7 +130,8 @@ public class PropertiesLoader extends EmptyLoader {
 
 	public static String[] readConfigLine(String input) {
 		int index = input.indexOf('=');
-		if (index == -1)
+		int colorIndex = input.indexOf(':');
+		if (index == -1 || colorIndex != -1 && colorIndex < index)
 			return null;
 		if (input.length() - index > 0) {
 			String[] result = new String[2];
