@@ -311,13 +311,20 @@ public class StringContainer {
 	}
 
 	public StringContainer replace(String value, String replacement) {
+		if (value == null || replacement == null)
+			return this;
 		int index;
-		while ((index = indexOf(value)) != -1)
+		int start = 0;
+		while (start < count && (index = indexOf(start, value)) != -1) {
+			start = index + replacement.length();
 			replace(index, index + value.length(), replacement);
+		}
 		return this;
 	}
 
 	public StringContainer replaceFirst(String value, String replacement) {
+		if (value == null || replacement == null)
+			return this;
 		int start = indexOf(value);
 		if (start != -1)
 			replace(start, start + value.length(), replacement);
@@ -325,6 +332,8 @@ public class StringContainer {
 	}
 
 	public StringContainer replaceLast(String value, String replacement) {
+		if (value == null || replacement == null)
+			return this;
 		int start = lastIndexOf(value);
 		if (start != -1)
 			replace(start, start + value.length(), replacement);
