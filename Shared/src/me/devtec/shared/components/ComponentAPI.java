@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 import me.devtec.shared.Ref;
 import me.devtec.shared.components.ClickEvent.Action;
 import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.json.Json;
 import me.devtec.shared.utility.ColorUtils;
 
 public class ComponentAPI {
@@ -546,5 +547,65 @@ public class ComponentAPI {
 			hover.put("value", val + "");
 		}
 		return hover;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Component fromJson(String json) {
+		Object obj = Json.reader().simpleRead(json);
+		if (obj instanceof Map)
+			return fromJson((Map<String, Object>) obj);
+		if (!(obj instanceof Collection))
+			return fromString(json);
+		return fromJson((Collection<?>) obj);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Component fromJson(Collection<?> collection) {
+		Component component = new Component("");
+		for (Object val : collection)
+			if (val instanceof Map)
+				component.append(fromJson((Map<String, Object>) val));
+		return component;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Component fromJson(Map<String, Object> map) {
+		Component component = new Component(map.get("text") + "");
+		if (map.containsKey("color"))
+			component.setColor(map.get("color") + "");
+		if (map.containsKey("font"))
+			component.setFont(map.get("font") + "");
+		if (map.containsKey("bold"))
+			component.setBold((boolean) map.get("bold"));
+		if (map.containsKey("italic"))
+			component.setItalic((boolean) map.get("italic"));
+		if (map.containsKey("obfuscated"))
+			component.setObfuscated((boolean) map.get("obfuscated"));
+		if (map.containsKey("underlined"))
+			component.setUnderlined((boolean) map.get("underlined"));
+		if (map.containsKey("strikethrough"))
+			component.setStrikethrough((boolean) map.get("strikethrough"));
+		if (map.containsKey("hoverEvent")) {
+			Map<String, String> value = (Map<String, String>) map.get("hoverEvent");
+			Object val = value.getOrDefault("value", value.get("contents"));
+			component.setHoverEvent(new HoverEvent(HoverEvent.Action.valueOf((value.get("action") + "").toUpperCase()),
+					val instanceof Collection ? fromJson((Collection<?>) val) : val instanceof Map ? fromJson((Map<String, Object>) val) : fromString(val + "")));
+		}
+		if (map.containsKey("clickEvent")) {
+			Map<String, String> value = (Map<String, String>) map.get("clickEvent");
+			component.setClickEvent(new ClickEvent(ClickEvent.Action.valueOf((value.get("action") + "").toUpperCase()), value.get("value") + ""));
+		}
+		if (map.containsKey("insertion"))
+			component.setInsertion(map.get("insertion") + "");
+		if (map.containsKey("extra")) {
+			Object extra = map.get("extra");
+			if (extra instanceof Map)
+				component.append(fromJson((Map<String, Object>) extra));
+			else if (extra instanceof Collection)
+				for (Object val : (Collection<?>) extra)
+					if (val instanceof Map)
+						component.append(fromJson((Map<String, Object>) val));
+		}
+		return component;
 	}
 }
