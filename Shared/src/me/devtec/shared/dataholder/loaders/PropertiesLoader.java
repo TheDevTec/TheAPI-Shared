@@ -111,10 +111,10 @@ public class PropertiesLoader extends EmptyLoader {
 				key.getValue().modified = false;
 			if (key.getValue().value == null) {
 				if (key.getValue().commentAfterValue != null)
-					builder.append(key.getKey()).append(':').append(' ').append(key.getValue().commentAfterValue);
+					builder.append(key.getKey()).append('=').append(key.getValue().commentAfterValue);
 				continue;
 			}
-			builder.append(key.getKey()).append(':').append(' ').append(Json.writer().write(key.getValue().value));
+			builder.append(key.getKey()).append('=').append(Json.writer().write(key.getValue().value));
 			if (key.getValue().commentAfterValue != null)
 				builder.append(' ').append(key.getValue().commentAfterValue);
 		}
