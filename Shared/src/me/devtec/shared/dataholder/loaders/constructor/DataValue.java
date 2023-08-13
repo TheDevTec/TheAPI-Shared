@@ -55,7 +55,7 @@ public class DataValue {
 	@Override
 	public String toString() {
 		Map<String, Object> values = new HashMap<>();
-		values.put("value", value + "");
+		values.put("value", value);
 		if (writtenValue != null)
 			values.put("writtenValue", writtenValue);
 		if (commentAfterValue != null)

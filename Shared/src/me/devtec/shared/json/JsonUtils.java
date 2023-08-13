@@ -7,24 +7,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import me.devtec.shared.Pair;
 import me.devtec.shared.Ref;
 import me.devtec.shared.utility.ArrayUtils;
-import sun.misc.Unsafe;
 
 public class JsonUtils {
-	private static Unsafe unsafe;
-	static {
-		try {
-			Field f = Unsafe.class.getDeclaredField("theUnsafe");
-			f.setAccessible(true);
-			JsonUtils.unsafe = (Unsafe) f.get(null);
-		} catch (Exception err) {
-		}
-	}
 
 	public static Object writeWithoutParseStatic(Object s) {
 		try {
@@ -43,6 +35,12 @@ public class JsonUtils {
 				return object;
 			}
 			if (s instanceof Map) {
+				if (s instanceof HashMap || s instanceof LinkedHashMap) {
+					Map<Object, Object> obj = s instanceof HashMap ? new HashMap<>() : new LinkedHashMap<>();
+					for (Map.Entry<?, ?> o : ((Map<?, ?>) s).entrySet())
+						obj.put(JsonUtils.writeWithoutParseStatic(o.getKey()), JsonUtils.writeWithoutParseStatic(o.getValue()));
+					return obj;
+				}
 				Map<String, Object> object = new HashMap<>();
 				object.put("c", s.getClass().getName());
 				object.put("t", "map");
@@ -53,6 +51,12 @@ public class JsonUtils {
 				return object;
 			}
 			if (s instanceof Collection) {
+				if (s instanceof ArrayList || s instanceof LinkedList) {
+					List<Object> obj = s instanceof ArrayList ? new ArrayList<>() : new LinkedList<>();
+					for (Object o : (Collection<?>) s)
+						obj.add(JsonUtils.writeWithoutParseStatic(o));
+					return obj;
+				}
 				Map<String, Object> object = new HashMap<>();
 				object.put("c", s.getClass().getName());
 				object.put("t", "collection");
@@ -161,7 +165,7 @@ public class JsonUtils {
 						try {
 							object = c.newInstance();
 						} catch (Exception e) {
-							object = Unsafe.getUnsafe().allocateInstance(c);
+							object = Ref.getUnsafe().allocateInstance(c);
 						}
 						Map o = (Map) object;
 						for (Object cc : (List<?>) map.getOrDefault("s", Collections.emptyList())) {
@@ -187,7 +191,7 @@ public class JsonUtils {
 						try {
 							object = c.newInstance();
 						} catch (Exception e) {
-							object = Unsafe.getUnsafe().allocateInstance(c);
+							object = Ref.getUnsafe().allocateInstance(c);
 						}
 						Collection<Object> o = (Collection<Object>) object;
 						for (Object cc : (List<?>) map.getOrDefault("s", Collections.emptyList()))
@@ -200,7 +204,7 @@ public class JsonUtils {
 				try {
 					object = c.newInstance();
 				} catch (Exception e) {
-					object = JsonUtils.unsafe.allocateInstance(c);
+					object = Ref.getUnsafe().allocateInstance(c);
 				}
 
 				Map<String, Object> fields = (Map<String, Object>) map.getOrDefault("f", Collections.emptyMap());

@@ -51,7 +51,7 @@ public class JsonLoader extends EmptyLoader {
 
 	@Override
 	public String saveAsString(Config config, boolean markSaved) {
-		List<Map<String, String>> list = new ArrayList<>();
+		List<Map<String, Object>> list = new ArrayList<>();
 		for (String key : config.getDataLoader().getPrimaryKeys())
 			addKeys(config, list, key, markSaved);
 		return Json.writer().simpleWrite(list);
@@ -62,17 +62,21 @@ public class JsonLoader extends EmptyLoader {
 		return saveAsString(config, markSaved).getBytes();
 	}
 
-	protected void addKeys(Config config, List<Map<String, String>> list, String key, boolean markSaved) {
+	protected void addKeys(Config config, List<Map<String, Object>> list, String key, boolean markSaved) {
 		DataValue data = config.getDataLoader().get(key);
 		if (data != null) {
 			if (markSaved)
 				data.modified = false;
-			Map<String, String> a = new HashMap<>();
-			a.put(key, Json.writer().write(data.value));
+			Map<String, Object> a = new HashMap<>();
+			a.put(key, isApplicable(data.value) ? Json.writer().writeWithoutParse(data.value) : data.value);
 			list.add(a);
 		}
 		for (String keyer : config.getDataLoader().keySet(key, false))
 			addKeys(config, list, key + '.' + keyer, markSaved);
+	}
+
+	private boolean isApplicable(Object value) {
+		return !(value instanceof CharSequence || value instanceof Number || value instanceof Boolean);
 	}
 
 	@Override
