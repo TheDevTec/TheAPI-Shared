@@ -200,6 +200,7 @@ public class API {
 			config.setIfAbsent("timeConvertor.seconds.convertor", Arrays.asList("<=1  second", ">1  seconds"));
 			if (config.exists("timeConvertor.weeks"))
 				config.remove("timeConvertor.weeks");
+			config.setIfAbsent("nmsProvider-use-directly-jar", false, Arrays.asList("", "# In some cases Java isn't able to compile .java file and we have to use .jar file instead"));
 			config.setIfAbsent("automatically-save-user-files", true, Arrays.asList("", "# Save all loaded user files (in memory) every 6 hours"));
 			config.setIfAbsent("default-json-handler", "Guava",
 					Arrays.asList("", "# Default Json reader & writer for reading & writing Config files", "# Guava - From Google (Default)", "# TheAPI - Our own project (Experimental)"));
