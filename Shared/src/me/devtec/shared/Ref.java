@@ -3,13 +3,24 @@ package me.devtec.shared;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import me.devtec.shared.utility.ParseUtils;
+import sun.misc.Unsafe;
 
 public class Ref {
+	private static Unsafe unsafe;
+	static {
+		try {
+			Field f = Unsafe.class.getDeclaredField("theUnsafe");
+			f.setAccessible(true);
+			unsafe = (Unsafe) f.get(null);
+		} catch (Exception err) {
+		}
+	}
 
 	public static enum ServerType {
 		BUKKIT(true), SPIGOT(true), PAPER(true), BUNGEECORD(false), VELOCITY(false), CUSTOM(false); // Is it minecraft?
@@ -39,6 +50,10 @@ public class Ref {
 		Ref.type = type;
 	}
 
+	public static Unsafe getUnsafe() {
+		return unsafe;
+	}
+
 	public static String serverVersion() {
 		return Ref.ver;
 	}
@@ -65,6 +80,10 @@ public class Ref {
 
 	public static void set(Object main, Field f, Object o) {
 		try {
+			if (Modifier.isFinal(f.getModifiers())) {
+				setFinal(main, f, o);
+				return;
+			}
 			f.setAccessible(true);
 			f.set(main, o);
 		} catch (Exception e) {
@@ -72,12 +91,46 @@ public class Ref {
 	}
 
 	public static void set(Object main, String field, Object o) {
+		set(main, Ref.field(main.getClass(), field), o);
+	}
+
+	public static void setFinal(Object main, Field f, Object o) {
 		try {
-			Field f = Ref.field(main.getClass(), field);
-			f.setAccessible(true);
-			f.set(main, o);
+			if (Modifier.isStatic(f.getModifiers())) {
+				Object staticBase = getUnsafe().staticFieldBase(f);
+				long offset = getUnsafe().staticFieldOffset(f);
+				unsafe.putObject(staticBase, offset, o);
+				return;
+			}
+			long offset = getUnsafe().objectFieldOffset(f);
+			unsafe.putObject(main, offset, o);
 		} catch (Exception e) {
 		}
+	}
+
+	public static void setFinal(Object main, String field, Object o) {
+		setFinal(main, Ref.field(main.getClass(), field), o);
+	}
+
+	public static void setStatic(Field f, Object o) {
+		set(null, f, o);
+	}
+
+	public static void setStatic(Class<?> clazz, String field, Object o) {
+		set(null, Ref.field(clazz, field), o);
+	}
+
+	public static void setStaticFinal(Field f, Object o) {
+		try {
+			Object staticBase = getUnsafe().staticFieldBase(f);
+			long offset = getUnsafe().staticFieldOffset(f);
+			unsafe.putObject(staticBase, offset, o);
+		} catch (Exception e) {
+		}
+	}
+
+	public static void setStaticFinal(Class<?> clazz, String field, Object o) {
+		setStaticFinal(Ref.field(clazz, field), o);
 	}
 
 	public static Class<?> getClass(String name) {
@@ -92,11 +145,7 @@ public class Ref {
 		try {
 			return Class.forName(name, true, loader);
 		} catch (Exception e) {
-			try {
-				return Class.forName(name);
-			} catch (Exception err) {
-				return null;
-			}
+			return getClass(name);
 		}
 	}
 
@@ -151,13 +200,13 @@ public class Ref {
 	}
 
 	public static List<Field> getAllFields(Class<?> main) {
-		List<Field> f = new ArrayList<>();
+		List<Field> fields = new ArrayList<>();
 		Class<?> superclass = main;
 		while (superclass != null) {
-			f.addAll(Arrays.asList(Ref.getDeclaredFields(superclass)));
+			Collections.addAll(fields, Ref.getDeclaredFields(superclass));
 			superclass = superclass.getSuperclass();
 		}
-		return f;
+		return fields;
 	}
 
 	public static Field[] getDeclaredFields(Class<?> main) {
