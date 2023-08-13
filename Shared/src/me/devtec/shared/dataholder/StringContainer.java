@@ -211,6 +211,10 @@ public class StringContainer {
 		return new String(value, 0, count);
 	}
 
+	public String substring(int start) {
+		return substring(start, length());
+	}
+
 	public String substring(int start, int end) {
 		return new String(value, start, end - start);
 	}
@@ -369,6 +373,10 @@ public class StringContainer {
 		return indexOf(value) != -1;
 	}
 
+	public boolean containsIgnoreCase(String value) {
+		return indexOfIgnoreCase(value) != -1;
+	}
+
 	public int indexOf(char c) {
 		return indexOf(c, 0);
 	}
@@ -428,6 +436,36 @@ public class StringContainer {
 		return -1;
 	}
 
+	public int indexOfIgnoreCase(String value) {
+		return indexOfIgnoreCase(value, 0);
+	}
+
+	public int indexOfIgnoreCase(String value, int start) {
+		return indexOfIgnoreCase(start, value);
+	}
+
+	protected int indexOfIgnoreCase(int start, String lookingFor) {
+		int min = Math.min(start, count);
+		int size = lookingFor.length();
+
+		if (min + size > count)
+			return -1;
+
+		char firstChar = lookingFor.charAt(0);
+		for (int i = min; i < count; ++i)
+			if (Character.toUpperCase(value[i]) == Character.toUpperCase(firstChar)) {
+				++i;
+				int foundPos = 1;
+				for (; i < count; ++i)
+					if (Character.toUpperCase(value[i]) == Character.toUpperCase(lookingFor.charAt(foundPos))) {
+						if (++foundPos == size)
+							return i - (size - 1);
+					} else
+						break;
+			}
+		return -1;
+	}
+
 	public int lastIndexOf(String value) {
 		return lastIndexOf(value, count);
 	}
@@ -450,6 +488,36 @@ public class StringContainer {
 				int foundPos = 1;
 				for (; i >= 0; i--)
 					if (value[i] == lookingFor.charAt(foundPos)) {
+						if (++foundPos == size)
+							return i - (size - 1);
+					} else
+						break;
+			}
+		return -1;
+	}
+
+	public int lastIndexOfIgnoreCase(String value) {
+		return lastIndexOfIgnoreCase(value, count);
+	}
+
+	public int lastIndexOfIgnoreCase(String value, int start) {
+		return lastIndexOfIgnoreCase(start, value);
+	}
+
+	protected int lastIndexOfIgnoreCase(int start, String lookingFor) {
+		int min = Math.min(start, count - 1);
+		int size = lookingFor.length();
+
+		if (min - size < 0)
+			return -1;
+
+		char firstChar = lookingFor.charAt(0);
+		for (int i = min; i >= 0; i--)
+			if (Character.toUpperCase(value[i]) == Character.toUpperCase(firstChar)) {
+				++i;
+				int foundPos = 1;
+				for (; i >= 0; i--)
+					if (Character.toUpperCase(value[i]) == Character.toUpperCase(lookingFor.charAt(foundPos))) {
 						if (++foundPos == size)
 							return i - (size - 1);
 					} else
@@ -481,5 +549,23 @@ public class StringContainer {
 			delete(i + 1, count);
 
 		return this;
+	}
+
+	public boolean startsWith(String prefix, int toffset) {
+		char ta[] = value;
+		int to = toffset;
+		int po = 0;
+		int pc = prefix.length();
+		// Note: toffset might be near -1>>>1.
+		if (toffset < 0 || toffset > length() - pc)
+			return false;
+		while (--pc >= 0)
+			if (ta[to++] != prefix.charAt(po++))
+				return false;
+		return true;
+	}
+
+	public boolean endsWith(String suffix) {
+		return startsWith(suffix, length() - suffix.length());
 	}
 }
