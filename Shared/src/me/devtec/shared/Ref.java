@@ -80,13 +80,13 @@ public class Ref {
 
 	public static void set(Object main, Field f, Object o) {
 		try {
+			f.setAccessible(true);
+			f.set(main, o);
+		} catch (Exception e) {
 			if (Modifier.isFinal(f.getModifiers())) {
 				setFinal(main, f, o);
 				return;
 			}
-			f.setAccessible(true);
-			f.set(main, o);
-		} catch (Exception e) {
 		}
 	}
 
