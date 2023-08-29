@@ -42,19 +42,20 @@ public class DatabaseAPI {
 
 		@Override
 		public String getUser() {
-			return this.username;
+			return username;
 		}
 
 		@Override
 		public String getPassword() {
-			return this.password;
+			return password;
 		}
 
 		@Override
 		public String getConnectionString() {
-			if (this.sqlType.equals("sqlserver"))
-				return "jdbc:sqlserver://" + this.ip + ":" + this.port + ";user=" + this.username + ";password=" + this.password + ";databaseName=" + this.database + ";integratedSecurity=true;" + (this.attributes == null ? "" : this.attributes);
-			return "jdbc:" + this.sqlType + "://" + this.ip + ":" + this.port + "/" + this.database + (this.attributes == null ? "" : this.attributes);
+			if (sqlType.equals("sqlserver"))
+				return "jdbc:sqlserver://" + ip + ":" + port + ";user=" + username + ";password=" + password + ";databaseName=" + database + ";integratedSecurity=true;"
+						+ (attributes == null ? "" : attributes);
+			return "jdbc:" + sqlType + "://" + ip + ":" + port + "/" + database + (attributes == null ? "" : attributes);
 		}
 	}
 
@@ -80,17 +81,17 @@ public class DatabaseAPI {
 
 		@Override
 		public String getUser() {
-			return this.username;
+			return username;
 		}
 
 		@Override
 		public String getPassword() {
-			return this.password;
+			return password;
 		}
 
 		@Override
 		public String getConnectionString() {
-			return "jdbc:" + this.sqlType + "://" + this.file + (this.attributes == null ? "" : this.attributes);
+			return "jdbc:" + sqlType + "://" + file + (attributes == null ? "" : attributes);
 		}
 	}
 
@@ -106,11 +107,11 @@ public class DatabaseAPI {
 		}
 
 		public String getName() {
-			return this.name;
+			return name;
 		}
 
 		public boolean isFileBased() {
-			return this.fileBased;
+			return fileBased;
 		}
 	}
 
@@ -120,45 +121,45 @@ public class DatabaseAPI {
 			DatabaseAPI.checkOrDownloadIfNeeded("h2");
 			try {
 				Class.forName("org.h2.Driver");
-			} catch (ClassNotFoundException e) {
-				throw new SQLException("SQL Driver not found.");
+			} catch (Exception e) {
+				throw new SQLException("SQL Driver not found.", e);
 			}
 			break;
 		case MARIADB:
 			DatabaseAPI.checkOrDownloadIfNeeded("mariadb");
 			try {
 				Class.forName("org.mariadb.jdbc.Driver");
-			} catch (ClassNotFoundException e) {
-				throw new SQLException("SQL Driver not found.");
+			} catch (Exception e) {
+				throw new SQLException("SQL Driver not found.", e);
 			}
 			break;
 		case MYSQL:
 			try {
 				Class.forName("com.mysql.cj.jdbc.Driver");
-			} catch (ClassNotFoundException e) {
+			} catch (Exception e) {
 				// Probably Velocity or custom server
 				DatabaseAPI.checkOrDownloadIfNeeded("mysql");
 			}
 			try {
 				Class.forName("com.mysql.cj.jdbc.Driver");
-			} catch (ClassNotFoundException e) {
-				throw new SQLException("SQL Driver not found.");
+			} catch (Exception e) {
+				throw new SQLException("SQL Driver not found.", e);
 			}
 			break;
 		case SQLITE:
 			DatabaseAPI.checkOrDownloadIfNeeded("sqlite");
 			try {
 				Class.forName("org.sqlite.JDBC");
-			} catch (ClassNotFoundException e) {
-				throw new SQLException("SQL Driver not found.");
+			} catch (Exception e) {
+				throw new SQLException("SQL Driver not found.", e);
 			}
 			break;
 		case SQLSERVER:
 			DatabaseAPI.checkOrDownloadIfNeeded("sqlserver");
 			try {
 				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			} catch (ClassNotFoundException e) {
-				throw new SQLException("SQL Driver not found.");
+			} catch (Exception e) {
+				throw new SQLException("SQL Driver not found.", e);
 			}
 			break;
 		default:
