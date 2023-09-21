@@ -78,6 +78,14 @@ public class Ref {
 		return Ref.intVer < i;
 	}
 
+	public static Object newUnsafeInstance(Class<?> clazz) {
+		try {
+			return getUnsafe().allocateInstance(clazz);
+		} catch (InstantiationException e) {
+			return null;
+		}
+	}
+
 	public static void set(Object main, Field f, Object o) {
 		try {
 			f.setAccessible(true);
