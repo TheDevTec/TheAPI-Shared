@@ -332,7 +332,7 @@ public interface DatabaseHandler {
 	public boolean insert(InsertQuery query) throws SQLException;
 
 	public default boolean set(UpdateQuery query) throws SQLException {
-		return set(query);
+		return update(query);
 	}
 
 	public boolean update(UpdateQuery query) throws SQLException;

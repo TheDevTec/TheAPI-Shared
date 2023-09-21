@@ -43,6 +43,10 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	public String buildSelectCommand(SelectQuery query) {
+		return buildSelectCommand(query, false);
+	}
+
+	public String buildSelectCommand(SelectQuery query, boolean safeMode) {
 		StringContainer builder = new StringContainer(32).append("select ");
 		boolean first = true;
 		for (String search : query.getSearch()) {
@@ -56,14 +60,24 @@ public class SqlHandler implements DatabaseHandler {
 		builder.append("from").append(' ');
 		builder.append('`').append(query.table).append('`');
 		first = true;
-		for (String[] pair : query.where) {
-			if (first) {
-				first = false;
-				builder.append(' ').append("where");
-			} else
-				builder.append("and");
-			builder.append(' ').append('`').append(pair[0].replace("'", "\\'")).append('`').append('=').append('\'').append(pair[1].replace("'", "\\'")).append('\'');
-		}
+		if (safeMode)
+			for (String[] pair : query.where) {
+				if (first) {
+					first = false;
+					builder.append(' ').append("where");
+				} else
+					builder.append("and");
+				builder.append(' ').append('`').append(pair[0].replace("'", "\\'")).append('`').append('=').append('?');
+			}
+		else
+			for (String[] pair : query.where) {
+				if (first) {
+					first = false;
+					builder.append(' ').append("where");
+				} else
+					builder.append("and");
+				builder.append(' ').append('`').append(pair[0].replace("'", "\\'")).append('`').append('=').append('\'').append((pair[1] + "").replace("'", "\\'")).append('\'');
+			}
 		if (query.sorting != null)
 			builder.append(' ').append("order").append(' ').append("by").append(' ').append('`').append(StringUtils.join(query.sortingKey, ",").replace("'", "\\'")).append('`').append(' ')
 					.append(query.sorting == Sorting.UP ? "DESC" : "ASC");
@@ -73,63 +87,120 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	public String buildInsertCommand(InsertQuery query) {
+		return buildInsertCommand(query, false);
+	}
+
+	public String buildInsertCommand(InsertQuery query, boolean safeMode) {
 		StringContainer builder = new StringContainer(32).append("insert into ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		builder.append("values").append('(');
-		boolean first = true;
-		for (String val : query.values) {
-			if (first)
-				first = false;
-			else
-				builder.append(',').append(' ');
-			builder.append('"').append(val.replace("'", "\\'")).append('"');
+		if (safeMode) {
+			boolean first = true;
+			for (int i = 0; i < query.values.size(); ++i) {
+				if (first)
+					first = false;
+				else
+					builder.append(',').append(' ');
+				builder.append('?');
+			}
+		} else {
+			boolean first = true;
+			for (String val : query.values) {
+				if (first)
+					first = false;
+				else
+					builder.append(',').append(' ');
+				builder.append('"').append((val + "").replace("'", "\\'")).append('"');
+			}
 		}
 		return builder.append(')').toString();
 	}
 
 	public String buildUpdateCommand(UpdateQuery query) {
+		return buildUpdateCommand(query, true);
+	}
+
+	public String buildUpdateCommand(UpdateQuery query, boolean safeMode) {
 		StringContainer builder = new StringContainer(32).append("update ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		builder.append("set");
+
 		boolean first = true;
-		for (String[] val : query.values) {
-			if (first)
-				first = false;
-			else
-				builder.append(',');
-			builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('\'').append(val[1].replace("'", "\\'")).append('\'');
-		}
-		if (!query.where.isEmpty()) {
-			first = true;
-			for (String[] val : query.where) {
-				if (first) {
+		if (safeMode) {
+			for (String[] val : query.values) {
+				if (first)
 					first = false;
-					builder.append(' ').append("where");
-				} else
-					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('\'').append(val[1].replace("'", "\\'")).append('\'');
+				else
+					builder.append(',');
+				builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('?');
+			}
+			if (!query.where.isEmpty()) {
+				first = true;
+				for (String[] val : query.where) {
+					val[1] = val[1] == null ? null : val[1].replace("'", "\\'");
+					if (first) {
+						first = false;
+						builder.append(' ').append("where");
+					} else
+						builder.append(' ').append("and");
+					builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('?');
+				}
+			}
+		} else {
+			for (String[] val : query.values) {
+				if (first)
+					first = false;
+				else
+					builder.append(',');
+				builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('\'').append((val[1] + "").replace("'", "\\'")).append('\'');
+			}
+			if (!query.where.isEmpty()) {
+				first = true;
+				for (String[] val : query.where) {
+					if (first) {
+						first = false;
+						builder.append(' ').append("where");
+					} else
+						builder.append(' ').append("and");
+					builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('\'').append((val[1] + "").replace("'", "\\'")).append('\'');
+				}
 			}
 		}
 		if (query.limit != null)
-			builder.append(' ').append("LIMIT").append(' ').append(query.limit);
+			builder.append(' ').append("limit").append(' ').append(query.limit);
 		return builder.toString();
 	}
 
 	public String buildRemoveCommand(RemoveQuery query) {
+		return buildRemoveCommand(query, false);
+	}
+
+	public String buildRemoveCommand(RemoveQuery query, boolean safeMode) {
 		StringContainer builder = new StringContainer(32).append("delete from ");
 		builder.append('`').append(query.table).append('`').append(' ');
 		boolean first = true;
-		for (String[] val : query.values) {
-			if (!first)
-				builder.append(' ').append("and").append(' ');
-			else {
-				first = false;
-				builder.append(' ').append("where").append(' ');
+		if (safeMode)
+			for (String[] val : query.values) {
+				if (!first)
+					builder.append(' ').append("and").append(' ');
+				else {
+					first = false;
+					builder.append(' ').append("where").append(' ');
+				}
+				builder.append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('?');
 			}
-			builder.append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('\'').append(val[1].replace("'", "\\'")).append('\'');
-		}
+		else
+			for (String[] val : query.values) {
+				if (!first)
+					builder.append(' ').append("and").append(' ');
+				else {
+					first = false;
+					builder.append(' ').append("where").append(' ');
+				}
+				builder.append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('\'').append((val[1] + "").replace("'", "\\'")).append('\'');
+			}
 		if (query.limit != null)
-			builder.append(' ').append("LIMIT").append(' ').append(query.limit);
+			builder.append(' ').append("limit").append(' ').append(query.limit);
 		return builder.toString();
 	}
 
@@ -157,10 +228,12 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean exists(SelectQuery query) throws SQLException {
-		ResultSet set = prepareStatement(buildSelectCommand(query)).executeQuery();
-		if (set == null)
-			return false;
-		return set.next();
+		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
+		int index = 1;
+		for (String[] keyWithValue : query.where)
+			prepared.setObject(index++, keyWithValue[1]);
+		ResultSet set = prepared.executeQuery();
+		return set == null ? false : set.next();
 	}
 
 	@Override
@@ -188,7 +261,11 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public Result get(SelectQuery query) throws SQLException {
-		ResultSet set = prepareStatement(buildSelectCommand(query)).executeQuery();
+		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
+		int index = 1;
+		for (String[] keyWithValue : query.where)
+			prepared.setObject(index++, keyWithValue[1]);
+		ResultSet set = prepared.executeQuery();
 		String[] lookup = query.getSearch();
 		if (set != null && set.next()) {
 			if (lookup.length == 1 && lookup[0].equals("*")) {
@@ -196,7 +273,7 @@ public class SqlHandler implements DatabaseHandler {
 				List<String> val = new ArrayList<>();
 				while (true)
 					try {
-						val.add(set.getObject(size++) + "");
+						val.add(String.valueOf(set.getObject(size++)));
 					} catch (Exception err) {
 						break;
 					}
@@ -206,7 +283,7 @@ public class SqlHandler implements DatabaseHandler {
 				while (set.next()) {
 					String[] vals = new String[size];
 					for (int i = 0; i < size; ++i)
-						vals[i] = set.getObject(i + 1) + "";
+						vals[i] = String.valueOf(set.getObject(i + 1));
 					res = new Result(vals);
 					next.nextResult(next = res);
 				}
@@ -214,14 +291,14 @@ public class SqlHandler implements DatabaseHandler {
 			}
 			String[] vals = new String[query.search.length];
 			for (int i = 0; i < query.search.length; ++i)
-				vals[i] = set.getObject(query.search[i]) + "";
+				vals[i] = String.valueOf(set.getObject(query.search[i]));
 			Result res = new Result(vals);
 			Result main = res;
 			Result next = main;
 			while (set.next()) {
 				vals = new String[query.search.length];
 				for (int i = 0; i < query.search.length; ++i)
-					vals[i] = set.getObject(query.search[i]) + "";
+					vals[i] = String.valueOf(set.getObject(query.search[i]));
 				res = new Result(vals);
 				next.nextResult(next = res);
 			}
@@ -232,12 +309,24 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean insert(InsertQuery query) throws SQLException {
-		return prepareStatement(buildInsertCommand(query)).executeUpdate() != 0;
+		PreparedStatement prepared = prepareStatement(buildInsertCommand(query, true));
+		int index = 1;
+		for (String value : query.values)
+			prepared.setObject(index++, value);
+		return prepared.executeUpdate() != 0;
 	}
 
 	@Override
 	public boolean update(UpdateQuery query) throws SQLException {
-		return prepareStatement(buildUpdateCommand(query)).executeUpdate() != 0;
+		PreparedStatement prepared = prepareStatement(buildUpdateCommand(query, true));
+		int index = 1;
+		// Values are first
+		for (String[] keyWithValue : query.values)
+			prepared.setObject(index++, keyWithValue[1]);
+		// Next are "ifs"
+		for (String[] keyWithValue : query.where)
+			prepared.setObject(index++, keyWithValue[1]);
+		return prepared.executeUpdate() != 0;
 	}
 
 	private PreparedStatement prepareStatement(String sqlCommand) throws SQLException {
@@ -256,7 +345,12 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean remove(RemoveQuery query) throws SQLException {
-		return prepareStatement(buildRemoveCommand(query)).executeUpdate() != 0;
+		PreparedStatement prepared = prepareStatement(buildRemoveCommand(query, true));
+		int index = 1;
+		// Values are first
+		for (String[] keyWithValue : query.values)
+			prepared.setObject(index++, keyWithValue[1]);
+		return prepared.executeUpdate() != 0;
 	}
 
 	@Override
