@@ -156,11 +156,17 @@ public class YamlLoader extends EmptyLoader {
 			data.value = writtenValue;
 			data.writtenValue = writtenValue;
 			data.comments = comments;
-		} else if (comments != null)
+		} else if (comments != null) {
+			if (comments.get(comments.size() - 1).isEmpty()) {
+				comments.remove(comments.size() - 1); // just empty line
+				if (comments.isEmpty())
+					comments = null;
+			}
 			if (data.isEmpty())
 				header = comments;
 			else
 				footer = comments;
+		}
 		loaded = comments != null || !data.isEmpty();
 	}
 

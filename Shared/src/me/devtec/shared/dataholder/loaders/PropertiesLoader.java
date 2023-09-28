@@ -71,11 +71,17 @@ public class PropertiesLoader extends EmptyLoader {
 			comments = null;
 			continue;
 		}
-		if (comments != null)
+		if (comments != null) {
+			if (comments.get(comments.size() - 1).isEmpty()) {
+				comments.remove(comments.size() - 1); // just empty line
+				if (comments.isEmpty())
+					comments = null;
+			}
 			if (data.isEmpty())
 				header = comments;
 			else
 				footer = comments;
+		}
 		loaded = comments != null || !data.isEmpty();
 	}
 
