@@ -2,14 +2,13 @@ package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
+import me.devtec.shared.dataholder.loaders.toml.TomlSectionBuilderHelper;
 import me.devtec.shared.json.Json;
 
 public class TomlLoader extends EmptyLoader {
@@ -34,7 +33,7 @@ public class TomlLoader extends EmptyLoader {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void load(String input) {
-		if (input == null || input.length() == 0)
+		if (input == null)
 			return;
 		reset();
 		lines = input;
@@ -48,13 +47,10 @@ public class TomlLoader extends EmptyLoader {
 		}
 
 		List<String> comments = null;
-
 		List<Map<Object, Object>> list = null;
 		Map<Object, Object> map = null;
 		int mode = 0;
-
 		String line;
-
 		String mainPath = "";
 
 		while ((line = readLine()) != null) {
@@ -65,11 +61,6 @@ public class TomlLoader extends EmptyLoader {
 				comments.add(trimmed);
 				continue;
 			}
-			if (line.charAt(0) == ' ') { // S-s-space?! Maybe.. this is YAML file.
-				data.clear();
-				comments = null;
-				break;
-			}
 			String[] parts = readConfigLine(trimmed);
 			if (parts == null) { // Didn't find = symbol.. Maybe this is YAML file.
 				data.clear();
@@ -78,33 +69,36 @@ public class TomlLoader extends EmptyLoader {
 			}
 			String[] value = YamlLoader.splitFromComment(0, parts[1]);
 
-			if (parts.length == 3) { // map or array
+			if (parts.length == 3) { // section or array with maps
 				mainPath = parts[0];
-				if (comments != null)
+				mode = parts[2].charAt(0) != 'a' ? 1 : 2;
+				DataValue probablyCreated = get(mainPath);
+				if (mode != 2 && probablyCreated == null && comments != null)
 					set(mainPath, DataValue.of(null, null, null, comments));
-				comments = null;
-				mode = parts[2].charAt(0) == 'a' ? 1 : 2;
 				map = null;
 				list = null;
+
+				if (mode == 2) {
+					if (list == null) {
+						list = probablyCreated != null && probablyCreated.value != null ? (List<Map<Object, Object>>) probablyCreated.value : new ArrayList<>();
+						if (probablyCreated == null || probablyCreated.value == null)
+							set(mainPath, DataValue.of(null, list, null, comments));
+					}
+					if (map == null) {
+						map = new HashMap<>();
+						list.add(map);
+					}
+				}
+				comments = null;
 				continue;
 			}
-			if (mode == 0) // root
+			if (mode == 0)
 				set(parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length == 2 ? value[1] : null, comments));
 			else // sub
 			if (mode == 1)
 				set(mainPath + '.' + parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length >= 2 ? value[1] : null, comments));
-			else {
-				if (list == null) {
-					DataValue probablyCreated = get(mainPath);
-					list = probablyCreated != null && probablyCreated.value instanceof List ? (List<Map<Object, Object>>) probablyCreated.value : new ArrayList<>();
-					set(mainPath, DataValue.of(null, list, value.length >= 2 ? value[1] : null, comments));
-				}
-				if (map == null) {
-					map = new HashMap<>();
-					list.add(map);
-				}
-				map.put(parts[0], value);
-			}
+			else
+				map.put(parts[0], Json.reader().read(value[0]));
 			comments = null;
 			continue;
 		}
@@ -114,10 +108,11 @@ public class TomlLoader extends EmptyLoader {
 				if (comments.isEmpty())
 					comments = null;
 			}
-			if (data.isEmpty())
-				header = comments;
-			else
-				footer = comments;
+			if (comments != null)
+				if (data.isEmpty())
+					header = comments;
+				else
+					footer = comments;
 		}
 		loaded = comments != null || !data.isEmpty();
 	}
@@ -132,7 +127,6 @@ public class TomlLoader extends EmptyLoader {
 		return saveAsContainer(config, markSaved).getBytes();
 	}
 
-	// TODO fix
 	public StringContainer saveAsContainer(Config config, boolean markSaved) {
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
@@ -143,25 +137,10 @@ public class TomlLoader extends EmptyLoader {
 			} catch (Exception er) {
 				er.printStackTrace();
 			}
-		boolean first = true;
-		Iterator<Entry<String, DataValue>> iterator = config.getDataLoader().entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<String, DataValue> key = iterator.next();
-			if (first)
-				first = false;
-			else
-				builder.append(System.lineSeparator());
-			if (markSaved)
-				key.getValue().modified = false;
-			if (key.getValue().value == null) {
-				if (key.getValue().commentAfterValue != null)
-					builder.append(key.getKey()).append(':').append(' ').append(key.getValue().commentAfterValue);
-				continue;
-			}
-			builder.append(key.getKey()).append(':').append(' ').append(Json.writer().write(key.getValue().value));
-			if (key.getValue().commentAfterValue != null)
-				builder.append(' ').append(key.getValue().commentAfterValue);
-		}
+
+		// BUILD KEYS & SECTIONS
+		TomlSectionBuilderHelper.write(builder, config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
+
 		if (config.getDataLoader().getFooter() != null)
 			try {
 				for (String h : config.getDataLoader().getFooter())
@@ -173,31 +152,47 @@ public class TomlLoader extends EmptyLoader {
 	}
 
 	public static String[] readConfigLine(String input) {
-		int mapIndex = input.indexOf('[');
-		if (mapIndex != -1 && input.length() > mapIndex + 1 && input.indexOf(mapIndex + 1) == '[') { // array
-			int mapEndIndex = input.indexOf(mapIndex, ']');
-			if (mapEndIndex != -1 && input.length() > mapEndIndex + 1 && input.charAt(mapEndIndex + 1) == ']')
-				return new String[] { input.substring(2, input.length() - 2), "", "a" };
-		}
-		if (mapIndex != -1) { // map
-			int mapEndIndex = input.indexOf(mapIndex, ']');
-			if (mapEndIndex != -1)
-				return new String[] { input.substring(1, input.length() - 1), "", "b" };
-		}
+		int yamlIndex = input.indexOf(':');
 		int index = input.indexOf('=');
-		int colorIndex = input.indexOf(':');
-		if (index == -1 || colorIndex != -1 && colorIndex < index)
+		int ignoreChar;
+		if (yamlIndex < index && ((ignoreChar = input.indexOf('"')) == -1 || ignoreChar > yamlIndex))
+			return null;
+		int mapIndex = input.indexOf('[');
+		if (index == -1 || index > mapIndex) {
+			if (mapIndex != -1 && input.length() > mapIndex + 1 && input.charAt(mapIndex + 1) == '[') { // array of maps
+				int mapEndIndex = input.lastIndexOf(']');
+				if (mapEndIndex != -1 && mapEndIndex - 1 > mapIndex && input.charAt(mapEndIndex - 1) == ']')
+					return new String[] { getFromQuotes(input.substring(2, input.length() - 2)), "", "a" };
+			}
+			if (mapIndex != -1) { // map
+				int mapEndIndex = input.lastIndexOf(']');
+				if (mapEndIndex != -1)
+					return new String[] { getFromQuotes(input.substring(1, input.length() - 1)), "", "b" };
+			}
+		}
+		if (index == -1 || index == 0)
 			return null;
 		if (input.length() - index > 0) {
 			String[] result = new String[2];
-			result[0] = input.substring(0, index);
-			result[1] = input.substring(index + 1);
+			result[0] = getFromQuotes(input.substring(0, index).trim());
+			result[1] = input.substring(index + 1).trim();
 			return result;
 		}
 		String[] result = new String[2];
-		result[0] = input;
+		result[0] = getFromQuotes(input.trim());
 		result[1] = "";
 		return result;
+	}
+
+	public static String getFromQuotes(String input) {
+		int len = input.length();
+		if (len <= 2)
+			return input;
+		char firstChar = input.charAt(0);
+		char lastChar = input.charAt(input.length() - 1);
+		if (firstChar == '\'' && lastChar == '\'' || firstChar == '"' && lastChar == '"')
+			return input.substring(1, input.length() - 1);
+		return input;
 	}
 
 	@Override

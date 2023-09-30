@@ -17,9 +17,9 @@ public class JsonLoader extends EmptyLoader {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void load(String input) {
-		if (input == null || input.length() == 0)
+		if (input == null)
 			return;
-		char startChar = input.charAt(0);
+		char startChar = input.isEmpty() ? 0 : input.charAt(0);
 		if (!(startChar == '{' || startChar == '['))
 			return;
 		reset();
@@ -39,14 +39,7 @@ public class JsonLoader extends EmptyLoader {
 	}
 
 	private static String replace(String string) {
-		StringContainer builder = new StringContainer(string.length());
-		for (int i = 0; i < string.length(); ++i) {
-			char c = string.charAt(i);
-			if (c == '\n' || c == '\r')
-				continue;
-			builder.append(c);
-		}
-		return builder.toString();
+		return new StringContainer(string).removeAllChars('\n', '\r').toString();
 	}
 
 	@Override

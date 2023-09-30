@@ -1,13 +1,14 @@
 package me.devtec.shared.dataholder.loaders;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataLoaderConstructor;
@@ -18,10 +19,14 @@ import me.devtec.shared.utility.StreamUtils;
 public abstract class DataLoader implements Cloneable {
 
 	// Data loaders hierarchy
-	public static Map<LoaderPriority, Set<DataLoaderConstructor>> dataLoaders = new ConcurrentHashMap<>();
+	public static Map<LoaderPriority, List<DataLoaderConstructor>> dataLoaders = new HashMap<>();
+
+	// Do not modify!
+	private static boolean anyLoaderWhichAllowFiles;
+
 	static {
 		for (LoaderPriority priority : LoaderPriority.values())
-			DataLoader.dataLoaders.put(priority, new HashSet<>());
+			DataLoader.dataLoaders.put(priority, new ArrayList<>());
 
 		// BUILT-IN LOADERS
 		DataLoader.dataLoaders.get(LoaderPriority.LOW).add(new DataLoaderConstructor() {
@@ -52,6 +57,21 @@ public abstract class DataLoader implements Cloneable {
 			@Override
 			public String name() {
 				return "json";
+			}
+		});
+		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
+			DataLoader notUsed;
+
+			@Override
+			public DataLoader construct() {
+				if (notUsed == null || notUsed.isLoaded())
+					notUsed = new TomlLoader();
+				return notUsed;
+			}
+
+			@Override
+			public String name() {
+				return "toml";
 			}
 		});
 		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
@@ -100,10 +120,12 @@ public abstract class DataLoader implements Cloneable {
 
 	public static void register(LoaderPriority priority, DataLoaderConstructor constructor) {
 		DataLoader.dataLoaders.get(priority).add(constructor);
+		if (constructor.construct().loadingFromFile())
+			anyLoaderWhichAllowFiles = true;
 	}
 
 	public void unregister(DataLoaderConstructor constructor) {
-		for (Set<DataLoaderConstructor> entry : DataLoader.dataLoaders.values())
+		for (List<DataLoaderConstructor> entry : DataLoader.dataLoaders.values())
 			if (entry.remove(constructor))
 				break;
 	}
@@ -160,43 +182,51 @@ public abstract class DataLoader implements Cloneable {
 	public static DataLoader findLoaderByName(String type) {
 		for (LoaderPriority priority : LoaderPriority.values())
 			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority))
-				if (constructor.name().equalsIgnoreCase(type))
+				if (constructor.isConstructorOf(type))
 					return constructor.construct();
 		return null;
 	}
 
 	public static DataLoader findLoaderFor(File input) {
-		String inputString = null;
-		loadersLoop: for (LoaderPriority priority : LoaderPriority.values())
-			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
-				DataLoader loader = constructor.construct();
-				if (inputString == null && loader.loadingFromFile())
-					loader.load(input);
-				else {
-					if (inputString == null) {
-						inputString = StreamUtils.fromStream(input);
-						if (inputString == null)
-							break loadersLoop;
+		String inputString;
+		if (!anyLoaderWhichAllowFiles)
+			return findLoaderFor(StreamUtils.fromStream(input));
+		if (input.length() > 0L) {
+			inputString = null;
+			loadersLoop: for (LoaderPriority priority : LoaderPriority.values())
+				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
+					DataLoader loader = constructor.construct();
+					if (inputString == null && loader.loadingFromFile())
+						loader.load(input);
+					else {
+						if (inputString == null) {
+							inputString = StreamUtils.fromStream(input);
+							if (inputString == null)
+								break loadersLoop;
+						}
+						loader.load(inputString);
 					}
-					loader.load(inputString);
+					if (loader.isLoaded())
+						return loader;
 				}
-				if (loader.isLoaded())
-					return loader;
-			}
+		}
 		EmptyLoader empty = new EmptyLoader();
 		empty.load(input);
 		return empty;
 	}
 
 	public static DataLoader findLoaderFor(String inputString) {
-		for (LoaderPriority priority : LoaderPriority.values())
-			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
-				DataLoader loader = constructor.construct();
-				loader.load(inputString);
-				if (loader.isLoaded())
-					return loader;
-			}
-		return null;
+		if (inputString != null && !inputString.isEmpty())
+			for (LoaderPriority priority : LoaderPriority.values())
+				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
+					DataLoader loader = constructor.construct();
+					loader.load(inputString);
+					if (loader.isLoaded())
+						return loader;
+				}
+		EmptyLoader empty = new EmptyLoader();
+		empty.load(inputString);
+		return empty;
 	}
 
 	public abstract Set<Entry<String, DataValue>> entrySet();

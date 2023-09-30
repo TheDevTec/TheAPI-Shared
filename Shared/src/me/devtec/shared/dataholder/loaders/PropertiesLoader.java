@@ -31,7 +31,7 @@ public class PropertiesLoader extends EmptyLoader {
 
 	@Override
 	public void load(String input) {
-		if (input == null || input.length() == 0)
+		if (input == null)
 			return;
 		reset();
 		lines = input;
@@ -77,10 +77,11 @@ public class PropertiesLoader extends EmptyLoader {
 				if (comments.isEmpty())
 					comments = null;
 			}
-			if (data.isEmpty())
-				header = comments;
-			else
-				footer = comments;
+			if (comments != null)
+				if (data.isEmpty())
+					header = comments;
+				else
+					footer = comments;
 		}
 		loaded = comments != null || !data.isEmpty();
 	}

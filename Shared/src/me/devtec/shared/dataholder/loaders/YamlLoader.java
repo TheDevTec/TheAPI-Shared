@@ -5,8 +5,8 @@ import java.util.List;
 
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
-import me.devtec.shared.dataholder.YamlSectionBuilderHelper;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
+import me.devtec.shared.dataholder.loaders.yaml.YamlSectionBuilderHelper;
 import me.devtec.shared.json.Json;
 
 public class YamlLoader extends EmptyLoader {
@@ -33,7 +33,7 @@ public class YamlLoader extends EmptyLoader {
 
 	@Override
 	public void load(String input) {
-		if (input == null || input.length() == 0)
+		if (input == null)
 			return;
 		reset();
 		lines = input;
@@ -86,7 +86,7 @@ public class YamlLoader extends EmptyLoader {
 				continue;
 			}
 			int currentDepth = getDepth(line);
-			String currentKey = getFromQuotes(parts[0]);
+			String currentKey = parts[0];
 			if (list != null) {
 				readerType = READER_TYPE_NONE;
 				DataValue data = getOrCreate(key.toString());
@@ -162,10 +162,11 @@ public class YamlLoader extends EmptyLoader {
 				if (comments.isEmpty())
 					comments = null;
 			}
-			if (data.isEmpty())
-				header = comments;
-			else
-				footer = comments;
+			if (comments != null)
+				if (data.isEmpty())
+					header = comments;
+				else
+					footer = comments;
 		}
 		loaded = comments != null || !data.isEmpty();
 	}
@@ -215,14 +216,14 @@ public class YamlLoader extends EmptyLoader {
 
 		if (index != -1) {
 			String[] result = new String[2];
-			result[0] = input.substring(0, index);
+			result[0] = getFromQuotes(input.substring(0, index));
 			result[1] = input.substring(index + 2);
 			return result;
 		}
 		int length = input.length() - 1;
 		if (input.charAt(length) == ':') {
 			String[] result = new String[1];
-			result[0] = input.substring(0, length);
+			result[0] = getFromQuotes(input.substring(0, length));
 			return result;
 		}
 		return null;

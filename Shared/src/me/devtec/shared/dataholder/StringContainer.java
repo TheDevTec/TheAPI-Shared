@@ -179,6 +179,10 @@ public class StringContainer {
 	}
 
 	public byte[] getBytes() {
+		return getBytes(charset);
+	}
+
+	public byte[] getBytes(Charset charset) {
 		if (count == 0)
 			return new byte[0];
 
@@ -341,6 +345,19 @@ public class StringContainer {
 		int start = lastIndexOf(value);
 		if (start != -1)
 			replace(start, start + value.length(), replacement);
+		return this;
+	}
+
+	public StringContainer removeAllChars(char... value) {
+		for (int i = 0; i < count; ++i) {
+			char c = charAt(i);
+			for (char replacing : value)
+				if (c == replacing) {
+					deleteCharAt(i);
+					--i;
+					break;
+				}
+		}
 		return this;
 	}
 

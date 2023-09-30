@@ -6,4 +6,8 @@ public interface DataLoaderConstructor {
 	public DataLoader construct();
 
 	public String name();
+
+	public default boolean isConstructorOf(String type) {
+		return name().equalsIgnoreCase(type);
+	}
 }

@@ -1,5 +1,6 @@
 package me.devtec.shared.dataholder.loaders;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -17,11 +18,16 @@ public class ByteLoader extends EmptyLoader {
 
 	@Override
 	public void load(String input) {
-		if (input == null || input.length() == 0)
+		if (input == null)
 			return;
 		reset();
 		try {
-			byte[] bb = Base64.getDecoder().decode(replace(input));
+			byte[] decoded = replace(input);
+			if (decoded == null) {
+				loaded = false;
+				return;
+			}
+			byte[] bb = Base64.getDecoder().decode(decoded);
 			ByteArrayDataInput bos = ByteStreams.newDataInput(bb);
 			int version = bos.readInt();
 			if (version == 3) {
@@ -123,15 +129,24 @@ public class ByteLoader extends EmptyLoader {
 		}
 	}
 
-	private static String replace(String string) {
-		StringContainer builder = new StringContainer(string.length());
-		for (int i = 0; i < string.length(); ++i) {
-			char c = string.charAt(i);
-			if (c == ' ' || c == '	' || c == '\n' || c == '\r')
+	private static byte[] replace(String string) {
+		StringContainer container = new StringContainer(string).removeAllChars(' ', '	', '\n', '\r');
+		if (processFastCheck(container))
+			return container.getBytes(StandardCharsets.ISO_8859_1);
+		return null;
+	}
+
+	private static boolean processFastCheck(StringContainer container) {
+		int lastCount = 0;
+		for (int i = 0; i < container.length(); ++i) {
+			char c = container.charAt(i);
+			if (lastCount == 0 && (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' && c >= '0' && c <= '9' || c == '+' || c == '/'))
 				continue;
-			builder.append(c);
+			if (c == '=' && ++lastCount <= 2)
+				continue;
+			return false;
 		}
-		return builder.toString();
+		return true;
 	}
 
 	public void load(byte[] byteData) {
