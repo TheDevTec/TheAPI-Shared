@@ -145,17 +145,13 @@ public class YamlLoader extends EmptyLoader {
 			comments = null;
 		}
 		if (list != null) {
-			readerType = READER_TYPE_NONE;
 			DataValue data = getOrCreate(key.toString());
 			data.value = list;
-			data.comments = comments;
 		} else if (stringContainer != null) {
-			readerType = READER_TYPE_NONE;
 			String writtenValue = stringContainer.toString();
 			DataValue data = getOrCreate(key.toString());
 			data.value = writtenValue;
 			data.writtenValue = writtenValue;
-			data.comments = comments;
 		} else if (comments != null) {
 			if (comments.get(comments.size() - 1).isEmpty()) {
 				comments.remove(comments.size() - 1); // just empty line
