@@ -1,5 +1,7 @@
 package me.devtec.shared.json;
 
+import me.devtec.shared.dataholder.StringContainer;
+
 public interface JWriter {
 
 	public default Object writeWithoutParse(Object s) {
@@ -10,8 +12,20 @@ public interface JWriter {
 		try {
 			if (s == null)
 				return "null";
-			return s instanceof String || s instanceof CharSequence ? '"' + s.toString() + '"'
-					: s instanceof Number || s instanceof Character ? '\'' + s.toString() + '\'' : toGson(writeWithoutParse(s));
+			if (s instanceof String || s instanceof CharSequence) {
+				StringContainer container = new StringContainer(s.toString());
+				int i = container.length();
+				while (i != -1) {
+					char c = container.charAt(i);
+					if (c == '"')
+						container.insert(i, '\\');
+					--i;
+				}
+				container.insert(0, '"');
+				container.append('"');
+				return container.toString();
+			}
+			return s instanceof Number || s instanceof Character ? '\'' + s.toString() + '\'' : toGson(writeWithoutParse(s));
 		} catch (Exception err) {
 		}
 		return null;
