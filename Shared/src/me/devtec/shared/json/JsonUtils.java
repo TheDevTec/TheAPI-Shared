@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import me.devtec.shared.Pair;
 import me.devtec.shared.Ref;
@@ -22,7 +23,7 @@ public class JsonUtils {
 		try {
 			if (s == null)
 				return null;
-			if (s instanceof String || s instanceof CharSequence || s instanceof Boolean || s instanceof Number || s instanceof Character)
+			if (s instanceof String || s instanceof CharSequence || s instanceof Boolean || s instanceof Number || s instanceof Character || s instanceof UUID)
 				return s;
 			Object result = Json.processDataWriters(s);
 			if (result != null)
