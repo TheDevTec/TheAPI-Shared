@@ -20,6 +20,7 @@ import me.devtec.shared.Ref.ServerType;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.DataType;
 import me.devtec.shared.json.Json;
+import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
 
 public class Metrics {
@@ -44,6 +45,7 @@ public class Metrics {
 
 	// The plugin id
 	private final int pluginId;
+	private int taskId;
 
 	public Metrics(String pluginVersion, int pluginId) {
 		this.pluginVersion = pluginVersion;
@@ -51,13 +53,20 @@ public class Metrics {
 		platform = Ref.serverType().isBukkit() ? "bukkit" : Ref.serverType() == ServerType.BUNGEECORD ? "bungeecord" : Ref.serverType() == ServerType.VELOCITY ? "velocity" : "bukkit";
 		long initialDelay = (long) (20 * 60 * (3 + Math.random() * 3));
 		long secondDelay = (long) (20 * 60 * (Math.random() * 30));
-		new Tasker() {
+		taskId = new Tasker() {
 
 			@Override
 			public void run() {
 				submitData();
 			}
 		}.runRepeating(initialDelay + secondDelay, 20 * 60 * 30);
+	}
+
+	public void shutdown() {
+		if (taskId == 0)
+			return;
+		Scheduler.cancelTask(taskId);
+		taskId = 0;
 	}
 
 	public void addCustomChart(CustomChart chart) {
