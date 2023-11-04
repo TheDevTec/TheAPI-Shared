@@ -203,7 +203,7 @@ public class API {
 			if (Ref.serverType().isBukkit())
 				config.setIfAbsent("nmsProvider-use-directly-jar", false, Arrays.asList("", "# In some cases Java isn't able to compile .java file and we have to use .jar file instead"));
 			config.setIfAbsent("automatically-save-user-files", true, Arrays.asList("", "# Save all loaded user files (in memory) every 6 hours"));
-			config.setIfAbsent("default-json-handler", "Guava",
+			config.setIfAbsent("default-json-handler", "TheAPI",
 					Arrays.asList("", "# Default Json reader & writer for reading & writing Config files", "# Guava - From Google (Default)", "# TheAPI - Our own project (Experimental)"));
 			AUTOMATICALLY_USER_SAVING_TASK = config.getBoolean("automatically-save-user-files");
 			if (Ref.serverType().isBukkit())
