@@ -26,7 +26,7 @@ import me.devtec.shared.scheduler.Tasker;
 public class Metrics {
 
 	public static GatheringInfoManager gatheringInfoManager;
-	public static final String METRICS_VERSION = "3.0.3-SNAPSHOT";
+	public static final String METRICS_VERSION = "3.0.2";
 
 	private static final String REPORT_URL = "https://bStats.org/api/v2/data/%s";
 
