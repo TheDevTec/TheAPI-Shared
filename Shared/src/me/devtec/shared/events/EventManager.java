@@ -17,30 +17,30 @@ public class EventManager {
 		return e;
 	}
 
-	public static void unregister(ListenerHolder handler) {
-		for (Class<? extends Event> event : handler.listen) {
+	public static boolean unregister(ListenerHolder handler) {
+		if (!handler.isRegistered())
+			return false;
+		for (Class<? extends Event> event : handler.getEvents()) {
 			List<ListenerHolder> listeners = getListeners(event);
 			if (listeners.isEmpty())
-				continue; // empty or doesn't exist
+				continue; // empty
 			listeners.remove(handler);
 		}
+		handler.isRegistered = false;
+		return true;
 	}
 
 	public static void call(Event event) {
 		List<ListenerHolder> result = event.getHandlers();
 		if (result.isEmpty())
-			return;
+			return; // Prevent from creating unused Iterator
 
 		for (ListenerHolder holder : result)
-			for (Class<? extends Event> clazz : holder.listen)
-				if (clazz.isAssignableFrom(event.getClass())) {
-					try {
-						holder.listener.listen(event);
-					} catch (Exception error) {
-						error.printStackTrace();
-					}
-					break;
-				}
+			try {
+				holder.listener.listen(event);
+			} catch (Exception error) {
+				error.printStackTrace();
+			}
 	}
 
 	@SuppressWarnings("unchecked")

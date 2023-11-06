@@ -18,6 +18,9 @@ import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.DataType;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.cache.TempList;
+import me.devtec.shared.events.EventManager;
+import me.devtec.shared.events.api.users.UserDataLoadEvent;
+import me.devtec.shared.events.api.users.UserDataUnloadEvent;
 import me.devtec.shared.placeholders.PlaceholderAPI;
 import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
@@ -41,7 +44,12 @@ public class API {
 	// Offline users cache
 	private static OfflineCache cache;
 	private static Map<UUID, Config> users = new ConcurrentHashMap<>();
-	private static List<Pair> savingQueue = new TempList<Pair>(600).setCallback(pair -> ((Config) pair.getValue()).save("yaml")); // 30s
+	private static List<Pair> savingQueue = new TempList<Pair>(600).setCallback(pair -> {
+		Config cached = (Config) pair.getValue();
+		UserDataUnloadEvent event = new UserDataUnloadEvent((UUID) pair.getKey(), cached);
+		EventManager.call(event);
+		cached.save("yaml");
+	}); // 30s
 	private static int savingScheduler;
 	public static boolean AUTOMATICALLY_USER_SAVING_TASK;
 
@@ -85,6 +93,8 @@ public class API {
 				}
 			}
 			API.users.put(id, cached = new Config("plugins/TheAPI/Users/" + id + ".yml"));
+			UserDataLoadEvent event = new UserDataLoadEvent(id, cached);
+			EventManager.call(event);
 		}
 		return cached;
 	}
@@ -110,8 +120,13 @@ public class API {
 			// Clear cache
 			API.users.clear();
 			// Saving queue
-			while (!savingQueue.isEmpty())
-				((Config) savingQueue.remove(0).getValue()).save("yaml");
+			while (!savingQueue.isEmpty()) {
+				Pair pair = savingQueue.remove(0);
+				Config cached = (Config) pair.getValue();
+				UserDataUnloadEvent event = new UserDataUnloadEvent((UUID) pair.getKey(), cached);
+				EventManager.call(event);
+				cached.save("yaml");
+			}
 			// Unregister placeholders
 			PlaceholderAPI.unregisterAll();
 			Scheduler.cancelAll();

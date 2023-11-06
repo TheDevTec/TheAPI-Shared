@@ -3,7 +3,7 @@ package me.devtec.shared.database;
 /**
  * @apiNote Some Sql field types are not supported by all SQLs and you should
  *          have to use another alternative.
- * @author StraikerinaCZ
+ * @author Straikerinos
  *
  */
 public enum SqlFieldType {
