@@ -7,7 +7,7 @@ import me.devtec.shared.Ref;
 
 public class EventManager {
 	public static ListenerHolder register(EventListener listener) {
-		return EventManager.register(0, listener);
+		return EventManager.register(EventListener.NORMAL, listener);
 	}
 
 	public static ListenerHolder register(int priority, EventListener listener) {
