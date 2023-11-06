@@ -1,10 +1,13 @@
 package me.devtec.shared.mcmetrics;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -18,7 +21,6 @@ import javax.net.ssl.HttpsURLConnection;
 import me.devtec.shared.Ref;
 import me.devtec.shared.Ref.ServerType;
 import me.devtec.shared.dataholder.Config;
-import me.devtec.shared.dataholder.DataType;
 import me.devtec.shared.json.Json;
 import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
@@ -32,10 +34,34 @@ public class Metrics {
 
 	// The uuid of the server
 	private static final String serverUUID;
+	private static final boolean enabled;
+	private static final boolean logErrors;
+	private static final boolean logSentData;
+	private static final boolean logResponseStatusText;
 	static {
-		Config c = new Config("plugins/bStats/config.yml");
-		serverUUID = c.getString("serverUuid", UUID.randomUUID().toString());
-		c.set("serverUuid", serverUUID).save(DataType.YAML);
+		Config config = new Config("plugins/bStats/config.yml");
+		if (!config.existsKey("serverUuid")) {
+			config.setIfAbsent("enabled", true);
+			config.setIfAbsent("serverUuid", UUID.randomUUID().toString());
+			config.setIfAbsent("logFailedRequests", false);
+			config.setIfAbsent("logSentData", false);
+			config.setIfAbsent("logResponseStatusText", false);
+
+			// Inform the server owners about bStats
+			config.setHeader(Arrays.asList("# bStats (https://bStats.org) collects some basic information for plugin authors, like how",
+					"# many people use their plugin and their total player count. It's recommended to keep bStats",
+					"# enabled, but if you're not comfortable with this, you can turn this setting off. There is no",
+					"# performance penalty associated with having metrics enabled, and data sent to bStats is fully", "# anonymous."));
+			config.save("yaml");
+		}
+		serverUUID = config.getString("serverUuid");
+
+		// Load the data
+		enabled = config.getBoolean("enabled", true);
+		logErrors = config.getBoolean("logFailedRequests", false);
+		logSentData = config.getBoolean("logSentData", false);
+		logResponseStatusText = config.getBoolean("logResponseStatusText", false);
+
 	}
 
 	// The plugin
@@ -53,13 +79,14 @@ public class Metrics {
 		platform = Ref.serverType().isBukkit() ? "bukkit" : Ref.serverType() == ServerType.BUNGEECORD ? "bungeecord" : Ref.serverType() == ServerType.VELOCITY ? "velocity" : "bukkit";
 		long initialDelay = (long) (20 * 60 * (3 + Math.random() * 3));
 		long secondDelay = (long) (20 * 60 * (Math.random() * 30));
-		taskId = new Tasker() {
+		if (enabled)
+			taskId = new Tasker() {
 
-			@Override
-			public void run() {
-				submitData();
-			}
-		}.runRepeating(initialDelay + secondDelay, 20 * 60 * 30);
+				@Override
+				public void run() {
+					submitData();
+				}
+			}.runRepeating(initialDelay + secondDelay, 20 * 60 * 30);
 	}
 
 	public void shutdown() {
@@ -116,18 +143,24 @@ public class Metrics {
 		pluginData.put("customCharts", chartData);
 
 		data.put("service", pluginData);
-		data.put("serverUUID", Metrics.serverUUID);
+		data.put("serverUUID", serverUUID);
 		data.put("metricsVersion", METRICS_VERSION);
 		return data;
 	}
 
 	private void submitData() {
 		try {
+
+			String data = Json.writer().simpleWrite(getServerData());
+			// Compress the data to save bandwidth
+			if (logSentData)
+				gatheringInfoManager.getInfoLogger().accept("Sent bStats metrics data: " + data);
+
 			String url = String.format(REPORT_URL, platform);
 			HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
 
 			// Compress the data to save bandwidth
-			byte[] compressedData = compress(Json.writer().simpleWrite(getServerData()));
+			byte[] compressedData = compress(data);
 
 			connection.setRequestMethod("POST");
 			connection.addRequestProperty("Accept", "application/json");
@@ -137,11 +170,22 @@ public class Metrics {
 			connection.setRequestProperty("Content-Type", "application/json");
 			connection.setRequestProperty("User-Agent", "Metrics-Service/1");
 
-			connection.setDoOutput(false);
+			connection.setDoOutput(true);
 			try (DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream())) {
 				outputStream.write(compressedData);
 			}
+			StringBuilder builder = new StringBuilder();
+			try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+				String line;
+				while ((line = bufferedReader.readLine()) != null)
+					builder.append(line);
+			}
+
+			if (logResponseStatusText)
+				gatheringInfoManager.getInfoLogger().accept("Sent data to bStats and received response: " + builder);
 		} catch (Exception e) {
+			if (logErrors)
+				gatheringInfoManager.getErrorLogger().accept("Could not submit bStats metrics data", e);
 		}
 	}
 
