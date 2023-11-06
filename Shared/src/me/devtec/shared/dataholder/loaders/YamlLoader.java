@@ -253,39 +253,37 @@ public class YamlLoader extends EmptyLoader {
 			++quoteCount;
 			++i;
 		}
-		boolean escaped = false;
 		boolean foundHash = false;
-		int lastQuotePos = 0;
-		int splitIndexEnd = 0;
 		int splitIndexStart = 0;
-		while (i < len) {
-			char c = input.charAt(i);
-			if (!escaped && c == '\\')
-				escaped = true;
-			else if (inQuotes && c == currentQueto && !escaped) {
-				if (currentQueto == c && i + 1 < len && input.charAt(i + 1) == c) {
-					--len;
-					input = input.substring(posFromStart, i) + input.substring(++i);
-					continue;
+		int endOfString = -1;
+
+		StringContainer container = new StringContainer(input, i);
+		i = 0;
+		while (i < container.length()) {
+			char c = container.charAt(i);
+			if (c == '\\' && i + 1 < container.length() && container.charAt(i + 1) == currentQueto) {
+				container.deleteCharAt(i++);
+				continue;
+			}
+			if (c == '\'' && i + 1 < container.length() && container.charAt(i + 1) == '\'') {
+				container.deleteCharAt(i++);
+				continue;
+			}
+			if (inQuotes && c == currentQueto) {
+				if (!(inQuotes = --quoteCount > 0)) {
+					container.deleteCharAt(i);
+					endOfString = i;
 				}
-				lastQuotePos = i;
-				quoteCount--;
-				if (!(inQuotes = quoteCount > 0))
-					splitIndexEnd = i;
-			} else if (!inQuotes && c == '#' && !escaped) {
+			} else if (!inQuotes && c == '#') {
 				foundHash = true;
 				splitIndexStart = i;
-				if (splitIndexEnd == 0)
-					splitIndexEnd = i;
 				break;
 			}
-			escaped = false;
-			i++;
+			++i;
 		}
 		if (!foundHash)
-			return new String[] { lastQuotePos == 0 || quoteCount != 0 ? posFromStart == 0 ? input.trim() : input.substring(posFromStart).trim() : input.substring(1 + posFromStart, lastQuotePos) };
-		return new String[] { currentQueto == 0 || quoteCount != 0 ? input.substring(posFromStart, splitIndexEnd).trim() : input.substring(1 + posFromStart, splitIndexEnd),
-				input.substring(splitIndexStart) };
+			return new String[] { endOfString == -1 ? container.toString() : container.substring(0, endOfString) };
+		return new String[] { endOfString == -1 ? container.toString() : container.substring(0, endOfString), container.substring(splitIndexStart) };
 	}
 
 	private static String[] splitFromCommentJson(int posFromStart, String input) {
@@ -294,37 +292,34 @@ public class YamlLoader extends EmptyLoader {
 		int braceCount = 0;
 		int bracketCount = 0;
 		boolean inQuotes = false;
-		boolean escaped = false;
 		int splitIndex = -1;
 		while (i < len) {
 			char c = input.charAt(i);
-			if (!escaped && c == '\\')
-				escaped = true;
-			else if (!inQuotes && c == '{' && !escaped)
+			if (c == '\\' && i + 1 < len && isSkippableChar(input.charAt(i + 1)))
+				++i;
+			else if (!inQuotes && c == '{')
 				braceCount++;
-			else if (!inQuotes && c == '}' && !escaped) {
+			else if (!inQuotes && c == '}') {
 				braceCount--;
 				if (braceCount == 0 && bracketCount == 0) {
 					splitIndex = i + 1;
 					break;
 				}
-			} else if (!inQuotes && c == '[' && !escaped)
+			} else if (!inQuotes && c == '[')
 				bracketCount++;
-			else if (!inQuotes && c == ']' && !escaped) {
+			else if (!inQuotes && c == ']') {
 				bracketCount--;
 				if (braceCount == 0 && bracketCount == 0) {
 					splitIndex = i + 1;
 					break;
 				}
-			} else if (!inQuotes && c == '#' && !escaped) {
+			} else if (!inQuotes && c == '#') {
 				if (braceCount == 0 && bracketCount == 0) {
 					splitIndex = i;
 					break;
 				}
-			} else if ((c == '"' || c == '\'') && !escaped)
+			} else if (c == '"' || c == '\'')
 				inQuotes = !inQuotes;
-			else
-				escaped = false;
 			i++;
 		}
 		String[] result = new String[2];
@@ -335,6 +330,22 @@ public class YamlLoader extends EmptyLoader {
 			result[1] = input.substring(splitIndex);
 		}
 		return result;
+	}
+
+	private static boolean isSkippableChar(char charAt) {
+		switch (charAt) {
+		case '{':
+		case '}':
+		case '[':
+		case ']':
+		case '#':
+		case '"':
+		case '\'':
+			return true;
+		default:
+			break;
+		}
+		return false;
 	}
 
 	private static int getDepth(String line) {
