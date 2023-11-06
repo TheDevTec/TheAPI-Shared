@@ -39,8 +39,12 @@ public class StringContainer {
 	}
 
 	public StringContainer(String text) {
+		this(text, 0);
+	}
+
+	public StringContainer(String text, int offset) {
 		value = new char[(count = text.length()) + 16];
-		text.getChars(0, count, value, 0);
+		text.getChars(offset, count, value, 0);
 	}
 
 	public int length() {
