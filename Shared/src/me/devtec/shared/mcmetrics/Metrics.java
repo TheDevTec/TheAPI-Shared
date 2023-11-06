@@ -76,7 +76,16 @@ public class Metrics {
 	public Metrics(String pluginVersion, int pluginId) {
 		this.pluginVersion = pluginVersion;
 		this.pluginId = pluginId;
-		platform = Ref.serverType().isBukkit() ? "bukkit" : Ref.serverType() == ServerType.BUNGEECORD ? "bungeecord" : Ref.serverType() == ServerType.VELOCITY ? "velocity" : "bukkit";
+		if (Ref.serverType().isBukkit())
+			platform = "bukkit";
+		else if (Ref.serverType() == ServerType.BUNGEECORD)
+			platform = "bungeecord";
+		else if (Ref.serverType() == ServerType.VELOCITY)
+			platform = "velocity";
+		else {
+			platform = "uknown";
+			return;
+		}
 		long initialDelay = (long) (20 * 60 * (3 + Math.random() * 3));
 		long secondDelay = (long) (20 * 60 * (Math.random() * 30));
 		if (enabled)
