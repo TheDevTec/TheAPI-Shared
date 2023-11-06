@@ -1,6 +1,8 @@
 package me.devtec.shared.utility;
 
 import java.net.URL;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,11 +20,15 @@ public class OfflineCache {
 		this.onlineMode = onlineMode;
 	}
 
+	public Collection<Query> getQueries() {
+		return Collections.unmodifiableCollection(values.values());
+	}
+
 	public UUID lookupId(String name) {
-		Query o = this.values.get(name.toLowerCase());
+		Query o = values.get(name.toLowerCase());
 		if (o == null) {
-			UUID uuid = this.onlineMode ? this.lookupIdFromMojang(name) : UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
-			this.values.put(name.toLowerCase(), new Query(name, uuid));
+			UUID uuid = onlineMode ? lookupIdFromMojang(name) : UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
+			values.put(name.toLowerCase(), new Query(name, uuid));
 			return uuid;
 		}
 		return o.uuid;
@@ -31,7 +37,7 @@ public class OfflineCache {
 	@SuppressWarnings("unchecked")
 	public String lookupNameFromMojang(String name) {
 		try {
-			return (String) ((Map<String, Object>) Json.reader().simpleRead(StreamUtils.fromStream(new URL(String.format(this.USER_FORMAT, name)).openStream()))).get("username");
+			return (String) ((Map<String, Object>) Json.reader().simpleRead(StreamUtils.fromStream(new URL(String.format(USER_FORMAT, name)).openStream()))).get("username");
 		} catch (Exception error) {
 		}
 		return name;
@@ -40,36 +46,36 @@ public class OfflineCache {
 	@SuppressWarnings("unchecked")
 	public UUID lookupIdFromMojang(String name) {
 		try {
-			return UUID.fromString((String) ((Map<String, Object>) Json.reader().simpleRead(StreamUtils.fromStream(new URL(String.format(this.USER_FORMAT, name)).openStream()))).get("uuid"));
+			return UUID.fromString((String) ((Map<String, Object>) Json.reader().simpleRead(StreamUtils.fromStream(new URL(String.format(USER_FORMAT, name)).openStream()))).get("uuid"));
 		} catch (Exception error) {
 		}
 		return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
 	}
 
 	public String lookupNameById(UUID id) {
-		for (Query i : this.values.values())
+		for (Query i : values.values())
 			if (id.equals(i.uuid))
 				return i.name;
 		return null;
 	}
 
 	public Query lookupQuery(String name) {
-		return this.values.get(name.toLowerCase());
+		return values.get(name.toLowerCase());
 	}
 
 	public Query lookupQuery(UUID id) {
-		for (Query i : this.values.values())
+		for (Query i : values.values())
 			if (id.equals(i.uuid))
 				return i;
 		return null;
 	}
 
 	public String lookupName(String name) {
-		Query get = this.values.get(name.toLowerCase());
+		Query get = values.get(name.toLowerCase());
 		String result = name;
 		if (get == null) {
-			UUID uuid = this.onlineMode ? this.lookupIdFromMojang(name) : UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
-			this.values.put(result.toLowerCase(), new Query(result, uuid));
+			UUID uuid = onlineMode ? lookupIdFromMojang(name) : UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
+			values.put(result.toLowerCase(), new Query(result, uuid));
 		} else
 			result = get.name;
 		return result;
@@ -78,9 +84,9 @@ public class OfflineCache {
 	public void setLookup(UUID uuid, String name) {
 		if (uuid == null || name == null)
 			return;
-		Query get = this.values.get(name.toLowerCase());
+		Query get = values.get(name.toLowerCase());
 		if (get == null || get.uuid == null) {
-			this.values.put(name.toLowerCase(), new Query(name, uuid));
+			values.put(name.toLowerCase(), new Query(name, uuid));
 			return;
 		}
 		if (!get.uuid.equals(uuid) || !get.name.equals(name)) {
@@ -91,7 +97,7 @@ public class OfflineCache {
 
 	public Config saveToConfig() {
 		Config data = new Config();
-		for (Query i : this.values.values())
+		for (Query i : values.values())
 			data.set(i.uuid.toString(), i.name);
 		return data;
 	}
@@ -106,11 +112,11 @@ public class OfflineCache {
 		}
 
 		public String getName() {
-			return this.name;
+			return name;
 		}
 
 		public UUID getUUID() {
-			return this.uuid;
+			return uuid;
 		}
 
 		public void setName(String name) {
