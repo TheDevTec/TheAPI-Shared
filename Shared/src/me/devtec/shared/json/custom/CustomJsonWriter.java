@@ -19,7 +19,7 @@ public class CustomJsonWriter implements JWriter {
 			return String.valueOf(obj);
 
 		if (obj instanceof CharSequence)
-			return CustomJsonReader.QUOTES + String.valueOf(obj) + CustomJsonReader.QUOTES;
+			return writeString((CharSequence) obj);
 
 		if (obj instanceof Collection) {
 			StringContainer container = new StringContainer().append(CustomJsonReader.OPEN_BRACKET);
@@ -63,13 +63,29 @@ public class CustomJsonWriter implements JWriter {
 		return CustomJsonReader.QUOTES + String.valueOf(obj) + CustomJsonReader.QUOTES;
 	}
 
+	private static String writeString(CharSequence s) {
+		if (s == null)
+			return "null";
+		StringContainer container = new StringContainer(s.toString());
+		int i = container.length();
+		while (i != -1) {
+			char c = container.charAt(i);
+			if (c == '"')
+				container.insert(i, '\\');
+			--i;
+		}
+		container.insert(0, '"');
+		container.append('"');
+		return container.toString();
+	}
+
 	private static void toJson(StringContainer container, Object obj) {
 		if (obj == null || obj instanceof Number || obj instanceof Boolean) {
 			container.append(String.valueOf(obj));
 			return;
 		}
 		if (obj instanceof CharSequence) {
-			container.append(CustomJsonReader.QUOTES + String.valueOf(obj) + CustomJsonReader.QUOTES);
+			container.append(writeString((CharSequence) obj));
 			return;
 		}
 
