@@ -14,30 +14,21 @@ import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.scheduler.Tasker;
 
 public class TempList<V> extends AbstractList<V> {
+	private static long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
+
 	private List<Entry<V, Long>> queue = new ArrayList<>();
 	private long cacheTime;
 	private RemoveCallback<V> callback;
+
+	// internal
+	private int task;
+	private long inactiveTask;
 
 	/**
 	 * @param cacheTime Should be in Minecraft ticks time (1 = 50 milis)
 	 */
 	public TempList(long cacheTime) {
 		this.cacheTime = cacheTime;
-		new Tasker() {
-			@Override
-			public void run() {
-				Iterator<Entry<V, Long>> iterator = queue.iterator();
-				while (iterator.hasNext()) {
-					Entry<V, Long> entry = iterator.next();
-					if (entry.getValue() - System.currentTimeMillis() / 50 + TempList.this.cacheTime <= 0) {
-						iterator.remove();
-						RemoveCallback<V> callback = getCallback();
-						if (callback != null)
-							callback.call(entry.getKey());
-					}
-				}
-			}
-		}.runRepeating(1, 1);
 	}
 
 	/**
@@ -68,6 +59,7 @@ public class TempList<V> extends AbstractList<V> {
 
 	@Override
 	public void add(int pos, V val) {
+		inactiveTask = 0;
 		queue.add(new Entry<V, Long>() {
 			long time = System.currentTimeMillis() / 50;
 
@@ -87,6 +79,31 @@ public class TempList<V> extends AbstractList<V> {
 				return time;
 			}
 		});
+		if (task == 0)
+			task = new Tasker() {
+
+				@Override
+				public void run() {
+					Iterator<Entry<V, Long>> iterator = queue.iterator();
+					while (iterator.hasNext()) {
+						Entry<V, Long> entry = iterator.next();
+						if (entry.getValue() - System.currentTimeMillis() / 50 + cacheTime <= 0) {
+							iterator.remove();
+							RemoveCallback<V> callback = getCallback();
+							if (callback != null)
+								callback.call(entry.getKey());
+						}
+					}
+					if (queue.isEmpty())
+						if (inactiveTask == 0)
+							inactiveTask = System.currentTimeMillis() / 1000 + DEFAULT_WAIT_TIME;
+						else if (inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
+							task = 0;
+							cancel();
+						}
+
+				}
+			}.runRepeating(1, 1);
 	}
 
 	@Override

@@ -11,30 +11,21 @@ import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.scheduler.Tasker;
 
 public class TempMap<K, V> extends AbstractMap<K, V> {
+	private static long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
+
 	private LinkedHashMap<Entry<K, V>, Long> queue = new LinkedHashMap<>();
 	private long cacheTime;
 	private RemoveCallback<Entry<K, V>> callback;
+
+	// internal
+	private int task;
+	private long inactiveTask;
 
 	/**
 	 * @param cacheTime Should be in Minecraft ticks time (1 = 50 milis)
 	 */
 	public TempMap(long cacheTime) {
 		this.cacheTime = cacheTime;
-		new Tasker() {
-			@Override
-			public void run() {
-				Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Entry<Entry<K, V>, Long> entry = iterator.next();
-					if (entry.getValue() - System.currentTimeMillis() / 50 + TempMap.this.cacheTime <= 0) {
-						iterator.remove();
-						RemoveCallback<Entry<K, V>> callback = getCallback();
-						if (callback != null)
-							callback.call(entry.getKey());
-					}
-				}
-			}
-		}.runRepeating(1, 1);
 	}
 
 	/**
@@ -64,6 +55,7 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 
 	@Override
 	public V put(K key, V val) {
+		inactiveTask = 0;
 		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
 		while (iterator.hasNext()) {
 			Entry<Entry<K, V>, Long> value = iterator.next();
@@ -74,7 +66,6 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 				return previous;
 			}
 		}
-
 		Entry<K, V> entry = new Entry<K, V>() {
 			V value = val;
 
@@ -102,6 +93,31 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 			}
 		};
 		queue.put(entry, System.currentTimeMillis() / 50);
+		if (task == 0)
+			task = new Tasker() {
+
+				@Override
+				public void run() {
+					Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
+					while (iterator.hasNext()) {
+						Entry<Entry<K, V>, Long> entry = iterator.next();
+						if (entry.getValue() - System.currentTimeMillis() / 50 + cacheTime <= 0) {
+							iterator.remove();
+							RemoveCallback<Entry<K, V>> callback = getCallback();
+							if (callback != null)
+								callback.call(entry.getKey());
+						}
+					}
+					if (queue.isEmpty())
+						if (inactiveTask == 0)
+							inactiveTask = System.currentTimeMillis() / 1000 + DEFAULT_WAIT_TIME;
+						else if (inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
+							task = 0;
+							cancel();
+						}
+
+				}
+			}.runRepeating(1, 1);
 		return null;
 	}
 
