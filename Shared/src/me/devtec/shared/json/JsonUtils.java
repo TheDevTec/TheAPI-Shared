@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import me.devtec.shared.Pair;
@@ -154,11 +155,17 @@ public class JsonUtils {
 				if (result != null)
 					return result;
 				String className = (String) map.get("c");
-				if (className == null)
+				if (className == null) {
+					for (Entry<String, Object> entry : map.entrySet())
+						entry.setValue(read(entry.getValue()));
 					return s;
+				}
 				Class<?> c = JsonUtils.getClassByName(className);
-				if (c == null)
+				if (c == null) {
+					for (Entry<String, Object> entry : map.entrySet())
+						entry.setValue(read(entry.getValue()));
 					return s;
+				}
 				String type = (String) map.get("t");
 				if (type != null) { // collection, array or map
 					if (type.equals("map")) {
