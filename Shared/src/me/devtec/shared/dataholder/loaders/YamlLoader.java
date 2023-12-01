@@ -283,7 +283,9 @@ public class YamlLoader extends EmptyLoader {
 		}
 		if (!foundHash)
 			return new String[] { endOfString == -1 ? container.toString() : container.substring(0, endOfString) };
-		return new String[] { endOfString == -1 ? container.toString() : container.substring(0, endOfString), container.substring(splitIndexStart) };
+		return new String[] {
+				endOfString == -1 && splitIndexStart == 0 ? container.toString() : endOfString == -1 ? container.substring(0, splitIndexStart).trim() : container.substring(0, endOfString),
+				container.substring(splitIndexStart) };
 	}
 
 	private static String[] splitFromCommentJson(int posFromStart, String input) {
