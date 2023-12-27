@@ -115,6 +115,45 @@ public class TempList<V> extends AbstractList<V> {
 		return value.getKey();
 	}
 
+	public int getPosition(V value) {
+		Iterator<V> it = iterator();
+		int pos = 0;
+		if (value == null) {
+			while (it.hasNext())
+				if (it.next() == null)
+					return pos;
+				else
+					++pos;
+		} else
+			while (it.hasNext())
+				if (value.equals(it.next()))
+					return pos;
+				else
+					++pos;
+		return -1;
+	}
+
+	public boolean update(V value) {
+		Iterator<Entry<V, Long>> it = queue.iterator();
+		if (value == null)
+			while (it.hasNext()) {
+				Entry<V, Long> entry = it.next();
+				if (entry.getKey() == null) {
+					entry.setValue(System.currentTimeMillis() / 50);
+					return true;
+				}
+			}
+		else
+			while (it.hasNext()) {
+				Entry<V, Long> entry = it.next();
+				if (value.equals(entry.getKey())) {
+					entry.setValue(System.currentTimeMillis() / 50);
+					return true;
+				}
+			}
+		return false;
+	}
+
 	/**
 	 * @apiNote Get Entry with value from index without updating time
 	 */
