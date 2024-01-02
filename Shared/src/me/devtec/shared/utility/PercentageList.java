@@ -1,13 +1,14 @@
 package me.devtec.shared.utility;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 
 public class PercentageList<V> {
-	private final List<Entry<V, Double>> entries = new ArrayList<>();
+	private final List<Entry<V, Double>> entries = Collections.synchronizedList(new ArrayList<>());
 	private double totalChance;
 
 	public boolean isEmpty() {

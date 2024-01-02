@@ -3,6 +3,7 @@ package me.devtec.shared.dataholder.cache;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
@@ -16,7 +17,7 @@ import me.devtec.shared.scheduler.Tasker;
 public class TempList<V> extends AbstractList<V> {
 	private static long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
 
-	private List<Entry<V, Long>> queue = new ArrayList<>();
+	private List<Entry<V, Long>> queue = Collections.synchronizedList(new ArrayList<>());
 	private long cacheTime;
 	private RemoveCallback<V> callback;
 

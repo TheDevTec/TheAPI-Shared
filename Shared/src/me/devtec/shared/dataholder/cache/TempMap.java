@@ -1,6 +1,7 @@
 package me.devtec.shared.dataholder.cache;
 
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,7 +14,7 @@ import me.devtec.shared.scheduler.Tasker;
 public class TempMap<K, V> extends AbstractMap<K, V> {
 	private static long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
 
-	private LinkedHashMap<Entry<K, V>, Long> queue = new LinkedHashMap<>();
+	private Map<Entry<K, V>, Long> queue = Collections.synchronizedMap(new LinkedHashMap<>());
 	private long cacheTime;
 	private RemoveCallback<Entry<K, V>> callback;
 
