@@ -570,6 +570,10 @@ public class ComponentAPI {
 
 	@SuppressWarnings("unchecked")
 	public static Component fromJson(Map<String, Object> map) {
+		if (map.containsKey("id") && map.containsKey("type"))
+			return ComponentEntity.fromJson(map);
+		if (map.containsKey("id"))
+			return ComponentItem.fromJson(map);
 		Component component = new Component(map.get("text") + "");
 		if (map.containsKey("color"))
 			component.setColor(map.get("color") + "");
