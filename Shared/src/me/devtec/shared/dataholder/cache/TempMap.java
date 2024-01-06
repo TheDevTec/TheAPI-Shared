@@ -62,7 +62,6 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 			Entry<Entry<K, V>, Long> value = iterator.next();
 			if (value.getKey().getKey().equals(key)) {
 				V previous = value.getKey().setValue(val);
-				value.getKey().setValue(val);
 				value.setValue(System.currentTimeMillis() / 50);
 				return previous;
 			}
@@ -77,13 +76,14 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 
 			@Override
 			public V getValue() {
-				return val;
+				return value;
 			}
 
 			@Override
 			public V setValue(V value) {
+				V previous = this.value;
 				this.value = value;
-				return this.value;
+				return previous;
 			}
 
 			@Override
