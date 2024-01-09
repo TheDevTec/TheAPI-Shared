@@ -8,7 +8,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class StringContainer {
+public class StringContainer implements CharSequence {
 	private static final int DEFAULT_CAPACITY = 16;
 
 	private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
@@ -43,10 +43,15 @@ public class StringContainer {
 	}
 
 	public StringContainer(String text, int offset) {
-		value = new char[(count = text.length()) + 16];
-		text.getChars(offset, count, value, 0);
+		this(text, offset, 16);
 	}
 
+	public StringContainer(String text, int offset, int additionalCapacity) {
+		value = new char[(count = text.length() - offset) + Math.max(0, additionalCapacity)];
+		text.getChars(offset, text.length(), value, 0);
+	}
+
+	@Override
 	public int length() {
 		return count;
 	}
@@ -76,6 +81,7 @@ public class StringContainer {
 		return minCapacity > MAX_ARRAY_SIZE ? minCapacity : MAX_ARRAY_SIZE;
 	}
 
+	@Override
 	public char charAt(int index) {
 		return value[index];
 	}
@@ -151,6 +157,16 @@ public class StringContainer {
 		ensureCapacityInternal(count + 1);
 		System.arraycopy(value, offset, value, offset + 1, ++count - offset - 1);
 		value[offset] = c;
+		return this;
+	}
+
+	public StringContainer insertMultipleChars(int offset, char... characters) {
+		int len = characters.length;
+		ensureCapacityInternal(count + len);
+		System.arraycopy(value, offset, value, offset + len, count - offset);
+		for (char c : characters)
+			value[offset++] = c;
+		count += len;
 		return this;
 	}
 
@@ -436,6 +452,8 @@ public class StringContainer {
 	}
 
 	protected int indexOf(int start, String lookingFor) {
+		if (lookingFor.length() == 1)
+			return indexOf(lookingFor.charAt(0), start);
 		int min = Math.min(start, count);
 		int size = lookingFor.length();
 
@@ -457,6 +475,24 @@ public class StringContainer {
 		return -1;
 	}
 
+	public int indexOfIgnoreCase(char val) {
+		return indexOfIgnoreCase(val, count);
+	}
+
+	public int indexOfIgnoreCase(char val, int start) {
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
+			if (Character.toUpperCase(value[i]) == Character.toUpperCase(val))
+				return i;
+		return -1;
+	}
+
+	public int indexOfIgnoreCase(char val, int start, int limit) {
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
+			if (Character.toUpperCase(value[i]) == Character.toUpperCase(val) && --limit <= 0)
+				return i;
+		return -1;
+	}
+
 	public int indexOfIgnoreCase(String value) {
 		return indexOfIgnoreCase(value, 0);
 	}
@@ -466,6 +502,8 @@ public class StringContainer {
 	}
 
 	protected int indexOfIgnoreCase(int start, String lookingFor) {
+		if (lookingFor.length() == 1)
+			return indexOfIgnoreCase(lookingFor.charAt(0), start);
 		int min = Math.min(start, count);
 		int size = lookingFor.length();
 
@@ -496,6 +534,8 @@ public class StringContainer {
 	}
 
 	protected int lastIndexOf(int start, String lookingFor) {
+		if (lookingFor.length() == 1)
+			return lastIndexOf(lookingFor.charAt(0), start);
 		int min = Math.min(start, count - 1);
 		int size = lookingFor.length();
 
@@ -588,5 +628,13 @@ public class StringContainer {
 
 	public boolean endsWith(String suffix) {
 		return startsWith(suffix, length() - suffix.length());
+	}
+
+	@Override
+	public CharSequence subSequence(int start, int end) {
+		StringContainer sub = new StringContainer(end - start);
+		System.arraycopy(value, start, sub.value, 0, end - start);
+		sub.count += end - start;
+		return sub;
 	}
 }
