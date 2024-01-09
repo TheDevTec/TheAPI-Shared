@@ -2,10 +2,13 @@ package me.devtec.shared.utility;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import me.devtec.shared.Pair;
 
 public class MathUtils {
+
+	public static Random random = new Random();
 
 	/**
 	 * @apiNote The method first casts the double value to an int using a simple
@@ -87,7 +90,7 @@ public class MathUtils {
 		double range = max - min;
 		if (range <= 0)
 			return min;
-		double randomValue = Math.random() * range + min;
+		double randomValue = random.nextDouble() * range + min;
 		if (randomValue >= max)
 			return Math.nextDown(max);
 		return randomValue;
@@ -112,7 +115,7 @@ public class MathUtils {
 		int range = max - min;
 		if (range <= 0)
 			throw new IllegalArgumentException("Invalid range: min > max");
-		int randomValue = (int) (Math.random() * range) + min;
+		int randomValue = (int) (random.nextDouble() * range) + min;
 		return isNegative ? randomValue * -1 : randomValue;
 	}
 

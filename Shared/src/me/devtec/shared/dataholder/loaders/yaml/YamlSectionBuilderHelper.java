@@ -147,9 +147,7 @@ public class YamlSectionBuilderHelper {
 					if (!((Collection<?>) value).isEmpty())
 						try {
 							if (dataVal.writtenValue != null)
-								YamlSectionBuilderHelper
-										.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), dataVal.writtenValue, value instanceof String ? '"' : 0), commentAfterValue)
-										.append(System.lineSeparator());
+								YamlSectionBuilderHelper.addCommentIfAvailable(b.append(' ').append(dataVal.writtenValue), commentAfterValue).append(System.lineSeparator());
 							else {
 								YamlSectionBuilderHelper.addCommentIfAvailable(b, commentAfterValue).append(System.lineSeparator());
 								for (Object a : (Collection<?>) value)
@@ -165,9 +163,7 @@ public class YamlSectionBuilderHelper {
 				} else if (((Object[]) value).length != 0)
 					try {
 						if (dataVal.writtenValue != null)
-							YamlSectionBuilderHelper
-									.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), dataVal.writtenValue, value instanceof String ? '"' : 0), commentAfterValue)
-									.append(System.lineSeparator());
+							YamlSectionBuilderHelper.addCommentIfAvailable(b.append(' ').append(dataVal.writtenValue), commentAfterValue).append(System.lineSeparator());
 						else {
 							YamlSectionBuilderHelper.addCommentIfAvailable(b, commentAfterValue).append(System.lineSeparator());
 							for (Object a : (Object[]) value)
@@ -183,8 +179,7 @@ public class YamlSectionBuilderHelper {
 			} else // write normal value
 				try {
 					if (dataVal.writtenValue != null)
-						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), dataVal.writtenValue, value instanceof String ? '"' : 0), commentAfterValue)
-								.append(System.lineSeparator());
+						YamlSectionBuilderHelper.addCommentIfAvailable(b.append(' ').append(dataVal.writtenValue), commentAfterValue).append(System.lineSeparator());
 					else if (value instanceof String)
 						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), (String) value, '"'), commentAfterValue).append(System.lineSeparator());
 					else
@@ -229,13 +224,9 @@ public class YamlSectionBuilderHelper {
 	}
 
 	protected static StringContainer writeQuotes(StringContainer b, String value, char add) {
-		if (add == 0)
-			b.append(value);
-		else {
-			b.append(add);
-			replaceWithEscape(b, value, add);
-			b.append(add);
-		}
+		b.append(add);
+		replaceWithEscape(b, value, add);
+		b.append(add);
 		return b;
 	}
 

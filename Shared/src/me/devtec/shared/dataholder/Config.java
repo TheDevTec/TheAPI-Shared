@@ -22,6 +22,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import me.devtec.shared.annotations.Checkers;
+import me.devtec.shared.annotations.Nonnull;
+import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.loaders.DataLoader;
 import me.devtec.shared.dataholder.loaders.EmptyLoader;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -43,53 +46,79 @@ public class Config {
 	protected int updaterTask;
 	protected Runnable updaterWatcher;
 
-	public static Config loadFromInput(InputStream input) {
+	public static Config loadFromInput(@Nonnull InputStream input) {
+		Checkers.nonNull(input, "InputStream");
 		return new Config().reload(StreamUtils.fromStream(input));
 	}
 
-	public static Config loadFromInput(InputStream input, String outputFile, MergeSetting... settings) {
+	public static Config loadFromInput(@Nonnull InputStream input, @Nonnull String outputFile, @Nonnull MergeSetting... settings) {
+		Checkers.nonNull(input, "InputStream");
+		Checkers.nonNull(outputFile, "Output File Name");
+		Checkers.nonNull(settings, "MergeSetting");
 		return Config.loadFromInput(input, new File(outputFile), settings);
 	}
 
-	public static Config loadFromInput(InputStream input, File outputFile, MergeSetting... settings) {
+	public static Config loadFromInput(@Nonnull InputStream input, @Nonnull File outputFile, @Nonnull MergeSetting... settings) {
+		Checkers.nonNull(input, "InputStream");
+		Checkers.nonNull(outputFile, "Output File");
+		Checkers.nonNull(settings, "MergeSetting");
 		Config config = new Config(outputFile);
 		config.merge(new Config().reload(StreamUtils.fromStream(input)), settings);
 		return config;
 	}
 
-	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, File outputFile, MergeSetting... settings) {
+	public static Config loadFromPlugin(@Nonnull Class<?> mainClass, @Nonnull String pathToFile, @Nonnull File outputFile, @Nonnull MergeSetting... settings) {
+		Checkers.nonNull(mainClass, "Plugin class");
+		Checkers.nonNull(outputFile, "Output File");
+		Checkers.nonNull(settings, "MergeSetting");
 		return Config.loadFromInput(mainClass.getClassLoader().getResourceAsStream(pathToFile), outputFile, settings);
 	}
 
-	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, String outputFile, MergeSetting... settings) {
+	public static Config loadFromPlugin(@Nonnull Class<?> mainClass, @Nonnull String pathToFile, @Nonnull String outputFile, @Nonnull MergeSetting... settings) {
+		Checkers.nonNull(mainClass, "Plugin class");
+		Checkers.nonNull(outputFile, "Output File Name");
+		Checkers.nonNull(settings, "MergeSetting");
 		return Config.loadFromInput(mainClass.getClassLoader().getResourceAsStream(pathToFile), new File(outputFile), settings);
 	}
 
-	public static Config loadFromInput(InputStream input, String outputFile) {
+	public static Config loadFromInput(@Nonnull InputStream input, @Nonnull String outputFile) {
+		Checkers.nonNull(input, "InputStream");
+		Checkers.nonNull(outputFile, "Output File Name");
 		return loadFromInput(input, outputFile, MergeStandards.DEFAULT);
 	}
 
-	public static Config loadFromInput(InputStream input, File outputFile) {
+	public static Config loadFromInput(@Nonnull InputStream input, @Nonnull File outputFile) {
+		Checkers.nonNull(input, "InputStream");
+		Checkers.nonNull(outputFile, "Output File");
 		return loadFromInput(input, outputFile, MergeStandards.DEFAULT);
 	}
 
-	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, File outputFile) {
+	public static Config loadFromPlugin(@Nonnull Class<?> mainClass, @Nonnull String pathToFile, @Nonnull File outputFile) {
+		Checkers.nonNull(mainClass, "Plugin class");
+		Checkers.nonNull(pathToFile, "Path To File");
+		Checkers.nonNull(outputFile, "Output File");
 		return loadFromPlugin(mainClass, pathToFile, outputFile, MergeStandards.DEFAULT);
 	}
 
-	public static Config loadFromPlugin(Class<?> mainClass, String pathToFile, String outputFile) {
+	public static Config loadFromPlugin(@Nonnull Class<?> mainClass, @Nonnull String pathToFile, @Nonnull String outputFile) {
+		Checkers.nonNull(mainClass, "Plugin class");
+		Checkers.nonNull(pathToFile, "Path To File");
+		Checkers.nonNull(outputFile, "Output File Name");
 		return loadFromPlugin(mainClass, pathToFile, outputFile, MergeStandards.DEFAULT);
 	}
 
-	public static Config loadFromFile(File file) {
+	public static Config loadFromFile(@Nonnull File file) {
+		Checkers.nonNull(file, "File");
 		return new Config(file);
 	}
 
-	public static Config loadFromFile(String filePath) {
+	public static Config loadFromFile(@Nonnull String filePath) {
+		Checkers.nonNull(filePath, "File Path");
 		return new Config(filePath);
 	}
 
-	public static Config loadFromString(String input) {
+	public static Config loadFromString(@Nonnull String input) {
+		Checkers.nonNull(input, "Contents");
 		return new Config().reload(input);
 	}
 
@@ -97,24 +126,31 @@ public class Config {
 		loader = new EmptyLoader();
 	}
 
-	public Config(DataLoader loaded) {
-		loader = loaded;
+	public Config(@Nonnull DataLoader dataLoader) {
+		Checkers.nonNull(dataLoader, "DataLoader");
+		loader = dataLoader;
 		requireSave = true;
 	}
 
-	public Config(String filePath) {
-		this(new File(filePath.charAt(0) == '/' ? filePath.substring(1) : filePath), true);
+	public Config(@Nonnull String filePath) {
+		this(filePath, true);
 	}
 
-	public Config(String filePath, boolean load) {
-		this(new File(filePath.charAt(0) == '/' ? filePath.substring(1) : filePath), load);
+	public Config(@Nonnull String filePath, boolean load) {
+		Checkers.nonNull(filePath, "File Path");
+		file = new File(filePath.charAt(0) == '/' ? filePath.substring(1) : filePath);
+		if (load)
+			loader = DataLoader.findLoaderFor(file); // get & load
+		else
+			loader = new EmptyLoader();
 	}
 
-	public Config(File file) {
+	public Config(@Nonnull File file) {
 		this(file, true);
 	}
 
-	public Config(File file, boolean load) {
+	public Config(@Nonnull File file, boolean load) {
+		Checkers.nonNull(file, "File");
 		this.file = file;
 		if (load)
 			loader = DataLoader.findLoaderFor(file); // get & load
@@ -123,7 +159,8 @@ public class Config {
 	}
 
 	// CLONE
-	public Config(Config data) {
+	public Config(@Nonnull Config data) {
+		Checkers.nonNull(data, "Config");
 		file = data.file;
 		loader = data.loader.clone();
 	}
@@ -140,29 +177,34 @@ public class Config {
 		requireSave = false;
 	}
 
-	public boolean exists(String path) {
-		return isKey(path);
+	public boolean exists(@Nonnull String key) {
+		return isKey(key);
 	}
 
-	public boolean existsKey(String path) {
-		return loader.get().containsKey(path);
+	public boolean existsKey(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
+		return loader.get().containsKey(key);
 	}
 
-	public Config setFile(File file) {
-		if (file == this.file)
+	public Config setFile(@Nullable File file) {
+		if (file == null ? this.file == null : file.equals(this.file))
 			return this;
 		markModified();
 		this.file = file;
 		return this;
 	}
 
-	public boolean setIfAbsent(String key, Object value) {
+	public Config setFile(@Nullable String filePath) {
+		return setFile(filePath == null ? null : new File(filePath));
+	}
+
+	public boolean setIfAbsent(@Nonnull String key, @Nonnull Object value) {
 		return setIfAbsent(key, value, null);
 	}
 
-	public boolean setIfAbsent(String key, Object value, List<String> comments) {
-		if (value == null)
-			return false;
+	public boolean setIfAbsent(@Nonnull String key, @Nonnull Object value, @Nullable List<String> comments) {
+		Checkers.nonNull(key, "Key");
+		Checkers.nonNull(value, "Value");
 		if (!existsKey(key)) {
 			DataValue val = loader.getOrCreate(key);
 			val.value = value;
@@ -174,7 +216,8 @@ public class Config {
 		return false;
 	}
 
-	public Config set(String key, Object value) {
+	public Config set(@Nonnull String key, @Nullable Object value) {
+		Checkers.nonNull(key, "Key");
 		if (value == null) {
 			if (loader.remove(key))
 				markModified();
@@ -194,20 +237,24 @@ public class Config {
 		return this;
 	}
 
-	public Config remove(String key) {
+	public Config remove(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		if (loader.remove(key, true))
 			markModified();
 		return this;
 	}
 
-	public List<String> getComments(String key) {
+	@Nullable
+	public List<String> getComments(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		DataValue val = loader.get(key);
 		if (val != null)
 			return val.comments;
 		return null;
 	}
 
-	public Config setComments(String key, List<String> value) {
+	public Config setComments(@Nonnull String key, @Nullable List<String> value) {
+		Checkers.nonNull(key, "Key");
 		if (value == null || value.isEmpty()) {
 			DataValue val = loader.get(key);
 			if (val != null && val.comments != null && !val.comments.isEmpty()) {
@@ -226,14 +273,17 @@ public class Config {
 		return this;
 	}
 
-	public String getCommentAfterValue(String key) {
+	@Nullable
+	public String getCommentAfterValue(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		DataValue val = loader.getOrCreate(key);
 		if (val != null)
 			return val.commentAfterValue;
 		return null;
 	}
 
-	public Config setCommentAfterValue(String key, String comment) {
+	public Config setCommentAfterValue(@Nonnull String key, @Nullable String comment) {
+		Checkers.nonNull(key, "Key");
 		if (comment == null || comment.isEmpty()) {
 			DataValue val = loader.get(key);
 			if (val == null || val.commentAfterValue == null)
@@ -252,11 +302,12 @@ public class Config {
 		return this;
 	}
 
+	@Nullable
 	public File getFile() {
 		return file;
 	}
 
-	public Config setHeader(Collection<String> lines) {
+	public Config setHeader(@Nullable Collection<String> lines) {
 		loader.getHeader().clear();
 		if (lines != null)
 			loader.getHeader().addAll(lines);
@@ -264,7 +315,7 @@ public class Config {
 		return this;
 	}
 
-	public Config setFooter(Collection<String> lines) {
+	public Config setFooter(@Nullable Collection<String> lines) {
 		loader.getFooter().clear();
 		if (lines != null)
 			loader.getFooter().addAll(lines);
@@ -272,15 +323,17 @@ public class Config {
 		return this;
 	}
 
+	@Nonnull
 	public Collection<String> getHeader() {
 		return loader.getHeader();
 	}
 
+	@Nonnull
 	public Collection<String> getFooter() {
 		return loader.getFooter();
 	}
 
-	public Config reload(String input) {
+	public Config reload(@Nullable String input) {
 		loader = DataLoader.findLoaderFor(input);
 		markModified();
 		return this;
@@ -290,30 +343,36 @@ public class Config {
 		return this.reload(getFile());
 	}
 
-	public Config reload(File file) {
-		if (file == null)
-			return this;
+	public Config reload(@Nonnull File file) {
+		Checkers.nonNull(file, "File");
 		loader = DataLoader.findLoaderFor(file);
 		markNonModified();
 		return this;
 	}
 
-	public Object get(String key) {
+	@Nullable
+	public Object get(@Nonnull String key) {
 		return get(key, null);
 	}
 
-	public Object get(String key, Object defaultValue) {
+	@Nullable
+	public Object get(@Nonnull String key, @Nullable Object defaultValue) {
+		Checkers.nonNull(key, "Key");
 		DataValue val = loader.get(key);
 		if (val == null || val.value == null)
 			return defaultValue;
 		return val.value;
 	}
 
-	public <E> E getAs(String key, Class<? extends E> clazz) {
+	@Nullable
+	public <E> E getAs(@Nonnull String key, @Nonnull Class<? extends E> clazz) {
 		return getAs(key, clazz, null);
 	}
 
-	public <E> E getAs(String key, Class<? extends E> clazz, E defaultValue) {
+	@Nullable
+	public <E> E getAs(@Nonnull String key, @Nonnull Class<? extends E> clazz, @Nullable E defaultValue) {
+		Checkers.nonNull(key, "Key");
+		Checkers.nonNull(clazz, "Class");
 		try {
 			if (clazz == String.class || clazz == CharSequence.class)
 				return clazz.cast(getString(key));
@@ -326,11 +385,14 @@ public class Config {
 		return defaultValue;
 	}
 
-	public String getString(String key) {
+	@Nullable
+	public String getString(@Nonnull String key) {
 		return getString(key, null);
 	}
 
-	public String getString(String key, String defaultValue) {
+	@Nullable
+	public String getString(@Nonnull String key, @Nullable String defaultValue) {
+		Checkers.nonNull(key, "Key");
 		DataValue val = loader.get(key);
 		if (val == null || val.value == null)
 			return defaultValue;
@@ -339,7 +401,7 @@ public class Config {
 		return val.value instanceof String ? (String) val.value : val.value + "";
 	}
 
-	public boolean isJson(String key) {
+	public boolean isJson(@Nonnull String key) {
 		DataValue val = loader.get(key);
 		if (val == null || val.value == null)
 			return false;
@@ -351,11 +413,12 @@ public class Config {
 		return false;
 	}
 
-	public int getInt(String key) {
+	public int getInt(@Nonnull String key) {
 		return getInt(key, 0);
 	}
 
-	public int getInt(String key, int defaultValue) {
+	public int getInt(@Nonnull String key, int defaultValue) {
+		Checkers.nonNull(key, "Key");
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -364,11 +427,12 @@ public class Config {
 		return ParseUtils.getInt(getString(key));
 	}
 
-	public double getDouble(String key) {
+	public double getDouble(@Nonnull String key) {
 		return getDouble(key, 0);
 	}
 
-	public double getDouble(String key, double defaultValue) {
+	public double getDouble(@Nonnull String key, double defaultValue) {
+		Checkers.nonNull(key, "Key");
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -377,11 +441,12 @@ public class Config {
 		return ParseUtils.getDouble(getString(key));
 	}
 
-	public long getLong(String key) {
+	public long getLong(@Nonnull String key) {
 		return getLong(key, 0);
 	}
 
-	public long getLong(String key, long defaultValue) {
+	public long getLong(@Nonnull String key, long defaultValue) {
+		Checkers.nonNull(key, "Key");
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -390,11 +455,12 @@ public class Config {
 		return ParseUtils.getLong(getString(key));
 	}
 
-	public float getFloat(String key) {
+	public float getFloat(@Nonnull String key) {
 		return getFloat(key, 0);
 	}
 
-	public float getFloat(String key, float defaultValue) {
+	public float getFloat(@Nonnull String key, float defaultValue) {
+		Checkers.nonNull(key, "Key");
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -403,11 +469,12 @@ public class Config {
 		return ParseUtils.getFloat(getString(key));
 	}
 
-	public byte getByte(String key) {
+	public byte getByte(@Nonnull String key) {
 		return getByte(key, (byte) 0);
 	}
 
-	public byte getByte(String key, byte defaultValue) {
+	public byte getByte(@Nonnull String key, byte defaultValue) {
+		Checkers.nonNull(key, "Key");
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -416,11 +483,12 @@ public class Config {
 		return ParseUtils.getByte(getString(key));
 	}
 
-	public short getShort(String key) {
+	public short getShort(@Nonnull String key) {
 		return getShort(key, (short) 0);
 	}
 
-	public short getShort(String key, short defaultValue) {
+	public short getShort(@Nonnull String key, short defaultValue) {
+		Checkers.nonNull(key, "Key");
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -429,11 +497,12 @@ public class Config {
 		return ParseUtils.getShort(getString(key));
 	}
 
-	public boolean getBoolean(String key) {
+	public boolean getBoolean(@Nonnull String key) {
 		return getBoolean(key, false);
 	}
 
-	public boolean getBoolean(String key, boolean defaultValue) {
+	public boolean getBoolean(@Nonnull String key, boolean defaultValue) {
+		Checkers.nonNull(key, "Key");
 		Object value = get(key);
 		if (value == null)
 			return defaultValue;
@@ -442,18 +511,24 @@ public class Config {
 		return ParseUtils.getBoolean(getString(key));
 	}
 
-	public Collection<Object> getList(String key) {
+	@Nullable
+	public Collection<Object> getList(@Nonnull String key) {
 		return getList(key, null);
 	}
 
-	public Collection<Object> getList(String key, Collection<Object> defaultValue) {
+	@Nullable
+	public Collection<Object> getList(@Nonnull String key, @Nullable Collection<Object> defaultValue) {
+		Checkers.nonNull(key, "Key");
 		Object value = get(key);
 		if (value == null || !(value instanceof Collection))
 			return defaultValue;
 		return new ArrayList<>((Collection<?>) value);
 	}
 
-	public <E> List<E> getListAs(String key, Class<? extends E> clazz) {
+	@Nonnull
+	public <E> List<E> getListAs(@Nonnull String key, @Nonnull Class<? extends E> clazz) {
+		Checkers.nonNull(key, "Key");
+		Checkers.nonNull(clazz, "Class");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -466,7 +541,9 @@ public class Config {
 		return list;
 	}
 
-	public List<String> getStringList(String key) {
+	@Nonnull
+	public List<String> getStringList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -479,7 +556,9 @@ public class Config {
 		return list;
 	}
 
-	public List<Boolean> getBooleanList(String key) {
+	@Nonnull
+	public List<Boolean> getBooleanList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -489,7 +568,9 @@ public class Config {
 		return list;
 	}
 
-	public List<Integer> getIntegerList(String key) {
+	@Nonnull
+	public List<Integer> getIntegerList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -499,7 +580,9 @@ public class Config {
 		return list;
 	}
 
-	public List<Double> getDoubleList(String key) {
+	@Nonnull
+	public List<Double> getDoubleList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -509,7 +592,9 @@ public class Config {
 		return list;
 	}
 
-	public List<Short> getShortList(String key) {
+	@Nonnull
+	public List<Short> getShortList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -519,7 +604,9 @@ public class Config {
 		return list;
 	}
 
-	public List<Byte> getByteList(String key) {
+	@Nonnull
+	public List<Byte> getByteList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -529,7 +616,9 @@ public class Config {
 		return list;
 	}
 
-	public List<Float> getFloatList(String key) {
+	@Nonnull
+	public List<Float> getFloatList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -539,7 +628,9 @@ public class Config {
 		return list;
 	}
 
-	public List<Long> getLongList(String key) {
+	@Nonnull
+	public List<Long> getLongList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -549,8 +640,10 @@ public class Config {
 		return list;
 	}
 
+	@Nonnull
 	@SuppressWarnings("unchecked")
-	public <K, V> List<Map<K, V>> getMapList(String key) {
+	public <K, V> List<Map<K, V>> getMapList(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
 		if (collection.isEmpty())
 			return Collections.emptyList();
@@ -572,11 +665,13 @@ public class Config {
 	}
 
 	public Config save(DataType type) {
+		Checkers.nonNull(type, "DataType");
 		return save(type.name());
 	}
 
-	public Config save(String name) {
-		if (name == null || file == null || isSaving() || !isModified())
+	public Config save(@Nonnull String dataTypeName) {
+		Checkers.nonNull(dataTypeName, "DataType Name");
+		if (file == null || isSaving() || !isModified())
 			return this;
 		isSaving = true;
 		if (!file.exists()) {
@@ -591,7 +686,7 @@ public class Config {
 				return this;
 			}
 		}
-		ByteBuffer bytes = ByteBuffer.wrap(toByteArray(name, true));
+		ByteBuffer bytes = ByteBuffer.wrap(toByteArray(dataTypeName, true));
 		try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
 			channel.write(bytes);
 		} catch (Exception e) {
@@ -609,23 +704,28 @@ public class Config {
 			save(getDataLoader().name());
 	}
 
+	@Nonnull
 	public Set<String> getKeys() {
 		return loader.getPrimaryKeys();
 	}
 
+	@Nonnull
 	public Set<String> getKeys(boolean subkeys) {
 		return subkeys ? loader.getKeys() : getKeys();
 	}
 
-	public Set<String> getKeys(String key) {
+	@Nonnull
+	public Set<String> getKeys(@Nonnull String key) {
 		return this.getKeys(key, false);
 	}
 
-	public Iterator<String> getIteratorKeys(String key) {
+	@Nonnull
+	public Iterator<String> getIteratorKeys(@Nonnull String key) {
 		return this.getIteratorKeys(key, false);
 	}
 
-	public boolean isKey(String key) {
+	public boolean isKey(@Nonnull String key) {
+		Checkers.nonNull(key, "Key");
 		for (String section : loader.getKeys())
 			if (section.startsWith(key))
 				if (section.length() == key.length() || section.charAt(key.length()) == '.')
@@ -633,52 +733,71 @@ public class Config {
 		return false;
 	}
 
-	public Set<String> getKeys(String key, boolean subkeys) {
+	@Nonnull
+	public Set<String> getKeys(@Nonnull String key, boolean subkeys) {
+		Checkers.nonNull(key, "Key");
 		return getDataLoader().keySet(key, subkeys);
 	}
 
-	public Iterator<String> getIteratorKeys(String key, boolean subkeys) {
+	@Nonnull
+	public Iterator<String> getIteratorKeys(@Nonnull String key, boolean subkeys) {
+		Checkers.nonNull(key, "Key");
 		return getDataLoader().keySetIterator(key, subkeys);
 	}
 
+	@Nonnull
 	@Override
 	public String toString() {
 		return toString(getDataLoader().name().equals("empty") ? DataType.BYTE.name() : getDataLoader().name(), false);
 	}
 
-	public String toString(String type) {
-		return toString(type, false);
+	@Nonnull
+	public String toString(String dataTypeName) {
+		Checkers.nonNull(dataTypeName, "DataType Name");
+		return toString(dataTypeName, false);
 	}
 
+	@Nonnull
 	public String toString(DataType type) {
+		Checkers.nonNull(type, "DataType");
 		return toString(type.name(), false);
 	}
 
-	public String toString(String type, boolean markSaved) {
-		if (getDataLoader().name().equalsIgnoreCase(type))
+	@Nonnull
+	public String toString(String dataTypeName, boolean markSaved) {
+		Checkers.nonNull(dataTypeName, "DataType Name");
+		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
 			return getDataLoader().saveAsString(this, markSaved);
-		DataLoader loader = DataLoader.findLoaderByName(type);
+		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
 		if (loader != null)
 			return loader.saveAsString(this, markSaved);
 		return null;
 	}
 
-	public byte[] toByteArray(String type) {
-		return toByteArray(type, false);
+	@Nonnull
+	public byte[] toByteArray(String dataTypeName) {
+		Checkers.nonNull(dataTypeName, "DataType Name");
+		return toByteArray(dataTypeName, false);
 	}
 
+	@Nonnull
 	public byte[] toByteArray(DataType type) {
+		Checkers.nonNull(type, "DataType");
 		return toByteArray(type.name(), false);
 	}
 
+	@Nonnull
 	public byte[] toByteArray(DataType type, boolean markSaved) {
+		Checkers.nonNull(type, "DataType");
 		return toByteArray(type.name(), markSaved);
 	}
 
-	public byte[] toByteArray(String type, boolean markSaved) {
-		if (getDataLoader().name().equalsIgnoreCase(type))
+	@Nonnull
+	public byte[] toByteArray(String dataTypeName, boolean markSaved) {
+		Checkers.nonNull(dataTypeName, "DataType Name");
+		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
 			return getDataLoader().save(this, markSaved);
-		DataLoader loader = DataLoader.findLoaderByName(type);
+		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
 		if (loader != null)
 			return loader.save(this, markSaved);
 		return null;
@@ -698,16 +817,20 @@ public class Config {
 	}
 
 	public boolean merge(Config merge) {
+		Checkers.nonNull(merge, "Config");
 		return merge(merge, MergeStandards.DEFAULT);
 	}
 
 	public boolean merge(Config merge, MergeSetting... settings) {
+		Checkers.nonNull(merge, "Config");
+		Checkers.nonNull(settings, "MergeSetting");
 		for (MergeSetting setting : settings)
 			if (setting.merge(this, merge))
 				markModified();
 		return isModified();
 	}
 
+	@Nonnull
 	public DataLoader getDataLoader() {
 		return loader;
 	}

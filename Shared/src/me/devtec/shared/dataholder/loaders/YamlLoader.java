@@ -3,6 +3,7 @@ package me.devtec.shared.dataholder.loaders;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -169,15 +170,18 @@ public class YamlLoader extends EmptyLoader {
 
 	@Override
 	public String saveAsString(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		return saveAsContainer(config, markSaved).toString();
 	}
 
 	@Override
 	public byte[] save(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		return saveAsContainer(config, markSaved).getBytes();
 	}
 
 	public StringContainer saveAsContainer(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
 		if (config.getDataLoader().getHeader() != null)
@@ -201,7 +205,7 @@ public class YamlLoader extends EmptyLoader {
 		return builder;
 	}
 
-	public static String[] readConfigLine(String input) {
+	protected static String[] readConfigLine(String input) {
 		int index = -1;
 
 		for (int i = 0; i < input.length() - 1; i++)
@@ -225,7 +229,7 @@ public class YamlLoader extends EmptyLoader {
 		return null;
 	}
 
-	public static String getFromQuotes(String input) {
+	protected static String getFromQuotes(String input) {
 		int len = input.length();
 		if (len <= 2)
 			return input;
@@ -236,7 +240,7 @@ public class YamlLoader extends EmptyLoader {
 		return input;
 	}
 
-	public static String[] splitFromComment(int posFromStart, String input) {
+	protected static String[] splitFromComment(int posFromStart, String input) {
 		int len = input.length();
 		if (len <= 1)
 			return new String[] { input };

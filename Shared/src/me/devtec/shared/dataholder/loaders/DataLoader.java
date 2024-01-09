@@ -10,6 +10,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import me.devtec.shared.annotations.Checkers;
+import me.devtec.shared.annotations.Comment;
+import me.devtec.shared.annotations.Nonnull;
+import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataLoaderConstructor;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -118,68 +122,112 @@ public abstract class DataLoader implements Cloneable {
 		});
 	}
 
-	public static void register(LoaderPriority priority, DataLoaderConstructor constructor) {
+	@Comment(comment = "Registers DataLoaderConstructor under specified priority. Lower priority means that this DataConstructor will be retrieved earlier.")
+	public static void register(@Nonnull LoaderPriority priority, @Nonnull DataLoaderConstructor constructor) {
+		Checkers.nonNull(priority, "LoaderPriority");
+		Checkers.nonNull(constructor, "DataLoaderConstructor");
 		DataLoader.dataLoaders.get(priority).add(constructor);
 		if (constructor.construct().loadingFromFile())
 			anyLoaderWhichAllowFiles = true;
 	}
 
-	public void unregister(DataLoaderConstructor constructor) {
+	@Comment(comment = "Unregisters DataLoaderConstructor.")
+	public void unregister(@Nonnull DataLoaderConstructor constructor) {
+		Checkers.nonNull(constructor, "DataLoaderConstructor");
 		for (List<DataLoaderConstructor> entry : DataLoader.dataLoaders.values())
 			if (entry.remove(constructor))
 				break;
 	}
 
-	// Does DataLoader have own loader from file?
-
+	@Comment(comment = "Checks if it can read the contents of the file directly from File. If not, StreamUtils will be used to read the contents.")
 	public abstract boolean loadingFromFile();
 
+	@Comment(comment = "Gets the primary keys.")
+	@Nonnull
 	public abstract Set<String> getPrimaryKeys();
 
+	@Comment(comment = "Gets the entire stored structure in memory")
+	@Nonnull
 	public abstract Map<String, DataValue> get();
 
-	public abstract void set(String key, DataValue value);
+	@Comment(comment = "Creates a section with the object.")
+	public abstract void set(@Nonnull String key, @Nonnull DataValue value);
 
-	public abstract boolean remove(String key, boolean withSubKeys);
+	@Comment(comment = "Removes a section. If boolean is set to true, it also removes all subsections with this section.")
+	public abstract boolean remove(@Nonnull String key, boolean withSubKeys);
 
-	public boolean remove(String key) {
+	@Comment(comment = "Removes a section.")
+	public boolean remove(@Nonnull String key) {
 		return remove(key, false);
 	}
 
+	@Comment(comment = "Gets the set header lines. This collection can be edited.")
+	@Nonnull
 	public abstract Collection<String> getHeader();
 
+	@Comment(comment = "Gets the set footer lines. This collection can be edited.")
+	@Nonnull
 	public abstract Collection<String> getFooter();
 
+	@Comment(comment = "Gets all the keys.")
+	@Nonnull
 	public abstract Set<String> getKeys();
 
+	@Comment(comment = "Clears all keys, sections and all settings.")
 	public abstract void reset();
 
-	public abstract void load(String input);
+	@Comment(comment = "Loads the contents of the file.")
+	public abstract void load(@Nullable String input);
 
-	public abstract boolean isLoaded();
-
-	public abstract DataValue get(String key);
-
-	public abstract DataValue getOrCreate(String key);
-
-	public abstract byte[] save(Config config, boolean markSaved);
-
-	public abstract String saveAsString(Config config, boolean markSaved);
-
-	public abstract String name();
-
-	@Override
-	public abstract DataLoader clone();
-
-	public abstract Set<String> keySet(String key, boolean subkeys);
-
-	public abstract Iterator<String> keySetIterator(String key, boolean subkeys);
-
-	public void load(File file) {
+	@Comment(comment = "Loads the file. If the class doesn't override this method on its own, StreamUtils will be used to read the contents of the file.")
+	public void load(@Nonnull File file) {
 		this.load(StreamUtils.fromStream(file));
 	}
 
-	public static DataLoader findLoaderByName(String type) {
+	@Comment(comment = "Checks if the file was loaded according to class after calling the load method.")
+	public abstract boolean isLoaded();
+
+	@Comment(comment = "Gets stored data from a collection on a specific section.")
+	@Nullable
+	public abstract DataValue get(@Nonnull String key);
+
+	@Comment(comment = "Gets stored data from a collection on a specific section. If there are none, creates a section with empty data.")
+	@Nonnull
+	public abstract DataValue getOrCreate(@Nonnull String key);
+
+	@Comment(comment = "Saves the entire structure to byte[]")
+	@Nonnull
+	public abstract byte[] save(@Nonnull Config config, boolean markSaved);
+
+	@Comment(comment = "Saves the entire structure to String")
+	@Nonnull
+	public abstract String saveAsString(@Nonnull Config config, boolean markSaved);
+
+	@Comment(comment = "Gets the name of this DataLoader")
+	@Nonnull
+	public abstract String name();
+
+	@Comment(comment = "Gets the entire structure from the Map and converts it to EntrySet")
+	@Nonnull
+	public abstract Set<Entry<String, DataValue>> entrySet();
+
+	@Comment(comment = "Gets all subsection names under a specific section. If boolean is set to true, it gets absolutely all subsections with full names.")
+	@Nonnull
+	public abstract Set<String> keySet(@Nonnull String key, boolean subkeys);
+
+	@Comment(comment = "Creates an Iterator that will retrieve subsections under a specific section. If boolean is set to true, it gets absolutely all subsections with full names.")
+	@Nonnull
+	public abstract Iterator<String> keySetIterator(@Nonnull String key, boolean subkeys);
+
+	@Comment(comment = "Clones the entire DataLoader")
+	@Override
+	@Nonnull
+	public abstract DataLoader clone();
+
+	@Comment(comment = "Finds DataLoader by its name")
+	@Nonnull
+	public static DataLoader findLoaderByName(@Nonnull String type) {
+		Checkers.nonNull(type, "DataLoader Type Name");
 		for (LoaderPriority priority : LoaderPriority.values())
 			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority))
 				if (constructor.isConstructorOf(type))
@@ -187,7 +235,10 @@ public abstract class DataLoader implements Cloneable {
 		return null;
 	}
 
-	public static DataLoader findLoaderFor(File input) {
+	@Comment(comment = "It finds the correct DataLoader according to the contents of the file and reads it.")
+	@Nonnull
+	public static DataLoader findLoaderFor(@Nonnull File input) {
+		Checkers.nonNull(input, "Input File");
 		String inputString;
 		if (!anyLoaderWhichAllowFiles)
 			return findLoaderFor(StreamUtils.fromStream(input));
@@ -215,7 +266,9 @@ public abstract class DataLoader implements Cloneable {
 		return empty;
 	}
 
-	public static DataLoader findLoaderFor(String inputString) {
+	@Comment(comment = "It finds the correct DataLoader according to the contents and reads it.")
+	@Nonnull
+	public static DataLoader findLoaderFor(@Nullable String inputString) {
 		if (inputString != null && !inputString.isEmpty())
 			for (LoaderPriority priority : LoaderPriority.values())
 				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
@@ -228,6 +281,4 @@ public abstract class DataLoader implements Cloneable {
 		empty.load(inputString);
 		return empty;
 	}
-
-	public abstract Set<Entry<String, DataValue>> entrySet();
 }

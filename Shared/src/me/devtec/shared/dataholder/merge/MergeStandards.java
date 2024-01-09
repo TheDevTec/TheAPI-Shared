@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
@@ -12,6 +13,8 @@ public class MergeStandards {
 
 		@Override
 		public boolean merge(Config config, Config merge) {
+			Checkers.nonNull(config, "Primary Config");
+			Checkers.nonNull(merge, "Merging Config");
 			boolean change = false;
 			try {
 				Iterator<Entry<String, DataValue>> itr;
@@ -31,6 +34,8 @@ public class MergeStandards {
 
 		@Override
 		public boolean merge(Config config, Config merge) {
+			Checkers.nonNull(config, "Primary Config");
+			Checkers.nonNull(merge, "Merging Config");
 			boolean change = false;
 			try {
 				if (config.getDataLoader().getFooter() != null /** Is footer supported? **/
@@ -48,6 +53,8 @@ public class MergeStandards {
 
 		@Override
 		public boolean merge(Config config, Config merge) {
+			Checkers.nonNull(config, "Primary Config");
+			Checkers.nonNull(merge, "Merging Config");
 			boolean change = false;
 			try {
 				Iterator<Entry<String, DataValue>> iterator = merge.getDataLoader().entrySet().iterator();
@@ -82,6 +89,8 @@ public class MergeStandards {
 
 		@Override
 		public boolean merge(Config config, Config merge) {
+			Checkers.nonNull(config, "Primary Config");
+			Checkers.nonNull(merge, "Merging Config");
 			boolean change = false;
 			try {
 				Iterator<Entry<String, DataValue>> iterator = merge.getDataLoader().entrySet().iterator();
@@ -119,6 +128,8 @@ public class MergeStandards {
 
 			@Override
 			public boolean merge(Config config, Config merge) {
+				Checkers.nonNull(config, "Primary Config");
+				Checkers.nonNull(merge, "Merging Config");
 				boolean change = false;
 				try {
 					Iterator<Entry<String, DataValue>> iterator = merge.getDataLoader().entrySet().iterator();
@@ -147,6 +158,8 @@ public class MergeStandards {
 
 			@Override
 			public boolean merge(Config config, Config merge) {
+				Checkers.nonNull(config, "Primary Config");
+				Checkers.nonNull(merge, "Merging Config");
 				boolean change = false;
 				try {
 					Iterator<Entry<String, DataValue>> iterator = merge.getDataLoader().entrySet().iterator();

@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -88,15 +89,18 @@ public class PropertiesLoader extends EmptyLoader {
 
 	@Override
 	public String saveAsString(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		return saveAsContainer(config, markSaved).toString();
 	}
 
 	@Override
 	public byte[] save(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		return saveAsContainer(config, markSaved).getBytes();
 	}
 
 	public StringContainer saveAsContainer(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
 		if (config.getDataLoader().getHeader() != null)
@@ -135,7 +139,7 @@ public class PropertiesLoader extends EmptyLoader {
 		return builder;
 	}
 
-	public static String[] readConfigLine(String input) {
+	protected static String[] readConfigLine(String input) {
 		int index = input.indexOf('=');
 		int colorIndex = input.indexOf(':');
 		if (index == -1 || colorIndex != -1 && colorIndex < index)

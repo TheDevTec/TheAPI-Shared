@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
@@ -54,11 +55,13 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public DataValue get(String key) {
+		Checkers.nonNull(key, "Key");
 		return data.get(key);
 	}
 
 	@Override
 	public DataValue getOrCreate(String key) {
+		Checkers.nonNull(key, "Key");
 		DataValue v = get(key);
 		if (v == null)
 			set(key, v = DataValue.empty());
@@ -67,6 +70,8 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public void set(String key, DataValue holder) {
+		Checkers.nonNull(key, "Key");
+		Checkers.nonNull(holder, "DataValue");
 		if (data.put(key, holder) == null) {
 			int pos = key.indexOf('.');
 			String primaryKey = pos == -1 ? key : key.substring(0, pos);
@@ -78,6 +83,7 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public boolean remove(String key, boolean withSubKeys) {
+		Checkers.nonNull(key, "Key");
 		if (withSubKeys) {
 			int pos = key.indexOf('.');
 			String primaryKey = pos == -1 ? key : key.substring(0, pos);
@@ -193,6 +199,7 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public Set<String> keySet(String key, boolean subkeys) {
+		Checkers.nonNull(key, "Key");
 		Set<String> keys = new LinkedHashSet<>();
 		key = key + '.';
 		for (String section : getKeys())
@@ -206,6 +213,7 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public Iterator<String> keySetIterator(String key, boolean subkeys) {
+		Checkers.nonNull(key, "Key");
 		String finalKey = key + '.';
 		Iterator<String> keySet = getKeys().iterator();
 		return new Iterator<String>() {

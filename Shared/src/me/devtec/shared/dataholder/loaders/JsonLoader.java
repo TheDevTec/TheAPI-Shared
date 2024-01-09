@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -44,6 +45,7 @@ public class JsonLoader extends EmptyLoader {
 
 	@Override
 	public String saveAsString(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		List<Map<String, Object>> list = new ArrayList<>();
 		for (String key : config.getDataLoader().getPrimaryKeys())
 			addKeys(config, list, key, markSaved);
@@ -52,6 +54,7 @@ public class JsonLoader extends EmptyLoader {
 
 	@Override
 	public byte[] save(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		return saveAsString(config, markSaved).getBytes();
 	}
 

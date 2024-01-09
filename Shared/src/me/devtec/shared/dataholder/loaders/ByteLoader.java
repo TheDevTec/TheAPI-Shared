@@ -9,6 +9,7 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 
+import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -43,6 +44,7 @@ public class ByteLoader extends EmptyLoader {
 
 	@Override
 	public byte[] save(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		try {
 			ByteArrayDataOutput in = ByteStreams.newDataOutput();
 			in.writeInt(3);
@@ -100,6 +102,7 @@ public class ByteLoader extends EmptyLoader {
 
 	@Override
 	public String saveAsString(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		return Base64.getEncoder().encodeToString(save(config, markSaved));
 	}
 
@@ -150,9 +153,9 @@ public class ByteLoader extends EmptyLoader {
 	}
 
 	public void load(byte[] byteData) {
-		reset();
 		if (byteData == null)
 			return;
+		reset();
 		try {
 			ByteArrayDataInput bos = ByteStreams.newDataInput(byteData);
 			int version = bos.readInt();

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -119,15 +120,18 @@ public class TomlLoader extends EmptyLoader {
 
 	@Override
 	public String saveAsString(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		return saveAsContainer(config, markSaved).toString();
 	}
 
 	@Override
 	public byte[] save(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		return saveAsContainer(config, markSaved).getBytes();
 	}
 
 	public StringContainer saveAsContainer(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
 		if (config.getDataLoader().getHeader() != null)
@@ -151,7 +155,7 @@ public class TomlLoader extends EmptyLoader {
 		return builder;
 	}
 
-	public static String[] readConfigLine(String input) {
+	protected static String[] readConfigLine(String input) {
 		int yamlIndex = input.indexOf(':');
 		int index = input.indexOf('=');
 		int ignoreChar;
@@ -184,7 +188,7 @@ public class TomlLoader extends EmptyLoader {
 		return result;
 	}
 
-	public static String getFromQuotes(String input) {
+	protected static String getFromQuotes(String input) {
 		int len = input.length();
 		if (len <= 2)
 			return input;

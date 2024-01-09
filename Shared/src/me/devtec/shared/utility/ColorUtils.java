@@ -3,37 +3,97 @@ package me.devtec.shared.utility;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import me.devtec.shared.API;
 import me.devtec.shared.Ref;
+import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.utility.colors.Branch;
 
 public class ColorUtils {
 
-	// INIT THIS
-	public static ColormaticFactory color;
-	public static Pattern rainbowSplit;
-	// COLOR UTILS
-	public static Pattern gradientFinder;
+	public static ColormaticFactory color = new ColormaticFactory() {
+	};
+	// Finder of gradients (like <#hex>text</hex>)
+	public static ClassConstructor gradientFinderConstructor;
 
-	// VARRIABLE INIT
-	public static Map<String, String> colorMap = new HashMap<>();
+	// Chat Tags (like !fire)
+	public static Map<Character, Branch[]> colorMapTree = new HashMap<>();
+
+	public static void registerColorTag(String tag, String hex) {
+		Branch[] branch = ColorUtils.colorMapTree.get(tag.charAt(0));
+		if (branch == null)
+			ColorUtils.colorMapTree.put(tag.charAt(0), branch = new Branch[] {});
+		Branch parent = null;
+		int pos = 1;
+		charLoop: for (char c : tag.substring(1).toLowerCase().toCharArray()) {
+			++pos;
+			for (Branch br : branch)
+				if (br.getKey() == c) {
+					parent = br;
+					branch = br.getBranches();
+					if (branch == null) {
+						br.setBranches(branch = new Branch[] {});
+						continue charLoop;
+					}
+					continue charLoop;
+				}
+			Branch[] copy = new Branch[branch.length + 1];
+			System.arraycopy(branch, 0, copy, 0, branch.length);
+			Branch br;
+			copy[branch.length] = br = new Branch(c);
+			if (pos == tag.length())
+				br.setValue(hex);
+			if (parent != null)
+				parent.setBranches(copy);
+			else
+				ColorUtils.colorMapTree.put(tag.charAt(0), copy);
+			if (pos != tag.length()) {
+				parent = br;
+				br.setBranches(branch = new Branch[] {});
+			}
+		}
+	}
+
 	public static String tagPrefix = "!";
 
+	public interface ClassConstructor {
+		public GradientFinder matcher(StringContainer container);
+	}
+
+	public interface GradientFinder {
+		public boolean find();
+
+		public String getFirstHex();
+
+		public int getFirstHexLength();
+
+		public String getSecondHex();
+
+		public int getSecondHexLength();
+
+		public int getStart();
+
+		public int getEnd();
+
+		public void skip(int characters);
+	}
+
+	private static long seed = MathUtils.random.nextLong();
+
 	public interface ColormaticFactory {
-		char[] characters = { 'a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+		char[] chars = { 'a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 
 		/**
 		 * @apiNote Generates random color depends on software & version
+		 * @author justADeni
 		 */
 		public default String generateColor() {
-			StringContainer b = new StringContainer(7).append('#');
-			for (int i = 0; i < 6; ++i)
-				b.append(characters[StringUtils.random.nextInt(16)]);
-			return b.toString();
+			seed ^= seed << 21;
+			seed ^= seed >>> 35;
+			seed ^= seed << 4;
+			return new String(new char[] { '#', chars[(int) seed & 0xF], chars[(int) seed >> 4 & 0xF], chars[(int) seed >> 8 & 0xF], chars[(int) seed >> 12 & 0xF], chars[(int) seed >> 16 & 0xF],
+					chars[(int) seed >> 20 & 0xF] });
 		}
 
 		/**
@@ -47,7 +107,13 @@ public class ColorUtils {
 		 * @apiNote Replace #RRGGBB hex color depends on software
 		 */
 		public default String replaceHex(String text) {
-			StringContainer container = new StringContainer(text.length() + 14 * 2);
+			return replaceHex(new StringContainer(text, 0, 14 * 2)).toString();
+		}
+
+		/**
+		 * @apiNote Replace #RRGGBB hex color depends on software
+		 */
+		public default StringContainer replaceHex(StringContainer text) {
 			for (int i = 0; i < text.length(); ++i) {
 				char c = text.charAt(i);
 				if (c == '&' && i + 7 < text.length() && text.charAt(i + 1) == '#') {
@@ -60,13 +126,12 @@ public class ColorUtils {
 						}
 					}
 					if (isHex) {
-						container.append('§').append('x');
-						for (int ic = 2; ic < 8; ++ic) {
-							char cn = text.charAt(i + ic);
-							container.append('§').append(cn);
+						text.setCharAt(i, '§');
+						text.setCharAt(++i, 'x');
+						for (int run = 0; run < 6; ++run) {
+							text.insert(++i, '§');
+							++i;
 						}
-						i += 7;
-						continue;
 					}
 				} else if (c == '#' && i + 6 < text.length()) {
 					boolean isHex = true;
@@ -78,34 +143,50 @@ public class ColorUtils {
 						break;
 					}
 					if (isHex) {
-						container.append('§').append('x');
-						for (int ic = 1; ic < 7; ++ic) {
-							char cn = text.charAt(i + ic);
-							container.append('§').append(toLowerCase(cn));
+						text.setCharAt(i, '§');
+						text.insert(++i, 'x');
+						for (int run = 0; run < 6; ++run) {
+							text.insert(++i, '§');
+							++i;
 						}
-						i += 6;
-						continue;
 					}
 				}
-				container.append(c);
 			}
-			return container.toString();
+			return text;
 		}
 
 		/**
 		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public default String gradient(String msg, String fromHex, String toHex, List<String> protectedStrings) {
-			return API.basics().gradient(msg, fromHex, toHex, protectedStrings);
+		public default String gradient(String msg, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
+			return gradient(new StringContainer(msg), 0, msg.length(), firstHex, secondHex, protectedStrings).toString();
 		}
 
 		/**
 		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public default String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings) {
-			return API.basics().rainbow(msg, fromHex, toHex, protectedStrings);
+		public default String rainbow(String msg, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
+			return rainbow(new StringContainer(msg), 0, msg.length(), firstHex, secondHex, protectedStrings).toString();
+		}
+
+		/**
+		 * @param protectedStrings List of strings which not be colored via gradient
+		 * @apiNote @see {@link API#basics()}
+		 */
+		public default StringContainer gradient(StringContainer container, int start, int end, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
+			API.basics().gradient(container, start, end, firstHex, secondHex, protectedStrings);
+			return container;
+		}
+
+		/**
+		 * @param protectedStrings List of strings which not be colored via gradient
+		 * @apiNote @see {@link API#basics()}
+		 */
+		public default StringContainer rainbow(StringContainer container, int start, int end, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
+			API.basics().rainbow(container, start, end, firstHex, secondHex, protectedStrings);
+			return container;
 		}
 
 	}
@@ -155,29 +236,61 @@ public class ColorUtils {
 	 * @param protectedStrings List of strings which not be colored via gradient
 	 * @return String
 	 */
-	public static String gradient(String originalMsg, List<String> protectedStrings) {
-		if (originalMsg == null || ColorUtils.gradientFinder == null)
-			return originalMsg;
+	public static String gradient(String text, List<String> protectedStrings) {
+		if (text == null || ColorUtils.gradientFinderConstructor == null)
+			return text;
+		return gradient(new StringContainer(text), protectedStrings).toString();
+	}
 
-		String legacyMsg = originalMsg;
+	/**
+	 * @apiNote Replace gradients in the StringContainer
+	 * @param container        Input StringContainer to colorize
+	 * @param protectedStrings List of strings which not be colored via gradient
+	 */
+	public static StringContainer gradient(StringContainer container, List<String> protectedStrings) {
+		return internalGradient(container, container.indexOf(tagPrefix), protectedStrings);
+	}
 
-		String low = legacyMsg.toLowerCase();
-		for (Entry<String, String> code : ColorUtils.colorMap.entrySet()) {
-			String rawCode = (ColorUtils.tagPrefix + code.getKey()).toLowerCase();
-			if (!low.contains(rawCode))
-				continue;
-			legacyMsg = legacyMsg.replace(rawCode, ColorUtils.color.replaceHex(code.getValue()));
+	private static StringContainer internalGradient(StringContainer container, int startAt, List<String> protectedStrings) {
+		if (ColorUtils.gradientFinderConstructor == null)
+			return container;
+
+		if (startAt > -1)
+			for (int i = startAt; i < container.length(); ++i) {
+				char c = Character.toLowerCase(container.charAt(i));
+				Branch[] branch = colorMapTree.get(c);
+				int deep = 0;
+				while (branch != null && i + deep - 1 < container.length()) {
+					c = Character.toLowerCase(container.charAt(i + ++deep));
+					for (Branch current : branch) {
+						if (current.getKey() == c) {
+							branch = current.getBranches();
+							if (current.hasValue()) {
+								String hex = current.getValue();
+								container.replace(i, i + deep, hex);
+								i += hex.length();
+							}
+							break;
+						}
+						branch = null;
+					}
+				}
+			}
+		GradientFinder finder = ColorUtils.gradientFinderConstructor.matcher(container);
+		while (finder.find()) {
+
+			System.out.println(container.substring(finder.getStart(), finder.getEnd()) + ":" + finder.getFirstHex() + ":" + finder.getSecondHex() + ":" + finder.getFirstHexLength());
+
+			int length = container.length();
+			// Remove hexs
+			container.delete(finder.getEnd(), finder.getEnd() + finder.getSecondHexLength()).delete(finder.getStart() - finder.getFirstHexLength(), finder.getStart());
+
+			// Replace gradients
+			ColorUtils.color.gradient(container, finder.getStart() - finder.getFirstHexLength(), finder.getEnd() - finder.getSecondHexLength(), finder.getFirstHex(), finder.getSecondHex(),
+					protectedStrings);
+			finder.skip(container.length() - length);
 		}
-		Matcher matcher = ColorUtils.gradientFinder.matcher(legacyMsg);
-		while (matcher.find()) {
-			if (matcher.groupCount() == 0 || matcher.group().isEmpty())
-				continue;
-			String replace = ColorUtils.color.gradient(matcher.group(3), matcher.group(1), matcher.group(4), protectedStrings);
-			if (replace == null)
-				continue;
-			legacyMsg = legacyMsg.replace(matcher.group(), replace);
-		}
-		return legacyMsg;
+		return container;
 	}
 
 	/**
@@ -186,8 +299,7 @@ public class ColorUtils {
 	 * @return List<String>
 	 */
 	public static List<String> colorize(List<String> list) {
-		list.replaceAll(ColorUtils::colorize);
-		return list;
+		return colorize(list, null);
 	}
 
 	/**
@@ -212,61 +324,94 @@ public class ColorUtils {
 
 	/**
 	 * @apiNote Strip colors from the String
-	 * @param original Text with colorize
+	 * @param text Text with colorize
 	 * @return String
 	 */
-	public static String strip(String original) {
-		if (original == null || original.trim().isEmpty())
-			return original;
+	public static String strip(String text) {
+		if (text == null || text.isEmpty())
+			return text;
+		return strip(new StringContainer(text)).toString();
+	}
 
-		StringContainer builder = new StringContainer(original.length());
-		for (int i = 0; i < original.length(); ++i) {
-			char c = original.charAt(i);
-			if (c == '§' && original.length() > i + 1) {
-				char next = original.charAt(++i);
-				if (!isColorChar(next))
-					builder.append(c).append(next);
+	/**
+	 * @apiNote Strip colors from the String
+	 * @param container Text with colorize
+	 * @return String
+	 */
+	public static StringContainer strip(StringContainer container) {
+		if (container == null || container.isEmpty())
+			return container;
+
+		for (int i = 0; i < container.length(); ++i) {
+			char c = container.charAt(i);
+			if (c == '§' && container.length() > i + 1) {
+				char next = container.charAt(i + 1);
+				if (isColorChar(next)) {
+					container.delete(i, i + 2);
+					--i;
+				}
 				continue;
 			}
-			builder.append(c);
 		}
-		return builder.toString();
+		return container;
 	}
 
 	/**
 	 * @apiNote Colorize string with colors
-	 * @param original         Text to colorize
+	 * @param text             Text to colorize
 	 * @param protectedStrings List of strings which not be colored via gradient
 	 * @return String
 	 */
-	public static String colorize(String original, List<String> protectedStrings) {
-		if (original == null || original.trim().isEmpty())
-			return original;
+	public static String colorize(String text, List<String> protectedStrings) {
+		if (text == null || text.isEmpty())
+			return text;
+		return colorize(new StringContainer(text, 0, 24), protectedStrings).toString();
+	}
 
-		StringContainer builder = new StringContainer(original.length() + 16);
-		for (int i = 0; i < original.length(); ++i) {
-			char c = original.charAt(i);
-			if (c == '&' && original.length() > i + 1) {
-				char next = original.charAt(++i);
-				if (isColorChar(next))
-					builder.append('§').append(toLowerCase(next));
-				else
-					builder.append(c).append(next);
+	/**
+	 * @apiNote Colorize string with colors
+	 * @param container        Text to colorize
+	 * @param protectedStrings List of strings which not be colored via gradient
+	 * @return String
+	 */
+	public static StringContainer colorize(StringContainer container, List<String> protectedStrings) {
+		if (container.isEmpty())
+			return container;
+
+		boolean foundRainbowChar = false;
+		boolean foundHash = false;
+		int foundTagPrefix = -2;
+		char tagPrefixChar = tagPrefix.charAt(0);
+		for (int i = 0; i < container.length(); ++i) {
+			char c = container.charAt(i);
+			if (c == tagPrefixChar && foundTagPrefix == -2)
+				foundTagPrefix = tagPrefix.length() == 1 ? i : container.indexOf(tagPrefix, i);
+			switch (c) {
+			case '#':
+				foundHash = true;
 				continue;
+			case '&':
+				if (container.length() > i + 1) {
+					char next = container.charAt(++i);
+					if (isColorChar(next)) {
+						container.setCharAt(i - 1, '§');
+						container.setCharAt(i, toLowerCase(next));
+					} else if (next == 'u')
+						foundRainbowChar = true;
+				}
 			}
-			builder.append(c);
 		}
-		String msg = builder.toString();
 		if (ColorUtils.color != null) {
-			if (!Ref.serverType().isBukkit() || Ref.isNewerThan(15)) { // Non bukkit software or 1.16+
-				msg = ColorUtils.gradient(msg, protectedStrings);
-				if (msg.indexOf('#') != -1)
-					msg = ColorUtils.color.replaceHex(msg);
+			if (!Ref.serverType().isBukkit() || Ref.isNewerThan(15)) {
+				if (foundHash || foundTagPrefix > -1)
+					ColorUtils.internalGradient(container, foundTagPrefix, protectedStrings);
+				if (foundHash)
+					ColorUtils.color.replaceHex(container);
 			}
-			if (msg.contains("&u"))
-				msg = ColorUtils.color.rainbow(msg, null, null, protectedStrings);
+			if (foundRainbowChar)
+				ColorUtils.color.rainbow(container, 0, container.length(), null, null, protectedStrings);
 		}
-		return msg;
+		return container;
 	}
 
 	private static boolean isColorChar(int c) {
@@ -274,24 +419,8 @@ public class ColorUtils {
 	}
 
 	private static char toLowerCase(int c) {
-		switch (c) {
-		case 65:
-		case 66:
-		case 67:
-		case 68:
-		case 69:
-		case 70:
-		case 75:
-		case 76:
-		case 77:
-		case 78:
-		case 79:
-		case 82:
-		case 85:
-		case 88:
+		if (c >= 65 && c <= 90)
 			return (char) (c + 32);
-		default:
-			return (char) c;
-		}
+		return (char) c;
 	}
 }

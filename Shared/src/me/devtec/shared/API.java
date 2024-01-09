@@ -1,6 +1,5 @@
 package me.devtec.shared;
 
-import java.awt.Color;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -31,6 +30,11 @@ import me.devtec.shared.utility.ParseUtils;
 import me.devtec.shared.utility.TimeUtils;
 import me.devtec.shared.utility.TimeUtils.TimeFormat;
 import me.devtec.shared.utility.TimeUtils.TimeFormatter;
+import me.devtec.shared.utility.colors.ArrowsFinder;
+import me.devtec.shared.utility.colors.ArrowsWithExclamationFinder;
+import me.devtec.shared.utility.colors.ClassicArrowsFinder;
+import me.devtec.shared.utility.colors.ExclamationFinder;
+import me.devtec.shared.utility.colors.RegexFinder;
 
 public class API {
 	// Commands api
@@ -155,10 +159,11 @@ public class API {
 
 			Config tags = new Config(path + "tags.yml");
 			tags.setIfAbsent("hexTagPrefix", "!", Arrays.asList("# <hexTagPrefix><tagName>", "# For ex.: !fire"));
-			tags.setIfAbsent("gradient.firstHex.prefix", "!");
+			tags.setIfAbsent("gradient-mode", 1);
+			tags.setIfAbsent("gradient.firstHex.prefix", "!", Arrays.asList("# !#rrggbb TEXT !#rrggbb"));
 			tags.setIfAbsent("gradient.firstHex.suffix", "");
 			tags.setIfAbsent("gradient.secondHex.prefix", "!");
-			tags.setIfAbsent("gradient.secondHex.suffix", "");
+			tags.setIfAbsent("gradient.secondHex.prefix", "");
 			if (!tags.exists("tags")) {
 				tags.setIfAbsent("tags.baby_blue", "0fd2f6");
 				tags.setIfAbsent("tags.beige", "ffc8a9");
@@ -187,16 +192,36 @@ public class API {
 			}
 			tags.save(DataType.YAML);
 			ColorUtils.tagPrefix = tags.getString("hexTagPrefix");
-			String firstPrefix = tags.getString("gradient.firstHex.prefix");
-			String secondPrefix = tags.getString("gradient.secondHex.prefix");
-			String firstSuffix = tags.getString("gradient.firstHex.suffix");
-			String secondSuffix = tags.getString("gradient.secondHex.suffix");
+
+			// Unsupported mode
+			if (tags.getString("gradient-mode").equalsIgnoreCase("REGEX")) {
+				String firstPrefix = tags.getString("gradient.firstHex.prefix");
+				String secondPrefix = tags.getString("gradient.secondHex.prefix");
+				String firstSuffix = tags.getString("gradient.firstHex.suffix");
+				String secondSuffix = tags.getString("gradient.secondHex.suffix");
+				ColorUtils.gradientFinderConstructor = RegexFinder::new;
+				RegexFinder.init(firstPrefix, firstSuffix, secondPrefix, secondSuffix);
+			} else
+				switch (tags.getInt("gradient-mode")) {
+				case 1:
+					ColorUtils.gradientFinderConstructor = ExclamationFinder::new;
+					break;
+				case 2:
+					ColorUtils.gradientFinderConstructor = ArrowsFinder::new;
+					break;
+				case 3:
+					ColorUtils.gradientFinderConstructor = ArrowsWithExclamationFinder::new;
+					break;
+				case 4:
+					ColorUtils.gradientFinderConstructor = ClassicArrowsFinder::new;
+					break;
+				default:
+					ColorUtils.gradientFinderConstructor = ExclamationFinder::new;
+					break;
+				}
 
 			for (String tag : tags.getKeys("tags"))
-				ColorUtils.colorMap.put(tag.toLowerCase(), "#" + tags.getString("tags." + tag));
-			ColorUtils.gradientFinder = Pattern
-					.compile(firstPrefix + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + firstSuffix + "(.*?)" + secondPrefix + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + secondSuffix + "|.*?(?=(?:"
-							+ firstPrefix + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + firstSuffix + ".*?" + secondPrefix + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + secondSuffix + "))");
+				ColorUtils.registerColorTag(ColorUtils.tagPrefix + tag, "#" + tags.getString("tags." + tag));
 			Config config = new Config(path + "config.yml");
 			config.setIfAbsent("timeConvertor.settings.defaultlyDigits", false, Arrays.asList("# If plugin isn't using own split, use defaulty digitals? 300 -> 5:00"));
 			config.setIfAbsent("timeConvertor.settings.defaultSplit", " ", Arrays.asList("# If plugin isn't using own split, api'll use this split"));
@@ -402,16 +427,228 @@ public class API {
 			return new String[] { color.length() == 0 ? null : color.toString(), formats.length() == 0 ? null : formats.toString() };
 		}
 
-		public String rainbow(String msg, String fromHex, String toHex, List<String> protectedStrings) {
-			if (msg == null)
-				return msg;
-			return rawGradient(msg, fromHex, toHex, false, protectedStrings);
+		public String rainbow(String text, String firstHex, String secondHex, List<String> protectedStrings) {
+			if (text == null)
+				return text;
+			return rainbow(text, 0, text.length(), firstHex, secondHex, protectedStrings);
 		}
 
-		public String gradient(String msg, String fromHex, String toHex, List<String> protectedStrings) {
-			if (msg == null)
-				return msg;
-			return rawGradient(msg, fromHex, toHex, true, protectedStrings);
+		public String rainbow(String text, int start, int end, String firstHex, String secondHex, List<String> protectedStrings) {
+			if (text == null)
+				return text;
+			StringContainer container = new StringContainer(text);
+			rawGradient(container, start, end, firstHex, secondHex, false, protectedStrings);
+			return container.toString();
+		}
+
+		public String gradient(String text, String firstHex, String secondHex, List<String> protectedStrings) {
+			if (text == null)
+				return text;
+			return gradient(text, 0, text.length(), firstHex, secondHex, protectedStrings);
+		}
+
+		public String gradient(String text, int start, int end, String firstHex, String secondHex, List<String> protectedStrings) {
+			if (text == null)
+				return text;
+			StringContainer container = new StringContainer(text);
+			rawGradient(container, start, end, firstHex, secondHex, true, protectedStrings);
+			return container.toString();
+		}
+
+		public void rainbow(StringContainer container, String firstHex, String secondHex, List<String> protectedStrings) {
+			rainbow(container, 0, container.length(), firstHex, secondHex, protectedStrings);
+		}
+
+		public void rainbow(StringContainer container, int start, int end, String firstHex, String secondHex, List<String> protectedStrings) {
+			rawGradient(container, start, end, firstHex, secondHex, false, protectedStrings);
+		}
+
+		public void gradient(StringContainer container, String firstHex, String secondHex, List<String> protectedStrings) {
+			gradient(container, 0, container.length(), firstHex, secondHex, protectedStrings);
+		}
+
+		public void gradient(StringContainer container, int start, int end, String firstHex, String secondHex, List<String> protectedStrings) {
+			rawGradient(container, start, end, firstHex, secondHex, true, protectedStrings);
+		}
+
+		private char[] EMPTY_CHAR_ARRAY = {};
+		private char[] RESET_CHAR_ARRAY = { '§', 'r' };
+
+		private void rawGradient(StringContainer container, int start, int end, String firstHex, String secondHex, boolean defaultRainbow, List<String> protectedStrings) {
+			boolean inRainbow = defaultRainbow;
+			char[] formats = EMPTY_CHAR_ARRAY;
+
+			// Skip regions
+			int[][] skipRegions = EMPTY_ARRAY;
+			byte allocated = 0;
+			int currentSkipAt = -1;
+			byte skipId = 0;
+
+			// Cache chars instance
+			char[] chars = new char[14];
+			chars[0] = '§';
+			chars[1] = 'x';
+			chars[2] = '§';
+			chars[4] = '§';
+			chars[6] = '§';
+			chars[8] = '§';
+			chars[10] = '§';
+			chars[12] = '§';
+
+			int totalSize = end - start;
+			if (protectedStrings != null && !protectedStrings.isEmpty()) {
+				for (String protect : protectedStrings) {
+					int size = protect.length();
+
+					int num = start;
+					while (true) {
+						int position = container.indexOf(protect, num);
+						if (position == -1 || position > end)
+							break;
+						num = position + size;
+						if (allocated == 0 || allocated >= skipRegions.length - 1) {
+							int[][] copy = new int[(allocated << 1) + 1][];
+							if (allocated > 0)
+								System.arraycopy(skipRegions, 0, copy, 0, skipRegions.length);
+							skipRegions = copy;
+						}
+						totalSize -= size;
+						skipRegions[allocated++] = new int[] { position, size };
+					}
+				}
+				if (allocated > 0)
+					currentSkipAt = skipRegions[0][0];
+			}
+
+			// FastMath
+			double mathPart1 = Math.PI / (2 * totalSize);
+			double mathPart2 = Math.PI * totalSize;
+
+			// R-G-B
+			short r = 0;
+			short g = 0;
+			short b = 0;
+			float intervalR = 0;
+			float intervalG = 0;
+			float intervalB = 0;
+			if (inRainbow) {
+				if (firstHex == null || secondHex == null) {
+					firstHex = ColorUtils.color.generateColor();
+					secondHex = ColorUtils.color.generateColor();
+				}
+				int rgb = parseHex(firstHex.charAt(0) == '§' ? toHex(firstHex) : firstHex);
+				r = (short) (rgb >> 16 & 0xFF);
+				g = (short) (rgb >> 8 & 0xFF);
+				b = (short) (rgb & 0xFF);
+				rgb = parseHex(secondHex.charAt(0) == '§' ? toHex(secondHex) : secondHex);
+				intervalR = ((rgb >> 16 & 0xFF) - r) / (float) (totalSize - 1);
+				intervalG = ((rgb >> 8 & 0xFF) - g) / (float) (totalSize - 1);
+				intervalB = ((rgb & 0xFF) - b) / (float) (totalSize - 1);
+				firstHex = null;
+				secondHex = null;
+			}
+
+			int i = start - 1;
+			for (int step = 0; step < end - start; ++step) {
+				char c = container.charAt(++i);
+
+				if (currentSkipAt == i) {
+					int skipForChars = skipRegions[skipId++][1] - 1;
+					currentSkipAt = skipId == allocated ? -1 : skipRegions[skipId][0];
+					i += skipForChars;
+					step += skipForChars;
+					continue;
+				}
+
+				if (c == '&' && i + 1 < container.length() && container.charAt(i + 1) == 'u') {
+					container.delete(i, i + 2);
+					--i;
+					inRainbow = true;
+					firstHex = ColorUtils.color.generateColor();
+					secondHex = ColorUtils.color.generateColor();
+					int rgb = parseHex(firstHex.charAt(0) == '§' ? toHex(firstHex) : firstHex);
+					r = (short) (rgb >> 16 & 0xFF);
+					g = (short) (rgb >> 8 & 0xFF);
+					b = (short) (rgb & 0xFF);
+					rgb = parseHex(secondHex.charAt(0) == '§' ? toHex(secondHex) : secondHex);
+					intervalR = ((rgb >> 16 & 0xFF) - r) / (float) (totalSize - 1);
+					intervalG = ((rgb >> 8 & 0xFF) - g) / (float) (totalSize - 1);
+					intervalB = ((rgb & 0xFF) - b) / (float) (totalSize - 1);
+					continue;
+				}
+
+				if (inRainbow)
+					switch (c) {
+					case ' ':
+						if (formats.length == 2 && formats[1] == 'r') {
+							container.insertMultipleChars(i, formats);
+							formats = EMPTY_CHAR_ARRAY;
+							i += 2;
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(i * mathPart1)) / mathPart2));
+							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
+							i += 14;
+						}
+						continue;
+					case '§':
+						if (i + 1 < container.length()) {
+							c = container.charAt(++i);
+							++step;
+							if (isFormat(c)) {
+								if (c == 'r')
+									formats = RESET_CHAR_ARRAY;
+								else if (formats.length == 0)
+									formats = new char[] { '§', c };
+								else {
+									char[] copy = new char[formats.length + 2];
+									System.arraycopy(formats, 0, copy, 0, formats.length);
+									formats = copy;
+									formats[formats.length - 2] = '§';
+									formats[formats.length - 1] = c;
+								}
+								break;
+							}
+							if (isColor(c) || c == 'x')
+								inRainbow = false;
+							break;
+						}
+					default:
+						if (formats.length == 2 && formats[1] == 'r') {
+							container.insertMultipleChars(i, formats);
+							formats = EMPTY_CHAR_ARRAY;
+							i += 2;
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(i * mathPart1)) / mathPart2));
+							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
+							i += 14;
+						} else {
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(i * mathPart1)) / mathPart2));
+							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
+							i += 14;
+							if (formats.length != 0) {
+								container.insertMultipleChars(i, formats);
+								i += formats.length;
+							}
+						}
+						break;
+					}
+			}
+		}
+
+		private int parseHex(String chars) {
+			int result = 0;
+			int i = 1;
+			while (i < 6) {
+				result *= 16;
+				result -= digit(chars.charAt(i++));
+			}
+			return result;
+		}
+
+		private int digit(char charAt) {
+			return charAt > 96 ? charAt - 87 : charAt - '0';
+		}
+
+		private int hexPiece(int step, int channelStart, float interval) {
+			return Math.min(Math.max(Math.round(interval * step + channelStart), 0), 255);
 		}
 
 		private boolean isColor(int charAt) {
@@ -422,189 +659,29 @@ public class API {
 			return charAt >= 107 && charAt <= 111 || charAt == 114;
 		}
 
-		private String rawGradient(String msg, String from, String to, boolean defaultRainbow, List<String> protectedStrings) {
-			boolean inRainbow = defaultRainbow;
-			String formats = "";
-
-			int[][] skipRegions = EMPTY_ARRAY;
-			int allocated = 0;
-			int currentSkipAt = -1;
-			int skipId = 0;
-
-			int rgbSize = msg.length();
-			int fixedSize = rgbSize * 14;
-			if (protectedStrings != null) {
-				for (String protect : protectedStrings) {
-					int size = protect.length();
-
-					int num = 0;
-					while (true) {
-						int position = msg.indexOf(protect, num);
-						if (position == -1)
-							break;
-						num = position + size;
-						if (allocated == 0 || allocated >= skipRegions.length - 1) {
-							int[][] copy = new int[(allocated << 1) + 1][];
-							if (allocated > 0)
-								System.arraycopy(skipRegions, 0, copy, 0, skipRegions.length);
-							skipRegions = copy;
-						}
-						fixedSize -= size * 14;
-						rgbSize -= size;
-						skipRegions[allocated++] = new int[] { position, size };
-					}
-				}
-				if (allocated > 0)
-					currentSkipAt = skipRegions[0][0];
+		private void insertHex(StringContainer builder, int pos, int r, int g, int b, char[] chars) {
+			int temp;
+			for (int i = 0; i < 2; i++) {
+				temp = r >> (1 - i) * 4 & 0xF;
+				chars[3 + i * 2] = temp < 10 ? (char) ('0' + temp) : (char) ('a' + temp - 10);
 			}
 
-			StringContainer builder = new StringContainer(fixedSize);
-
-			Color fromRGB = null;
-			Color toRGB = null;
-			double rStep = 0;
-			double gStep = 0;
-			double bStep = 0;
-
-			Color finalColor = null;
-
-			if (inRainbow) {
-				if (from == null || to == null) {
-					from = ColorUtils.color.generateColor();
-					to = ColorUtils.color.generateColor();
-				}
-
-				fromRGB = Color.decode(from.charAt(0) == '§' ? toHex(from) : from);
-				toRGB = Color.decode(to.charAt(0) == '§' ? toHex(to) : to);
-				from = null;
-				to = null;
-				rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / rgbSize);
-				gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / rgbSize);
-				bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / rgbSize);
-				if (fromRGB.getRed() > toRGB.getRed())
-					rStep = -rStep;
-				if (fromRGB.getGreen() > toRGB.getGreen())
-					gStep = -gStep;
-				if (fromRGB.getBlue() > toRGB.getBlue())
-					bStep = -bStep;
-
-				finalColor = new Color(fromRGB.getRGB());
+			for (int i = 0; i < 2; i++) {
+				temp = g >> (1 - i) * 4 & 0xF;
+				chars[7 + i * 2] = temp < 10 ? (char) ('0' + temp) : (char) ('a' + temp - 10);
 			}
 
-			int skipForChars = 0;
-			for (int i = 0; i < msg.length(); ++i) {
-				char c = msg.charAt(i);
-				if (c == 0)
-					continue;
-
-				if (skipForChars > 0) {
-					builder.append(c);
-					--skipForChars;
-					continue;
-				}
-
-				if (currentSkipAt == i) {
-					skipForChars = skipRegions[skipId++][1] - 1;
-					currentSkipAt = skipId == allocated ? -1 : skipRegions[skipId][0];
-					builder.append(c);
-					continue;
-				}
-
-				if (c == '&' && i + 1 < msg.length()) {
-					c = msg.charAt(++i);
-					if (c == 'u') {
-						inRainbow = true;
-						if (from == null || to == null) {
-							from = ColorUtils.color.generateColor();
-							to = ColorUtils.color.generateColor();
-						}
-						fromRGB = Color.decode(from.charAt(0) == '§' ? toHex(from) : from);
-						toRGB = Color.decode(to.charAt(0) == '§' ? toHex(to) : to);
-
-						from = null;
-						to = null;
-
-						rStep = Math.abs((double) (fromRGB.getRed() - toRGB.getRed()) / rgbSize);
-						gStep = Math.abs((double) (fromRGB.getGreen() - toRGB.getGreen()) / rgbSize);
-						bStep = Math.abs((double) (fromRGB.getBlue() - toRGB.getBlue()) / rgbSize);
-						if (fromRGB.getRed() > toRGB.getRed())
-							rStep = -rStep;
-						if (fromRGB.getGreen() > toRGB.getGreen())
-							gStep = -gStep;
-						if (fromRGB.getBlue() > toRGB.getBlue())
-							bStep = -bStep;
-
-						finalColor = new Color(fromRGB.getRGB());
-					} else
-						builder.append('&').append(c);
-					continue;
-				}
-				if (inRainbow && c == '§' && i + 1 < msg.length()) {
-					c = msg.charAt(++i);
-					if (isFormat(c)) {
-						if (c == 'r')
-							formats = "§r";
-						else
-							formats += "§" + c;
-						continue;
-					}
-					if (isColor(c) || c == 'x') {
-						builder.append('§').append(c);
-						inRainbow = false;
-						continue;
-					}
-					builder.append('§').append(c);
-					continue;
-				}
-				if (inRainbow)
-					if (c != ' ') {
-						int red = (int) Math.round(finalColor.getRed() + rStep);
-						int green = (int) Math.round(finalColor.getGreen() + gStep);
-						int blue = (int) Math.round(finalColor.getBlue() + bStep);
-						if (red > 255)
-							red = 255;
-						if (red < 0)
-							red = 0;
-						if (green > 255)
-							green = 255;
-						if (green < 0)
-							green = 0;
-						if (blue > 255)
-							blue = 255;
-						if (blue < 0)
-							blue = 0;
-						finalColor = new Color(red, green, blue);
-						if (formats.equals("§r")) {
-							builder.append(formats); // add formats
-							addHex(builder, finalColor.getRGB()); // color
-							formats = "";
-						} else {
-							addHex(builder, finalColor.getRGB()); // color
-							if (!formats.isEmpty())
-								builder.append(formats); // add formats
-						}
-					} else if (formats.equals("§r")) {
-						builder.append(formats); // add formats
-						addHex(builder, finalColor.getRGB()); // color
-						formats = "";
-					}
-				builder.append(c);
+			for (int i = 0; i < 2; i++) {
+				temp = b >> (1 - i) * 4 & 0xF;
+				chars[11 + i * 2] = temp < 10 ? (char) ('0' + temp) : (char) ('a' + temp - 10);
 			}
-			return builder.toString();
+			builder.insertMultipleChars(pos, chars);
 		}
 
 		private String toHex(String from) {
 			if (from.length() != 14)
 				return "#000000";
 			return "#" + from.charAt(3) + from.charAt(5) + from.charAt(7) + from.charAt(9) + from.charAt(11) + from.charAt(13);
-		}
-
-		private void addHex(StringContainer builder, int rgb) {
-			builder.append('§').append('x');
-			for (int i = 0; i < 6; i++) {
-				int nibble = rgb >> (5 - i) * 4 & 0xF;
-				builder.append('§').append(toLowerCase((char) (nibble < 10 ? nibble + '0' : nibble - 10 + 'a')));
-			}
 		}
 	}
 
