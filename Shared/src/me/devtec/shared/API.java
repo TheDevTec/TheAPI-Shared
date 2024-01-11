@@ -313,19 +313,13 @@ public class API {
 			return false; // invalid
 		}
 
-		private static char toLowerCase(int c) {
-			if (c >= 65 && c <= 90)
-				return (char) (c + 32);
-			return (char) c;
-		}
-
 		public String[] getLastColors(String input) {
 			StringContainer color = new StringContainer(14);
 			StringContainer formats = new StringContainer(5);
 			for (int i = 0; i < input.length(); i++) {
 				char c = input.charAt(i);
 				if (c == '§' && i + 1 < input.length()) {
-					c = toLowerCase(input.charAt(++i));
+					c = Character.toLowerCase(input.charAt(++i));
 					switch (c) {
 					case 'r':
 						formats.clear();
@@ -369,7 +363,7 @@ public class API {
 									color.clear();
 									break;
 								}
-								cn = toLowerCase(input.charAt(++i));
+								cn = Character.toLowerCase(input.charAt(++i));
 								if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
 									color.append(cn);
 									continue;
@@ -383,7 +377,7 @@ public class API {
 						break;
 					}
 				} else if (c == '&' && i + 1 < input.length()) {
-					c = toLowerCase(input.charAt(++i));
+					c = Character.toLowerCase(input.charAt(++i));
 					switch (c) {
 					case 'u':
 						color.clear();
