@@ -276,11 +276,9 @@ public class ColorUtils {
 					}
 				}
 			}
+
 		GradientFinder finder = ColorUtils.gradientFinderConstructor.matcher(container);
 		while (finder.find()) {
-
-			System.out.println(container.substring(finder.getStart(), finder.getEnd()) + ":" + finder.getFirstHex() + ":" + finder.getSecondHex() + ":" + finder.getFirstHexLength());
-
 			int length = container.length();
 			// Remove hexs
 			container.delete(finder.getEnd(), finder.getEnd() + finder.getSecondHexLength()).delete(finder.getStart() - finder.getFirstHexLength(), finder.getStart());
@@ -395,7 +393,7 @@ public class ColorUtils {
 					char next = container.charAt(++i);
 					if (isColorChar(next)) {
 						container.setCharAt(i - 1, '§');
-						container.setCharAt(i, toLowerCase(next));
+						container.setCharAt(i, Character.toLowerCase(next));
 					} else if (next == 'u')
 						foundRainbowChar = true;
 				}
@@ -416,11 +414,5 @@ public class ColorUtils {
 
 	private static boolean isColorChar(int c) {
 		return c <= 102 && c >= 97 || c <= 57 && c >= 48 || c <= 70 && c >= 65 || c <= 79 && c >= 75 || c <= 111 && c >= 107 || c == 114 || c == 82 || c == 120;
-	}
-
-	private static char toLowerCase(int c) {
-		if (c >= 65 && c <= 90)
-			return (char) (c + 32);
-		return (char) c;
 	}
 }
