@@ -604,6 +604,10 @@ public class ComponentAPI {
 				case 4:
 					if (c == ' ') {
 						ClickEvent event = new ClickEvent(ClickEvent.Action.OPEN_URL, input.substring(initAt, i).replace('§', '&'));
+						if (!event.getValue().startsWith("http://"))
+							event.setValue("https" + event.getValue().substring(4));
+						else if (!event.getValue().startsWith("https://"))
+							event.setValue("https://" + event.getValue());
 						Component start = componentStartAt == componentPos ? component : main.getExtra().get(componentStartAt);
 						if (componentStartAt == componentPos) { // Start & end are same
 							Component withUrl = new Component(container.substring(spaceFinder, container.length() - 1)).copyOf(start);
@@ -650,6 +654,10 @@ public class ComponentAPI {
 		}
 		if (lookingMode == 4) {
 			ClickEvent event = new ClickEvent(ClickEvent.Action.OPEN_URL, input.substring(initAt).replace('§', '&'));
+			if (!event.getValue().startsWith("http://"))
+				event.setValue("https" + event.getValue().substring(4));
+			else if (!event.getValue().startsWith("https://"))
+				event.setValue("https://" + event.getValue());
 			Component start = componentStartAt == componentPos ? component : main.getExtra().get(componentStartAt);
 
 			if (componentStartAt == componentPos) { // Start & end are same
