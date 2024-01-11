@@ -518,12 +518,11 @@ public class API {
 
 			// FastMath
 			double mathPart1 = Math.PI / (2 * totalSize);
-			double mathPart2 = Math.PI * totalSize;
 
 			// R-G-B
-			short r = 0;
-			short g = 0;
-			short b = 0;
+			int r = 0;
+			int g = 0;
+			int b = 0;
 			float intervalR = 0;
 			float intervalG = 0;
 			float intervalB = 0;
@@ -533,9 +532,9 @@ public class API {
 					secondHex = ColorUtils.color.generateColor();
 				}
 				int rgb = parseHex(firstHex.charAt(0) == '§' ? toHex(firstHex) : firstHex);
-				r = (short) (rgb >> 16 & 0xFF);
-				g = (short) (rgb >> 8 & 0xFF);
-				b = (short) (rgb & 0xFF);
+				r = rgb >> 16 & 0xFF;
+				g = rgb >> 8 & 0xFF;
+				b = rgb & 0xFF;
 				rgb = parseHex(secondHex.charAt(0) == '§' ? toHex(secondHex) : secondHex);
 				intervalR = ((rgb >> 16 & 0xFF) - r) / (float) (totalSize - 1);
 				intervalG = ((rgb >> 8 & 0xFF) - g) / (float) (totalSize - 1);
@@ -545,7 +544,7 @@ public class API {
 			}
 
 			int i = start - 1;
-			for (int step = 0; step < end - start; ++step) {
+			for (int step = 0; step < totalSize; ++step) {
 				char c = container.charAt(++i);
 
 				if (currentSkipAt == i) {
@@ -563,9 +562,9 @@ public class API {
 					firstHex = ColorUtils.color.generateColor();
 					secondHex = ColorUtils.color.generateColor();
 					int rgb = parseHex(firstHex.charAt(0) == '§' ? toHex(firstHex) : firstHex);
-					r = (short) (rgb >> 16 & 0xFF);
-					g = (short) (rgb >> 8 & 0xFF);
-					b = (short) (rgb & 0xFF);
+					r = rgb >> 16 & 0xFF;
+					g = rgb >> 8 & 0xFF;
+					b = rgb & 0xFF;
 					rgb = parseHex(secondHex.charAt(0) == '§' ? toHex(secondHex) : secondHex);
 					intervalR = ((rgb >> 16 & 0xFF) - r) / (float) (totalSize - 1);
 					intervalG = ((rgb >> 8 & 0xFF) - g) / (float) (totalSize - 1);
@@ -580,7 +579,7 @@ public class API {
 							container.insertMultipleChars(i, formats);
 							formats = EMPTY_CHAR_ARRAY;
 							i += 2;
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(i * mathPart1)) / mathPart2));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(i * mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 						}
@@ -612,11 +611,11 @@ public class API {
 							container.insertMultipleChars(i, formats);
 							formats = EMPTY_CHAR_ARRAY;
 							i += 2;
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(i * mathPart1)) / mathPart2));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 						} else {
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(i * mathPart1)) / mathPart2));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 							if (formats.length != 0) {
