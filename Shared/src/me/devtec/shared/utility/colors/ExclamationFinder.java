@@ -1,7 +1,6 @@
 package me.devtec.shared.utility.colors;
 
 import me.devtec.shared.dataholder.StringContainer;
-import me.devtec.shared.utility.ColorUtils.GradientFinder;
 
 public class ExclamationFinder implements GradientFinder {
 

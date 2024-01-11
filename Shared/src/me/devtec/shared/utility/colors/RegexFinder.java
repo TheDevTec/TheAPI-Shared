@@ -4,7 +4,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.devtec.shared.dataholder.StringContainer;
-import me.devtec.shared.utility.ColorUtils.GradientFinder;
 
 @Deprecated
 public class RegexFinder implements GradientFinder {
