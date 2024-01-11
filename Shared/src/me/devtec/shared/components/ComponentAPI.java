@@ -604,7 +604,7 @@ public class ComponentAPI {
 				case 4:
 					if (c == ' ') {
 						ClickEvent event = new ClickEvent(ClickEvent.Action.OPEN_URL, input.substring(initAt, i).replace('§', '&'));
-						if (!event.getValue().startsWith("http://"))
+						if (event.getValue().startsWith("http://"))
 							event.setValue("https" + event.getValue().substring(4));
 						else if (!event.getValue().startsWith("https://"))
 							event.setValue("https://" + event.getValue());
@@ -654,7 +654,7 @@ public class ComponentAPI {
 		}
 		if (lookingMode == 4) {
 			ClickEvent event = new ClickEvent(ClickEvent.Action.OPEN_URL, input.substring(initAt).replace('§', '&'));
-			if (!event.getValue().startsWith("http://"))
+			if (event.getValue().startsWith("http://"))
 				event.setValue("https" + event.getValue().substring(4));
 			else if (!event.getValue().startsWith("https://"))
 				event.setValue("https://" + event.getValue());
