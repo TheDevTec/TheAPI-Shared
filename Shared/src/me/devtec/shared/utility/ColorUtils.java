@@ -312,6 +312,26 @@ public class ColorUtils {
 	}
 
 	/**
+	 * @apiNote Colorize List of strings with colors
+	 * @param list Texts to colorize
+	 * @return List<StringContainer>
+	 */
+	public static List<StringContainer> colorizeComp(List<StringContainer> list) {
+		return colorizeComp(list, null);
+	}
+
+	/**
+	 * @apiNote Colorize List of strings with colors
+	 * @param list             Texts to colorize
+	 * @param protectedStrings List of strings which not be colored via gradient
+	 * @return List<StringContainer>
+	 */
+	public static List<StringContainer> colorizeComp(List<StringContainer> list, List<String> protectedStrings) {
+		list.replaceAll(string -> colorize(string, protectedStrings));
+		return list;
+	}
+
+	/**
 	 * @apiNote Colorize string with colors
 	 * @param original Text to colorize
 	 * @return String
