@@ -1,12 +1,9 @@
 package me.devtec.shared.utility.colors;
 
-import me.devtec.shared.utility.ColorUtils;
-
 public class Branch {
 	private char key;
 	private Branch[] branches;
 	private String value;
-	private boolean init;
 
 	public Branch(char key) {
 		this.key = key;
@@ -33,10 +30,6 @@ public class Branch {
 	}
 
 	public String getValue() {
-		if (!init) {
-			init = true;
-			value = ColorUtils.color.replaceHex(value);
-		}
 		return value;
 	}
 }
