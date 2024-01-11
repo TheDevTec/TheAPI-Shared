@@ -159,7 +159,9 @@ public class API {
 
 			Config tags = new Config(path + "tags.yml");
 			tags.setIfAbsent("hexTagPrefix", "!", Arrays.asList("# <hexTagPrefix><tagName>", "# For ex.: !fire"));
-			tags.setIfAbsent("gradient-mode", 1);
+			tags.setIfAbsent("gradient-mode", 1,
+					Arrays.asList("# Modes: 1, 2, 3, 4, REGEX", "# ", "# Mode 1: !#rrggbb[TEXT]!#rrggbb", "# Mode 2: <#hex>[TEXT]<#secondHex>", "# Mode 3: <!#hex>[TEXT]<!#secondHex>",
+							"# Mode 4: <#hex>[TEXT]</#secondHex>", "# Mode REGEX: [prefix1]#rrggbb[suffix1][TEXT][prefix2]#rrggbb[suffix2] - Settings in the gradient section"));
 			tags.setIfAbsent("gradient.firstHex.prefix", "!", Arrays.asList("# !#rrggbb TEXT !#rrggbb"));
 			tags.setIfAbsent("gradient.firstHex.suffix", "");
 			tags.setIfAbsent("gradient.secondHex.prefix", "!");
@@ -244,7 +246,7 @@ public class API {
 				config.setIfAbsent("nmsProvider-use-directly-jar", false, Arrays.asList("", "# In some cases Java isn't able to compile .java file and we have to use .jar file instead"));
 			config.setIfAbsent("automatically-save-user-files", true, Arrays.asList("", "# Save all loaded user files (in memory) every 6 hours"));
 			config.setIfAbsent("default-json-handler", "TheAPI",
-					Arrays.asList("", "# Default Json reader & writer for reading & writing Config files", "# Guava - From Google (Default)", "# TheAPI - Our own project (Experimental)"));
+					Arrays.asList("", "# Default Json reader & writer for reading & writing Config files", "# Guava - From Google (Default)", "# TheAPI - Our own project"));
 			AUTOMATICALLY_USER_SAVING_TASK = config.getBoolean("automatically-save-user-files");
 			if (Ref.serverType().isBukkit())
 				config.setIfAbsent("fallback-scoreboard-support", false,
