@@ -9,11 +9,18 @@ import me.devtec.shared.Ref;
 import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.utility.colors.Branch;
+import me.devtec.shared.utility.colors.ClassConstructor;
+import me.devtec.shared.utility.colors.GradientFinder;
 
 public class ColorUtils {
 
 	public static ColormaticFactory color = new ColormaticFactory() {
 	};
+
+	public static String tagPrefix = "!";
+
+	private static long seed = MathUtils.random.nextLong();
+
 	// Finder of gradients (like <#hex>text</hex>)
 	public static ClassConstructor gradientFinderConstructor;
 
@@ -54,32 +61,6 @@ public class ColorUtils {
 			}
 		}
 	}
-
-	public static String tagPrefix = "!";
-
-	public interface ClassConstructor {
-		public GradientFinder matcher(StringContainer container);
-	}
-
-	public interface GradientFinder {
-		public boolean find();
-
-		public String getFirstHex();
-
-		public int getFirstHexLength();
-
-		public String getSecondHex();
-
-		public int getSecondHexLength();
-
-		public int getStart();
-
-		public int getEnd();
-
-		public void skip(int characters);
-	}
-
-	private static long seed = MathUtils.random.nextLong();
 
 	public interface ColormaticFactory {
 		char[] chars = { 'a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
