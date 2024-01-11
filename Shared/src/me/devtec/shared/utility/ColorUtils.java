@@ -316,8 +316,8 @@ public class ColorUtils {
 	 * @param list Texts to colorize
 	 * @return List<StringContainer>
 	 */
-	public static List<StringContainer> colorizeComp(List<StringContainer> list) {
-		return colorizeComp(list, null);
+	public static List<StringContainer> colorizeCont(List<StringContainer> list) {
+		return colorizeCont(list, null);
 	}
 
 	/**
@@ -326,7 +326,7 @@ public class ColorUtils {
 	 * @param protectedStrings List of strings which not be colored via gradient
 	 * @return List<StringContainer>
 	 */
-	public static List<StringContainer> colorizeComp(List<StringContainer> list, List<String> protectedStrings) {
+	public static List<StringContainer> colorizeCont(List<StringContainer> list, List<String> protectedStrings) {
 		list.replaceAll(string -> colorize(string, protectedStrings));
 		return list;
 	}
