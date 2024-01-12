@@ -397,6 +397,8 @@ public class ColorUtils {
 						container.setCharAt(i, Character.toLowerCase(next));
 					} else if (next == 'u')
 						foundRainbowChar = true;
+					else if (next == '#')
+						foundHash = true;
 				}
 			}
 		}
