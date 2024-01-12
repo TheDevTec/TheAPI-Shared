@@ -11,6 +11,7 @@ import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.utility.colors.Branch;
 import me.devtec.shared.utility.colors.ClassConstructor;
 import me.devtec.shared.utility.colors.GradientFinder;
+import me.devtec.shared.utility.colors.HexReplacer;
 
 public class ColorUtils {
 
@@ -23,6 +24,9 @@ public class ColorUtils {
 
 	// Finder of gradients (like <#hex>text</hex>)
 	public static ClassConstructor gradientFinderConstructor;
+
+	// Replace of hex colors (like &#rrggbb or <#rrggbb>)
+	public static HexReplacer hexReplacer;
 
 	// Chat Tags (like !fire)
 	public static Map<Character, Branch[]> colorMapTree = new HashMap<>();
@@ -95,44 +99,7 @@ public class ColorUtils {
 		 * @apiNote Replace #RRGGBB hex color depends on software
 		 */
 		public default StringContainer replaceHex(StringContainer text) {
-			for (int i = 0; i < text.length(); ++i) {
-				char c = text.charAt(i);
-				if (c == '&' && i + 7 < text.length() && text.charAt(i + 1) == '#') {
-					boolean isHex = true;
-					for (int ic = 2; ic < 8; ++ic) {
-						char cn = text.charAt(i + ic);
-						if (!(cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57)) {
-							isHex = false;
-							break;
-						}
-					}
-					if (isHex) {
-						text.setCharAt(i, '§');
-						text.setCharAt(++i, 'x');
-						for (int run = 0; run < 6; ++run) {
-							text.insert(++i, '§');
-							++i;
-						}
-					}
-				} else if (c == '#' && i + 6 < text.length()) {
-					boolean isHex = true;
-					for (int ic = 1; ic < 7; ++ic) {
-						char cn = text.charAt(i + ic);
-						if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57)
-							continue;
-						isHex = false;
-						break;
-					}
-					if (isHex) {
-						text.setCharAt(i, '§');
-						text.insert(++i, 'x');
-						for (int run = 0; run < 6; ++run) {
-							text.insert(++i, '§');
-							++i;
-						}
-					}
-				}
-			}
+			hexReplacer.apply(text, 0, text.length());
 			return text;
 		}
 
@@ -248,7 +215,7 @@ public class ColorUtils {
 							branch = current.getBranches();
 							if (current.hasValue()) {
 								String hex = current.getValue();
-								container.replace(i, i + deep, hex);
+								container.replace(i, i + deep + 1, hex);
 								i += hex.length();
 							}
 							break;
