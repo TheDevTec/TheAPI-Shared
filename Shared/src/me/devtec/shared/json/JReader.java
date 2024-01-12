@@ -18,7 +18,7 @@ public interface JReader {
 
 	// For lists or maps
 	public default Object simpleRead(String json) {
-		if (json == null || json.trim().isEmpty())
+		if (json == null || json.isEmpty())
 			return json;
 		char first = json.charAt(0);
 		if (first == 'n' && json.equals("null"))
@@ -27,18 +27,19 @@ public interface JReader {
 			return true;
 		if (first == 'f' && json.equalsIgnoreCase("false"))
 			return false;
-		if (first >= 48 && first <= 57 || first == '+' || first == '-') {
+		if (first >= '0' && first <= '9' || first == '+' || first == '-') {
 			Number number = ParseUtils.getNumber(json);
 			if (number != null)
 				return number;
 		}
 		if (first == '{' || first == '[') {
 			Object read = null;
-			try {
-				read = fromGson(json, Map.class);
-			} catch (Exception er) {
-			}
-			if (read == null)
+			if (first == '{')
+				try {
+					read = fromGson(json, Map.class);
+				} catch (Exception er) {
+				}
+			else if (first == '[')
 				try {
 					read = fromGson(json, Collection.class);
 				} catch (Exception err) {

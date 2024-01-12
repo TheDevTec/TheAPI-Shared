@@ -12,7 +12,7 @@ public interface JWriter {
 		try {
 			if (s == null)
 				return "null";
-			if (s instanceof String || s instanceof CharSequence) {
+			if (s instanceof CharSequence) {
 				StringContainer container = new StringContainer(s.toString());
 				int i = container.length();
 				while (i != -1) {
@@ -35,7 +35,7 @@ public interface JWriter {
 	public default String simpleWrite(Object object) {
 		if (object == null)
 			return "null";
-		if (object instanceof String || object instanceof CharSequence || object instanceof Boolean || object instanceof Number || object instanceof Character)
+		if (object instanceof CharSequence || object instanceof Boolean || object instanceof Number || object instanceof Character)
 			return object.toString();
 		return toGson(object);
 	}

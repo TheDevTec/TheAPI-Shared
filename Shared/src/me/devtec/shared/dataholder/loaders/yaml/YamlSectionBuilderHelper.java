@@ -2,7 +2,6 @@ package me.devtec.shared.dataholder.loaders.yaml;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -18,7 +17,7 @@ public class YamlSectionBuilderHelper {
 		public String space;
 		public String keyName;
 		public DataValue value;
-		public Map<String, Section> sub;
+		public Section[] sub;
 		public Section parent;
 		public String fullName;
 
@@ -40,21 +39,31 @@ public class YamlSectionBuilderHelper {
 
 		public void add(Section sec) {
 			if (sub == null)
-				sub = new LinkedHashMap<>();
-			sub.put(sec.keyName, sec);
+				sub = new Section[] { sec };
+			else {
+				Section[] copy = new Section[sub.length + 1];
+				System.arraycopy(sub, 0, copy, 0, sub.length);
+				copy[sub.length] = sec;
+				sub = copy;
+			}
+		}
+
+		public Section get(String name) {
+			for (Section section : sub)
+				if (section.keyName.equals(name))
+					return section;
+			return null;
 		}
 
 		public Section create(String name) {
 			Section current = this;
-			StringContainer sb = new StringContainer(name);
 
 			int pos;
 			int lastPos = 0;
-			while ((pos = sb.indexOf('.', lastPos)) != -1) {
-				String key = sb.substring(lastPos, pos);
-				Map<String, Section> subSections = current.sub;
-				if (subSections != null) {
-					Section sec = subSections.get(key);
+			while ((pos = name.indexOf('.', lastPos)) != -1) {
+				String key = name.substring(lastPos, pos);
+				if (current.sub != null) {
+					Section sec = current.get(key);
 					if (sec == null) {
 						Section newMade = new Section(current, key, null);
 						current.add(newMade);
@@ -69,14 +78,13 @@ public class YamlSectionBuilderHelper {
 				lastPos = pos + 1;
 			}
 			// Final
-			String key = sb.substring(lastPos, sb.length());
-			Map<String, Section> subSections = current.sub;
-			if (subSections == null) {
+			String key = name.substring(lastPos);
+			if (current.sub == null) {
 				Section newMade = new Section(current, key, null);
 				current.add(newMade);
 				return newMade;
 			}
-			Section sec = subSections.get(key);
+			Section sec = current.get(key);
 			if (sec == null) {
 				Section newMade = new Section(current, key, null);
 				current.add(newMade);
@@ -111,10 +119,8 @@ public class YamlSectionBuilderHelper {
 			sec.value = entry.getValue();
 			prevParent = sec.parent;
 		}
-		for (String primaryKey : primaryKeys) {
-			Section sec = map.get(primaryKey);
-			YamlSectionBuilderHelper.start(dataLoader, primaryKey, sec.value, builder, sec, markSaved);
-		}
+		for (Entry<String, Section> primaryKey : map.entrySet())
+			YamlSectionBuilderHelper.start(dataLoader, primaryKey.getKey(), primaryKey.getValue().value, builder, primaryKey.getValue(), markSaved);
 	}
 
 	public static void start(DataLoader config, String section, DataValue dataVal, StringContainer b, Section linked, boolean markSaved) {
@@ -122,7 +128,7 @@ public class YamlSectionBuilderHelper {
 			if (dataVal == null) {
 				appendName(b, linked.space, section).append(System.lineSeparator());
 				if (linked.sub != null)
-					for (Section sub : linked.sub.values())
+					for (Section sub : linked.sub)
 						start(config, sub.keyName, sub.value, b, sub, markSaved);
 				return;
 			}
@@ -179,14 +185,21 @@ public class YamlSectionBuilderHelper {
 			} else // write normal value
 				try {
 					if (dataVal.writtenValue != null)
-						YamlSectionBuilderHelper.addCommentIfAvailable(b.append(' ').append(dataVal.writtenValue), commentAfterValue).append(System.lineSeparator());
-					else if (value instanceof String)
+						YamlSectionBuilderHelper.addCommentIfAvailable(value instanceof CharSequence ? YamlSectionBuilderHelper.writeQuotes(b.append(' '), dataVal.writtenValue, '"')
+								: value instanceof Number || value instanceof Character ? YamlSectionBuilderHelper.writeQuotes(b.append(' '), dataVal.writtenValue, '\'')
+										: b.append(' ').append(dataVal.writtenValue),
+								commentAfterValue).append(System.lineSeparator());
+					else if (value instanceof Number || value instanceof Character)
+						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), value.toString(), '\''), commentAfterValue).append(System.lineSeparator());
+					else if (value instanceof CharSequence)
 						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), (String) value, '"'), commentAfterValue).append(System.lineSeparator());
 					else
 						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeWithoutQuotes(b.append(' '), value), commentAfterValue).append(System.lineSeparator());
 				} catch (Exception er) {
-					if (value instanceof String)
+					if (value instanceof CharSequence)
 						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), (String) value, '"'), commentAfterValue).append(System.lineSeparator());
+					else if (value instanceof Number || value instanceof Character)
+						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), value.toString(), '\''), commentAfterValue).append(System.lineSeparator());
 					else
 						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeWithoutQuotes(b.append(' '), value), commentAfterValue).append(System.lineSeparator());
 				}
@@ -194,7 +207,7 @@ public class YamlSectionBuilderHelper {
 			err.printStackTrace();
 		}
 		if (linked.sub != null)
-			for (Section sub : linked.sub.values())
+			for (Section sub : linked.sub)
 				start(config, sub.keyName, sub.value, b, sub, markSaved);
 	}
 

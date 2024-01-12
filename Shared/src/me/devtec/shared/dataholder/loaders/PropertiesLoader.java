@@ -50,23 +50,28 @@ public class PropertiesLoader extends EmptyLoader {
 		String line;
 		while ((line = readLine()) != null) {
 			String trimmed = line.trim();
+
+			// Comments
 			if (trimmed.isEmpty() || trimmed.charAt(0) == '#') {
 				if (comments == null)
 					comments = new ArrayList<>();
 				comments.add(trimmed);
 				continue;
 			}
+
 			if (line.charAt(0) == ' ') { // S-s-space?! Maybe.. this is YAML file.
 				data.clear();
 				comments = null;
 				break;
 			}
+
 			String[] parts = readConfigLine(trimmed);
 			if (parts == null) { // Didn't find = symbol.. Maybe this is YAML file.
 				data.clear();
 				comments = null;
 				break;
 			}
+
 			String[] value = YamlLoader.splitFromComment(0, parts[1]);
 			set(parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length == 2 ? value[1] : null, comments));
 			comments = null;
