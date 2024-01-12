@@ -33,6 +33,7 @@ import me.devtec.shared.utility.TimeUtils.TimeFormatter;
 import me.devtec.shared.utility.colors.ArrowsFinder;
 import me.devtec.shared.utility.colors.ArrowsWithExclamationFinder;
 import me.devtec.shared.utility.colors.ClassicArrowsFinder;
+import me.devtec.shared.utility.colors.ExclamationArrowsFinder;
 import me.devtec.shared.utility.colors.ExclamationFinder;
 import me.devtec.shared.utility.colors.RegexFinder;
 
@@ -162,36 +163,40 @@ public class API {
 			tags.setIfAbsent("gradient-mode", 1,
 					Arrays.asList("# Modes: 1, 2, 3, 4, REGEX", "# ", "# Mode 1: !#rrggbb[TEXT]!#rrggbb", "# Mode 2: <#hex>[TEXT]<#secondHex>", "# Mode 3: <!#hex>[TEXT]<!#secondHex>",
 							"# Mode 4: <#hex>[TEXT]</#secondHex>", "# Mode REGEX: [prefix1]#rrggbb[suffix1][TEXT][prefix2]#rrggbb[suffix2] - Settings in the gradient section"));
+			tags.setIfAbsent("hex-mode", 1, Arrays.asList("# Modes: 1, 2", "# ", "# Mode 1: &#rrggbb or #rrggbb", "# Mode 2: <#rrggbb>"));
 			tags.setIfAbsent("gradient.firstHex.prefix", "!", Arrays.asList("# !#rrggbb TEXT !#rrggbb"));
 			tags.setIfAbsent("gradient.firstHex.suffix", "");
 			tags.setIfAbsent("gradient.secondHex.prefix", "!");
-			tags.setIfAbsent("gradient.secondHex.prefix", "");
+			tags.setIfAbsent("gradient.secondHex.suffix", "");
+			if (tags.getInt("version") == 0)
+				tags.remove("tags");
 			if (!tags.exists("tags")) {
-				tags.setIfAbsent("tags.baby_blue", "0fd2f6");
-				tags.setIfAbsent("tags.beige", "ffc8a9");
-				tags.setIfAbsent("tags.blush", "e69296");
-				tags.setIfAbsent("tags.amaranth", "e52b50");
-				tags.setIfAbsent("tags.brown", "964b00");
-				tags.setIfAbsent("tags.crimson", "dc143c");
-				tags.setIfAbsent("tags.dandelion", "ffc31c");
-				tags.setIfAbsent("tags.eggshell", "f0ecc7");
-				tags.setIfAbsent("tags.fire", "ff0000");
-				tags.setIfAbsent("tags.ice", "bddeec");
-				tags.setIfAbsent("tags.indigo", "726eff");
-				tags.setIfAbsent("tags.lavender", "4b0082");
-				tags.setIfAbsent("tags.leaf", "618a3d");
-				tags.setIfAbsent("tags.lilac", "c8a2c8");
-				tags.setIfAbsent("tags.lime", "b7ff00");
-				tags.setIfAbsent("tags.midnight", "007bff");
-				tags.setIfAbsent("tags.mint", "50c878");
-				tags.setIfAbsent("tags.olive", "929d40");
-				tags.setIfAbsent("tags.royal_purple", "7851a9");
-				tags.setIfAbsent("tags.rust", "b45019");
-				tags.setIfAbsent("tags.sky", "00c8ff");
-				tags.setIfAbsent("tags.smoke", "708c98");
-				tags.setIfAbsent("tags.tangerine", "ef8e38");
-				tags.setIfAbsent("tags.violet", "9c6eff");
+				tags.setIfAbsent("tags.baby_blue", "#0fd2f6");
+				tags.setIfAbsent("tags.beige", "#ffc8a9");
+				tags.setIfAbsent("tags.blush", "#e69296");
+				tags.setIfAbsent("tags.amaranth", "#e52b50");
+				tags.setIfAbsent("tags.brown", "#964b00");
+				tags.setIfAbsent("tags.crimson", "#dc143c");
+				tags.setIfAbsent("tags.dandelion", "#ffc31c");
+				tags.setIfAbsent("tags.eggshell", "#f0ecc7");
+				tags.setIfAbsent("tags.fire", "#ff0000");
+				tags.setIfAbsent("tags.ice", "#bddeec");
+				tags.setIfAbsent("tags.indigo", "#726eff");
+				tags.setIfAbsent("tags.lavender", "#4b0082");
+				tags.setIfAbsent("tags.leaf", "#618a3d");
+				tags.setIfAbsent("tags.lilac", "#c8a2c8");
+				tags.setIfAbsent("tags.lime", "#b7ff00");
+				tags.setIfAbsent("tags.midnight", "#007bff");
+				tags.setIfAbsent("tags.mint", "#50c878");
+				tags.setIfAbsent("tags.olive", "#929d40");
+				tags.setIfAbsent("tags.royal_purple", "#7851a9");
+				tags.setIfAbsent("tags.rust", "#b45019");
+				tags.setIfAbsent("tags.sky", "#00c8ff");
+				tags.setIfAbsent("tags.smoke", "#708c98");
+				tags.setIfAbsent("tags.tangerine", "#ef8e38");
+				tags.setIfAbsent("tags.violet", "#9c6eff");
 			}
+			tags.setIfAbsent("version", 1);
 			tags.save(DataType.YAML);
 			ColorUtils.tagPrefix = tags.getString("hexTagPrefix");
 
@@ -217,13 +222,77 @@ public class API {
 				case 4:
 					ColorUtils.gradientFinderConstructor = ClassicArrowsFinder::new;
 					break;
+				case 5:
+					ColorUtils.gradientFinderConstructor = ExclamationArrowsFinder::new;
+					break;
 				default:
-					ColorUtils.gradientFinderConstructor = ExclamationFinder::new;
+					ColorUtils.gradientFinderConstructor = ClassicArrowsFinder::new;
 					break;
 				}
 
+			switch (tags.getInt("hex-mode")) {
+			case 1:
+				ColorUtils.hexReplacer = (text, start, end) -> {
+					charLoop: for (int i = 0; i < text.length(); ++i) {
+						char c = text.charAt(i);
+						if (c == '&' && i + 7 < text.length() && text.charAt(i + 1) == '#') {
+							for (int ic = 2; ic < 8; ++ic) {
+								char cn = text.charAt(i + ic);
+								if (!(cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57))
+									continue charLoop;
+							}
+							text.setCharAt(i, '§');
+							text.setCharAt(++i, 'x');
+							for (int run = 0; run < 6; ++run) {
+								text.insert(++i, '§');
+								++i;
+								text.setCharAt(i, Character.toLowerCase(text.charAt(i)));
+							}
+						} else if (c == '#' && i + 6 < text.length()) {
+							for (int ic = 1; ic < 7; ++ic) {
+								char cn = text.charAt(i + ic);
+								if (!(cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57))
+									continue charLoop;
+							}
+							text.setCharAt(i, '§');
+							text.insert(++i, 'x');
+							for (int run = 0; run < 6; ++run) {
+								text.insert(++i, '§');
+								++i;
+								text.setCharAt(i, Character.toLowerCase(text.charAt(i)));
+							}
+						}
+					}
+				};
+				break;
+			case 2:
+				ColorUtils.hexReplacer = (text, start, end) -> {
+					charLoop: for (int i = 0; i < text.length(); ++i) {
+						char c = text.charAt(i);
+						if (c == '<' && i + 8 < text.length() && text.charAt(i + 1) == '#') {
+							for (int ic = 2; ic < 8; ++ic) {
+								char cn = text.charAt(i + ic);
+								if (!(cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57))
+									continue charLoop;
+							}
+							if (text.charAt(i + 8) == '>') {
+								text.deleteCharAt(i + 8);
+								text.setCharAt(i, '§');
+								text.setCharAt(++i, 'x');
+								for (int run = 0; run < 6; ++run) {
+									text.insert(++i, '§');
+									++i;
+									text.setCharAt(i, Character.toLowerCase(text.charAt(i)));
+								}
+							}
+						}
+					}
+				};
+				break;
+			}
+
 			for (String tag : tags.getKeys("tags"))
-				ColorUtils.registerColorTag(ColorUtils.tagPrefix + tag, "#" + tags.getString("tags." + tag));
+				ColorUtils.registerColorTag(ColorUtils.tagPrefix + tag, tags.getString("tags." + tag));
 			Config config = new Config(path + "config.yml");
 			config.setIfAbsent("timeConvertor.settings.defaultlyDigits", false, Arrays.asList("# If plugin isn't using own split, use defaulty digitals? 300 -> 5:00"));
 			config.setIfAbsent("timeConvertor.settings.defaultSplit", " ", Arrays.asList("# If plugin isn't using own split, api'll use this split"));
@@ -547,7 +616,7 @@ public class API {
 			for (int step = 0; step < totalSize; ++step) {
 				char c = container.charAt(++i);
 
-				if (currentSkipAt == i) {
+				if (currentSkipAt == step) {
 					int skipForChars = skipRegions[skipId++][1] - 1;
 					currentSkipAt = skipId == allocated ? -1 : skipRegions[skipId][0];
 					i += skipForChars;
