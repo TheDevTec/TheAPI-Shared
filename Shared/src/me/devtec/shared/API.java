@@ -586,7 +586,7 @@ public class API {
 			}
 
 			// FastMath
-			double mathPart1 = Math.PI / (2 * totalSize);
+			double mathPart1 = 2 * totalSize;
 
 			// R-G-B
 			int r = 0;
@@ -620,13 +620,13 @@ public class API {
 					int skipForChars = skipRegions[skipId++][1] - 1;
 					currentSkipAt = skipId == allocated ? -1 : skipRegions[skipId][0];
 					i += skipForChars;
-					step += skipForChars;
 					continue;
 				}
 
 				if (c == '&' && i + 1 < container.length() && container.charAt(i + 1) == 'u') {
 					container.delete(i, i + 2);
 					--i;
+					++step;
 					inRainbow = true;
 					firstHex = ColorUtils.color.generateColor();
 					secondHex = ColorUtils.color.generateColor();
@@ -648,7 +648,7 @@ public class API {
 							container.insertMultipleChars(i, formats);
 							formats = EMPTY_CHAR_ARRAY;
 							i += 2;
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(i * mathPart1)) / Math.PI * totalSize));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * Math.PI / mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 						}
@@ -658,6 +658,8 @@ public class API {
 							c = container.charAt(++i);
 							++step;
 							if (isFormat(c)) {
+								container.delete(i - 1, i + 1);
+								i -= 2;
 								if (c == 'r')
 									formats = RESET_CHAR_ARRAY;
 								else if (formats.length == 0)
@@ -680,11 +682,11 @@ public class API {
 							container.insertMultipleChars(i, formats);
 							formats = EMPTY_CHAR_ARRAY;
 							i += 2;
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * mathPart1)) / Math.PI * totalSize));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * Math.PI / mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 						} else {
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * mathPart1)) / Math.PI * totalSize));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * Math.PI / mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 							if (formats.length != 0) {
@@ -698,17 +700,7 @@ public class API {
 		}
 
 		private int parseHex(String chars) {
-			int result = 0;
-			int i = 1;
-			while (i < 6) {
-				result *= 16;
-				result -= digit(chars.charAt(i++));
-			}
-			return result;
-		}
-
-		private int digit(char charAt) {
-			return charAt > 96 ? charAt - 87 : charAt - '0';
+			return Integer.decode(chars);
 		}
 
 		private int hexPiece(int step, int channelStart, float interval) {
