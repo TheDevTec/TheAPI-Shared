@@ -119,8 +119,10 @@ public class YamlSectionBuilderHelper {
 			sec.value = entry.getValue();
 			prevParent = sec.parent;
 		}
-		for (Entry<String, Section> primaryKey : map.entrySet())
-			YamlSectionBuilderHelper.start(dataLoader, primaryKey.getKey(), primaryKey.getValue().value, builder, primaryKey.getValue(), markSaved);
+		for (String primaryKey : primaryKeys) {
+			Section section = map.get(primaryKey);
+			YamlSectionBuilderHelper.start(dataLoader, primaryKey, section.value, builder, section, markSaved);
+		}
 	}
 
 	public static void start(DataLoader config, String section, DataValue dataVal, StringContainer b, Section linked, boolean markSaved) {
