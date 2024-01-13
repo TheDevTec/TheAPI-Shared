@@ -685,6 +685,8 @@ public class ComponentAPI {
 			}
 		} else if (!container.isEmpty())
 			component.setText(container.toString());
+		else if (container.isEmpty())
+			main.getExtra().remove(main.getExtra().size() - 1);
 		return main;
 	}
 
