@@ -586,7 +586,7 @@ public class API {
 			}
 
 			// FastMath
-			double mathPart1 = 2 * totalSize;
+			double mathPart1 = Math.PI / (2 * totalSize);
 
 			// R-G-B
 			int r = 0;
@@ -648,7 +648,7 @@ public class API {
 							container.insertMultipleChars(i, formats);
 							formats = EMPTY_CHAR_ARRAY;
 							i += 2;
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * Math.PI / mathPart1)) / Math.PI * totalSize));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 						}
@@ -682,11 +682,11 @@ public class API {
 							container.insertMultipleChars(i, formats);
 							formats = EMPTY_CHAR_ARRAY;
 							i += 2;
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * Math.PI / mathPart1)) / Math.PI * totalSize));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 						} else {
-							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * Math.PI / mathPart1)) / Math.PI * totalSize));
+							int aStep = (int) Math.round(Math.abs(2 * Math.asin(Math.sin(step * mathPart1)) / Math.PI * totalSize));
 							insertHex(container, i, hexPiece(aStep, r, intervalR), hexPiece(aStep, g, intervalG), hexPiece(aStep, b, intervalB), chars);
 							i += 14;
 							if (formats.length != 0) {
