@@ -80,15 +80,11 @@ public class TomlLoader extends EmptyLoader {
 				list = null;
 
 				if (mode == 2) {
-					if (list == null) {
-						list = probablyCreated != null && probablyCreated.value != null ? (List<Map<Object, Object>>) probablyCreated.value : new ArrayList<>();
-						if (probablyCreated == null || probablyCreated.value == null)
-							set(mainPath, DataValue.of(null, list, null, comments));
-					}
-					if (map == null) {
-						map = new HashMap<>();
-						list.add(map);
-					}
+					list = probablyCreated != null && probablyCreated.value != null ? (List<Map<Object, Object>>) probablyCreated.value : new ArrayList<>();
+					if (probablyCreated == null || probablyCreated.value == null)
+						set(mainPath, DataValue.of(null, list, null, comments));
+					map = new HashMap<>();
+					list.add(map);
 				}
 				comments = null;
 				continue;
@@ -134,24 +130,22 @@ public class TomlLoader extends EmptyLoader {
 		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
-		if (config.getDataLoader().getHeader() != null)
-			try {
-				for (String h : config.getDataLoader().getHeader())
-					builder.append(h).append(System.lineSeparator());
-			} catch (Exception er) {
-				er.printStackTrace();
-			}
+		try {
+			for (String h : config.getDataLoader().getHeader())
+				builder.append(h).append(System.lineSeparator());
+		} catch (Exception er) {
+			er.printStackTrace();
+		}
 
 		// BUILD KEYS & SECTIONS
 		TomlSectionBuilderHelper.write(builder, config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
 
-		if (config.getDataLoader().getFooter() != null)
-			try {
-				for (String h : config.getDataLoader().getFooter())
-					builder.append(h).append(System.lineSeparator());
-			} catch (Exception er) {
-				er.printStackTrace();
-			}
+		try {
+			for (String h : config.getDataLoader().getFooter())
+				builder.append(h).append(System.lineSeparator());
+		} catch (Exception er) {
+			er.printStackTrace();
+		}
 		return builder;
 	}
 

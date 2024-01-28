@@ -108,13 +108,12 @@ public class PropertiesLoader extends EmptyLoader {
 		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
-		if (config.getDataLoader().getHeader() != null)
-			try {
-				for (String h : config.getDataLoader().getHeader())
-					builder.append(h).append(System.lineSeparator());
-			} catch (Exception er) {
-				er.printStackTrace();
-			}
+		try {
+			for (String h : config.getDataLoader().getHeader())
+				builder.append(h).append(System.lineSeparator());
+		} catch (Exception er) {
+			er.printStackTrace();
+		}
 		boolean first = true;
 		Iterator<Entry<String, DataValue>> iterator = config.getDataLoader().entrySet().iterator();
 		while (iterator.hasNext()) {
@@ -134,13 +133,12 @@ public class PropertiesLoader extends EmptyLoader {
 			if (key.getValue().commentAfterValue != null)
 				builder.append(' ').append(key.getValue().commentAfterValue);
 		}
-		if (config.getDataLoader().getFooter() != null)
-			try {
-				for (String h : config.getDataLoader().getFooter())
-					builder.append(h).append(System.lineSeparator());
-			} catch (Exception er) {
-				er.printStackTrace();
-			}
+		try {
+			for (String h : config.getDataLoader().getFooter())
+				builder.append(h).append(System.lineSeparator());
+		} catch (Exception er) {
+			er.printStackTrace();
+		}
 		return builder;
 	}
 

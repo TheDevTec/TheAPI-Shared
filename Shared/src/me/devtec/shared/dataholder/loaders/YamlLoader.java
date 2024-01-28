@@ -330,24 +330,22 @@ public class YamlLoader extends EmptyLoader {
 		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
-		if (config.getDataLoader().getHeader() != null)
-			try {
-				for (String h : config.getDataLoader().getHeader())
-					builder.append(h).append(System.lineSeparator());
-			} catch (Exception er) {
-				er.printStackTrace();
-			}
+		try {
+			for (String h : config.getDataLoader().getHeader())
+				builder.append(h).append(System.lineSeparator());
+		} catch (Exception er) {
+			er.printStackTrace();
+		}
 
 		// BUILD KEYS & SECTIONS
 		YamlSectionBuilderHelper.write(builder, config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
 
-		if (config.getDataLoader().getFooter() != null)
-			try {
-				for (String h : config.getDataLoader().getFooter())
-					builder.append(h).append(System.lineSeparator());
-			} catch (Exception er) {
-				er.printStackTrace();
-			}
+		try {
+			for (String h : config.getDataLoader().getFooter())
+				builder.append(h).append(System.lineSeparator());
+		} catch (Exception er) {
+			er.printStackTrace();
+		}
 		return builder;
 	}
 

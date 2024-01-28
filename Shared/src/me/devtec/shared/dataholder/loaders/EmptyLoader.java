@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import me.devtec.shared.Ref;
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -199,19 +200,15 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public DataLoader clone() {
-		try {
-			EmptyLoader clone = getClass().newInstance();
-			synchronized (data) {
-				clone.data = Collections.synchronizedMap(new LinkedHashMap<>(data));
-			}
-			clone.primaryKeys = new LinkedHashSet<>(primaryKeys);
-			clone.footer = new ArrayList<>(footer);
-			clone.header = new ArrayList<>(header);
-			clone.loaded = loaded;
-			return clone;
-		} catch (Exception e) {
+		EmptyLoader clone = (EmptyLoader) Ref.newInstanceByClass(getClass());
+		synchronized (data) {
+			clone.data = Collections.synchronizedMap(new LinkedHashMap<>(data));
 		}
-		return null;
+		clone.primaryKeys = new LinkedHashSet<>(primaryKeys);
+		clone.footer = new ArrayList<>(footer);
+		clone.header = new ArrayList<>(header);
+		clone.loaded = loaded;
+		return clone;
 	}
 
 	@Override
