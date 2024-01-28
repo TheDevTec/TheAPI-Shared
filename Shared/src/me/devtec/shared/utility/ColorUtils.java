@@ -294,7 +294,8 @@ public class ColorUtils {
 							if (branch.value != null) {
 								endBranch = branch;
 								if (current == null) {
-									int length = start + endBranch.length;
+									++j;
+									int length = endBranch.value.length() - endBranch.length;
 									container.replace(start, start + endBranch.length, endBranch.value);
 									j += length;
 									endBranch = null;
@@ -305,7 +306,7 @@ public class ColorUtils {
 					current = null;
 					--j;
 					if (endBranch != null) {
-						int length = start + endBranch.length;
+						int length = endBranch.value.length() - endBranch.length;
 						container.replace(start, start + endBranch.length, endBranch.value);
 						j += length;
 						endBranch = null;
