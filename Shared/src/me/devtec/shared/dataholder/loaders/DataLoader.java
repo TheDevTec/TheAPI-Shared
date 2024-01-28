@@ -232,7 +232,7 @@ public abstract class DataLoader implements Cloneable {
 			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority))
 				if (constructor.isConstructorOf(type))
 					return constructor.construct();
-		return null;
+		return new EmptyLoader();
 	}
 
 	@Comment(comment = "It finds the correct DataLoader according to the contents of the file and reads it.")

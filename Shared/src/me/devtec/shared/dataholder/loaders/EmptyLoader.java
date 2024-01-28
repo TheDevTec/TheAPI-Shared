@@ -2,6 +2,7 @@ package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,7 +16,7 @@ import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
 public class EmptyLoader extends DataLoader {
-	protected Map<String, DataValue> data = new LinkedHashMap<>();
+	protected Map<String, DataValue> data = Collections.synchronizedMap(new LinkedHashMap<>());
 	protected Set<String> primaryKeys = new LinkedHashSet<>();
 	protected List<String> header = new ArrayList<>();
 	protected List<String> footer = new ArrayList<>();
@@ -31,7 +32,9 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public Map<String, DataValue> get() {
-		return data;
+		synchronized (data) {
+			return data;
+		}
 	}
 
 	@Override
@@ -42,21 +45,27 @@ public class EmptyLoader extends DataLoader {
 	@Override
 	public Set<String> getKeys() {
 		if (keySet == null)
-			keySet = data.keySet();
+			synchronized (data) {
+				keySet = data.keySet();
+			}
 		return keySet;
 	}
 
 	@Override
 	public Set<Entry<String, DataValue>> entrySet() {
 		if (entrySet == null)
-			entrySet = data.entrySet();
+			synchronized (data) {
+				entrySet = data.entrySet();
+			}
 		return entrySet;
 	}
 
 	@Override
 	public DataValue get(String key) {
 		Checkers.nonNull(key, "Key");
-		return data.get(key);
+		synchronized (data) {
+			return data.get(key);
+		}
 	}
 
 	@Override
@@ -72,25 +81,47 @@ public class EmptyLoader extends DataLoader {
 	public void set(String key, DataValue holder) {
 		Checkers.nonNull(key, "Key");
 		Checkers.nonNull(holder, "DataValue");
-		if (data.put(key, holder) == null) {
-			int pos = key.indexOf('.');
-			String primaryKey = pos == -1 ? key : key.substring(0, pos);
-			primaryKeys.add(primaryKey);
-			keySet = null;
-			entrySet = null;
+		synchronized (data) {
+			if (data.put(key, holder) == null) {
+				int pos = key.indexOf('.');
+				String primaryKey = pos == -1 ? key : key.substring(0, pos);
+				primaryKeys.add(primaryKey);
+				keySet = null;
+				entrySet = null;
+			}
 		}
 	}
 
 	@Override
 	public boolean remove(String key, boolean withSubKeys) {
 		Checkers.nonNull(key, "Key");
-		if (withSubKeys) {
-			int pos = key.indexOf('.');
-			String primaryKey = pos == -1 ? key : key.substring(0, pos);
-			if (pos == -1) {
+		synchronized (data) {
+			if (withSubKeys) {
+				int pos = key.indexOf('.');
+				String primaryKey = pos == -1 ? key : key.substring(0, pos);
+				if (pos == -1) {
+					boolean modified = false;
+					if (primaryKeys.remove(primaryKey))
+						modified = true;
+					if (data.remove(key) != null)
+						modified = true;
+					key = key + '.';
+					Iterator<String> itr = getKeys().iterator();
+					while (itr.hasNext()) {
+						String section = itr.next();
+						if (section.startsWith(key)) {
+							itr.remove();
+							modified = true;
+						}
+					}
+					if (modified) {
+						keySet = null;
+						entrySet = null;
+					}
+					return modified;
+				}
+				boolean onlyOne = true;
 				boolean modified = false;
-				if (primaryKeys.remove(primaryKey))
-					modified = true;
 				if (data.remove(key) != null)
 					modified = true;
 				key = key + '.';
@@ -100,52 +131,34 @@ public class EmptyLoader extends DataLoader {
 					if (section.startsWith(key)) {
 						itr.remove();
 						modified = true;
-					}
+					} else if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.'))
+						onlyOne = false;
 				}
+				if (onlyOne && primaryKeys.remove(primaryKey))
+					modified = true;
 				if (modified) {
 					keySet = null;
 					entrySet = null;
 				}
 				return modified;
 			}
-			boolean onlyOne = true;
-			boolean modified = false;
-			if (data.remove(key) != null)
-				modified = true;
-			key = key + '.';
-			Iterator<String> itr = getKeys().iterator();
-			while (itr.hasNext()) {
-				String section = itr.next();
-				if (section.startsWith(key)) {
-					itr.remove();
-					modified = true;
-				} else if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.'))
-					onlyOne = false;
-			}
-			if (onlyOne && primaryKeys.remove(primaryKey))
-				modified = true;
-			if (modified) {
+			if (data.remove(key) != null) {
+				int pos = key.indexOf('.');
+				String primaryKey = pos == -1 ? key : key.substring(0, pos);
+				Iterator<String> itr = getKeys().iterator();
+				while (itr.hasNext()) {
+					String section = itr.next();
+					if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.')) {
+						keySet = null;
+						entrySet = null;
+						return true;
+					}
+				}
+				primaryKeys.remove(primaryKey);
 				keySet = null;
 				entrySet = null;
+				return true;
 			}
-			return modified;
-		}
-		if (data.remove(key) != null) {
-			int pos = key.indexOf('.');
-			String primaryKey = pos == -1 ? key : key.substring(0, pos);
-			Iterator<String> itr = getKeys().iterator();
-			while (itr.hasNext()) {
-				String section = itr.next();
-				if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.')) {
-					keySet = null;
-					entrySet = null;
-					return true;
-				}
-			}
-			primaryKeys.remove(primaryKey);
-			keySet = null;
-			entrySet = null;
-			return true;
 		}
 		return false;
 	}
@@ -154,8 +167,10 @@ public class EmptyLoader extends DataLoader {
 	public void reset() {
 		keySet = null;
 		entrySet = null;
-		primaryKeys.clear();
-		data.clear();
+		synchronized (data) {
+			primaryKeys.clear();
+			data.clear();
+		}
 		header.clear();
 		footer.clear();
 		loaded = false;
@@ -186,7 +201,9 @@ public class EmptyLoader extends DataLoader {
 	public DataLoader clone() {
 		try {
 			EmptyLoader clone = getClass().newInstance();
-			clone.data = new LinkedHashMap<>(data);
+			synchronized (data) {
+				clone.data = Collections.synchronizedMap(new LinkedHashMap<>(data));
+			}
 			clone.primaryKeys = new LinkedHashSet<>(primaryKeys);
 			clone.footer = new ArrayList<>(footer);
 			clone.header = new ArrayList<>(header);

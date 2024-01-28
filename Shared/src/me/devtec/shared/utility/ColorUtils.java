@@ -1,8 +1,6 @@
 package me.devtec.shared.utility;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import me.devtec.shared.API;
 import me.devtec.shared.Ref;
@@ -29,41 +27,114 @@ public class ColorUtils {
 	public static HexReplacer hexReplacer;
 
 	// Chat Tags (like !fire)
-	public static Map<Character, Branch[]> colorMapTree = new HashMap<>();
+	private static Branch[] base = {};
+	private static int baseSize;
 
-	public static void registerColorTag(String tag, String hex) {
-		Branch[] branch = ColorUtils.colorMapTree.get(tag.charAt(0));
-		if (branch == null)
-			ColorUtils.colorMapTree.put(tag.charAt(0), branch = new Branch[] {});
-		Branch parent = null;
-		int pos = 1;
-		charLoop: for (char c : tag.substring(1).toLowerCase().toCharArray()) {
-			++pos;
-			for (Branch br : branch)
-				if (br.getKey() == c) {
-					parent = br;
-					branch = br.getBranches();
-					if (branch == null) {
-						br.setBranches(branch = new Branch[] {});
-						continue charLoop;
-					}
-					continue charLoop;
-				}
-			Branch[] copy = new Branch[branch.length + 1];
-			System.arraycopy(branch, 0, copy, 0, branch.length);
-			Branch br;
-			copy[branch.length] = br = new Branch(c);
-			if (pos == tag.length())
-				br.setValue(hex);
-			if (parent != null)
-				parent.setBranches(copy);
-			else
-				ColorUtils.colorMapTree.put(tag.charAt(0), copy);
-			if (pos != tag.length()) {
-				parent = br;
-				br.setBranches(branch = new Branch[] {});
+	public static void registerColorTag(String replace, String value) {
+		char c = replace.charAt(0);
+		Branch mainStream = findBranchFor(c);
+		if (mainStream == null) {
+			Branch[] newbase = new Branch[++baseSize];
+			System.arraycopy(base, 0, newbase, 0, base.length);
+			mainStream = new Branch(c, null);
+			newbase[base.length] = mainStream;
+			base = newbase;
+			String left = replace.substring(1);
+			Branch current = new Branch((char) 0, null);
+			mainStream.sub = new Branch[] { current };
+			while (!left.isEmpty()) {
+				current.c = left.charAt(0);
+				if (left.length() < 2)
+					break;
+
+				Branch next = new Branch((char) 0, null);
+				current.sub = new Branch[] { next };
+				current = next;
+				left = left.substring(1);
 			}
+			current.value = value;
+			current.length = replace.length();
+		} else {
+			Branch[] trunk = mainStream.sub;
+			String left = replace.substring(1);
+			char t = left.charAt(0);
+			Branch previous = null;
+			// Find first branch stemming from first char
+			for (Branch branch : trunk)
+				if (branch.c == t) {
+					previous = branch;
+					left = left.substring(1);
+					t = left.charAt(0);
+					break;
+				}
+
+			// Branch found, follow it
+			if (previous != null)
+				while (!left.isEmpty()) {
+					if (previous.sub == null)
+						break;
+
+					boolean found = false;
+					for (Branch branch : previous.sub)
+						if (branch.c == t) {
+							found = true;
+							previous = branch;
+							left = left.substring(1);
+							if (left.length() == 0) {
+								if (previous.value == null) {
+									previous.value = value;
+									previous.length = replace.length();
+								}
+								return;
+							}
+							t = left.charAt(0);
+							break;
+						}
+					if (!found)
+						break;
+				}
+
+			// Branched off right at the trunk
+			if (previous == null) {
+				previous = new Branch(t, null);
+				Branch[] branches = mainStream.sub;
+				Branch[] augmented = new Branch[branches.length + 1];
+				System.arraycopy(branches, 0, augmented, 0, branches.length);
+				augmented[branches.length] = previous;
+				mainStream.sub = augmented;
+				left = left.substring(1);
+				t = left.charAt(0);
+			}
+
+			Branch next = new Branch(t, null);
+			if (previous.sub == null)
+				previous.sub = new Branch[] { next };
+			else {
+				Branch[] augmented = new Branch[previous.sub.length + 1];
+				System.arraycopy(previous.sub, 0, augmented, 0, previous.sub.length);
+				augmented[previous.sub.length] = next;
+				previous.sub = augmented;
+			}
+			previous = next;
+			left = left.substring(1);
+
+			while (!left.isEmpty()) {
+				t = left.charAt(0);
+				next = new Branch(t, null);
+				previous.sub = new Branch[] { next };
+				previous = next;
+				left = left.substring(1);
+			}
+			next.value = value;
+			next.length = replace.length();
 		}
+	}
+
+	private static Branch findBranchFor(char c) {
+		for (Branch main : base)
+			if (main.c == c)
+				return main;
+		return null;
 	}
 
 	public interface ColormaticFactory {
@@ -203,27 +274,45 @@ public class ColorUtils {
 		if (ColorUtils.gradientFinderConstructor == null)
 			return container;
 
-		if (startAt > -1)
-			for (int i = startAt; i < container.length(); ++i) {
-				char c = Character.toLowerCase(container.charAt(i));
-				Branch[] branch = colorMapTree.get(c);
-				int deep = 0;
-				while (branch != null && i + deep - 1 < container.length()) {
-					c = Character.toLowerCase(container.charAt(i + ++deep));
-					for (Branch current : branch) {
-						if (current.getKey() == c) {
-							branch = current.getBranches();
-							if (current.hasValue()) {
-								String hex = current.getValue();
-								container.replace(i, i + deep + 1, hex);
-								i += hex.length();
+		if (startAt > -1) {
+			Branch[] current = null;
+			int start = 0;
+			Branch endBranch = null;
+
+			charLoop: for (int j = startAt; j < container.length(); ++j) {
+				char c = Character.toLowerCase(container.charAt(j));
+				if (current == null) {
+					Branch main = findBranchFor(c);
+					if (main != null) {
+						current = main.sub;
+						start = j;
+					}
+				} else {
+					for (Branch branch : current)
+						if (branch.c == c) {
+							current = branch.sub;
+							if (branch.value != null) {
+								endBranch = branch;
+								if (current == null) {
+									int length = start + endBranch.length;
+									container.replace(start, start + endBranch.length, endBranch.value);
+									j += length;
+									endBranch = null;
+								}
 							}
-							break;
+							continue charLoop;
 						}
-						branch = null;
+					current = null;
+					--j;
+					if (endBranch != null) {
+						int length = start + endBranch.length;
+						container.replace(start, start + endBranch.length, endBranch.value);
+						j += length;
+						endBranch = null;
 					}
 				}
 			}
+		}
 
 		GradientFinder finder = ColorUtils.gradientFinderConstructor.matcher(container);
 		while (finder.find()) {
@@ -370,11 +459,9 @@ public class ColorUtils {
 			}
 		}
 		if (ColorUtils.color != null) {
-			if (!Ref.serverType().isBukkit() || Ref.isNewerThan(15)) {
-				if (foundHash || foundTagPrefix > -1)
-					ColorUtils.internalGradient(container, foundTagPrefix, protectedStrings);
-				if (foundHash)
-					ColorUtils.color.replaceHex(container);
+			if ((!Ref.serverType().isBukkit() || Ref.isNewerThan(15)) && (foundHash || foundTagPrefix > -1)) {
+				ColorUtils.internalGradient(container, foundTagPrefix, protectedStrings);
+				ColorUtils.color.replaceHex(container);
 			}
 			if (foundRainbowChar)
 				ColorUtils.color.rainbow(container, 0, container.length(), null, null, protectedStrings);
