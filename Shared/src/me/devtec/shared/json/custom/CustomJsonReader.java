@@ -260,15 +260,6 @@ public class CustomJsonReader implements JReader {
 				case TAB:
 					continue;
 				}
-				for (; pos < to; ++pos) {
-					character = text.charAt(pos);
-					switch (character) {
-					case CLOSED_BRACKET:
-					case CLOSED_BRACE:
-					case COMMA:
-						return Pair.of(null, pos);
-					}
-				}
 				if (container.isEmpty())
 					return Pair.of(listResult, pos);
 				return Pair.of(null, pos);
@@ -572,15 +563,6 @@ public class CustomJsonReader implements JReader {
 				case SPACE:
 				case TAB:
 					continue;
-				}
-				for (; pos < to; ++pos) {
-					character = text.charAt(pos);
-					switch (character) {
-					case CLOSED_BRACKET:
-					case CLOSED_BRACE:
-					case COMMA:
-						return Pair.of(null, pos);
-					}
 				}
 				if (key == null && container.isEmpty())
 					return Pair.of(mapResult, pos);

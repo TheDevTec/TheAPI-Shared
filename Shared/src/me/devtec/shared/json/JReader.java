@@ -21,18 +21,19 @@ public interface JReader {
 		if (json == null || json.isEmpty())
 			return json;
 		char first = json.charAt(0);
-		if (first == 'n' && json.equals("null"))
+		char last = json.charAt(json.length() - 1);
+		if (first == 'n' && last == 'l' && json.equals("null"))
 			return null;
-		if (first == 't' && json.equalsIgnoreCase("true"))
+		if (first == 't' && last == 'e' && json.equalsIgnoreCase("true"))
 			return true;
-		if (first == 'f' && json.equalsIgnoreCase("false"))
+		if (first == 'f' && last == 'e' && json.equalsIgnoreCase("false"))
 			return false;
 		if (first >= '0' && first <= '9' || first == '+' || first == '-') {
 			Number number = ParseUtils.getNumber(json);
 			if (number != null)
 				return number;
 		}
-		if (first == '{' || first == '[') {
+		if (first == '{' && last == '}' || first == '[' && last == ']') {
 			Object read = null;
 			if (first == '{')
 				try {
