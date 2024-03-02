@@ -1,5 +1,6 @@
 package me.devtec.shared.commands.holder;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,7 +25,7 @@ public class CommandHolder<S> {
 
 	private String[] EMPTY_ARRAY = { "" };
 
-	public List<String> tablist(Object obj, String[] args) {
+	public Collection<String> tablist(Object obj, String[] args) {
 		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
 			return Collections.emptyList();
 		S s = (S) obj;
@@ -33,7 +34,7 @@ public class CommandHolder<S> {
 		return StringUtils.copyPartialMatches(args[args.length - 1], lookupTab(this.structure, s, args, args[0], 0));
 	}
 
-	private List<String> lookupTab(CommandStructure<S> structure, S s, String[] args, String arg, int argPos) {
+	private Collection<String> lookupTab(CommandStructure<S> structure, S s, String[] args, String arg, int argPos) {
 		List<String> result = new LinkedList<>();
 		if (args.length >= argPos) {
 			List<CommandStructure<S>> nextStructures = structure.getNextStructures(s);

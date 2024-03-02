@@ -1,6 +1,7 @@
 package me.devtec.shared.commands.structures;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,14 +24,14 @@ public class ArgumentCommandStructure<S> extends CommandStructure<S> {
 	}
 
 	@Override
-	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
+	public Collection<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return tabEx != null ? tabEx.execute(sender, structure, arguments) : this.args.isEmpty() ? Arrays.asList("<args>") : this.args;
 	}
 
 	/**
 	 * @apiNote Returns arguments of this {@link ArgumentCommandStructure}
 	 */
-	public List<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments) {
+	public Collection<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments) {
 		return this.args;
 	}
 

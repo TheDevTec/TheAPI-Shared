@@ -1,6 +1,6 @@
 package me.devtec.shared.commands.structures;
 
-import java.util.List;
+import java.util.Collection;
 
 import me.devtec.shared.API;
 import me.devtec.shared.commands.holder.CommandExecutor;
@@ -19,7 +19,7 @@ public class SelectorCommandStructure<S> extends CommandStructure<S> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
+	public Collection<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return tabEx != null ? tabEx.execute(sender, structure, arguments) : API.selectorUtils.build(sender, this.selector);
 	}
 

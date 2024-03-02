@@ -1,6 +1,7 @@
 package me.devtec.shared.commands.structures;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -282,7 +283,7 @@ public class CommandStructure<S> {
 	 * @apiNote Returns tab completer values of this {@link CommandStructure}
 	 *
 	 */
-	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
+	public Collection<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return Collections.emptyList();
 	}
 
@@ -368,7 +369,7 @@ public class CommandStructure<S> {
 		return list;
 	}
 
-	public static boolean contains(ArgumentCommandStructure<?> sub, List<String> list, String arg) {
+	public static boolean contains(ArgumentCommandStructure<?> sub, Collection<String> list, String arg) {
 		if (!(sub instanceof CallableArgumentCommandStructure) && list.isEmpty())
 			return true;
 		for (String value : list)

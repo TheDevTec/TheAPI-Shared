@@ -1,7 +1,7 @@
 package me.devtec.shared.commands.structures;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import me.devtec.shared.commands.holder.CommandExecutor;
 import me.devtec.shared.commands.holder.CommandTabExecutor;
@@ -16,7 +16,7 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	}
 
 	@Override
-	public List<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
+	public Collection<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return getTabExecutor() != null ? getTabExecutor().execute(sender, structure, arguments) : this.getArgs(sender, structure, arguments);
 	}
 
@@ -24,7 +24,7 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	 * @apiNote Returns arguments of this {@link ArgumentCommandStructure}
 	 */
 	@Override
-	public List<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments) {
+	public Collection<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments) {
 		try {
 			return this.futureArgs.call(sender, structure, arguments);
 		} catch (Exception e) {
@@ -34,6 +34,6 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	}
 
 	public interface CallableArgument<S> {
-		public List<String> call(S sender, CommandStructure<S> structure, String[] args);
+		public Collection<String> call(S sender, CommandStructure<S> structure, String[] args);
 	}
 }
