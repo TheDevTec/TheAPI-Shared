@@ -34,13 +34,10 @@ public abstract class DataLoader implements Cloneable {
 
 		// BUILT-IN LOADERS
 		DataLoader.dataLoaders.get(LoaderPriority.LOW).add(new DataLoaderConstructor() {
-			DataLoader notUsed;
 
 			@Override
 			public DataLoader construct() {
-				if (notUsed == null || notUsed.isLoaded())
-					notUsed = new ByteLoader();
-				return notUsed;
+				return new ByteLoader();
 			}
 
 			@Override
@@ -49,13 +46,10 @@ public abstract class DataLoader implements Cloneable {
 			}
 		});
 		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
-			DataLoader notUsed;
 
 			@Override
 			public DataLoader construct() {
-				if (notUsed == null || notUsed.isLoaded())
-					notUsed = new JsonLoader();
-				return notUsed;
+				return new JsonLoader();
 			}
 
 			@Override
@@ -64,13 +58,10 @@ public abstract class DataLoader implements Cloneable {
 			}
 		});
 		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
-			DataLoader notUsed;
 
 			@Override
 			public DataLoader construct() {
-				if (notUsed == null || notUsed.isLoaded())
-					notUsed = new TomlLoader();
-				return notUsed;
+				return new TomlLoader();
 			}
 
 			@Override
@@ -79,13 +70,10 @@ public abstract class DataLoader implements Cloneable {
 			}
 		});
 		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
-			DataLoader notUsed;
 
 			@Override
 			public DataLoader construct() {
-				if (notUsed == null || notUsed.isLoaded())
-					notUsed = new PropertiesLoader();
-				return notUsed;
+				return new PropertiesLoader();
 			}
 
 			@Override
@@ -94,13 +82,10 @@ public abstract class DataLoader implements Cloneable {
 			}
 		});
 		DataLoader.dataLoaders.get(LoaderPriority.HIGH).add(new DataLoaderConstructor() {
-			DataLoader notUsed;
 
 			@Override
 			public DataLoader construct() {
-				if (notUsed == null || notUsed.isLoaded())
-					notUsed = new YamlLoader();
-				return notUsed;
+				return new YamlLoader();
 			}
 
 			@Override
