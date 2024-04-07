@@ -102,6 +102,7 @@ public class ComponentAPI {
 						if (ic == 12) {
 							if (!container.isEmpty()) {
 								privatePos = 0;
+								spaceFinder = 0;
 								component.setText(container.toString());
 								container.clear();
 								component = new Component();
@@ -120,6 +121,7 @@ public class ComponentAPI {
 						continue;
 					if (!container.isEmpty()) {
 						privatePos = 0;
+						spaceFinder = 0;
 						component.setText(container.toString());
 						container.clear();
 						component = new Component();
@@ -133,6 +135,7 @@ public class ComponentAPI {
 						continue;
 					if (!container.isEmpty()) {
 						privatePos = 0;
+						spaceFinder = 0;
 						component.setText(container.toString());
 						container.clear();
 						component = new Component().copyOf(component);
@@ -151,8 +154,9 @@ public class ComponentAPI {
 				case 0:
 					initAt = i;
 					componentStartAt = componentPos;
+					spaceFinder = privatePos;
 					if (c == 'h' && i + 11 < input.length()) {
-						if (input.charAt(i + 1) == 't' && input.charAt(i + 2) == 't' || input.charAt(i + 3) == 'p') {
+						if (input.charAt(i + 1) == 't' && input.charAt(i + 2) == 't' && input.charAt(i + 3) == 'p') {
 							container.append('t').append('t').append('p');
 							if (input.charAt(i + 4) == 's' && input.charAt(i + 5) == ':' && input.charAt(i + 6) == '/' && input.charAt(i + 7) == '/') {
 								container.append('s').append(':').append('/').append('/');
@@ -610,16 +614,20 @@ public class ComponentAPI {
 							event.setValue("https://" + event.getValue());
 						Component start = componentStartAt == componentPos ? component : main.getExtra().get(componentStartAt);
 						if (componentStartAt == componentPos) { // Start & end are same
-							Component withUrl = new Component(container.substring(spaceFinder, container.length() - 1)).copyOf(start);
-							withUrl.setClickEvent(event);
-							main.append(withUrl);
-							++componentPos;
-							start.setText(container.substring(0, spaceFinder));
+							if (spaceFinder == 0) {
+								start.setText(container.toString());
+								start.setClickEvent(event);
+							} else {
+								Component withUrl = new Component(container.substring(spaceFinder, container.length() - 1)).copyOf(start);
+								withUrl.setClickEvent(event);
+								main.append(withUrl);
+								++componentPos;
+								start.setText(container.substring(0, spaceFinder));
+							}
 							container.clear();
 							container.append(' ');
 							component = new Component().copyOf(start);
 						} else {
-
 							for (int middle = componentStartAt + 1; middle < componentPos; ++middle)
 								main.getExtra().get(middle).setClickEvent(event);
 
@@ -659,15 +667,17 @@ public class ComponentAPI {
 			else if (!event.getValue().startsWith("https://"))
 				event.setValue("https://" + event.getValue());
 			Component start = componentStartAt == componentPos ? component : main.getExtra().get(componentStartAt);
-
 			if (componentStartAt == componentPos) { // Start & end are same
-				Component withUrl = new Component(container.substring(spaceFinder)).copyOf(start);
-				withUrl.setClickEvent(event);
-				main.append(withUrl);
-				++componentPos;
-				start.setText(container.substring(0, spaceFinder));
+				if (spaceFinder == 0) {
+					start.setText(container.toString());
+					start.setClickEvent(event);
+				} else {
+					Component withUrl = new Component(container.substring(spaceFinder)).copyOf(start);
+					withUrl.setClickEvent(event);
+					main.append(withUrl);
+					start.setText(container.substring(0, spaceFinder));
+				}
 			} else {
-
 				for (int middle = componentStartAt + 1; middle < componentPos; ++middle)
 					main.getExtra().get(middle).setClickEvent(event);
 
