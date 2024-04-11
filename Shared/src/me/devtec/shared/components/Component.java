@@ -403,6 +403,18 @@ public class Component {
 			map.put("obfuscated", true);
 		if (isUnderlined())
 			map.put("underlined", true);
+		if(extra!=null&&!extra.isEmpty()){
+            	    if(extra.size()==1){
+                	map.put("extra",extra.get(0).toJsonMap());
+		    }else {
+			List<Map<String,Object>>list=new ArrayList<>();
+			for(Component extras:extra){	
+			    //possible cyclic error - not yet solved
+                    	    list.add(extras.toJsonMap());
+                	}
+                	map.put("extra",list);
+            	    }
+                }
 		return map;
 	}
 }
