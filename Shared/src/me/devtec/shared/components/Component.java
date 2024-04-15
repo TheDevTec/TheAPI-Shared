@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import me.devtec.shared.annotations.Nonnull;
+import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.StringContainer;
 
 public class Component {
@@ -33,6 +35,18 @@ public class Component {
 
 	public Component(String text) {
 		this.text = text;
+	}
+
+	public static Component fromString(String input) {
+		return ComponentAPI.fromString(input);
+	}
+
+	public static Component fromString(String input, boolean hexMode) {
+		return ComponentAPI.fromString(input, hexMode);
+	}
+
+	public static Component fromString(String input, boolean hexMode, boolean urlMode) {
+		return ComponentAPI.fromString(input, hexMode, urlMode);
 	}
 
 	public Component setText(String value) {
@@ -380,6 +394,27 @@ public class Component {
 		return this;
 	}
 
+	/**
+	 *
+	 * @return Component (adventure api)
+	 */
+	@Nullable
+	public Object asAdventureComponent() {
+		ComponentTransformer<?> comp = ComponentAPI.adventure();
+		return comp == null ? null : comp.fromComponent(this);
+	}
+
+	/**
+	 *
+	 * @return TextComponent (bungeecord api)
+	 */
+	@Nullable
+	public Object asBungeeComponent() {
+		ComponentTransformer<?> comp = ComponentAPI.bungee();
+		return comp == null ? null : comp.fromComponent(this);
+	}
+
+	@Nonnull
 	public Map<String, Object> toJsonMap() {
 		Map<String, Object> map = new LinkedHashMap<>();
 		map.put("text", getText());
@@ -403,6 +438,25 @@ public class Component {
 			map.put("obfuscated", true);
 		if (isUnderlined())
 			map.put("underlined", true);
+		return map;
+	}
+
+	/**
+	 * @author petulikan1
+	 */
+	@Nonnull
+	public Map<String, Object> toJsonMapWithExtras() {
+		Map<String, Object> map = toJsonMap();
+		if (extra != null && !extra.isEmpty())
+			if (extra.size() == 1)
+				map.put("extra", extra.get(0).toJsonMapWithExtras());
+			else {
+				List<Map<String, Object>> list = new ArrayList<>();
+				for (Component children : extra)
+					if (!children.equals(this))
+						list.add(children.toJsonMapWithExtras());
+				map.put("extra", list);
+			}
 		return map;
 	}
 }
