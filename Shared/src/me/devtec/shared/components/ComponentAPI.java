@@ -1,10 +1,7 @@
 package me.devtec.shared.components;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -700,70 +697,13 @@ public class ComponentAPI {
 		return main;
 	}
 
-	public static List<Map<String, Object>> toJsonList(Component component) {
-		List<Map<String, Object>> list = new LinkedList<>();
-		list.add(component.toJsonMap());
-		if (component.getExtra() != null)
-			ComponentAPI.toJsonListAll(list, component.getExtra());
-		return list;
-	}
-
-	private static void toJsonListAll(List<Map<String, Object>> list, List<Component> extra) {
-		for (Component c : extra) {
-			list.add(c.toJsonMap());
-			if (c.getExtra() != null)
-				ComponentAPI.toJsonListAll(list, c.getExtra());
-		}
-	}
-
 	public static List<Map<String, Object>> toJsonList(String text) {
 		return ComponentAPI.toJsonList(ComponentAPI.fromString(text));
 	}
 
-	@SuppressWarnings("unchecked")
-	public static List<Map<String, Object>> fixJsonList(List<Map<String, Object>> lists) { // usable for ex. chat format
-		if (lists == null || lists.isEmpty())
-			return lists;
-		List<Map<String, Object>> list = new ArrayList<>();
-
-		Iterator<Map<String, Object>> it = lists.listIterator();
-		while (it.hasNext()) {
-			Map<String, Object> text = it.next();
-
-			if (text.get("text") == null || text.get("text").toString().isEmpty())
-				continue; // fast skip
-
-			Map<String, Object> hover = convertMapValues("hoverEvent", (Map<String, Object>) text.get("hoverEvent"));
-			Map<String, Object> click = convertMapValues("clickEvent", (Map<String, Object>) text.get("clickEvent"));
-			String insertion = (String) text.get("insertion");
-
-			String stext = (String) text.get("text");
-			Component c = ComponentAPI.fromString(stext);
-			if (c != null) {
-				if (!c.getText().isEmpty()) {
-					Map<String, Object> json = c.toJsonMap();
-					if (hover != null)
-						json.put("hoverEvent", hover);
-					if (click != null && c.getClickEvent() == null) // Propably URL
-						json.put("clickEvent", click);
-					if (insertion != null)
-						json.put("insertion", insertion);
-					list.add(json);
-				}
-				if (c.getExtra() != null)
-					for (Component extras : c.getExtra())
-						addExtras(extras, list, hover, click, insertion);
-			}
-			Object extra = text.get("extra");
-			if (extra != null) {
-				List<Map<String, Object>> extras = new ArrayList<>();
-				if (extra instanceof Map)
-					extras.addAll(fixJsonList(Arrays.asList((Map<String, Object>) extra)));
-				else if (extra instanceof List)
-					extras.addAll(fixJsonList((List<Map<String, Object>>) extra));
-				list.get(list.size() - 1).put("extra", extras);
-			}
-		}
+	public static List<Map<String, Object>> toJsonList(Component component) {
+		List<Map<String, Object>> list = new LinkedList<>();
+		list.add(component.toJsonMapWithExtras());
 		return list;
 	}
 
@@ -861,7 +801,7 @@ public class ComponentAPI {
 			return component.isItalic();
 		case 'r':
 		case 'R':
-			return !(component.isObfuscated() || component.isBold() || component.isStrikethrough() || component.isUnderlined() || component.isItalic());
+			return !component.isObfuscated() && !component.isBold() && !component.isStrikethrough() && !component.isUnderlined() && !component.isItalic();
 		}
 		return false;
 	}
@@ -874,57 +814,11 @@ public class ComponentAPI {
 		return afterSymbol >= 'r' && afterSymbol <= 'R' || afterSymbol >= 'k' && afterSymbol <= 'o' || afterSymbol >= 'K' && afterSymbol <= 'O';
 	}
 
-	private static void addExtras(Component extras, List<Map<String, Object>> list, Map<String, Object> hover, Map<String, Object> click, String insertion) {
-		Map<String, Object> jsons = extras.toJsonMap();
-		if (hover != null)
-			jsons.put("hoverEvent", hover);
-		if (click != null && extras.getClickEvent() == null) // Propably URL
-			jsons.put("clickEvent", click);
-		if (insertion != null)
-			jsons.put("insertion", insertion);
-		list.add(jsons);
-		if (extras.getExtra() != null)
-			for (Component c : extras.getExtra())
-				addExtras(c, list, hover, click, insertion);
-	}
-
 	private static String getColor(Object color) {
 		if (color == null)
 			return "";
 		if (color.toString().startsWith("#"))
 			return ColorUtils.color.replaceHex(color.toString());
 		return "§" + Component.colorToChar(color.toString());
-	}
-
-	private static Map<String, Object> convertMapValues(String key, Map<String, Object> hover) {
-		if (hover == null || hover.isEmpty())
-			return null;
-		Object val = hover.getOrDefault("value", hover.getOrDefault("content", hover.getOrDefault("contents", null)));
-		if (val == null)
-			hover.put("value", "");
-		else if (key.equalsIgnoreCase("hoverEvent")) {
-			if (val instanceof Collection || val instanceof Map) {
-				Object ac = hover.get("action");
-				hover.clear();
-				hover.put("action", ac);
-				hover.put("value", val);
-			} else {
-				Object ac = hover.get("action");
-				hover.clear();
-				hover.put("action", ac);
-				hover.put("value", ComponentAPI.toJsonList(val + ""));
-			}
-		} else if (val instanceof Collection || val instanceof Map) {
-			Object ac = hover.get("action");
-			hover.clear();
-			hover.put("action", ac);
-			hover.put("value", val);
-		} else {
-			Object ac = hover.get("action");
-			hover.clear();
-			hover.put("action", ac);
-			hover.put("value", val + "");
-		}
-		return hover;
 	}
 }
