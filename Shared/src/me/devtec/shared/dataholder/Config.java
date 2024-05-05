@@ -855,7 +855,6 @@ public class Config {
 				if (!file.exists())
 					return this;
 				WatchService watchService = FileSystems.getDefault().newWatchService();
-				System.out.println(file.getAbsoluteFile().toPath().getParent());
 				Path path = file.getAbsoluteFile().toPath();
 
 				Scheduler.getManager().register(updaterWatcher = () -> {
