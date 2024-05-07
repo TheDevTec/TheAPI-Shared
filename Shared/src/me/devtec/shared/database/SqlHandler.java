@@ -329,7 +329,8 @@ public class SqlHandler implements DatabaseHandler {
 		return prepared.executeUpdate() != 0;
 	}
 
-	private PreparedStatement prepareStatement(String sqlCommand) throws SQLException {
+	@Override
+	public PreparedStatement prepareStatement(String sqlCommand) throws SQLException {
 		try {
 			if (!isConnected())
 				open();
@@ -341,6 +342,31 @@ public class SqlHandler implements DatabaseHandler {
 		} catch (SQLException err) {
 			return sql.prepareStatement(sqlCommand); // one more time!
 		}
+	}
+
+	@Override
+	public int executeUpdate(PreparedStatement prepared) throws SQLException {
+		return prepared.executeUpdate();
+	}
+
+	@Override
+	public long[] executeLargeBatch(PreparedStatement prepared) throws SQLException {
+		return prepared.executeLargeBatch();
+	}
+
+	@Override
+	public int[] executeBatch(PreparedStatement prepared) throws SQLException {
+		return prepared.executeBatch();
+	}
+
+	@Override
+	public ResultSet executeQuery(PreparedStatement prepared) throws SQLException {
+		return prepared.executeQuery();
+	}
+
+	@Override
+	public boolean execute(PreparedStatement prepared) throws SQLException {
+		return prepared.execute();
 	}
 
 	@Override

@@ -1,5 +1,7 @@
 package me.devtec.shared.database;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -309,37 +311,49 @@ public interface DatabaseHandler {
 		}
 	}
 
-	public DatabaseType getType();
+	DatabaseType getType();
 
-	public boolean isConnected() throws SQLException;
+	boolean isConnected() throws SQLException;
 
-	public void open() throws SQLException;
+	void open() throws SQLException;
 
-	public void close() throws SQLException;
+	void close() throws SQLException;
 
-	public boolean exists(SelectQuery query) throws SQLException;
+	boolean exists(SelectQuery query) throws SQLException;
 
-	public boolean createTable(String name, Row[] values) throws SQLException;
+	boolean createTable(String name, Row[] values) throws SQLException;
 
-	public boolean deleteTable(String name) throws SQLException;
+	boolean deleteTable(String name) throws SQLException;
 
-	public default Result select(SelectQuery query) throws SQLException {
+	default Result select(SelectQuery query) throws SQLException {
 		return get(query);
 	}
 
-	public Result get(SelectQuery query) throws SQLException;
+	Result get(SelectQuery query) throws SQLException;
 
-	public boolean insert(InsertQuery query) throws SQLException;
+	boolean insert(InsertQuery query) throws SQLException;
 
-	public default boolean set(UpdateQuery query) throws SQLException {
+	default boolean set(UpdateQuery query) throws SQLException {
 		return update(query);
 	}
 
-	public boolean update(UpdateQuery query) throws SQLException;
+	boolean update(UpdateQuery query) throws SQLException;
 
-	public boolean remove(RemoveQuery query) throws SQLException;
+	boolean remove(RemoveQuery query) throws SQLException;
 
-	public List<String> getTables() throws SQLException;
+	PreparedStatement prepareStatement(String sql) throws SQLException;
 
-	public Row[] getTableValues(String name) throws SQLException;
+	boolean execute(PreparedStatement sql) throws SQLException;
+
+	int executeUpdate(PreparedStatement sql) throws SQLException;
+
+	int[] executeBatch(PreparedStatement sql) throws SQLException;
+
+	long[] executeLargeBatch(PreparedStatement sql) throws SQLException;
+
+	ResultSet executeQuery(PreparedStatement sql) throws SQLException;
+
+	List<String> getTables() throws SQLException;
+
+	Row[] getTableValues(String name) throws SQLException;
 }
