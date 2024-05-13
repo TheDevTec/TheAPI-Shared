@@ -9,8 +9,6 @@ import java.util.Collections;
 import java.util.List;
 
 import me.devtec.shared.utility.ParseUtils;
-import me.devtec.shared.versioning.VersionUtils;
-import me.devtec.shared.versioning.VersionUtils.Version;
 import sun.misc.Unsafe;
 
 public class Ref {
@@ -48,12 +46,9 @@ public class Ref {
 		Ref.type = type;
 		if (type.isBukkit()) {
 			if (serverVersion.indexOf('.') != -1) {
-				Version ver = VersionUtils.getVersion(serverVersion, "1.20.5");
-				if (ver == Version.SAME_VERSION || ver == Version.NEWER_VERSION) {
-					Ref.intVer = ParseUtils.getInt(Ref.ver.split("\\.")[1]);
-					Ref.intRelease = ParseUtils.getInt(Ref.ver.split("\\.")[2]); // !!! This is not true
-					return;
-				}
+				Ref.intVer = ParseUtils.getInt(Ref.ver.split("\\.")[1]);
+				Ref.intRelease = ParseUtils.getInt(Ref.ver.split("\\.")[2]); // !!! This is not true
+				return;
 			}
 			Ref.intVer = ParseUtils.getInt(Ref.ver.split("_")[1]);
 			Ref.intRelease = ParseUtils.getInt(Ref.ver.split("_")[2]);
@@ -508,6 +503,8 @@ public class Ref {
 
 	public static Class<?> craft(String name) {
 		try {
+			if (Ref.serverType() == ServerType.PAPER && (Ref.isNewerThan(20) || Ref.isNewerThan(19) && Ref.serverVersionRelease() >= 5))
+				return Class.forName("org.bukkit.craftbukkit." + name);
 			return Class.forName("org.bukkit.craftbukkit." + Ref.serverVersion() + "." + name);
 		} catch (Exception e) {
 			return null;
