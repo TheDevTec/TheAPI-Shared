@@ -60,7 +60,7 @@ public class API {
 
 	// Other cool things
 	private static final Basics basics = new Basics();
-	private static boolean enabled = true;
+	private static volatile boolean enabled = true;
 
 	public static void initOfflineCache(boolean onlineMode, Config rawData) {
 		API.cache = new OfflineCache(onlineMode);
@@ -238,7 +238,7 @@ public class API {
 						if (c == '&' && i + 7 < text.length() && text.charAt(i + 1) == '#') {
 							for (int ic = 2; ic < 8; ++ic) {
 								char cn = text.charAt(i + ic);
-								if (!(cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57))
+								if ((((cn < 64) || (cn > 70)) && ((cn < 97) || (cn > 102)) && ((cn < 48) || (cn > 57))))
 									continue charLoop;
 							}
 							text.setCharAt(i, '§');
@@ -251,7 +251,7 @@ public class API {
 						} else if (c == '#' && i + 6 < text.length()) {
 							for (int ic = 1; ic < 7; ++ic) {
 								char cn = text.charAt(i + ic);
-								if (!(cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57))
+								if ((((cn < 64) || (cn > 70)) && ((cn < 97) || (cn > 102)) && ((cn < 48) || (cn > 57))))
 									continue charLoop;
 							}
 							text.setCharAt(i, '§');
@@ -272,7 +272,7 @@ public class API {
 						if (c == '<' && i + 8 < text.length() && text.charAt(i + 1) == '#') {
 							for (int ic = 2; ic < 8; ++ic) {
 								char cn = text.charAt(i + ic);
-								if (!(cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57))
+								if ((((cn < 64) || (cn > 70)) && ((cn < 97) || (cn > 102)) && ((cn < 48) || (cn > 57))))
 									continue charLoop;
 							}
 							if (text.charAt(i + 8) == '>') {

@@ -1,46 +1,60 @@
 package me.devtec.shared.scheduler;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import me.devtec.shared.API;
+
 public class ThreadManager implements Executor {
-	protected final Map<Integer, Thread> threads = new ConcurrentHashMap<>();
 	protected final List<Runnable> onKill = new ArrayList<>();
-	protected final AtomicInteger i = new AtomicInteger();
+
+	private final ThreadPoolExecutor executorService;
+	private final Map<Integer, Future<?>> taskMap = new ConcurrentHashMap<>();
+	private final AtomicInteger idCounter = new AtomicInteger();
+
+	public ThreadManager() {
+		executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5L, TimeUnit.SECONDS, new SynchronousQueue<>());
+		executorService.setKeepAliveTime(5, TimeUnit.SECONDS);
+		new Thread(this::monitorThreads).start();
+	}
+
+	private void monitorThreads() {
+		while (API.isEnabled())
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				break;
+			}
+		shutdownAndAwaitTermination();
+	}
+
+	private void shutdownAndAwaitTermination() {
+		try {
+			// Ukončení nových úloh
+			executorService.shutdown();
+
+			if (!executorService.awaitTermination(5, TimeUnit.SECONDS))
+				// Přerušení zbývajících běžících úloh
+				executorService.shutdownNow();
+		} catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+		}
+	}
 
 	public void kill() {
-		List<Thread> check = new ArrayList<>();
-		Iterator<Thread> it = threads.values().iterator();
-		while (it.hasNext()) {
-			Thread tht = it.next();
-			it.remove();
-			if (tht != null && tht.isAlive()) {
-				tht.interrupt(); // safe destroy of thread
-				check.add(tht);
-			}
-		}
+		for (int i : new ArrayList<>(taskMap.keySet()))
+			destroy(i);
 		for (Runnable runnable : onKill)
 			runnable.run();
 		onKill.clear();
-		if (!check.isEmpty())
-			new Thread(() -> {
-				try {
-					Thread.sleep(2000);
-				} catch (InterruptedException e) {
-					return;
-				}
-				for (Thread thread : check)
-					if (thread.isAlive()) {
-						thread.stop();
-						System.out.println("Stopped thread that was not interrupted normally (Infinity loop?)");
-					}
-				check.clear();
-			}).start();
 	}
 
 	public ThreadManager register(Runnable runnable) {
@@ -54,57 +68,43 @@ public class ThreadManager implements Executor {
 	}
 
 	public boolean isAlive(int id) {
-		return threads.containsKey(id) && threads.get(id).isAlive();
-	}
-
-	public Map<Integer, Thread> getThreads() {
-		return threads;
+		Future<?> future = taskMap.get(id);
+		return future != null && !future.isDone() && !future.isCancelled();
 	}
 
 	public int incrementAndGet() {
-		return i.incrementAndGet();
+		return idCounter.incrementAndGet();
 	}
 
 	public void destroy(int id) {
-		Thread t = threads.remove(id);
-		if (t == null)
-			return;
-		t.interrupt(); // safe destroy of thread
+		Future<?> future = taskMap.remove(id);
+		if (future != null)
+			future.cancel(true);
 	}
 
 	public void kill(int id) {
-		Thread t = threads.remove(id);
-		if (t == null)
-			return;
-		t.interrupt(); // safe destroy of thread
-		new Thread(() -> {
-			try {
-				Thread.sleep(3000);
-			} catch (InterruptedException e) {
-				return;
-			}
-			if (t.isAlive()) {
-				t.stop();
-				System.out.println("Stopped thread that was not interrupted normally (Infinity loop?)");
-			}
-		}).start();
+		destroy(id);
 	}
 
 	public int executeWithId(int id, Runnable command) {
-		Thread t = new Thread(command, "AsyncThreadWorker-" + id);
-		threads.put(id, t);
-		t.start();
+		Future<Void> future = executorService.submit(() -> {
+			try {
+				command.run();
+			} finally {
+				taskMap.remove(id);
+			}
+			return null;
+		});
+		taskMap.put(id, future);
 		return id;
 	}
 
 	public int executeAndGet(Runnable command) {
-		int id = i.incrementAndGet();
-		return executeWithId(id, command);
+		return executeWithId(incrementAndGet(), command);
 	}
 
 	@Override
 	public void execute(Runnable command) {
-		int id = i.incrementAndGet();
-		executeWithId(id, command);
+		executeWithId(incrementAndGet(), command);
 	}
 }

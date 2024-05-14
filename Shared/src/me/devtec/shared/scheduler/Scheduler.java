@@ -25,15 +25,12 @@ public class Scheduler {
 	public static int run(Runnable r) {
 		if (r == null || !API.isEnabled())
 			return -1;
-		int id = Scheduler.thread.incrementAndGet();
-		return Scheduler.thread.executeWithId(id, () -> {
+		return Scheduler.thread.executeAndGet(() -> {
 			try {
-				if (!Scheduler.isCancelled(id))
-					r.run();
+				r.run();
 			} catch (Throwable err) {
 				err.printStackTrace();
 			}
-			Scheduler.thread.destroy(id);
 		});
 	}
 
@@ -51,7 +48,6 @@ public class Scheduler {
 			} catch (Throwable err) {
 				err.printStackTrace();
 			}
-			Scheduler.thread.destroy(id);
 		});
 	}
 
@@ -71,7 +67,6 @@ public class Scheduler {
 			} catch (Throwable err) {
 				err.printStackTrace();
 			}
-			Scheduler.thread.destroy(id);
 		});
 	}
 
@@ -105,7 +100,6 @@ public class Scheduler {
 				} catch (Throwable err) {
 					err.printStackTrace();
 				}
-				Scheduler.thread.destroy(id);
 			}
 		});
 	}
