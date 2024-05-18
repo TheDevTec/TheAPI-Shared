@@ -12,18 +12,18 @@ import me.devtec.shared.database.DatabaseAPI.DatabaseType;
 
 public interface DatabaseHandler {
 	public static class SelectQuery {
-		protected enum Action {
-			WHERE, SORT
-		}
 
 		public enum Sorting {
-			UP, DOWN;
+			HIGHEST_TO_LOWEST, UP, LOWEST_TO_HIGHEST, DOWN;
 		}
 
 		protected String table;
 		protected String[] search;
 		protected String limit;
-		protected List<String[]> where = new ArrayList<>();
+		protected List<Object[]> where = new ArrayList<>();
+		protected List<Object[]> like = new ArrayList<>();
+		protected List<List<Object[]>[]> whereOr = new ArrayList<>();
+		protected byte mode;
 
 		protected Sorting sorting;
 		protected List<String> sortingKey = new ArrayList<>();
@@ -38,7 +38,33 @@ public interface DatabaseHandler {
 		}
 
 		public SelectQuery where(String key, String value) {
-			where.add(new String[] { key, value });
+			where.add(new Object[] { key, value });
+			return this;
+		}
+
+		public SelectQuery where(String key, SelectQuery value) {
+			where.add(new Object[] { key, value });
+			return this;
+		}
+
+		public SelectQuery like(String key, String value) {
+			like.add(new Object[] { key, value });
+			return this;
+		}
+
+		public SelectQuery like(String key, SelectQuery value) {
+			like.add(new Object[] { key, value });
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public SelectQuery or() {
+			if (!where.isEmpty()) {
+				mode = 1;
+				whereOr.add(new List[] { where, like });
+				where = new ArrayList<>();
+				like = new ArrayList<>();
+			}
 			return this;
 		}
 
@@ -94,7 +120,10 @@ public interface DatabaseHandler {
 	public static class UpdateQuery {
 
 		protected String table;
-		protected List<String[]> where = new ArrayList<>();
+		protected List<Object[]> where = new ArrayList<>();
+		protected List<Object[]> like = new ArrayList<>();
+		protected List<List<Object[]>[]> whereOr = new ArrayList<>();
+		protected byte mode;
 		protected List<String[]> values = new ArrayList<>();
 		protected String limit = "1";
 
@@ -111,7 +140,33 @@ public interface DatabaseHandler {
 		}
 
 		public UpdateQuery where(String key, String value) {
-			where.add(new String[] { key, value });
+			where.add(new Object[] { key, value });
+			return this;
+		}
+
+		public UpdateQuery where(String key, SelectQuery value) {
+			where.add(new Object[] { key, value });
+			return this;
+		}
+
+		public UpdateQuery like(String key, String value) {
+			like.add(new Object[] { key, value });
+			return this;
+		}
+
+		public UpdateQuery like(String key, SelectQuery value) {
+			like.add(new Object[] { key, value });
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public UpdateQuery or() {
+			if (!where.isEmpty()) {
+				mode = 1;
+				whereOr.add(new List[] { where, like });
+				where = new ArrayList<>();
+				like = new ArrayList<>();
+			}
 			return this;
 		}
 
@@ -138,7 +193,10 @@ public interface DatabaseHandler {
 	public static class RemoveQuery {
 
 		protected String table;
-		protected List<String[]> values = new ArrayList<>();
+		protected List<Object[]> where = new ArrayList<>();
+		protected List<Object[]> like = new ArrayList<>();
+		protected List<List<Object[]>[]> whereOr = new ArrayList<>();
+		protected byte mode;
 		protected String limit = "1";
 
 		private RemoveQuery(String table) {
@@ -150,7 +208,33 @@ public interface DatabaseHandler {
 		}
 
 		public RemoveQuery where(String key, String value) {
-			values.add(new String[] { key, value });
+			where.add(new Object[] { key, value });
+			return this;
+		}
+
+		public RemoveQuery where(String key, SelectQuery value) {
+			where.add(new Object[] { key, value });
+			return this;
+		}
+
+		public RemoveQuery like(String key, String value) {
+			like.add(new Object[] { key, value });
+			return this;
+		}
+
+		public RemoveQuery like(String key, SelectQuery value) {
+			like.add(new Object[] { key, value });
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public RemoveQuery or() {
+			if (!where.isEmpty()) {
+				mode = 1;
+				whereOr.add(new List[] { where, like });
+				where = new ArrayList<>();
+				like = new ArrayList<>();
+			}
 			return this;
 		}
 
