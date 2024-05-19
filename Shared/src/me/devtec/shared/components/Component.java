@@ -199,8 +199,7 @@ public class Component {
 					else
 						colorBefore = "§" + c.colorToChar();
 				String formats = c.getFormats();
-				if (!formats.isEmpty())
-					formatsBefore = formats;
+				formatsBefore = formats;
 			}
 		return builder.toString();
 	}
