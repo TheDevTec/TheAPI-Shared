@@ -1,13 +1,10 @@
 package me.devtec.shared.dataholder.loaders;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Iterator;
 import java.util.Map.Entry;
-
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
@@ -28,13 +25,8 @@ public class ByteLoader extends EmptyLoader {
 				loaded = false;
 				return;
 			}
-			byte[] bb = Base64.getDecoder().decode(decoded);
-			ByteArrayDataInput bos = ByteStreams.newDataInput(bb);
-			int version = bos.readInt();
-			if (version == 3) {
-				bos.readInt();
-				ByteLoader.byteBuilderV3(this, bos);
-			}
+			ByteArrayInputStream array = new ByteArrayInputStream(Base64.getDecoder().decode(decoded));
+			ByteLoader.readBytes(this, array);
 			if (!data.isEmpty())
 				loaded = true;
 		} catch (Exception er) {
@@ -42,58 +34,37 @@ public class ByteLoader extends EmptyLoader {
 		}
 	}
 
+	private String write(Object s) {
+		try {
+			if (s == null)
+				return "null";
+			return s instanceof CharSequence || s instanceof Number || s instanceof Character ? s.toString() : Json.writer().toGson(Json.writer().writeWithoutParse(s));
+		} catch (Exception err) {
+		}
+		return null;
+	}
+
 	@Override
 	public byte[] save(Config config, boolean markSaved) {
 		Checkers.nonNull(config, "Config");
 		try {
-			ByteArrayDataOutput in = ByteStreams.newDataOutput();
-			in.writeInt(3);
-			Iterator<Entry<String, DataValue>> iterator = config.getDataLoader().entrySet().iterator();
-			while (iterator.hasNext()) {
-				Entry<String, DataValue> key = iterator.next();
-				try {
-					if (markSaved)
-						key.getValue().modified = false;
-					in.writeInt(0);
-					in.writeUTF(key.getKey());
-					if (key.getValue().value == null) {
-						in.writeInt(3);
-						continue;
-					}
-					if (key.getValue().writtenValue != null) {
-						String write = key.getValue().writtenValue;
-						if (write == null) {
-							in.writeInt(3);
-							continue;
-						}
-						while (write.length() > 40000) {
-							String wr = write.substring(0, 39999);
-							in.writeInt(1);
-							in.writeUTF(wr);
-							write = write.substring(39999);
-						}
-						in.writeInt(1);
-						in.writeUTF(write);
-						continue;
-					}
-					String write = Json.writer().write(key.getValue().value);
-					if (write == null) {
-						in.writeInt(3);
-						continue;
-					}
-					while (write.length() > 40000) {
-						String wr = write.substring(0, 39999);
-						in.writeInt(1);
-						in.writeUTF(wr);
-						write = write.substring(39999);
-					}
-					in.writeInt(1);
-					in.writeUTF(write);
-				} catch (Exception er) {
-					er.printStackTrace();
+			ByteArrayOutputStream array = new ByteArrayOutputStream();
+			array.write(config.getDataLoader().entrySet().size()); // total entries
+			for (Entry<String, DataValue> entry : config.getDataLoader().entrySet()) {
+				array.write(entry.getKey().length());
+				array.write(entry.getKey().getBytes());
+				if (markSaved)
+					entry.getValue().modified = false;
+				if (entry.getValue().writtenValue != null) {
+					array.write(entry.getValue().writtenValue.length());
+					array.write(entry.getValue().writtenValue.getBytes());
+				} else {
+					String write = write(entry.getValue().value);
+					array.write(write.length());
+					array.write(write.getBytes());
 				}
 			}
-			return in.toByteArray();
+			return Base64.getEncoder().encode(array.toByteArray());
 		} catch (Exception error) {
 			error.printStackTrace();
 			return new byte[0];
@@ -103,53 +74,43 @@ public class ByteLoader extends EmptyLoader {
 	@Override
 	public String saveAsString(Config config, boolean markSaved) {
 		Checkers.nonNull(config, "Config");
-		return Base64.getEncoder().encodeToString(save(config, markSaved));
+		return new String(save(config, markSaved));
 	}
 
-	private static void byteBuilderV3(ByteLoader loader, ByteArrayDataInput bos) {
+	private static void readBytes(ByteLoader loader, ByteArrayInputStream array) {
 		try {
-			String key = bos.readUTF();
-			String value = null;
-			int result;
-			try {
-				while ((result = bos.readInt()) == 1)
-					if (value == null)
-						value = bos.readUTF();
-					else
-						value += bos.readUTF();
-				if (result == 3) { // null pointer
-					value = null;
-					result = bos.readInt();
-				}
-			} catch (Exception err) {
-				loader.set(key, DataValue.of(value, Json.reader().read(value)));
-				return;
+			int total = array.read() * 4;
+			for (int i = 0; i < total; ++i) {
+				byte[] keyBytes = new byte[array.read()];
+				array.read(keyBytes);
+				byte[] valueBytes = new byte[array.read()];
+				array.read(valueBytes);
+				String writtenValue = new String(valueBytes, StandardCharsets.UTF_8);
+				loader.set(new String(keyBytes, StandardCharsets.UTF_8), DataValue.of(writtenValue, Json.reader().read(writtenValue)));
 			}
-			loader.set(key, DataValue.of(value, Json.reader().read(value)));
-			if (result == 0)
-				ByteLoader.byteBuilderV3(loader, bos);
 		} catch (Exception err) {
 		}
 	}
 
-	private static byte[] replace(String string) {
-		StringContainer container = new StringContainer(string).removeAllChars(' ', '	', '\n', '\r');
-		if (processFastCheck(container))
-			return container.getBytes(StandardCharsets.ISO_8859_1);
-		return null;
-	}
+	private static final char[] oneOfReplacedChar = { ' ', '	', '\n', '\r' };
 
-	private static boolean processFastCheck(StringContainer container) {
+	private static byte[] replace(String string) {
+		StringContainer container = new StringContainer(string);
 		int lastCount = 0;
-		for (int i = 0; i < container.length(); ++i) {
+		charLoop: for (int i = 0; i < container.length(); ++i) {
 			char c = container.charAt(i);
-			if (lastCount == 0 && (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' && c >= '0' && c <= '9' || c == '+' || c == '/'))
+			for (char replacing : oneOfReplacedChar)
+				if (c == replacing) {
+					container.deleteCharAt(i--);
+					continue charLoop;
+				}
+			if (lastCount == 0 && (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '+' || c == '/'))
 				continue;
 			if (c == '=' && ++lastCount <= 2)
 				continue;
-			return false;
+			return null;
 		}
-		return true;
+		return container.getBytes(StandardCharsets.ISO_8859_1);
 	}
 
 	public void load(byte[] byteData) {
@@ -157,12 +118,8 @@ public class ByteLoader extends EmptyLoader {
 			return;
 		reset();
 		try {
-			ByteArrayDataInput bos = ByteStreams.newDataInput(byteData);
-			int version = bos.readInt();
-			if (version == 3) {
-				bos.readInt();
-				ByteLoader.byteBuilderV3(this, bos);
-			}
+			ByteArrayInputStream array = new ByteArrayInputStream(byteData);
+			ByteLoader.readBytes(this, array);
 			if (!data.isEmpty())
 				loaded = true;
 		} catch (Exception er) {
@@ -175,12 +132,8 @@ public class ByteLoader extends EmptyLoader {
 			return null;
 		ByteLoader loader = new ByteLoader();
 		try {
-			ByteArrayDataInput bos = ByteStreams.newDataInput(byteData);
-			int version = bos.readInt();
-			if (version == 3) {
-				bos.readInt();
-				ByteLoader.byteBuilderV3(loader, bos);
-			}
+			ByteArrayInputStream array = new ByteArrayInputStream(byteData);
+			ByteLoader.readBytes(loader, array);
 			loader.loaded = true;
 		} catch (Exception er) {
 			loader.loaded = false;
