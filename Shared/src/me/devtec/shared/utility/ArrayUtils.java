@@ -24,14 +24,13 @@ public class ArrayUtils {
 			return newInstance(arrays.getClass().getComponentType().getComponentType(), 0);
 
 		int totalSize = 0;
-		for (int i = 0; i < arrays.length; ++i)
-			totalSize += arrays[i].length;
+		for (T[] array2 : arrays)
+			totalSize += array2.length;
 
 		T[] result = newInstance(arrays.getClass().getComponentType().getComponentType(), totalSize);
 
 		int endPos = 0;
-		for (int i = 0; i < arrays.length; ++i) {
-			T[] array = arrays[i];
+		for (T[] array : arrays) {
 			System.arraycopy(array, 0, result, endPos, array.length);
 			endPos += array.length;
 		}
@@ -40,6 +39,10 @@ public class ArrayUtils {
 
 	public static <T> T[] newInstance(Class<?> clazz, int size) {
 		return (T[]) (clazz == Object[].class ? new Object[size] : Array.newInstance(clazz, size));
+	}
+
+	public static Object newSafeInstance(Class<?> clazz, int size) {
+		return clazz == Object[].class ? new Object[size] : Array.newInstance(clazz, size);
 	}
 
 	/**
