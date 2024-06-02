@@ -184,7 +184,7 @@ public class JsonUtils {
 					}
 					if (type.equals("array")) {
 						List<?> collection = (List<?>) map.getOrDefault("s", Collections.emptyList());
-						Object array = ArrayUtils.newInstance(c, collection.size());
+						Object array = ArrayUtils.newSafeInstance(c, collection.size());
 						int i = 0;
 						for (Object cc : collection)
 							Array.set(array, i++, JsonUtils.cast(JsonUtils.read(cc), c));

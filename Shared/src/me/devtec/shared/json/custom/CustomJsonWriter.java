@@ -1,5 +1,6 @@
 package me.devtec.shared.json.custom;
 
+import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -118,12 +119,11 @@ public class CustomJsonWriter implements JWriter {
 		}
 		if (obj.getClass().isArray()) {
 			container.append(CustomJsonReader.OPEN_BRACKET);
-			Object[] itr = (Object[]) obj;
-			int size = itr.length;
+			int size = Array.getLength(obj);
 			for (int i = 0; i < size; ++i) {
 				if (i != 0)
 					container.append(CustomJsonReader.COMMA);
-				toJson(container, itr[i]);
+				toJson(container, Array.get(obj, i));
 			}
 			container.append(CustomJsonReader.CLOSED_BRACKET);
 			return;
