@@ -1,18 +1,22 @@
 package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
+import me.devtec.shared.scheduler.Scheduler;
+import me.devtec.shared.scheduler.Tasker;
 
 public class PropertiesLoader extends EmptyLoader {
 
+	private boolean readingReachedEnd;
 	private int startIndex;
 	private int endIndex;
 	private String lines;
@@ -31,6 +35,12 @@ public class PropertiesLoader extends EmptyLoader {
 	}
 
 	@Override
+	public void reset() {
+		super.reset();
+		readingReachedEnd = false;
+	}
+
+	@Override
 	public void load(String input) {
 		if (input == null)
 			return;
@@ -45,10 +55,32 @@ public class PropertiesLoader extends EmptyLoader {
 				++endIndex;
 		}
 
+		Queue<String> lines = new ConcurrentLinkedQueue<>();
+		int task = -1;
+		if (input.length() >= 35000)
+			task = new Tasker() {
+
+				@Override
+				public void run() {
+					String line;
+					while (!isCancelled() && (line = readLine()) != null)
+						lines.add(line);
+					readingReachedEnd = true;
+				}
+			}.runTask();
+		else {
+			String line;
+			while ((line = readLine()) != null)
+				lines.add(line);
+			readingReachedEnd = true;
+		}
+
 		List<String> comments = null;
 
-		String line;
-		while ((line = readLine()) != null) {
+		while (!readingReachedEnd || !lines.isEmpty()) {
+			if (lines.isEmpty())
+				continue;
+			String line = lines.poll();
 			String trimmed = line.trim();
 
 			// Comments
@@ -77,6 +109,8 @@ public class PropertiesLoader extends EmptyLoader {
 			comments = null;
 			continue;
 		}
+		if (task != -1)
+			Scheduler.cancelTask(task);
 		if (comments != null) {
 			if (comments.get(comments.size() - 1).isEmpty()) {
 				comments.remove(comments.size() - 1); // just empty line
@@ -115,9 +149,7 @@ public class PropertiesLoader extends EmptyLoader {
 			er.printStackTrace();
 		}
 		boolean first = true;
-		Iterator<Entry<String, DataValue>> iterator = config.getDataLoader().entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<String, DataValue> key = iterator.next();
+		for (Entry<String, DataValue> key : config.getDataLoader().entrySet()) {
 			if (first)
 				first = false;
 			else

@@ -184,6 +184,17 @@ public abstract class DataLoader implements Cloneable {
 	@Nonnull
 	public abstract byte[] save(@Nonnull Config config, boolean markSaved);
 
+	@Comment(comment = "Saves the entire structure to Iterator<byte[]> which prevent from overload")
+	@Nullable
+	public Iterator<String> saveAsIterator(@Nonnull Config config, boolean markSaved) {
+		return null;
+	}
+
+	@Comment(comment = "Returns status of iterator mode of this DataLoader type")
+	public boolean supportsIteratorMode() {
+		return false;
+	}
+
 	@Comment(comment = "Saves the entire structure to String")
 	@Nonnull
 	public abstract String saveAsString(@Nonnull Config config, boolean markSaved);

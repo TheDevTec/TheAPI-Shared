@@ -2,18 +2,25 @@ package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import me.devtec.shared.annotations.Checkers;
+import me.devtec.shared.annotations.Nonnull;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.dataholder.loaders.toml.TomlSectionBuilderHelper;
 import me.devtec.shared.json.Json;
+import me.devtec.shared.scheduler.Scheduler;
+import me.devtec.shared.scheduler.Tasker;
 
 public class TomlLoader extends EmptyLoader {
 
+	private boolean readingReachedEnd;
 	private int startIndex;
 	private int endIndex;
 	private String lines;
@@ -29,6 +36,12 @@ public class TomlLoader extends EmptyLoader {
 			if (endIndex < lines.length() && endIndex != -1 && lines.charAt(endIndex) == '\r')
 				++endIndex;
 		}
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+		readingReachedEnd = false;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -47,14 +60,36 @@ public class TomlLoader extends EmptyLoader {
 				++endIndex;
 		}
 
+		Queue<String> lines = new ConcurrentLinkedQueue<>();
+		int task = -1;
+		if (input.length() >= 35000)
+			task = new Tasker() {
+
+				@Override
+				public void run() {
+					String line;
+					while (!isCancelled() && (line = readLine()) != null)
+						lines.add(line);
+					readingReachedEnd = true;
+				}
+			}.runTask();
+		else {
+			String line;
+			while ((line = readLine()) != null)
+				lines.add(line);
+			readingReachedEnd = true;
+		}
+
 		List<String> comments = null;
 		List<Map<Object, Object>> list = null;
 		Map<Object, Object> map = null;
 		int mode = 0;
-		String line;
 		String mainPath = "";
 
-		while ((line = readLine()) != null) {
+		while (!readingReachedEnd || !lines.isEmpty()) {
+			if (lines.isEmpty())
+				continue;
+			String line = lines.poll();
 			String trimmed = line.trim();
 			if (trimmed.isEmpty() || trimmed.charAt(0) == '#') {
 				if (comments == null)
@@ -99,6 +134,8 @@ public class TomlLoader extends EmptyLoader {
 			comments = null;
 			continue;
 		}
+		if (task != -1)
+			Scheduler.cancelTask(task);
 		if (comments != null) {
 			if (comments.get(comments.size() - 1).isEmpty()) {
 				comments.remove(comments.size() - 1); // just empty line
@@ -130,30 +167,75 @@ public class TomlLoader extends EmptyLoader {
 		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
-		try {
-			for (String h : config.getDataLoader().getHeader())
-				builder.append(h).append(System.lineSeparator());
-		} catch (Exception er) {
-			er.printStackTrace();
-		}
-
-		// BUILD KEYS & SECTIONS
-		TomlSectionBuilderHelper.write(builder, config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
-
-		try {
-			for (String h : config.getDataLoader().getFooter())
-				builder.append(h).append(System.lineSeparator());
-		} catch (Exception er) {
-			er.printStackTrace();
-		}
+		Iterator<String> itr = saveAsIterator(config, markSaved);
+		while (itr.hasNext())
+			builder.append(itr.next());
 		return builder;
+	}
+
+	@Override
+	public boolean supportsIteratorMode() {
+		return true;
+	}
+
+	@Override
+	public Iterator<String> saveAsIterator(@Nonnull Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
+		return new Iterator<String>() {
+			// 0=header
+			// 1=lines
+			// 2=footer
+			byte phase = 0;
+			int posInPhase = 0;
+			List<String> list;
+
+			@Override
+			public String next() {
+				switch (phase) {
+				case 0:
+					return config.getDataLoader().getHeader() instanceof List ? ((List<String>) config.getDataLoader().getHeader()).get(posInPhase++) + System.lineSeparator()
+							: config.getDataLoader().getHeader().toArray(new String[0])[posInPhase++] + System.lineSeparator();
+				case 1:
+					return list.get(posInPhase++);
+				case 2:
+					return config.getDataLoader().getFooter() instanceof List ? ((List<String>) config.getDataLoader().getFooter()).get(posInPhase++) + System.lineSeparator()
+							: config.getDataLoader().getFooter().toArray(new String[0])[posInPhase++] + System.lineSeparator();
+				}
+				return null;
+			}
+
+			@Override
+			public boolean hasNext() {
+				switch (phase) {
+				case 0:
+					if (config.getDataLoader().getHeader().isEmpty() || config.getDataLoader().getHeader().size() == posInPhase) {
+						phase = 1;
+						posInPhase = 0;
+						list = TomlSectionBuilderHelper.prepareBuilder(config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
+						return hasNext();
+					}
+					return true;
+				case 1:
+					if (list.size() != posInPhase)
+						return true;
+					phase = 2;
+					posInPhase = 0;
+					return hasNext();
+				case 2:
+					if (config.getDataLoader().getFooter().isEmpty() || config.getDataLoader().getFooter().size() == posInPhase)
+						return false;
+					return true;
+				}
+				return false;
+			}
+		};
 	}
 
 	protected static String[] readConfigLine(String input) {
 		int yamlIndex = input.indexOf(':');
 		int index = input.indexOf('=');
 		int ignoreChar;
-		if (yamlIndex < index && ((ignoreChar = input.indexOf('"')) == -1 || ignoreChar > yamlIndex))
+		if (yamlIndex != -1 && yamlIndex < index && ((ignoreChar = input.indexOf('"')) == -1 || ignoreChar > yamlIndex))
 			return null;
 		int mapIndex = input.indexOf('[');
 		if (index == -1 || index > mapIndex) {

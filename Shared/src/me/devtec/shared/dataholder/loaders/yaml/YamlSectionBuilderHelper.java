@@ -1,10 +1,12 @@
 package me.devtec.shared.dataholder.loaders.yaml;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.DataLoader;
@@ -12,6 +14,28 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.json.Json;
 
 public class YamlSectionBuilderHelper {
+
+	public static class StringArrayList extends ArrayList<String> {
+
+		private static final long serialVersionUID = 1L;
+
+		private StringContainer container = new StringContainer(5720);
+
+		@Override
+		public boolean add(String e) {
+			container.append(e);
+			if (container.length() >= 5120) {
+				super.add(container.toString());
+				container.clear();
+			}
+			return true;
+		}
+
+		public void complete() {
+			if (!container.isEmpty())
+				super.add(container.toString());
+		}
+	}
 
 	public static class Section {
 		public String space;
@@ -95,8 +119,8 @@ public class YamlSectionBuilderHelper {
 
 	}
 
-	public static void write(StringContainer builder, Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
-		Map<String, Section> map = new HashMap<>();
+	public static List<String> prepareBuilder(Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
+		Map<String, Section> map = new WeakHashMap<>();
 		for (String primaryKey : primaryKeys)
 			map.put(primaryKey, new Section(primaryKey, dataLoader.get(primaryKey)));
 
@@ -119,144 +143,127 @@ public class YamlSectionBuilderHelper {
 			sec.value = entry.getValue();
 			prevParent = sec.parent;
 		}
-		for (String primaryKey : primaryKeys) {
-			Section section = map.get(primaryKey);
-			YamlSectionBuilderHelper.start(dataLoader, primaryKey, section.value, builder, section, markSaved);
-		}
+		StringArrayList values = new StringArrayList();
+		StringContainer container = new StringContainer(128);
+		for (Section section : map.values())
+			startIterate(container, values, section.keyName, section.value, section, markSaved);
+		values.complete();
+		return values;
 	}
 
-	public static void start(DataLoader config, String section, DataValue dataVal, StringContainer b, Section linked, boolean markSaved) {
-		try {
-			if (dataVal == null) {
-				appendName(b, linked.space, section).append(System.lineSeparator());
-				if (linked.sub != null)
-					for (Section sub : linked.sub)
-						start(config, sub.keyName, sub.value, b, sub, markSaved);
-				return;
+	public static void startIterate(StringContainer container, List<String> values, String section, DataValue dataVal, Section linked, boolean markSaved) {
+		if (dataVal == null) {
+			values.add(appendName(container, linked.space, section));
+			if (linked.sub != null)
+				for (Section sub : linked.sub)
+					startIterate(container, values, sub.keyName, sub.value, sub, markSaved);
+			return;
+		}
+		if (markSaved)
+			dataVal.modified = false;
+		String commentAfterValue = dataVal.commentAfterValue;
+		Collection<String> comments = dataVal.comments;
+		Object value = dataVal.value;
+		// write list values
+		if (comments != null)
+			for (String comment : comments) {
+				container.clear();
+				values.add(container.append(linked.space).append(comment).append(System.lineSeparator()).toString());
 			}
-			if (markSaved)
-				dataVal.modified = false;
-			String commentAfterValue = dataVal.commentAfterValue;
-			Collection<String> comments = dataVal.comments;
-			Object value = dataVal.value;
-			// write list values
-			if (comments != null)
-				for (String s : comments)
-					b.append(linked.space).append(s).append(System.lineSeparator());
 
-			appendName(b, linked.space, section);
-
-			if (value == null)
-				YamlSectionBuilderHelper.addCommentIfAvailable(b, commentAfterValue).append(System.lineSeparator());
-			// write collection or array
-			else if (value instanceof Collection || value instanceof Object[]) {
-				String splitted = linked.space + "- ";
-				if (value instanceof Collection) {
-					if (!((Collection<?>) value).isEmpty())
-						try {
-							if (dataVal.writtenValue != null)
-								YamlSectionBuilderHelper.addCommentIfAvailable(b.append(' ').append(dataVal.writtenValue), commentAfterValue).append(System.lineSeparator());
-							else {
-								YamlSectionBuilderHelper.addCommentIfAvailable(b, commentAfterValue).append(System.lineSeparator());
-								for (Object a : (Collection<?>) value)
-									YamlSectionBuilderHelper.writeWithoutQuotesSplit(b, splitted, a);
-							}
-						} catch (Exception er) {
-							b.append(System.lineSeparator());
-							for (Object a : (Collection<?>) value)
-								YamlSectionBuilderHelper.writeWithoutQuotesSplit(b, splitted, a);
-						}
-					else
-						YamlSectionBuilderHelper.addCommentIfAvailable(b.append(' ').append('[').append(']'), commentAfterValue).append(System.lineSeparator());
-				} else if (((Object[]) value).length != 0)
-					try {
-						if (dataVal.writtenValue != null)
-							YamlSectionBuilderHelper.addCommentIfAvailable(b.append(' ').append(dataVal.writtenValue), commentAfterValue).append(System.lineSeparator());
-						else {
-							YamlSectionBuilderHelper.addCommentIfAvailable(b, commentAfterValue).append(System.lineSeparator());
-							for (Object a : (Object[]) value)
-								YamlSectionBuilderHelper.writeWithoutQuotesSplit(b, splitted, a);
-						}
-					} catch (Exception er) {
-						b.append(System.lineSeparator());
-						for (Object a : (Object[]) value)
-							YamlSectionBuilderHelper.writeWithoutQuotesSplit(b, splitted, a);
+		if (value == null)
+			values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
+		else if (value instanceof Collection || value instanceof Object[]) {
+			if (value instanceof Collection) {
+				if (!((Collection<?>) value).isEmpty())
+					if (dataVal.writtenValue != null)
+						values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
+					else {
+						values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
+						for (Object object : (Collection<?>) value)
+							values.add(writeListValue(container, linked.space, object));
 					}
 				else
-					YamlSectionBuilderHelper.addCommentIfAvailable(b.append(' ').append('[').append(']'), commentAfterValue).append(System.lineSeparator());
-			} else // write normal value
-				try {
-					if (dataVal.writtenValue != null)
-						YamlSectionBuilderHelper.addCommentIfAvailable(value instanceof CharSequence ? YamlSectionBuilderHelper.writeQuotes(b.append(' '), dataVal.writtenValue, '"')
-								: value instanceof Number || value instanceof Character ? YamlSectionBuilderHelper.writeQuotes(b.append(' '), dataVal.writtenValue, '\'')
-										: b.append(' ').append(dataVal.writtenValue),
-								commentAfterValue).append(System.lineSeparator());
-					else if (value instanceof Number || value instanceof Character)
-						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), value.toString(), '\''), commentAfterValue).append(System.lineSeparator());
-					else if (value instanceof CharSequence)
-						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), (String) value, '"'), commentAfterValue).append(System.lineSeparator());
-					else
-						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeWithoutQuotes(b.append(' '), value), commentAfterValue).append(System.lineSeparator());
-				} catch (Exception er) {
-					if (value instanceof CharSequence)
-						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), (String) value, '"'), commentAfterValue).append(System.lineSeparator());
-					else if (value instanceof Number || value instanceof Character)
-						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeQuotes(b.append(' '), value.toString(), '\''), commentAfterValue).append(System.lineSeparator());
-					else
-						YamlSectionBuilderHelper.addCommentIfAvailable(YamlSectionBuilderHelper.writeWithoutQuotes(b.append(' '), value), commentAfterValue).append(System.lineSeparator());
+					values.add(appendName(container, linked.space, section, "[]", (char) 0, commentAfterValue));
+			} else if (((Object[]) value).length != 0)
+				if (dataVal.writtenValue != null)
+					values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
+				else {
+					values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
+					for (Object object : (Object[]) value)
+						values.add(writeListValue(container, linked.space, object));
 				}
-		} catch (Exception err) {
-			err.printStackTrace();
-		}
+			else
+				values.add(appendName(container, linked.space, section, "[]", (char) 0, commentAfterValue));
+		} else // write normal value
+		if (dataVal.writtenValue != null)
+			values.add(appendName(container, linked.space, section, dataVal.writtenValue, value instanceof CharSequence ? '"' : value instanceof Number || value instanceof Character ? '\'' : (char) 0,
+					commentAfterValue));
+		else if (value instanceof Number || value instanceof Character)
+			values.add(appendName(container, linked.space, section, value.toString(), '\'', commentAfterValue));
+		else if (value instanceof CharSequence)
+			values.add(appendName(container, linked.space, section, value instanceof String ? (String) value : value.toString(), '"', commentAfterValue));
+		else
+			values.add(appendName(container, linked.space, section, Json.writer().write(value), (char) 0, commentAfterValue));
 		if (linked.sub != null)
 			for (Section sub : linked.sub)
-				start(config, sub.keyName, sub.value, b, sub, markSaved);
+				startIterate(container, values, sub.keyName, sub.value, sub, markSaved);
 	}
 
-	private static StringContainer appendName(StringContainer sectionLine, String space, String section) {
-		// write spaces
-		sectionLine.append(space);
-
-		// write section name
+	private static String appendName(StringContainer container, String space, String section) {
+		container.clear();
 		if (section.charAt(0) == '#')
-			sectionLine.append('\'').append(section).append('\'').append(':');
+			container.append(space).append('\'').append(section).append('\'').append(':');
 		else
-			sectionLine.append(section).append(':');
-		return sectionLine;
+			container.append(space).append(section).append(':');
+		container.append(System.lineSeparator());
+		return container.toString();
 	}
 
-	private static StringContainer addCommentIfAvailable(StringContainer append, String commentAfterValue) {
-		if (commentAfterValue == null)
-			return append;
-		return append.append(' ').append(commentAfterValue);
+	private static String appendName(StringContainer container, String space, String section, String value, char queto, String comment) {
+		container.clear();
+		if (section.charAt(0) == '#')
+			container.append(space).append('\'').append(section).append('\'').append(':');
+		else
+			container.append(space).append(section).append(':');
+		if (value != null) {
+			container.append(' ');
+			if (queto == 0)
+				container.append(value);
+			else
+				container.append(queto).append(replaceWithEscape(value, queto)).append(queto);
+			if (comment != null && !comment.trim().isEmpty())
+				if (comment.charAt(0) == ' ')
+					container.append(comment);
+				else
+					container.append(' ').append(comment);
+		} else if (comment != null && !comment.trim().isEmpty())
+			if (comment.charAt(0) == ' ')
+				container.append(comment);
+			else
+				container.append(' ').append(comment);
+		container.append(System.lineSeparator());
+		return container.toString();
 	}
 
-	protected static StringContainer writeWithoutQuotesSplit(StringContainer b, String split, Object value) {
-		b.append(split);
-		b.append(Json.writer().write(value));
-		b.append(System.lineSeparator());
-		return b;
+	private static String writeListValue(StringContainer container, String space, Object value) {
+		container.clear();
+		container.append(space).append('-').append(' ');
+		container.append(Json.writer().write(value));
+		container.append(System.lineSeparator());
+		return container.toString();
 	}
 
-	protected static StringContainer writeQuotes(StringContainer b, String value, char add) {
-		b.append(add);
-		replaceWithEscape(b, value, add);
-		b.append(add);
-		return b;
-	}
-
-	protected static StringContainer replaceWithEscape(StringContainer b, String value, char add) {
-		for (int i = 0; i < value.length(); ++i) {
-			char c = value.charAt(i);
+	private static String replaceWithEscape(String value, char add) {
+		int startAt = value.indexOf(add);
+		if (startAt == -1)
+			return value;
+		StringContainer container = new StringContainer(value);
+		for (int i = startAt; i < container.length(); ++i) {
+			char c = container.charAt(i);
 			if (c == add)
-				b.append('\\');
-			b.append(c);
+				container.insert(i++, '\\');
 		}
-		return b;
-	}
-
-	protected static StringContainer writeWithoutQuotes(StringContainer b, Object value) {
-		b.append(Json.writer().write(value));
-		return b;
+		return container.toString();
 	}
 }

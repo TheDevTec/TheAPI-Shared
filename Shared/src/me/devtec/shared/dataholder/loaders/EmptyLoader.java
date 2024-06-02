@@ -146,15 +146,12 @@ public class EmptyLoader extends DataLoader {
 			if (data.remove(key) != null) {
 				int pos = key.indexOf('.');
 				String primaryKey = pos == -1 ? key : key.substring(0, pos);
-				Iterator<String> itr = getKeys().iterator();
-				while (itr.hasNext()) {
-					String section = itr.next();
+				for (String section : getKeys())
 					if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.')) {
 						keySet = null;
 						entrySet = null;
 						return true;
 					}
-				}
 				primaryKeys.remove(primaryKey);
 				keySet = null;
 				entrySet = null;
@@ -229,7 +226,6 @@ public class EmptyLoader extends DataLoader {
 	public Iterator<String> keySetIterator(String key, boolean subkeys) {
 		Checkers.nonNull(key, "Key");
 		String finalKey = key + '.';
-		Iterator<String> keySet = getKeys().iterator();
 		return new Iterator<String>() {
 			String currentKey = null;
 
@@ -251,15 +247,13 @@ public class EmptyLoader extends DataLoader {
 
 			public Iterator<String> step() {
 				currentKey = null;
-				while (keySet.hasNext()) {
-					String section = keySet.next();
+				for (String section : getKeys())
 					if (section.startsWith(finalKey)) {
 						int pos;
 						section = section.substring(finalKey.length());
 						currentKey = subkeys ? section : (pos = section.indexOf('.')) == -1 ? section : section.substring(0, pos);
 						break;
 					}
-				}
 				return this;
 			}
 		}.step();

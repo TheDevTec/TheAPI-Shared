@@ -39,7 +39,7 @@ import me.devtec.shared.utility.StreamUtils;
 public class Config {
 	protected DataLoader loader;
 	protected File file;
-	protected boolean isSaving; // LOCK
+	protected transient boolean isSaving; // LOCK
 	protected boolean requireSave;
 
 	// Config updater
@@ -686,12 +686,26 @@ public class Config {
 				return this;
 			}
 		}
-		ByteBuffer bytes = ByteBuffer.wrap(toByteArray(dataTypeName, true));
-		try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
-			channel.write(bytes);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		DataLoader writer;
+		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
+			writer = getDataLoader();
+		else
+			writer = DataLoader.findLoaderByName(dataTypeName);
+		if (writer != null)
+			if (writer.supportsIteratorMode()) {
+				Iterator<String> iterator = writer.saveAsIterator(this, true);
+				try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+					while (iterator.hasNext())
+						channel.write(ByteBuffer.wrap(iterator.next().getBytes()));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else
+				try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+					channel.write(ByteBuffer.wrap(writer.save(this, true)));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 		markNonModified();
 		isSaving = false;
 		return this;
