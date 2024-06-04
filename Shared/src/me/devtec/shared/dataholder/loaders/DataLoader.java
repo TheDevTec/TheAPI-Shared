@@ -186,7 +186,7 @@ public abstract class DataLoader implements Cloneable {
 
 	@Comment(comment = "Saves the entire structure to Iterator<byte[]> which prevent from overload")
 	@Nullable
-	public Iterator<String> saveAsIterator(@Nonnull Config config, boolean markSaved) {
+	public Iterator<CharSequence> saveAsIterator(@Nonnull Config config, boolean markSaved) {
 		return null;
 	}
 

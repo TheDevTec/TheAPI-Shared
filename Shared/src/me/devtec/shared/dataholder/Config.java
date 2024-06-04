@@ -693,10 +693,13 @@ public class Config {
 			writer = DataLoader.findLoaderByName(dataTypeName);
 		if (writer != null)
 			if (writer.supportsIteratorMode()) {
-				Iterator<String> iterator = writer.saveAsIterator(this, true);
+				Iterator<CharSequence> iterator = writer.saveAsIterator(this, true);
 				try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
-					while (iterator.hasNext())
-						channel.write(ByteBuffer.wrap(iterator.next().getBytes()));
+					while (iterator.hasNext()) {
+						CharSequence next = iterator.next();
+						channel.write(ByteBuffer
+								.wrap(next instanceof StringContainer ? ((StringContainer) next).getBytes() : next instanceof String ? ((String) next).getBytes() : next.toString().getBytes()));
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
