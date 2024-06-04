@@ -986,7 +986,7 @@ public class YamlSectionBuilderHelper {
 		return container;
 	}
 
-	private static CharSequence replaceWithEscape(String value, char add) {
+	public static CharSequence replaceWithEscape(String value, char add) {
 		int startAt = value.indexOf(add);
 		if (startAt == -1)
 			return value;

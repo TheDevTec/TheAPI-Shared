@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import me.devtec.shared.Pair;
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
@@ -19,18 +20,14 @@ public class PropertiesLoader extends EmptyLoader {
 	private boolean readingReachedEnd;
 	private int startIndex;
 	private int endIndex;
-	private String lines;
+	private StringContainer lines;
 
-	private final String readLine() {
+	private final int[] readLine() {
 		try {
-			return startIndex == -1 ? null : endIndex == -1 ? lines.substring(startIndex) : lines.substring(startIndex, endIndex);
+			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
 			startIndex = endIndex == -1 ? -1 : endIndex + 1;
-			if (startIndex < lines.length() && startIndex != -1 && lines.charAt(startIndex) == '\r')
-				++startIndex;
 			endIndex = startIndex == -1 ? -1 : lines.indexOf('\n', startIndex);
-			if (endIndex < lines.length() && endIndex != -1 && lines.charAt(endIndex) == '\r')
-				++endIndex;
 		}
 	}
 
@@ -45,31 +42,27 @@ public class PropertiesLoader extends EmptyLoader {
 		if (input == null)
 			return;
 		reset();
-		lines = input;
-		if (lines == null)
-			startIndex = -1;
-		else {
-			startIndex = 0;
-			endIndex = lines.indexOf('\n');
-			if (endIndex < lines.length() && endIndex != -1 && lines.charAt(endIndex) == '\r')
-				++endIndex;
-		}
 
-		Queue<String> lines = new ConcurrentLinkedQueue<>();
+		lines = new StringContainer(input, 0, 0);
+		// Init
+		startIndex = 0;
+		endIndex = lines.indexOf('\n');
+
+		Queue<int[]> lines = new ConcurrentLinkedQueue<>();
 		int task = -1;
 		if (input.length() >= 35000)
 			task = new Tasker() {
 
 				@Override
 				public void run() {
-					String line;
+					int[] line;
 					while (!isCancelled() && (line = readLine()) != null)
 						lines.add(line);
 					readingReachedEnd = true;
 				}
 			}.runTask();
 		else {
-			String line;
+			int[] line;
 			while ((line = readLine()) != null)
 				lines.add(line);
 			readingReachedEnd = true;
@@ -80,32 +73,38 @@ public class PropertiesLoader extends EmptyLoader {
 		while (!readingReachedEnd || !lines.isEmpty()) {
 			if (lines.isEmpty())
 				continue;
-			String line = lines.poll();
-			String trimmed = line.trim();
 
-			// Comments
-			if (trimmed.isEmpty() || trimmed.charAt(0) == '#') {
-				if (comments == null)
-					comments = new ArrayList<>();
-				comments.add(trimmed);
-				continue;
-			}
+			int[] line = lines.poll();
 
-			if (line.charAt(0) == ' ') { // S-s-space?! Maybe.. this is YAML file.
+			if (this.lines.charAt(line[0]) == '\r' ? this.lines.charAt(line[0] + 1) == ' ' : this.lines.charAt(line[0]) == ' ') { // S-s-space?! Maybe.. this is YAML file.
 				data.clear();
 				comments = null;
 				break;
 			}
 
-			String[] parts = readConfigLine(trimmed);
+			int[] trimmed = YamlLoader.trim(this.lines, line);
+			// Comments
+			if (trimmed[0] == trimmed[1] || this.lines.charAt(trimmed[0]) == '#') {
+				if (comments == null)
+					comments = new ArrayList<>();
+				comments.add(trimmed[0] == trimmed[1] ? "" : this.lines.substring(trimmed[0], trimmed[1]));
+				continue;
+			}
+
+			int[][] parts = readConfigLine(this.lines, trimmed);
 			if (parts == null) { // Didn't find = symbol.. Maybe this is YAML file.
 				data.clear();
 				comments = null;
 				break;
 			}
-
-			String[] value = YamlLoader.splitFromComment(0, parts[1]);
-			set(parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length == 2 ? value[1] : null, comments));
+			Object readerValueParsed = YamlLoader.splitFromComment(this.lines, 0, parts[1]);
+			int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
+			int[] value = readerValue[0];
+			int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
+			String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+			set(this.lines.substring(parts[0][0], parts[0][1]),
+					DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
+							Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
 			comments = null;
 			continue;
 		}
@@ -174,20 +173,30 @@ public class PropertiesLoader extends EmptyLoader {
 		return builder;
 	}
 
-	protected static String[] readConfigLine(String input) {
-		int index = input.indexOf('=');
-		int colorIndex = input.indexOf(':');
-		if (index == -1 || colorIndex != -1 && colorIndex < index)
-			return null;
-		if (input.length() - index > 0) {
-			String[] result = new String[2];
-			result[0] = input.substring(0, index);
-			result[1] = input.substring(index + 1);
-			return result;
+	protected static int[][] readConfigLine(StringContainer input, int[] index) {
+		boolean foundYamlIndexChar = false;
+		for (int i = index[0]; i < index[1]; ++i) {
+			char c = input.charAt(i);
+			switch (c) {
+			case ':':
+				foundYamlIndexChar = true;
+				break;
+			case '=':
+				if (i == index[0])
+					return null; // Invalid PROPERTIES file.
+				int[][] result = new int[2][];
+				result[0] = YamlLoader.getFromQuotes(input, YamlLoader.trim(input, index[0], i));
+				result[1] = YamlLoader.trim(input, i + 1, index[1]);
+				return result;
+			default:
+				break;
+			}
 		}
-		String[] result = new String[2];
-		result[0] = input;
-		result[1] = "";
+		if (foundYamlIndexChar)
+			return null; // Hey! This is YAML file.
+		int[][] result = new int[2][];
+		result[0] = YamlLoader.getFromQuotes(input, YamlLoader.trim(input, index[0], index[1]));
+		result[1] = null;
 		return result;
 	}
 

@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import me.devtec.shared.Pair;
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.annotations.Nonnull;
 import me.devtec.shared.dataholder.Config;
@@ -23,18 +24,14 @@ public class TomlLoader extends EmptyLoader {
 	private boolean readingReachedEnd;
 	private int startIndex;
 	private int endIndex;
-	private String lines;
+	private StringContainer lines;
 
-	private final String readLine() {
+	private final int[] readLine() {
 		try {
-			return startIndex == -1 ? null : endIndex == -1 ? lines.substring(startIndex) : lines.substring(startIndex, endIndex);
+			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
 			startIndex = endIndex == -1 ? -1 : endIndex + 1;
-			if (startIndex < lines.length() && startIndex != -1 && lines.charAt(startIndex) == '\r')
-				++startIndex;
 			endIndex = startIndex == -1 ? -1 : lines.indexOf('\n', startIndex);
-			if (endIndex < lines.length() && endIndex != -1 && lines.charAt(endIndex) == '\r')
-				++endIndex;
 		}
 	}
 
@@ -44,37 +41,33 @@ public class TomlLoader extends EmptyLoader {
 		readingReachedEnd = false;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked" })
 	@Override
 	public void load(String input) {
 		if (input == null)
 			return;
 		reset();
-		lines = input;
-		if (lines == null)
-			startIndex = -1;
-		else {
-			startIndex = 0;
-			endIndex = lines.indexOf('\n');
-			if (endIndex < lines.length() && endIndex != -1 && lines.charAt(endIndex) == '\r')
-				++endIndex;
-		}
 
-		Queue<String> lines = new ConcurrentLinkedQueue<>();
+		lines = new StringContainer(input, 0, 0);
+		// Init
+		startIndex = 0;
+		endIndex = lines.indexOf('\n');
+
+		Queue<int[]> lines = new ConcurrentLinkedQueue<>();
 		int task = -1;
 		if (input.length() >= 35000)
 			task = new Tasker() {
 
 				@Override
 				public void run() {
-					String line;
+					int[] line;
 					while (!isCancelled() && (line = readLine()) != null)
 						lines.add(line);
 					readingReachedEnd = true;
 				}
 			}.runTask();
 		else {
-			String line;
+			int[] line;
 			while ((line = readLine()) != null)
 				lines.add(line);
 			readingReachedEnd = true;
@@ -84,53 +77,75 @@ public class TomlLoader extends EmptyLoader {
 		List<Map<Object, Object>> list = null;
 		Map<Object, Object> map = null;
 		int mode = 0;
-		String mainPath = "";
+		StringContainer mainPath = null;
 
 		while (!readingReachedEnd || !lines.isEmpty()) {
 			if (lines.isEmpty())
 				continue;
-			String line = lines.poll();
-			String trimmed = line.trim();
-			if (trimmed.isEmpty() || trimmed.charAt(0) == '#') {
+			int[] line = lines.poll();
+			int[] trimmed = YamlLoader.trim(this.lines, line);
+			// Comments
+			if (trimmed[0] == trimmed[1] || this.lines.charAt(trimmed[0]) == '#') {
 				if (comments == null)
 					comments = new ArrayList<>();
-				comments.add(trimmed);
+				comments.add(trimmed[0] == trimmed[1] ? "" : this.lines.substring(trimmed[0], trimmed[1]));
 				continue;
 			}
-			String[] parts = readConfigLine(trimmed);
+			int[][] parts = readConfigLine(this.lines, trimmed);
 			if (parts == null) { // Didn't find = symbol.. Maybe this is YAML file.
 				data.clear();
 				comments = null;
 				break;
 			}
-			String[] value = YamlLoader.splitFromComment(0, parts[1]);
 
 			if (parts.length == 3) { // section or array with maps
-				mainPath = parts[0];
-				mode = parts[2].charAt(0) != 'a' ? 1 : 2;
-				DataValue probablyCreated = get(mainPath);
+				mainPath = (StringContainer) this.lines.subSequence(parts[0][0], parts[0][1]);
+				mode = parts[2][0];
+				String inString = mainPath.toString();
+				DataValue probablyCreated = get(inString);
 				if (mode != 2 && probablyCreated == null && comments != null)
-					set(mainPath, DataValue.of(null, null, null, comments));
+					set(inString, DataValue.of(null, null, null, comments));
 				map = null;
 				list = null;
 
 				if (mode == 2) {
 					list = probablyCreated != null && probablyCreated.value != null ? (List<Map<Object, Object>>) probablyCreated.value : new ArrayList<>();
 					if (probablyCreated == null || probablyCreated.value == null)
-						set(mainPath, DataValue.of(null, list, null, comments));
+						set(inString, DataValue.of(null, list, null, comments));
 					map = new HashMap<>();
 					list.add(map);
 				}
 				comments = null;
 				continue;
 			}
-			if (mode == 0)
-				set(parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length == 2 ? value[1] : null, comments));
-			else // sub
-			if (mode == 1)
-				set(mainPath + '.' + parts[0], DataValue.of(value[0], Json.reader().read(value[0]), value.length >= 2 ? value[1] : null, comments));
-			else
-				map.put(parts[0], Json.reader().read(value[0]));
+			if (parts[1] == null) {
+				if (mode == 0 || mode != 1)
+					set(this.lines.substring(parts[0][0], parts[0][1]), DataValue.of(null, "", null, comments));
+				else {
+					CharSequence seq = this.lines.subSequence(parts[0][0], parts[0][1]);
+					mainPath.append('.').append(seq);
+					set(mainPath.toString(), DataValue.of(null, "", null, comments));
+					mainPath.delete(mainPath.length() - seq.length() - 1, mainPath.length());
+				}
+			} else {
+				Object readerValueParsed = YamlLoader.splitFromComment(this.lines, 0, parts[1]);
+				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
+				int[] value = readerValue[0];
+				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
+				String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+
+				if (mode == 0 || mode != 1)
+					set(this.lines.substring(parts[0][0], parts[0][1]),
+							DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
+									Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
+				else {
+					CharSequence seq = this.lines.subSequence(parts[0][0], parts[0][1]);
+					mainPath.append('.').append(seq);
+					set(mainPath.toString(), DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
+							Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
+					mainPath.delete(mainPath.length() - seq.length() - 1, mainPath.length());
+				}
+			}
 			comments = null;
 			continue;
 		}
@@ -167,7 +182,7 @@ public class TomlLoader extends EmptyLoader {
 		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
-		Iterator<String> itr = saveAsIterator(config, markSaved);
+		Iterator<CharSequence> itr = saveAsIterator(config, markSaved);
 		while (itr.hasNext())
 			builder.append(itr.next());
 		return builder;
@@ -179,24 +194,24 @@ public class TomlLoader extends EmptyLoader {
 	}
 
 	@Override
-	public Iterator<String> saveAsIterator(@Nonnull Config config, boolean markSaved) {
+	public Iterator<CharSequence> saveAsIterator(@Nonnull Config config, boolean markSaved) {
 		Checkers.nonNull(config, "Config");
-		return new Iterator<String>() {
+		return new Iterator<CharSequence>() {
 			// 0=header
 			// 1=lines
 			// 2=footer
 			byte phase = 0;
 			int posInPhase = 0;
-			List<String> list;
+			Iterator<CharSequence> list;
 
 			@Override
-			public String next() {
+			public CharSequence next() {
 				switch (phase) {
 				case 0:
 					return config.getDataLoader().getHeader() instanceof List ? ((List<String>) config.getDataLoader().getHeader()).get(posInPhase++) + System.lineSeparator()
 							: config.getDataLoader().getHeader().toArray(new String[0])[posInPhase++] + System.lineSeparator();
 				case 1:
-					return list.get(posInPhase++);
+					return list.next();
 				case 2:
 					return config.getDataLoader().getFooter() instanceof List ? ((List<String>) config.getDataLoader().getFooter()).get(posInPhase++) + System.lineSeparator()
 							: config.getDataLoader().getFooter().toArray(new String[0])[posInPhase++] + System.lineSeparator();
@@ -216,7 +231,7 @@ public class TomlLoader extends EmptyLoader {
 					}
 					return true;
 				case 1:
-					if (list.size() != posInPhase)
+					if (list.hasNext())
 						return true;
 					phase = 2;
 					posInPhase = 0;
@@ -231,48 +246,59 @@ public class TomlLoader extends EmptyLoader {
 		};
 	}
 
-	protected static String[] readConfigLine(String input) {
-		int yamlIndex = input.indexOf(':');
-		int index = input.indexOf('=');
-		int ignoreChar;
-		if (yamlIndex != -1 && yamlIndex < index && ((ignoreChar = input.indexOf('"')) == -1 || ignoreChar > yamlIndex))
-			return null;
-		int mapIndex = input.indexOf('[');
-		if (index == -1 || index > mapIndex) {
-			if (mapIndex != -1 && input.length() > mapIndex + 1 && input.charAt(mapIndex + 1) == '[') { // array of maps
-				int mapEndIndex = input.lastIndexOf(']');
-				if (mapEndIndex != -1 && mapEndIndex - 1 > mapIndex && input.charAt(mapEndIndex - 1) == ']')
-					return new String[] { getFromQuotes(input.substring(2, input.length() - 2)), "", "a" };
-			}
-			if (mapIndex != -1) { // map
+	protected static int[][] readConfigLine(StringContainer input, int[] index) {
+		int quoteCount = 0;
+		char currentQueto = 0;
+
+		for (int i = index[0]; i < index[1]; ++i) {
+			char c = input.charAt(i);
+			switch (c) {
+			case ':':
+				if (quoteCount != 0)
+					break;
+				if (i + 1 < index[1] && input.charAt(index[0] + 1) == ' ')
+					return null; // Hey! This is YAML file.
+				break;
+			case '=':
+				if (quoteCount != 0)
+					break;
+				if (i == index[0])
+					return null; // Invalid TOML file.
+				int[][] result = new int[2][];
+				result[0] = YamlLoader.getFromQuotes(input, YamlLoader.trim(input, index[0], i));
+				result[1] = YamlLoader.trim(input, i + 1, index[1]);
+				return result;
+			case '[':
+				if (quoteCount != 0)
+					break;
+				if (index[1] > i + 1 && input.charAt(i + 1) == '[') {
+					int mapEndIndex = input.lastIndexOf(']');
+					if (mapEndIndex != -1 && mapEndIndex - 1 > i && input.charAt(mapEndIndex - 1) == ']')
+						return new int[][] { YamlLoader.getFromQuotes(input, index[0] + 2, index[1] - 2), null, new int[] { 2 } }; // maps
+				}
 				int mapEndIndex = input.lastIndexOf(']');
 				if (mapEndIndex != -1)
-					return new String[] { getFromQuotes(input.substring(1, input.length() - 1)), "", "b" };
+					return new int[][] { YamlLoader.getFromQuotes(input, index[0] + 1, index[1] - 1), null, new int[] { 1 } }; // sub keys
+				break;
+			case '\\':
+				++i;
+				break;
+			case '"':
+			case '\'':
+				if (quoteCount == 0) {
+					++quoteCount;
+					currentQueto = c;
+				} else if (c == currentQueto)
+					--quoteCount;
+				break;
+			default:
+				break;
 			}
 		}
-		if (index == -1 || index == 0)
-			return null;
-		if (input.length() - index > 0) {
-			String[] result = new String[2];
-			result[0] = getFromQuotes(input.substring(0, index).trim());
-			result[1] = input.substring(index + 1).trim();
-			return result;
-		}
-		String[] result = new String[2];
-		result[0] = getFromQuotes(input.trim());
-		result[1] = "";
+		int[][] result = new int[2][];
+		result[0] = YamlLoader.getFromQuotes(input, YamlLoader.trim(input, index[0], index[1]));
+		result[1] = null;
 		return result;
-	}
-
-	protected static String getFromQuotes(String input) {
-		int len = input.length();
-		if (len <= 2)
-			return input;
-		char firstChar = input.charAt(0);
-		char lastChar = input.charAt(input.length() - 1);
-		if (firstChar == '\'' && lastChar == '\'' || firstChar == '"' && lastChar == '"')
-			return input.substring(1, input.length() - 1);
-		return input;
 	}
 
 	@Override

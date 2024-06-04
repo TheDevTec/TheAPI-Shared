@@ -353,59 +353,6 @@ public class YamlLoader extends EmptyLoader {
 		loaded = comments != null || !data.isEmpty();
 	}
 
-	private String removeCharsAt(CharSequence value, int[] indexes) {
-		for (int i = indexes.length - 1; i > 0; --i)
-			((StringContainer) value).deleteCharAt(i);
-		return value.toString();
-	}
-
-	private static int[] trim(StringContainer lines, int[] line) {
-		int len = line[1] - line[0];
-		int st = 0;
-
-		while (st < len && lines.charAt(line[0] + st) <= ' ')
-			st++;
-		while (st < len && lines.charAt(line[0] + len - 1) <= ' ')
-			len--;
-		line[1] = line[0] + len;
-		line[0] += st;
-		return line;
-	}
-
-	private static int[] trim(StringContainer lines, int start, int end) {
-		int[] trimmed = new int[2];
-		trimmed[0] = start;
-		trimmed[1] = end;
-		int len = trimmed[1] - trimmed[0];
-		int st = 0;
-		while (st < len && lines.charAt(start + st) <= ' ')
-			st++;
-		while (st < len && lines.charAt(start + len - 1) <= ' ')
-			len--;
-		trimmed[0] = start + st;
-		trimmed[1] = start + len;
-		return trimmed;
-	}
-
-	private int buildKey(StringContainer lines, StringContainer key, int[] currentKey, int depth, int currentDepth, int lastIndexOfDot) {
-		if (currentDepth == 0)
-			key.clear();
-		else if (currentDepth > depth) { // Up
-			key.append('.');
-			lastIndexOfDot = key.length();
-		} else if (currentDepth < depth) { // Down
-			if (currentDepth == 0)
-				key.clear();
-			else {
-				key.delete(key.lastIndexOf('.', lastIndexOfDot, depth - currentDepth + 1) + 1, key.length()); // Don't remove dot
-				lastIndexOfDot = key.length();
-			}
-		} else
-			key.delete(lastIndexOfDot, key.length()); // Don't remove dot
-		key.append(lines.subSequence(currentKey[0], currentKey[1]));
-		return lastIndexOfDot;
-	}
-
 	@Override
 	public String saveAsString(Config config, boolean markSaved) {
 		Checkers.nonNull(config, "Config");
@@ -486,23 +433,76 @@ public class YamlLoader extends EmptyLoader {
 		};
 	}
 
+	protected static String removeCharsAt(CharSequence value, int[] indexes) {
+		for (int i = indexes.length - 1; i > 0; --i)
+			((StringContainer) value).deleteCharAt(i);
+		return value.toString();
+	}
+
+	protected static int[] trim(StringContainer lines, int[] line) {
+		int len = line[1] - line[0];
+		int st = 0;
+
+		while (st < len && lines.charAt(line[0] + st) <= ' ')
+			st++;
+		while (st < len && lines.charAt(line[0] + len - 1) <= ' ')
+			len--;
+		line[1] = line[0] + len;
+		line[0] += st;
+		return line;
+	}
+
+	protected static int[] trim(StringContainer lines, int start, int end) {
+		int[] trimmed = new int[2];
+		trimmed[0] = start;
+		trimmed[1] = end;
+		int len = trimmed[1] - trimmed[0];
+		int st = 0;
+		while (st < len && lines.charAt(start + st) <= ' ')
+			st++;
+		while (st < len && lines.charAt(start + len - 1) <= ' ')
+			len--;
+		trimmed[0] = start + st;
+		trimmed[1] = start + len;
+		return trimmed;
+	}
+
+	private int buildKey(StringContainer lines, StringContainer key, int[] currentKey, int depth, int currentDepth, int lastIndexOfDot) {
+		if (currentDepth == 0)
+			key.clear();
+		else if (currentDepth > depth) { // Up
+			key.append('.');
+			lastIndexOfDot = key.length();
+		} else if (currentDepth < depth) { // Down
+			if (currentDepth == 0)
+				key.clear();
+			else {
+				key.delete(key.lastIndexOf('.', lastIndexOfDot, depth - currentDepth + 1) + 1, key.length()); // Don't remove dot
+				lastIndexOfDot = key.length();
+			}
+		} else
+			key.delete(lastIndexOfDot, key.length()); // Don't remove dot
+		key.append(lines.subSequence(currentKey[0], currentKey[1]));
+		return lastIndexOfDot;
+	}
+
 	protected static int[][] readConfigLine(StringContainer input, int[] index) {
 		int charIndex = -1;
 
-		for (int i = 0; i < index[1] - index[0]; ++i)
-			if (input.charAt(index[0] + i) == ':') {
+		for (int i = index[0]; i < index[1]; ++i)
+			if (input.charAt(index[0]) == ':') {
 				charIndex = i;
-				if (i + 1 != input.length() && input.charAt(index[0] + i + 1) == ' ') {
+				if (i + 1 < index[1] && input.charAt(index[0] + 1) == ' ') {
 					int[][] result = new int[2][];
-					result[0] = getFromQuotes(input, index[0], index[0] + i);
-					result[1] = trim(input, index[0] + i + 2, index[1]);
+					result[0] = getFromQuotes(input, index[0], i);
+					result[1] = trim(input, i + 2, index[1]);
 					return result;
 				}
 			}
 
 		if (charIndex != -1) {
 			int[][] result = new int[1][];
-			result[0] = getFromQuotes(input, index[0], index[0] + charIndex);
+			result[0] = getFromQuotes(input, index[0], charIndex);
 			return result;
 		}
 		return null;
@@ -517,6 +517,19 @@ public class YamlLoader extends EmptyLoader {
 		if (firstChar == '\'' && lastChar == '\'' || firstChar == '"' && lastChar == '"')
 			return new int[] { start + 1, end - 1 };
 		return new int[] { start, end };
+	}
+
+	protected static int[] getFromQuotes(StringContainer input, int[] line) {
+		int len = line[1] - line[0];
+		if (len <= 2)
+			return line;
+		char firstChar = input.charAt(line[0]);
+		char lastChar = input.charAt(line[1] - 1);
+		if (firstChar == '\'' && lastChar == '\'' || firstChar == '"' && lastChar == '"') {
+			line[0] += 1;
+			line[1] -= 1;
+		}
+		return line;
 	}
 
 	protected static Object splitFromComment(StringContainer lines, int posFromStart, int[] container) {
@@ -578,7 +591,6 @@ public class YamlLoader extends EmptyLoader {
 						copy[shouldBeRemoved.length] = i;
 						shouldBeRemoved = copy;
 					}
-					container[0] -= 1;
 					container[1] -= 1;
 					endOfString = container[0] + i;
 				}
