@@ -1,8 +1,8 @@
 package me.devtec.shared.dataholder.loaders.yaml;
 
-import java.util.ArrayList;
+import java.lang.reflect.Array;
 import java.util.Collection;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -15,48 +15,55 @@ import me.devtec.shared.json.Json;
 
 public class YamlSectionBuilderHelper {
 
-	public static class StringArrayList extends ArrayList<String> {
+	public static class StringArrayList {
 
-		private static final long serialVersionUID = 1L;
+		private static final int BUFFER_SIZE = 1024 * 16;
 
-		private StringContainer container = new StringContainer(5720);
+		private StringContainer container = new StringContainer(BUFFER_SIZE);
 
-		@Override
-		public boolean add(String e) {
+		public String add(CharSequence e) {
+			if (e == null)
+				return null;
 			container.append(e);
-			if (container.length() >= 5120) {
-				super.add(container.toString());
+			if (container.length() >= BUFFER_SIZE) {
+				String result = container.toString();
 				container.clear();
+				return result;
 			}
-			return true;
+			return null;
 		}
 
-		public void complete() {
+		public String complete() {
 			if (!container.isEmpty())
-				super.add(container.toString());
+				return container.toString();
+			return null;
+		}
+
+		public boolean isEmpty() {
+			return container.isEmpty();
+		}
+
+		public void clear() {
+			container.clear();
 		}
 	}
 
 	public static class Section {
-		public String space;
+		public int space;
 		public String keyName;
 		public DataValue value;
 		public Section[] sub;
 		public Section parent;
-		public String fullName;
 
 		public Section(Section parent, String key, DataValue val) {
-			fullName = parent.fullName + '.' + key;
 			this.parent = parent;
-			space = parent.space + "  ";
+			space = parent.space + 1;
 			keyName = key;
 			value = val;
 		}
 
 		public Section(String key, DataValue val) {
-			parent = this;
-			fullName = key;
-			space = "";
+			space = 0;
 			keyName = key;
 			value = val;
 		}
@@ -117,115 +124,838 @@ public class YamlSectionBuilderHelper {
 			return sec;
 		}
 
+		public StringContainer fullName(StringContainer container) {
+			container.clear();
+			for (Section parent = this; parent != null; parent = parent.parent)
+				container.insert(0, '.').insert(0, parent.keyName);
+			return container;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof Section) {
+				Section sec = (Section) obj;
+				if (sec.keyName.equals(keyName) && sec.space == space)
+					return true;
+			}
+			return false;
+		}
+
 	}
 
-	public static List<String> prepareBuilder(Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
+	public static Iterator<CharSequence> prepareBuilder(Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
+		StringContainer container = new StringContainer(64);
 		Map<String, Section> map = new WeakHashMap<>();
 		for (String primaryKey : primaryKeys)
 			map.put(primaryKey, new Section(primaryKey, dataLoader.get(primaryKey)));
 
 		Section prevParent = null;
+		StringContainer fullNameContainer = new StringContainer(64);
 		for (Entry<String, DataValue> entry : dataLoader.entrySet()) {
-			String fullName = entry.getKey();
+			container.clear();
+			container.append(entry.getKey());
 			Section main = null;
-			if (prevParent != null && (fullName.startsWith(prevParent.fullName + '.') || fullName.startsWith((prevParent = prevParent.parent).fullName + '.'))) {
-				fullName = fullName.substring(prevParent.fullName.length() + 1);
+			if (prevParent != null && (container.startsWith(prevParent.fullName(fullNameContainer), 0)
+					|| (prevParent = prevParent.parent) != null && container.startsWith(prevParent.fullName(fullNameContainer), 0))) {
+				container.delete(0, prevParent.fullName(fullNameContainer).length());
 				main = prevParent;
 			} else {
-				int pos = fullName.indexOf('.');
+				int pos = container.indexOf('.');
 				if (pos == -1)
 					continue;
-				String primaryKey = pos == -1 ? fullName : fullName.substring(0, pos);
-				fullName = fullName.substring(primaryKey.length() + 1);
+				String primaryKey = pos == -1 ? container.toString() : container.substring(0, pos);
+				container.delete(0, primaryKey.length() + 1);
 				main = prevParent = map.get(primaryKey);
 			}
-			Section sec = main.create(fullName);
+			Section sec = main.create(container.toString());
 			sec.value = entry.getValue();
 			prevParent = sec.parent;
 		}
+		container.clear();
 		StringArrayList values = new StringArrayList();
-		StringContainer container = new StringContainer(128);
-		for (Section section : map.values())
-			startIterate(container, values, section.keyName, section.value, section, markSaved);
-		values.complete();
-		return values;
+		Iterator<Section> itr = map.values().iterator();
+		return new Iterator<CharSequence>() {
+			Iterator<CharSequence> currentItr;
+
+			@Override
+			public boolean hasNext() {
+				return currentItr != null && currentItr.hasNext() || itr.hasNext() || !values.isEmpty();
+			}
+
+			@Override
+			public CharSequence next() {
+				if (currentItr != null && currentItr.hasNext()) {
+					CharSequence next = currentItr.next();
+					if (next == null) {
+						if (currentItr != null && currentItr.hasNext() || itr.hasNext())
+							return next();
+						String result = values.complete();
+						values.clear();
+						return result;
+					}
+					return next;
+				}
+				if (!itr.hasNext()) {
+					String result = values.complete();
+					values.clear();
+					return result;
+				}
+				Section section = itr.next();
+				currentItr = startIterator(container, values, section.keyName, section.value, section, markSaved);
+				CharSequence next = currentItr.next();
+				if (next == null) {
+					if (currentItr != null && currentItr.hasNext() || itr.hasNext())
+						return next();
+					String result = values.complete();
+					values.clear();
+					return result;
+				}
+				return next;
+			}
+		};
 	}
 
-	public static void startIterate(StringContainer container, List<String> values, String section, DataValue dataVal, Section linked, boolean markSaved) {
-		if (dataVal == null) {
-			values.add(appendName(container, linked.space, section));
-			if (linked.sub != null)
-				for (Section sub : linked.sub)
-					startIterate(container, values, sub.keyName, sub.value, sub, markSaved);
-			return;
-		}
+	public static Iterator<CharSequence> startIterator(StringContainer container, StringArrayList values, String section, DataValue dataVal, Section linked, boolean markSaved) {
+		if (dataVal == null)
+			return new Iterator<CharSequence>() {
+				int pos = -1;
+				Iterator<CharSequence> currentItr;
+
+				@Override
+				public boolean hasNext() {
+					return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+				}
+
+				@Override
+				public CharSequence next() {
+					if (pos == -1) {
+						++pos;
+						String result = values.add(appendName(container, linked.space, section));
+						if (result != null)
+							return result;
+						return hasNext() ? next() : null;
+					}
+					if (currentItr != null && currentItr.hasNext()) {
+						String result = values.add(currentItr.next());
+						if (result != null)
+							return result;
+						return hasNext() ? next() : null;
+					}
+					Section sub = linked.sub[pos++];
+					currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+					String result = values.add(currentItr.next());
+					if (result != null)
+						return result;
+					if (hasNext())
+						return next();
+					return null;
+				}
+
+			};
 		if (markSaved)
 			dataVal.modified = false;
 		String commentAfterValue = dataVal.commentAfterValue;
 		Collection<String> comments = dataVal.comments;
+		Iterator<String> commentsItr = comments != null && !comments.isEmpty() ? comments.iterator() : null;
 		Object value = dataVal.value;
-		// write list values
-		if (comments != null)
-			for (String comment : comments) {
-				container.clear();
-				values.add(container.append(linked.space).append(comment).append(System.lineSeparator()).toString());
-			}
 
 		if (value == null)
-			values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
-		else if (value instanceof Collection || value instanceof Object[]) {
-			if (value instanceof Collection) {
-				if (!((Collection<?>) value).isEmpty())
-					if (dataVal.writtenValue != null)
-						values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
-					else {
-						values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
-						for (Object object : (Collection<?>) value)
-							values.add(writeListValue(container, linked.space, object));
+			return new Iterator<CharSequence>() {
+				byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+				int pos = 0;
+				Iterator<CharSequence> currentItr;
+
+				@Override
+				public boolean hasNext() {
+					switch (type) {
+					case 0:
+						return commentsItr.hasNext();
+					case 1:
+						return true;
+					case 2:
+						return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
 					}
-				else
-					values.add(appendName(container, linked.space, section, "[]", (char) 0, commentAfterValue));
-			} else if (((Object[]) value).length != 0)
-				if (dataVal.writtenValue != null)
-					values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
-				else {
-					values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
-					for (Object object : (Object[]) value)
-						values.add(writeListValue(container, linked.space, object));
+					return false;
 				}
+
+				@Override
+				public CharSequence next() {
+					switch (type) {
+					case 0:
+						while (commentsItr.hasNext()) {
+							String comment = commentsItr.next();
+							container.clear();
+							String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+							if (result != null)
+								return result;
+						}
+						type = 1;
+						return hasNext() ? next() : null;
+					case 1: {
+						type = 2;
+						String result = values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
+						if (result != null)
+							return result;
+						return hasNext() ? next() : null;
+					}
+					case 2:
+						if (currentItr != null && currentItr.hasNext()) {
+							String result = values.add(currentItr.next());
+							if (result != null)
+								return result;
+							return hasNext() ? next() : null;
+						}
+						Section sub = linked.sub[pos++];
+						currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+						String result = values.add(currentItr.next());
+						if (result != null)
+							return result;
+						if (hasNext())
+							return next();
+					}
+					return null;
+				}
+
+			};
+		int size;
+		if (value instanceof Collection || value.getClass().isArray())
+			if (value instanceof Collection) {
+				if (((Collection<?>) value).isEmpty())
+					return new Iterator<CharSequence>() {
+						byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+						int pos = 0;
+						Iterator<CharSequence> currentItr;
+
+						@Override
+						public boolean hasNext() {
+							switch (type) {
+							case 0:
+								return commentsItr.hasNext();
+							case 1:
+								return true;
+							case 2:
+								return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+							}
+							return false;
+						}
+
+						@Override
+						public CharSequence next() {
+							switch (type) {
+							case 0:
+								while (commentsItr.hasNext()) {
+									String comment = commentsItr.next();
+									container.clear();
+									String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+									if (result != null)
+										return result;
+								}
+								type = 1;
+								return hasNext() ? next() : null;
+							case 1: {
+								type = 2;
+								String result = values.add(appendName(container, linked.space, section, "[]", (char) 0, commentAfterValue));
+								if (result != null)
+									return result;
+								return hasNext() ? next() : null;
+							}
+							case 2:
+								if (currentItr != null && currentItr.hasNext()) {
+									String result = values.add(currentItr.next());
+									if (result != null)
+										return result;
+									return hasNext() ? next() : null;
+								}
+								Section sub = linked.sub[pos++];
+								currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+								String result = values.add(currentItr.next());
+								if (result != null)
+									return result;
+								if (hasNext())
+									return next();
+							}
+							return null;
+						}
+
+					};
+				if (dataVal.writtenValue != null)
+					return new Iterator<CharSequence>() {
+						byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+						int pos = 0;
+						Iterator<CharSequence> currentItr;
+
+						@Override
+						public boolean hasNext() {
+							switch (type) {
+							case 0:
+								return commentsItr.hasNext();
+							case 1:
+								return true;
+							case 2:
+								return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+							}
+							return false;
+						}
+
+						@Override
+						public CharSequence next() {
+							switch (type) {
+							case 0:
+								while (commentsItr.hasNext()) {
+									String comment = commentsItr.next();
+									container.clear();
+									String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+									if (result != null)
+										return result;
+								}
+								type = 1;
+								return hasNext() ? next() : null;
+							case 1: {
+								type = 2;
+								String result = values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
+								if (result != null)
+									return result;
+								return hasNext() ? next() : null;
+							}
+							case 2:
+								if (currentItr != null && currentItr.hasNext()) {
+									String result = values.add(currentItr.next());
+									if (result != null)
+										return result;
+									return hasNext() ? next() : null;
+								}
+								Section sub = linked.sub[pos++];
+								currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+								String result = values.add(currentItr.next());
+								if (result != null)
+									return result;
+								if (hasNext())
+									return next();
+							}
+							return null;
+						}
+
+					};
+				Iterator<?> itr = ((Collection<?>) value).iterator();
+				return new Iterator<CharSequence>() {
+					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+					int pos = 0;
+					Iterator<CharSequence> currentItr;
+
+					@Override
+					public boolean hasNext() {
+						switch (type) {
+						case 0:
+							return commentsItr.hasNext();
+						case 1:
+							return true;
+						case 2:
+							return itr.hasNext();
+						case 3:
+							return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+						}
+						return false;
+					}
+
+					@Override
+					public CharSequence next() {
+						switch (type) {
+						case 0:
+							while (commentsItr.hasNext()) {
+								String comment = commentsItr.next();
+								container.clear();
+								String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+								if (result != null)
+									return result;
+							}
+							type = 1;
+							return hasNext() ? next() : null;
+						case 1: {
+							type = 2;
+							String result = values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
+							if (result != null)
+								return result;
+							return hasNext() ? next() : null;
+						}
+						case 2: {
+							type = 3;
+							String result = values.add(writeListValue(container, linked.space, itr.next()));
+							if (result != null)
+								return result;
+							return hasNext() ? next() : null;
+						}
+						case 3:
+							if (currentItr != null && currentItr.hasNext()) {
+								String result = values.add(currentItr.next());
+								if (result != null)
+									return result;
+								return hasNext() ? next() : null;
+							}
+							Section sub = linked.sub[pos++];
+							currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+							String result = values.add(currentItr.next());
+							if (result != null)
+								return result;
+							if (hasNext())
+								return next();
+						}
+						return null;
+					}
+
+				};
+			} else if ((size = Array.getLength(value)) != 0)
+				if (dataVal.writtenValue != null)
+					return new Iterator<CharSequence>() {
+						byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+						int pos = 0;
+						Iterator<CharSequence> currentItr;
+
+						@Override
+						public boolean hasNext() {
+							switch (type) {
+							case 0:
+								return commentsItr.hasNext();
+							case 1:
+								return true;
+							case 2:
+								return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+							}
+							return false;
+						}
+
+						@Override
+						public CharSequence next() {
+							switch (type) {
+							case 0:
+								while (commentsItr.hasNext()) {
+									String comment = commentsItr.next();
+									container.clear();
+									String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+									if (result != null)
+										return result;
+								}
+								type = 1;
+								return hasNext() ? next() : null;
+							case 1: {
+								type = 2;
+								String result = values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
+								if (result != null)
+									return result;
+								return hasNext() ? next() : null;
+							}
+							case 2:
+								if (currentItr != null && currentItr.hasNext()) {
+									String result = values.add(currentItr.next());
+									if (result != null)
+										return result;
+									return hasNext() ? next() : null;
+								}
+								Section sub = linked.sub[pos++];
+								currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+								String result = values.add(currentItr.next());
+								if (result != null)
+									return result;
+								if (hasNext())
+									return next();
+							}
+							return null;
+						}
+
+					};
+				else
+					return new Iterator<CharSequence>() {
+						byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+						int pos = 0;
+						Iterator<CharSequence> currentItr;
+
+						@Override
+						public boolean hasNext() {
+							switch (type) {
+							case 0:
+								return commentsItr.hasNext();
+							case 1:
+								return true;
+							case 2:
+								return size > pos;
+							case 3:
+								return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+							}
+							return false;
+						}
+
+						@Override
+						public CharSequence next() {
+							switch (type) {
+							case 0:
+								while (commentsItr.hasNext()) {
+									String comment = commentsItr.next();
+									container.clear();
+									String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+									if (result != null)
+										return result;
+								}
+								type = 1;
+								return hasNext() ? next() : null;
+							case 1: {
+								type = 2;
+								String result = values.add(appendName(container, linked.space, section, null, (char) 0, commentAfterValue));
+								if (result != null)
+									return result;
+								return hasNext() ? next() : null;
+							}
+							case 2: {
+								String result = values.add(writeListValue(container, linked.space, Array.get(value, pos++)));
+								if (pos == size) {
+									type = 3;
+									pos = 0;
+								}
+								if (result != null)
+									return result;
+								return hasNext() ? next() : null;
+							}
+							case 3:
+								if (currentItr != null && currentItr.hasNext()) {
+									String result = values.add(currentItr.next());
+									if (result != null)
+										return result;
+									return hasNext() ? next() : null;
+								}
+								Section sub = linked.sub[pos++];
+								currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+								String result = values.add(currentItr.next());
+								if (result != null)
+									return result;
+								if (hasNext())
+									return next();
+							}
+							return null;
+						}
+
+					};
 			else
-				values.add(appendName(container, linked.space, section, "[]", (char) 0, commentAfterValue));
-		} else // write normal value
+				return new Iterator<CharSequence>() {
+					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+					int pos = 0;
+					Iterator<CharSequence> currentItr;
+
+					@Override
+					public boolean hasNext() {
+						switch (type) {
+						case 0:
+							return commentsItr.hasNext();
+						case 1:
+							return true;
+						case 2:
+							return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+						}
+						return false;
+					}
+
+					@Override
+					public CharSequence next() {
+						switch (type) {
+						case 0:
+							while (commentsItr.hasNext()) {
+								String comment = commentsItr.next();
+								container.clear();
+								String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+								if (result != null)
+									return result;
+							}
+							type = 1;
+							return hasNext() ? next() : null;
+						case 1: {
+							type = 2;
+							String result = values.add(appendName(container, linked.space, section, "[]", (char) 0, commentAfterValue));
+							if (result != null)
+								return result;
+							return hasNext() ? next() : null;
+						}
+						case 2:
+							if (currentItr != null && currentItr.hasNext()) {
+								String result = values.add(currentItr.next());
+								if (result != null)
+									return result;
+								return hasNext() ? next() : null;
+							}
+							Section sub = linked.sub[pos++];
+							currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+							String result = values.add(currentItr.next());
+							if (result != null)
+								return result;
+							if (hasNext())
+								return next();
+						}
+						return null;
+					}
+
+				};
 		if (dataVal.writtenValue != null)
-			values.add(appendName(container, linked.space, section, dataVal.writtenValue, value instanceof CharSequence ? '"' : value instanceof Number || value instanceof Character ? '\'' : (char) 0,
-					commentAfterValue));
-		else if (value instanceof Number || value instanceof Character)
-			values.add(appendName(container, linked.space, section, value.toString(), '\'', commentAfterValue));
-		else if (value instanceof CharSequence)
-			values.add(appendName(container, linked.space, section, value instanceof String ? (String) value : value.toString(), '"', commentAfterValue));
-		else
-			values.add(appendName(container, linked.space, section, Json.writer().write(value), (char) 0, commentAfterValue));
-		if (linked.sub != null)
-			for (Section sub : linked.sub)
-				startIterate(container, values, sub.keyName, sub.value, sub, markSaved);
+			return new Iterator<CharSequence>() {
+				byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+				int pos = 0;
+				Iterator<CharSequence> currentItr;
+
+				@Override
+				public boolean hasNext() {
+					switch (type) {
+					case 0:
+						return commentsItr.hasNext();
+					case 1:
+						return true;
+					case 2:
+						return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+					}
+					return false;
+				}
+
+				@Override
+				public CharSequence next() {
+					switch (type) {
+					case 0:
+						while (commentsItr.hasNext()) {
+							String comment = commentsItr.next();
+							container.clear();
+							String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+							if (result != null)
+								return result;
+						}
+						type = 1;
+						return hasNext() ? next() : null;
+					case 1: {
+						type = 2;
+						String result = values.add(appendName(container, linked.space, section, dataVal.writtenValue,
+								value instanceof CharSequence ? '"' : value instanceof Number || value instanceof Character ? '\'' : (char) 0, commentAfterValue));
+						if (result != null)
+							return result;
+						return hasNext() ? next() : null;
+					}
+					case 2:
+						if (currentItr != null && currentItr.hasNext()) {
+							String result = values.add(currentItr.next());
+							if (result != null)
+								return result;
+							return hasNext() ? next() : null;
+						}
+						Section sub = linked.sub[pos++];
+						currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+						String result = values.add(currentItr.next());
+						if (result != null)
+							return result;
+						if (hasNext())
+							return next();
+					}
+					return null;
+				}
+
+			};
+		if (value instanceof Number || value instanceof Character)
+			return new Iterator<CharSequence>() {
+				byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+				int pos = 0;
+				Iterator<CharSequence> currentItr;
+
+				@Override
+				public boolean hasNext() {
+					switch (type) {
+					case 0:
+						return commentsItr.hasNext();
+					case 1:
+						return true;
+					case 2:
+						return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+					}
+					return false;
+				}
+
+				@Override
+				public CharSequence next() {
+					switch (type) {
+					case 0:
+						while (commentsItr.hasNext()) {
+							String comment = commentsItr.next();
+							container.clear();
+							String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+							if (result != null)
+								return result;
+						}
+						type = 1;
+						return hasNext() ? next() : null;
+					case 1: {
+						type = 2;
+						String result = values.add(appendName(container, linked.space, section, value.toString(), '\'', commentAfterValue));
+						if (result != null)
+							return result;
+						return hasNext() ? next() : null;
+					}
+					case 2:
+						if (currentItr != null && currentItr.hasNext()) {
+							String result = values.add(currentItr.next());
+							if (result != null)
+								return result;
+							return hasNext() ? next() : null;
+						}
+						Section sub = linked.sub[pos++];
+						currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+						String result = values.add(currentItr.next());
+						if (result != null)
+							return result;
+						if (hasNext())
+							return next();
+					}
+					return null;
+				}
+
+			};
+		if (value instanceof CharSequence)
+			return new Iterator<CharSequence>() {
+				byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+				int pos = 0;
+				Iterator<CharSequence> currentItr;
+
+				@Override
+				public boolean hasNext() {
+					switch (type) {
+					case 0:
+						return commentsItr.hasNext();
+					case 1:
+						return true;
+					case 2:
+						return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+					}
+					return false;
+				}
+
+				@Override
+				public CharSequence next() {
+					switch (type) {
+					case 0:
+						while (commentsItr.hasNext()) {
+							String comment = commentsItr.next();
+							container.clear();
+							String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+							if (result != null)
+								return result;
+						}
+						type = 1;
+						return hasNext() ? next() : null;
+					case 1: {
+						type = 2;
+						String result = values.add(appendName(container, linked.space, section, value instanceof String ? (String) value : value.toString(), '"', commentAfterValue));
+						if (result != null)
+							return result;
+						return hasNext() ? next() : null;
+					}
+					case 2:
+						if (currentItr != null && currentItr.hasNext()) {
+							String result = values.add(currentItr.next());
+							if (result != null)
+								return result;
+							return hasNext() ? next() : null;
+						}
+						Section sub = linked.sub[pos++];
+						currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+						String result = values.add(currentItr.next());
+						if (result != null)
+							return result;
+						if (hasNext())
+							return next();
+					}
+					return null;
+				}
+
+			};
+		return new Iterator<CharSequence>() {
+			byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+			int pos = 0;
+			Iterator<CharSequence> currentItr;
+
+			@Override
+			public boolean hasNext() {
+				switch (type) {
+				case 0:
+					return commentsItr.hasNext();
+				case 1:
+					return true;
+				case 2:
+					return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+				}
+				return false;
+			}
+
+			@Override
+			public CharSequence next() {
+				if (currentItr != null && currentItr.hasNext()) {
+					String result = values.add(currentItr.next());
+					if (result != null)
+						return result;
+					return hasNext() ? next() : null;
+				}
+				switch (type) {
+				case 0:
+					while (commentsItr.hasNext()) {
+						String comment = commentsItr.next();
+						container.clear();
+						String result = values.add(container.append(linked.space).append(comment).append(System.lineSeparator()));
+						if (result != null)
+							return result;
+					}
+					type = 1;
+					return hasNext() ? next() : null;
+				case 1: {
+					type = 2;
+					String result = values.add(appendName(container, linked.space, section, Json.writer().write(value), (char) 0, commentAfterValue));
+					if (result != null)
+						return result;
+					return hasNext() ? next() : null;
+				}
+				case 2:
+					Section sub = linked.sub[pos++];
+					currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+					String result = values.add(currentItr.next());
+					if (result != null)
+						return result;
+					if (hasNext())
+						return next();
+				}
+				return null;
+			}
+
+		};
 	}
 
-	private static String appendName(StringContainer container, String space, String section) {
+	private static CharSequence appendName(StringContainer container, int space, String section) {
 		container.clear();
+		for (int i = 0; i < space; ++i)
+			container.append(' ').append(' ');
 		if (section.charAt(0) == '#')
-			container.append(space).append('\'').append(section).append('\'').append(':');
+			container.append('\'').append(section).append('\'').append(':');
 		else
-			container.append(space).append(section).append(':');
+			container.append(section).append(':');
 		container.append(System.lineSeparator());
-		return container.toString();
+		return container;
 	}
 
-	private static String appendName(StringContainer container, String space, String section, String value, char queto, String comment) {
+	private static CharSequence appendName(StringContainer container, int space, String section, String value, char queto, String comment) {
 		container.clear();
+		for (int i = 0; i < space; ++i)
+			container.append(' ').append(' ');
 		if (section.charAt(0) == '#')
-			container.append(space).append('\'').append(section).append('\'').append(':');
+			container.append('\'').append(section).append('\'').append(':');
 		else
-			container.append(space).append(section).append(':');
+			container.append(section).append(':');
 		if (value != null) {
 			container.append(' ');
 			if (queto == 0)
@@ -243,18 +973,20 @@ public class YamlSectionBuilderHelper {
 			else
 				container.append(' ').append(comment);
 		container.append(System.lineSeparator());
-		return container.toString();
+		return container;
 	}
 
-	private static String writeListValue(StringContainer container, String space, Object value) {
+	private static CharSequence writeListValue(StringContainer container, int space, Object value) {
 		container.clear();
-		container.append(space).append('-').append(' ');
+		for (int i = 0; i < space; ++i)
+			container.append(' ').append(' ');
+		container.append('-').append(' ');
 		container.append(Json.writer().write(value));
 		container.append(System.lineSeparator());
-		return container.toString();
+		return container;
 	}
 
-	private static String replaceWithEscape(String value, char add) {
+	private static CharSequence replaceWithEscape(String value, char add) {
 		int startAt = value.indexOf(add);
 		if (startAt == -1)
 			return value;
@@ -264,6 +996,6 @@ public class YamlSectionBuilderHelper {
 			if (c == add)
 				container.insert(i++, '\\');
 		}
-		return container.toString();
+		return container;
 	}
 }
