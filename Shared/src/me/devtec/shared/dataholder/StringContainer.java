@@ -101,6 +101,20 @@ public class StringContainer implements CharSequence {
 		return this;
 	}
 
+	public StringContainer append(CharSequence asb) {
+		if (asb == null)
+			return appendNull();
+		if (asb instanceof StringContainer)
+			return append((StringContainer) asb);
+		if (asb instanceof String)
+			return append((String) asb);
+		int len = asb.length();
+		ensureCapacityInternal(count + len);
+		asb.toString().getChars(0, len, value, count);
+		count += len;
+		return this;
+	}
+
 	public StringContainer append(long l) {
 		if (l == Long.MIN_VALUE) {
 			append("-9223372036854775808");
@@ -613,6 +627,10 @@ public class StringContainer implements CharSequence {
 	}
 
 	public boolean startsWith(String prefix, int toffset) {
+		return startsWith((CharSequence) prefix, toffset);
+	}
+
+	public boolean startsWith(CharSequence prefix, int toffset) {
 		char ta[] = value;
 		int to = toffset;
 		int po = 0;
@@ -627,6 +645,10 @@ public class StringContainer implements CharSequence {
 	}
 
 	public boolean endsWith(String suffix) {
+		return endsWith((CharSequence) suffix);
+	}
+
+	public boolean endsWith(CharSequence suffix) {
 		return startsWith(suffix, length() - suffix.length());
 	}
 
