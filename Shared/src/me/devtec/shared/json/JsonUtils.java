@@ -25,6 +25,11 @@ public class JsonUtils {
 	// Stream#toList()
 	private static Class<?> immutableCollection = Ref.getClass("java.util.ImmutableCollections$AbstractImmutableCollection");
 
+	// Collections#unmodifiable
+	private static Class<?> unmodifiableMap = Ref.getClass("java.util.Collections$UnmodifiableMap");
+	// Stream#toList()
+	private static Class<?> immutableMap = Ref.getClass("java.util.ImmutableCollections$AbstractImmutableMap");
+
 	public static Object writeWithoutParseStatic(Object s) {
 		try {
 			if (s == null)
@@ -42,8 +47,8 @@ public class JsonUtils {
 				return object;
 			}
 			if (s instanceof Map) {
-				if (s instanceof HashMap || s instanceof LinkedHashMap) {
-					Map<Object, Object> obj = s instanceof HashMap ? new HashMap<>() : new LinkedHashMap<>();
+				if (s instanceof HashMap || s instanceof LinkedHashMap || unmodifiableMap.isAssignableFrom(s.getClass()) || immutableMap.isAssignableFrom(s.getClass())) {
+					Map<Object, Object> obj = s instanceof LinkedHashMap ? new LinkedHashMap<>() : new HashMap<>();
 					for (Map.Entry<?, ?> o : ((Map<?, ?>) s).entrySet())
 						obj.put(JsonUtils.writeWithoutParseStatic(o.getKey()), JsonUtils.writeWithoutParseStatic(o.getValue()));
 					return obj;
