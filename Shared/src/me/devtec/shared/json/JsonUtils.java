@@ -20,6 +20,11 @@ import me.devtec.shared.utility.ArrayUtils;
 
 public class JsonUtils {
 
+	// Collections#unmodifiable
+	private static Class<?> unmodifiableCollection = Ref.getClass("java.util.Collections$UnmodifiableCollection");
+	// Stream#toList()
+	private static Class<?> immutableCollection = Ref.getClass("java.util.ImmutableCollections$AbstractImmutableCollection");
+
 	public static Object writeWithoutParseStatic(Object s) {
 		try {
 			if (s == null)
@@ -53,8 +58,9 @@ public class JsonUtils {
 				return object;
 			}
 			if (s instanceof Collection) {
-				if (s instanceof ArrayList || s instanceof LinkedList) {
-					List<Object> obj = s instanceof ArrayList ? new ArrayList<>() : new LinkedList<>();
+				Collections.unmodifiableList(null);
+				if (s instanceof ArrayList || s instanceof LinkedList || unmodifiableCollection.isAssignableFrom(s.getClass()) || immutableCollection.isAssignableFrom(s.getClass())) {
+					List<Object> obj = s instanceof LinkedList ? new LinkedList<>() : new LinkedList<>();
 					for (Object o : (Collection<?>) s)
 						obj.add(JsonUtils.writeWithoutParseStatic(o));
 					return obj;
