@@ -2,10 +2,10 @@ package me.devtec.shared.dataholder.loaders.toml;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.DataLoader;
@@ -114,8 +114,8 @@ public class TomlSectionBuilderHelper {
 
 	public static Iterator<CharSequence> prepareBuilder(Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
 		StringContainer container = new StringContainer(64);
-		Map<String, Section> map = new WeakHashMap<>();
-		Map<String, Section> keysWithoutSub = new WeakHashMap<>();
+		Map<String, Section> map = new LinkedHashMap<>();
+		Map<String, Section> keysWithoutSub = new LinkedHashMap<>();
 		for (String primaryKey : primaryKeys)
 			keysWithoutSub.put(primaryKey, new Section(primaryKey, dataLoader.get(primaryKey)));
 

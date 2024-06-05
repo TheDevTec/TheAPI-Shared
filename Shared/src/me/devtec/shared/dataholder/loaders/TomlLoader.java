@@ -256,7 +256,7 @@ public class TomlLoader extends EmptyLoader {
 			case ':':
 				if (quoteCount != 0)
 					break;
-				if (i + 1 < index[1] && input.charAt(index[0] + 1) == ' ')
+				if (i + 1 < index[1] && input.charAt(i + 1) == ' ')
 					return null; // Hey! This is YAML file.
 				break;
 			case '=':

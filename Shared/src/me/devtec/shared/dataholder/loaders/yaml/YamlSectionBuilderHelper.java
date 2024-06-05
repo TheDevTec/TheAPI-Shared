@@ -3,10 +3,10 @@ package me.devtec.shared.dataholder.loaders.yaml;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.DataLoader;
@@ -145,7 +145,7 @@ public class YamlSectionBuilderHelper {
 
 	public static Iterator<CharSequence> prepareBuilder(Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
 		StringContainer container = new StringContainer(64);
-		Map<String, Section> map = new WeakHashMap<>();
+		Map<String, Section> map = new LinkedHashMap<>();
 		for (String primaryKey : primaryKeys)
 			map.put(primaryKey, new Section(primaryKey, dataLoader.get(primaryKey)));
 

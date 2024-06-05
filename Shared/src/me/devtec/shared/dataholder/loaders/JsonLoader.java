@@ -20,8 +20,9 @@ public class JsonLoader extends EmptyLoader {
 	public void load(String input) {
 		if (input == null)
 			return;
-		char startChar = input.isEmpty() ? 0 : input.charAt(0);
-		if (!(startChar == '{' || startChar == '['))
+		char startChar = input.isEmpty() ? 0 : lookupForStart(input);
+		char endChar = input.isEmpty() ? 0 : lookupForEnd(input);
+		if ((((startChar != '{') || (endChar != '}')) && ((startChar != '[') || (endChar != ']'))))
 			return;
 		reset();
 		try {
@@ -37,6 +38,26 @@ public class JsonLoader extends EmptyLoader {
 		} catch (Exception er) {
 			loaded = false;
 		}
+	}
+
+	private char lookupForStart(String input) {
+		for (int i = 0; i < input.length(); ++i) {
+			char c = input.charAt(i);
+			if (c <= ' ')
+				continue;
+			return c;
+		}
+		return 0;
+	}
+
+	private char lookupForEnd(String input) {
+		for (int i = input.length() - 1; i > 0; --i) {
+			char c = input.charAt(i);
+			if (c <= ' ')
+				continue;
+			return c;
+		}
+		return 0;
 	}
 
 	private static String replace(String string) {
@@ -72,7 +93,7 @@ public class JsonLoader extends EmptyLoader {
 	}
 
 	private boolean isApplicable(Object value) {
-		return !(value instanceof CharSequence || value instanceof Number || value instanceof Boolean);
+		return (!(value instanceof CharSequence) && !(value instanceof Number) && !(value instanceof Boolean));
 	}
 
 	@Override

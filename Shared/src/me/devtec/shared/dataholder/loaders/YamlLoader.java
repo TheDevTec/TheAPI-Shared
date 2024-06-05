@@ -490,9 +490,9 @@ public class YamlLoader extends EmptyLoader {
 		int charIndex = -1;
 
 		for (int i = index[0]; i < index[1]; ++i)
-			if (input.charAt(index[0]) == ':') {
+			if (input.charAt(i) == ':') {
 				charIndex = i;
-				if (i + 1 < index[1] && input.charAt(index[0] + 1) == ' ') {
+				if (i + 1 < index[1] && input.charAt(i + 1) == ' ') {
 					int[][] result = new int[2][];
 					result[0] = getFromQuotes(input, index[0], i);
 					result[1] = trim(input, i + 2, index[1]);
@@ -555,11 +555,11 @@ public class YamlLoader extends EmptyLoader {
 
 		if (i != 0)
 			container[0] += i;
-		i = 0;
+		i = container[0];
 		int[] shouldBeRemoved = null;
-		while (i < container[1] - container[0]) {
-			char c = lines.charAt(container[0] + i);
-			if (c == '\\' && i + 1 < container[1] - container[0] && lines.charAt(container[0] + i + 1) == currentQueto) {
+		while (i < container[1]) {
+			char c = lines.charAt(i);
+			if (c == '\\' && i + 1 < container[1] && lines.charAt(i + 1) == currentQueto) {
 				if (shouldBeRemoved == null)
 					shouldBeRemoved = new int[] { i };
 				else {
@@ -570,7 +570,7 @@ public class YamlLoader extends EmptyLoader {
 				}
 				continue;
 			}
-			if (c == '\'' && i + 1 < container[1] - container[0] && lines.charAt(container[0] + i + 1) == '\'') {
+			if (c == '\'' && i + 1 < container[1] && lines.charAt(i + 1) == '\'') {
 				if (shouldBeRemoved == null)
 					shouldBeRemoved = new int[] { i };
 				else {
@@ -592,11 +592,11 @@ public class YamlLoader extends EmptyLoader {
 						shouldBeRemoved = copy;
 					}
 					container[1] -= 1;
-					endOfString = container[0] + i;
+					endOfString = i;
 				}
 			} else if (!inQuotes && c == '#') {
 				foundHash = true;
-				splitIndexStart = container[0] + i;
+				splitIndexStart = i;
 				break;
 			}
 			++i;
@@ -675,7 +675,7 @@ public class YamlLoader extends EmptyLoader {
 	private static int getDepth(StringContainer lines, int[] index) {
 		int depth = 0;
 		char c;
-		for (int startAt = index[0]; startAt < index[1] && (c = lines.charAt(startAt++)) <= ' '; ++startAt)
+		for (int startAt = index[0]; startAt < index[1] && (c = lines.charAt(startAt)) <= ' '; ++startAt)
 			if (c == ' ' || c == '	')
 				++depth;
 		return depth / 2;
