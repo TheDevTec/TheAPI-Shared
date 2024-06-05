@@ -17,7 +17,7 @@ public class YamlSectionBuilderHelper {
 
 	public static class StringArrayList {
 
-		private static final int BUFFER_SIZE = 1024 * 16;
+		private static final int BUFFER_SIZE = 1024 * 32;
 
 		private StringContainer container = new StringContainer(BUFFER_SIZE);
 
@@ -229,7 +229,7 @@ public class YamlSectionBuilderHelper {
 				@Override
 				public CharSequence next() {
 					if (pos == -1) {
-						++pos;
+						pos = 0;
 						String result = values.add(appendName(container, linked.space, section));
 						if (result != null)
 							return result;
@@ -247,9 +247,7 @@ public class YamlSectionBuilderHelper {
 					CharSequence result = currentItr.next();
 					if (result != null)
 						return result;
-					if (hasNext())
-						return next();
-					return null;
+					return hasNext() ? next() : null;
 				}
 
 			};

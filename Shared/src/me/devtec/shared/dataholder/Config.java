@@ -162,7 +162,7 @@ public class Config {
 	public Config(@Nonnull Config data) {
 		Checkers.nonNull(data, "Config");
 		file = data.file;
-		loader = data.loader.clone();
+		loader = data.getDataLoader().clone();
 	}
 
 	public boolean isModified() {
@@ -183,7 +183,7 @@ public class Config {
 
 	public boolean existsKey(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		return loader.get().containsKey(key);
+		return getDataLoader().get().containsKey(key);
 	}
 
 	public Config setFile(@Nullable File file) {
@@ -206,7 +206,7 @@ public class Config {
 		Checkers.nonNull(key, "Key");
 		Checkers.nonNull(value, "Value");
 		if (!existsKey(key)) {
-			DataValue val = loader.getOrCreate(key);
+			DataValue val = getDataLoader().getOrCreate(key);
 			val.value = value;
 			val.comments = comments;
 			val.modified = true;
@@ -219,13 +219,13 @@ public class Config {
 	public Config set(@Nonnull String key, @Nullable Object value) {
 		Checkers.nonNull(key, "Key");
 		if (value == null) {
-			if (loader.remove(key))
+			if (getDataLoader().remove(key))
 				markModified();
 			return this;
 		}
-		DataValue val = loader.get(key);
+		DataValue val = getDataLoader().get(key);
 		if (val == null) {
-			loader.set(key, val = DataValue.of(value));
+			getDataLoader().set(key, val = DataValue.of(value));
 			val.modified = true;
 			markModified();
 		} else if (val.value == null && value != null || val.value != null && !val.value.equals(value)) {
@@ -239,7 +239,7 @@ public class Config {
 
 	public Config remove(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		if (loader.remove(key, true))
+		if (getDataLoader().remove(key, true))
 			markModified();
 		return this;
 	}
@@ -247,7 +247,7 @@ public class Config {
 	@Nullable
 	public List<String> getComments(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		DataValue val = loader.get(key);
+		DataValue val = getDataLoader().get(key);
 		if (val != null)
 			return val.comments;
 		return null;
@@ -256,7 +256,7 @@ public class Config {
 	public Config setComments(@Nonnull String key, @Nullable List<String> value) {
 		Checkers.nonNull(key, "Key");
 		if (value == null || value.isEmpty()) {
-			DataValue val = loader.get(key);
+			DataValue val = getDataLoader().get(key);
 			if (val != null && val.comments != null && !val.comments.isEmpty()) {
 				val.comments = null;
 				val.modified = true;
@@ -264,7 +264,7 @@ public class Config {
 			}
 			return this;
 		}
-		DataValue val = loader.getOrCreate(key);
+		DataValue val = getDataLoader().getOrCreate(key);
 		if (val.comments == null || !value.containsAll(val.comments)) {
 			val.comments = value;
 			val.modified = true;
@@ -276,7 +276,7 @@ public class Config {
 	@Nullable
 	public String getCommentAfterValue(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		DataValue val = loader.getOrCreate(key);
+		DataValue val = getDataLoader().getOrCreate(key);
 		if (val != null)
 			return val.commentAfterValue;
 		return null;
@@ -285,7 +285,7 @@ public class Config {
 	public Config setCommentAfterValue(@Nonnull String key, @Nullable String comment) {
 		Checkers.nonNull(key, "Key");
 		if (comment == null || comment.isEmpty()) {
-			DataValue val = loader.get(key);
+			DataValue val = getDataLoader().get(key);
 			if (val == null || val.commentAfterValue == null)
 				return this;
 			val.commentAfterValue = null;
@@ -293,7 +293,7 @@ public class Config {
 			markModified();
 			return this;
 		}
-		DataValue val = loader.getOrCreate(key);
+		DataValue val = getDataLoader().getOrCreate(key);
 		if (val.commentAfterValue == null || !comment.equals(val.commentAfterValue)) {
 			val.commentAfterValue = comment;
 			val.modified = true;
@@ -308,29 +308,29 @@ public class Config {
 	}
 
 	public Config setHeader(@Nullable Collection<String> lines) {
-		loader.getHeader().clear();
+		getDataLoader().getHeader().clear();
 		if (lines != null)
-			loader.getHeader().addAll(lines);
+			getDataLoader().getHeader().addAll(lines);
 		markModified();
 		return this;
 	}
 
 	public Config setFooter(@Nullable Collection<String> lines) {
-		loader.getFooter().clear();
+		getDataLoader().getFooter().clear();
 		if (lines != null)
-			loader.getFooter().addAll(lines);
+			getDataLoader().getFooter().addAll(lines);
 		markModified();
 		return this;
 	}
 
 	@Nonnull
 	public Collection<String> getHeader() {
-		return loader.getHeader();
+		return getDataLoader().getHeader();
 	}
 
 	@Nonnull
 	public Collection<String> getFooter() {
-		return loader.getFooter();
+		return getDataLoader().getFooter();
 	}
 
 	public Config reload(@Nullable String input) {
@@ -345,6 +345,7 @@ public class Config {
 
 	public Config reload(@Nonnull File file) {
 		Checkers.nonNull(file, "File");
+		clear();
 		loader = DataLoader.findLoaderFor(file);
 		markNonModified();
 		return this;
@@ -358,7 +359,7 @@ public class Config {
 	@Nullable
 	public Object get(@Nonnull String key, @Nullable Object defaultValue) {
 		Checkers.nonNull(key, "Key");
-		DataValue val = loader.get(key);
+		DataValue val = getDataLoader().get(key);
 		if (val == null || val.value == null)
 			return defaultValue;
 		return val.value;
@@ -393,7 +394,7 @@ public class Config {
 	@Nullable
 	public String getString(@Nonnull String key, @Nullable String defaultValue) {
 		Checkers.nonNull(key, "Key");
-		DataValue val = loader.get(key);
+		DataValue val = getDataLoader().get(key);
 		if (val == null || val.value == null)
 			return defaultValue;
 		if (val.writtenValue != null)
@@ -402,7 +403,7 @@ public class Config {
 	}
 
 	public boolean isJson(@Nonnull String key) {
-		DataValue val = loader.get(key);
+		DataValue val = getDataLoader().get(key);
 		if (val == null || val.value == null)
 			return false;
 		if (val.writtenValue != null && val.writtenValue.length() > 1) {
@@ -723,12 +724,12 @@ public class Config {
 
 	@Nonnull
 	public Set<String> getKeys() {
-		return loader.getPrimaryKeys();
+		return getDataLoader().getPrimaryKeys();
 	}
 
 	@Nonnull
 	public Set<String> getKeys(boolean subkeys) {
-		return subkeys ? loader.getKeys() : getKeys();
+		return subkeys ? getDataLoader().getKeys() : getKeys();
 	}
 
 	@Nonnull
@@ -743,7 +744,7 @@ public class Config {
 
 	public boolean isKey(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		for (String section : loader.getKeys())
+		for (String section : getDataLoader().getKeys())
 			if (section.startsWith(key))
 				if (section.length() == key.length() || section.charAt(key.length()) == '.')
 					return true;
@@ -787,7 +788,7 @@ public class Config {
 			return getDataLoader().saveAsString(this, markSaved);
 		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
 		if (loader != null)
-			return loader.saveAsString(this, markSaved);
+			return getDataLoader().saveAsString(this, markSaved);
 		return null;
 	}
 
@@ -816,20 +817,20 @@ public class Config {
 			return getDataLoader().save(this, markSaved);
 		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
 		if (loader != null)
-			return loader.save(this, markSaved);
+			return getDataLoader().save(this, markSaved);
 		return null;
 	}
 
 	public Config clear() {
-		loader.getPrimaryKeys().clear();
-		loader.get().clear();
-		loader.getHeader().clear();
-		loader.getFooter().clear();
+		getDataLoader().getPrimaryKeys().clear();
+		getDataLoader().get().clear();
+		getDataLoader().getHeader().clear();
+		getDataLoader().getFooter().clear();
 		return this;
 	}
 
 	public Config reset() {
-		loader.reset();
+		getDataLoader().reset();
 		return this;
 	}
 
@@ -920,7 +921,7 @@ public class Config {
 		// Add added sections & modified values
 		while (iterator.hasNext()) {
 			Entry<String, DataValue> key = iterator.next();
-			DataValue val = loader.getOrCreate(key.getKey());
+			DataValue val = getDataLoader().getOrCreate(key.getKey());
 			if (val.modified)
 				continue;
 			val.value = key.getValue().value;
@@ -929,7 +930,7 @@ public class Config {
 			val.commentAfterValue = key.getValue().commentAfterValue;
 		}
 
-		iterator = loader.entrySet().iterator();
+		iterator = getDataLoader().entrySet().iterator();
 
 		// Remove removed sections
 
@@ -948,6 +949,6 @@ public class Config {
 
 		if (sectionsToRemove != null)
 			for (String section : sectionsToRemove)
-				loader.remove(section);
+				getDataLoader().remove(section);
 	}
 }

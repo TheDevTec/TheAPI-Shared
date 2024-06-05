@@ -54,7 +54,7 @@ public class YamlLoader extends EmptyLoader {
 
 		Queue<int[]> lines = new ConcurrentLinkedQueue<>();
 		int task = -1;
-		if (input.length() >= 35000)
+		if (input.length() >= 20000)
 			task = new Tasker() {
 
 				@Override
@@ -77,7 +77,7 @@ public class YamlLoader extends EmptyLoader {
 		List<Object> list = null;
 		StringContainer stringContainer = null;
 
-		StringContainer key = new StringContainer(32);
+		StringContainer key = new StringContainer(48);
 		int depth = 0;
 		int lastIndexOfDot = 0;
 
@@ -121,7 +121,7 @@ public class YamlLoader extends EmptyLoader {
 				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 				int[] value = readerValue[0];
 				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+				String comment = readerValue.length == 1 || readerValue[1] == null ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && this.lines.charAt(value[0]) == '|') {
 						readerMode = 2;
@@ -183,7 +183,7 @@ public class YamlLoader extends EmptyLoader {
 				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 				int[] value = readerValue[0];
 				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+				String comment = readerValue.length == 1 || readerValue[1] == null ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && this.lines.charAt(value[0]) == '|') {
 						readerMode = 2;
@@ -242,7 +242,7 @@ public class YamlLoader extends EmptyLoader {
 				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 				int[] value = readerValue[0];
 				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+				String comment = readerValue.length == 1 || readerValue[1] == null ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && this.lines.charAt(value[0]) == '|') {
 						readerMode = 2;
@@ -300,7 +300,7 @@ public class YamlLoader extends EmptyLoader {
 				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 				int[] value = readerValue[0];
 				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+				String comment = readerValue.length == 1 || readerValue[1] == null ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && this.lines.charAt(value[0]) == '|') {
 						readerMode = 2;
@@ -512,7 +512,7 @@ public class YamlLoader extends EmptyLoader {
 
 	protected static int[] getFromQuotes(StringContainer input, int start, int end) {
 		int len = end - start;
-		if (len <= 2)
+		if (len <= 1)
 			return new int[] { start, end };
 		char firstChar = input.charAt(0);
 		char lastChar = input.charAt(input.length() - 1);
@@ -523,7 +523,7 @@ public class YamlLoader extends EmptyLoader {
 
 	protected static int[] getFromQuotes(StringContainer input, int[] line) {
 		int len = line[1] - line[0];
-		if (len <= 2)
+		if (len <= 1)
 			return line;
 		char firstChar = input.charAt(line[0]);
 		char lastChar = input.charAt(line[1] - 1);
@@ -535,68 +535,44 @@ public class YamlLoader extends EmptyLoader {
 	}
 
 	protected static Object splitFromComment(StringContainer lines, int posFromStart, int[] container) {
-		int len = container[1] - container[0];
-		if (len <= 1)
+		if (container[1] - container[0] <= 1)
 			return new int[][] { container };
+
 		char firstChar = lines.charAt(container[0] + posFromStart);
 		if (firstChar == '[' || firstChar == '{')
 			return splitFromCommentJson(lines, posFromStart, container);
 
-		int i = posFromStart;
-		int quoteCount = 0;
-		char currentQueto = 0;
 		boolean inQuotes = firstChar == '"' || firstChar == '\'';
-		if (inQuotes) {
-			currentQueto = firstChar;
-			++quoteCount;
-			++i;
-		}
-		boolean foundHash = false;
-		int splitIndexStart = 0;
 		int endOfString = -1;
+		int splitIndexStart = 0;
+		boolean foundHash = false;
 
-		// len=35
-		// velikost=135
-		// i=105
-		// velikost-i = 30
-		// 5
-
-		if (i != 0)
-			container[0] += i;
-		i = container[0];
-		len = container[1] - container[0];
-		int[] shouldBeRemoved = null;
-		while (i < container[1]) {
+		posFromStart += inQuotes ? 1 : 0;
+		container[0] += posFromStart;
+		int length = 0;
+		int[] indexes = null;
+		for (int i = container[0]; i < container[1]; i++) {
 			char c = lines.charAt(i);
-			if (c == '\\' && i + 1 < container[1] && lines.charAt(i + 1) == currentQueto) {
-				if (shouldBeRemoved == null)
-					shouldBeRemoved = new int[] { len - (container[1] - i) };
-				else {
-					int[] copy = new int[shouldBeRemoved.length + 1];
-					System.arraycopy(shouldBeRemoved, 0, copy, 0, shouldBeRemoved.length);
-					copy[shouldBeRemoved.length] = len - (container[1] - i);
-					shouldBeRemoved = copy;
-				}
-				++i;
-			} else if (c == '\'' && i + 1 < container[1] && lines.charAt(i + 1) == '\'') {
-				if (shouldBeRemoved == null)
-					shouldBeRemoved = new int[] { len - (container[1] - i) };
-				else {
-					int[] copy = new int[shouldBeRemoved.length + 1];
-					System.arraycopy(shouldBeRemoved, 0, copy, 0, shouldBeRemoved.length);
-					copy[shouldBeRemoved.length] = len - (container[1] - i);
-					shouldBeRemoved = copy;
-				}
-				++i;
-			} else if (inQuotes && c == currentQueto) {
-				if (!(inQuotes = --quoteCount > 0))
+			if (inQuotes) {
+				if (c == firstChar) {
+					inQuotes = false;
 					endOfString = i;
-			} else if (!inQuotes && c == '#') {
-				foundHash = true;
+				} else if (c == '\\' && i + 1 < container[1] && lines.charAt(i + 1) == firstChar) {
+					++i;
+					if (indexes == null) {
+						length = container[1] - container[0];
+						indexes = new int[] { length - (container[1] - i) };
+					} else {
+						int[] copy = new int[indexes.length + 1];
+						System.arraycopy(indexes, 0, copy, 0, indexes.length);
+						copy[indexes.length] = length - (container[1] - i);
+						indexes = copy;
+					}
+				}
+			} else if (c == '#' && !foundHash) {
 				splitIndexStart = i;
-				break;
+				foundHash = true;
 			}
-			++i;
 		}
 		int[][] result;
 		if (!foundHash)
@@ -604,7 +580,7 @@ public class YamlLoader extends EmptyLoader {
 		else
 			result = new int[][] { endOfString == -1 && splitIndexStart == 0 ? container : endOfString == -1 ? new int[] { container[0], splitIndexStart } : new int[] { container[0], endOfString },
 					new int[] { splitIndexStart, container[1] } };
-		return shouldBeRemoved != null ? Pair.of(shouldBeRemoved, result) : result;
+		return indexes != null ? Pair.of(indexes, result) : result;
 	}
 
 	private static int[][] splitFromCommentJson(StringContainer lines, int posFromStart, int[] input) {
@@ -612,43 +588,31 @@ public class YamlLoader extends EmptyLoader {
 		int braceCount = 0;
 		int bracketCount = 0;
 		boolean inQuotes = false;
-		int splitIndex = -1;
+
 		while (i < input[1]) {
 			char c = lines.charAt(i);
 			if (c == '\\' && i + 1 < input[1] && isSkippableChar(lines.charAt(i + 1)))
 				++i;
-			else if (!inQuotes && c == '{')
-				braceCount++;
-			else if (!inQuotes && c == '}') {
-				braceCount--;
-				if (braceCount == 0 && bracketCount == 0) {
-					splitIndex = i + 1;
+			else if (!inQuotes)
+				if (c == '{')
+					braceCount++;
+				else if (c == '}')
+					braceCount--;
+				else if (c == '[')
+					bracketCount++;
+				else if (c == ']')
+					bracketCount--;
+				else if (c == '#' && braceCount == 0 && bracketCount == 0)
 					break;
-				}
-			} else if (!inQuotes && c == '[')
-				bracketCount++;
-			else if (!inQuotes && c == ']') {
-				bracketCount--;
-				if (braceCount == 0 && bracketCount == 0) {
-					splitIndex = i + 1;
-					break;
-				}
-			} else if (!inQuotes && c == '#') {
-				if (braceCount == 0 && bracketCount == 0) {
-					splitIndex = i;
-					break;
-				}
-			} else if (c == '"' || c == '\'')
-				inQuotes = !inQuotes;
+				else if (c == '"' || c == '\'')
+					inQuotes = !inQuotes;
 			i++;
 		}
+
 		int[][] result = new int[2][];
-		if (splitIndex == -1)
-			result[0] = input;
-		else {
-			result[0] = trim(lines, input[0] + posFromStart, splitIndex);
-			result[1] = new int[] { splitIndex, input[1] };
-		}
+		result[0] = trim(lines, input[0] + posFromStart, i);
+		if (i < input[1])
+			result[1] = new int[] { i, input[1] };
 		return result;
 	}
 
