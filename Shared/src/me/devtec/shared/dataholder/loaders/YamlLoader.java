@@ -24,12 +24,14 @@ public class YamlLoader extends EmptyLoader {
 	private int endIndex;
 	private StringContainer lines;
 
+	private static String lineChar = System.lineSeparator();
+
 	private final int[] readLine() {
 		try {
 			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
-			startIndex = endIndex == -1 ? -1 : endIndex + 1;
-			endIndex = startIndex == -1 ? -1 : lines.indexOf('\n', startIndex);
+			startIndex = endIndex == -1 ? -1 : endIndex + lineChar.length();
+			endIndex = startIndex == -1 ? -1 : lines.indexOf(lineChar, startIndex);
 		}
 	}
 
@@ -48,7 +50,7 @@ public class YamlLoader extends EmptyLoader {
 		lines = new StringContainer(input, 0, 0);
 		// Init
 		startIndex = 0;
-		endIndex = lines.indexOf('\n');
+		endIndex = lines.indexOf(lineChar);
 
 		Queue<int[]> lines = new ConcurrentLinkedQueue<>();
 		int task = -1;
@@ -434,8 +436,8 @@ public class YamlLoader extends EmptyLoader {
 	}
 
 	protected static String removeCharsAt(CharSequence value, int[] indexes) {
-		for (int i = indexes.length - 1; i > 0; --i)
-			((StringContainer) value).deleteCharAt(i);
+		for (int i = indexes.length - 1; i > -1; --i)
+			((StringContainer) value).deleteCharAt(indexes[i]);
 		return value.toString();
 	}
 
@@ -553,47 +555,42 @@ public class YamlLoader extends EmptyLoader {
 		int splitIndexStart = 0;
 		int endOfString = -1;
 
+		// len=35
+		// velikost=135
+		// i=105
+		// velikost-i = 30
+		// 5
+
 		if (i != 0)
 			container[0] += i;
 		i = container[0];
+		len = container[1] - container[0];
 		int[] shouldBeRemoved = null;
 		while (i < container[1]) {
 			char c = lines.charAt(i);
 			if (c == '\\' && i + 1 < container[1] && lines.charAt(i + 1) == currentQueto) {
 				if (shouldBeRemoved == null)
-					shouldBeRemoved = new int[] { i };
+					shouldBeRemoved = new int[] { len - (container[1] - i) };
 				else {
 					int[] copy = new int[shouldBeRemoved.length + 1];
 					System.arraycopy(shouldBeRemoved, 0, copy, 0, shouldBeRemoved.length);
-					copy[shouldBeRemoved.length] = i;
+					copy[shouldBeRemoved.length] = len - (container[1] - i);
 					shouldBeRemoved = copy;
 				}
-				continue;
-			}
-			if (c == '\'' && i + 1 < container[1] && lines.charAt(i + 1) == '\'') {
+				++i;
+			} else if (c == '\'' && i + 1 < container[1] && lines.charAt(i + 1) == '\'') {
 				if (shouldBeRemoved == null)
-					shouldBeRemoved = new int[] { i };
+					shouldBeRemoved = new int[] { len - (container[1] - i) };
 				else {
 					int[] copy = new int[shouldBeRemoved.length + 1];
 					System.arraycopy(shouldBeRemoved, 0, copy, 0, shouldBeRemoved.length);
-					copy[shouldBeRemoved.length] = i;
+					copy[shouldBeRemoved.length] = len - (container[1] - i);
 					shouldBeRemoved = copy;
 				}
-				continue;
-			}
-			if (inQuotes && c == currentQueto) {
-				if (!(inQuotes = --quoteCount > 0)) {
-					if (shouldBeRemoved == null)
-						shouldBeRemoved = new int[] { i };
-					else {
-						int[] copy = new int[shouldBeRemoved.length + 1];
-						System.arraycopy(shouldBeRemoved, 0, copy, 0, shouldBeRemoved.length);
-						copy[shouldBeRemoved.length] = i;
-						shouldBeRemoved = copy;
-					}
-					container[1] -= 1;
+				++i;
+			} else if (inQuotes && c == currentQueto) {
+				if (!(inQuotes = --quoteCount > 0))
 					endOfString = i;
-				}
 			} else if (!inQuotes && c == '#') {
 				foundHash = true;
 				splitIndexStart = i;
@@ -611,15 +608,14 @@ public class YamlLoader extends EmptyLoader {
 	}
 
 	private static int[][] splitFromCommentJson(StringContainer lines, int posFromStart, int[] input) {
-		int len = input[1] - input[0];
-		int i = posFromStart;
+		int i = input[0] + posFromStart;
 		int braceCount = 0;
 		int bracketCount = 0;
 		boolean inQuotes = false;
 		int splitIndex = -1;
-		while (i < len) {
-			char c = lines.charAt(input[0] + i);
-			if (c == '\\' && i + 1 < len && isSkippableChar(lines.charAt(input[0] + i + 1)))
+		while (i < input[1]) {
+			char c = lines.charAt(i);
+			if (c == '\\' && i + 1 < input[1] && isSkippableChar(lines.charAt(i + 1)))
 				++i;
 			else if (!inQuotes && c == '{')
 				braceCount++;
@@ -650,7 +646,7 @@ public class YamlLoader extends EmptyLoader {
 		if (splitIndex == -1)
 			result[0] = input;
 		else {
-			result[0] = trim(lines, posFromStart, splitIndex);
+			result[0] = trim(lines, input[0] + posFromStart, splitIndex);
 			result[1] = new int[] { splitIndex, input[1] };
 		}
 		return result;

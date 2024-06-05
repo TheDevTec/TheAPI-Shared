@@ -4,11 +4,11 @@ import me.devtec.shared.dataholder.StringContainer;
 
 public interface JWriter {
 
-	public default Object writeWithoutParse(Object s) {
+	default Object writeWithoutParse(Object s) {
 		return JsonUtils.writeWithoutParseStatic(s);
 	}
 
-	public default String write(Object s) {
+	default String write(Object s) {
 		try {
 			if (s == null)
 				return "null";
@@ -32,7 +32,7 @@ public interface JWriter {
 	}
 
 	// For lists or maps
-	public default String simpleWrite(Object object) {
+	default String simpleWrite(Object object) {
 		if (object == null)
 			return "null";
 		if (object instanceof CharSequence || object instanceof Boolean || object instanceof Number || object instanceof Character)
@@ -40,5 +40,5 @@ public interface JWriter {
 		return toGson(object);
 	}
 
-	public String toGson(Object object);
+	String toGson(Object object);
 }

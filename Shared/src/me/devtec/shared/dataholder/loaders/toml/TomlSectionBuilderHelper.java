@@ -222,7 +222,7 @@ public class TomlSectionBuilderHelper {
 				@Override
 				public CharSequence next() {
 					if (currentItr.hasNext()) {
-						String result = values.add(currentItr.next());
+						CharSequence result = currentItr.next();
 						if (result != null)
 							return result;
 						return currentItr.hasNext() ? next() : null;
@@ -246,7 +246,7 @@ public class TomlSectionBuilderHelper {
 				@Override
 				public CharSequence next() {
 					if (currentItr.hasNext()) {
-						String result = values.add(currentItr.next());
+						CharSequence result = currentItr.next();
 						if (result != null)
 							return result;
 						return currentItr.hasNext() ? next() : null;
@@ -300,7 +300,7 @@ public class TomlSectionBuilderHelper {
 						}
 						case 2:
 							if (currentItr != null && currentItr.hasNext()) {
-								String result = values.add(currentItr.next());
+								CharSequence result = currentItr.next();
 								if (result != null)
 									return result;
 								return hasNext() ? next() : null;
@@ -350,7 +350,7 @@ public class TomlSectionBuilderHelper {
 						}
 						case 2:
 							if (currentItr != null && currentItr.hasNext()) {
-								String result = values.add(currentItr.next());
+								CharSequence result = currentItr.next();
 								if (result != null)
 									return result;
 								return hasNext() ? next() : null;
@@ -400,7 +400,7 @@ public class TomlSectionBuilderHelper {
 						}
 						case 2:
 							if (currentItr != null && currentItr.hasNext()) {
-								String result = values.add(currentItr.next());
+								CharSequence result = currentItr.next();
 								if (result != null)
 									return result;
 								return hasNext() ? next() : null;
@@ -421,7 +421,7 @@ public class TomlSectionBuilderHelper {
 			@Override
 			public CharSequence next() {
 				if (currentItr.hasNext()) {
-					String result = values.add(currentItr.next());
+					CharSequence result = currentItr.next();
 					if (result != null)
 						return result;
 					return currentItr.hasNext() ? next() : null;
@@ -485,7 +485,7 @@ public class TomlSectionBuilderHelper {
 				}
 				switch (mode) {
 				case 0: {
-					String result = values.add(commentsItr.next());
+					CharSequence result = currentItr.next();
 					if (!commentsItr.hasNext())
 						if (hasNext())
 							mode = 1;

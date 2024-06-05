@@ -25,13 +25,14 @@ public class TomlLoader extends EmptyLoader {
 	private int startIndex;
 	private int endIndex;
 	private StringContainer lines;
+	private static String lineChar = System.lineSeparator();
 
 	private final int[] readLine() {
 		try {
 			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
-			startIndex = endIndex == -1 ? -1 : endIndex + 1;
-			endIndex = startIndex == -1 ? -1 : lines.indexOf('\n', startIndex);
+			startIndex = endIndex == -1 ? -1 : endIndex + lineChar.length();
+			endIndex = startIndex == -1 ? -1 : lines.indexOf(lineChar, startIndex);
 		}
 	}
 
@@ -51,7 +52,7 @@ public class TomlLoader extends EmptyLoader {
 		lines = new StringContainer(input, 0, 0);
 		// Init
 		startIndex = 0;
-		endIndex = lines.indexOf('\n');
+		endIndex = lines.indexOf(lineChar);
 
 		Queue<int[]> lines = new ConcurrentLinkedQueue<>();
 		int task = -1;
@@ -98,6 +99,19 @@ public class TomlLoader extends EmptyLoader {
 				break;
 			}
 
+			if (parts.length == 1) {
+				if (comments != null)
+					if (mode == 0 || mode != 1)
+						set(this.lines.substring(parts[0][0], parts[0][1]), DataValue.of(null, "", null, comments));
+					else {
+						CharSequence seq = this.lines.subSequence(parts[0][0], parts[0][1]);
+						mainPath.append('.').append(seq);
+						set(mainPath.toString(), DataValue.of(null, "", null, comments));
+						mainPath.delete(mainPath.length() - seq.length() - 1, mainPath.length());
+					}
+				continue;
+			}
+
 			if (parts.length == 3) { // section or array with maps
 				mainPath = (StringContainer) this.lines.subSequence(parts[0][0], parts[0][1]);
 				mode = parts[2][0];
@@ -118,33 +132,22 @@ public class TomlLoader extends EmptyLoader {
 				comments = null;
 				continue;
 			}
-			if (parts[1] == null) {
-				if (mode == 0 || mode != 1)
-					set(this.lines.substring(parts[0][0], parts[0][1]), DataValue.of(null, "", null, comments));
-				else {
-					CharSequence seq = this.lines.subSequence(parts[0][0], parts[0][1]);
-					mainPath.append('.').append(seq);
-					set(mainPath.toString(), DataValue.of(null, "", null, comments));
-					mainPath.delete(mainPath.length() - seq.length() - 1, mainPath.length());
-				}
-			} else {
-				Object readerValueParsed = YamlLoader.splitFromComment(this.lines, 0, parts[1]);
-				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
-				int[] value = readerValue[0];
-				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+			Object readerValueParsed = YamlLoader.splitFromComment(this.lines, 0, parts[1]);
+			int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
+			int[] value = readerValue[0];
+			int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
+			String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
 
-				if (mode == 0 || mode != 1)
-					set(this.lines.substring(parts[0][0], parts[0][1]),
-							DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
-									Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
-				else {
-					CharSequence seq = this.lines.subSequence(parts[0][0], parts[0][1]);
-					mainPath.append('.').append(seq);
-					set(mainPath.toString(), DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
-							Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
-					mainPath.delete(mainPath.length() - seq.length() - 1, mainPath.length());
-				}
+			if (mode == 0 || mode != 1)
+				set(this.lines.substring(parts[0][0], parts[0][1]),
+						DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
+								Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
+			else {
+				CharSequence seq = this.lines.subSequence(parts[0][0], parts[0][1]);
+				mainPath.append('.').append(seq);
+				set(mainPath.toString(), DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
+						Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
+				mainPath.delete(mainPath.length() - seq.length() - 1, mainPath.length());
 			}
 			comments = null;
 			continue;
@@ -295,9 +298,8 @@ public class TomlLoader extends EmptyLoader {
 				break;
 			}
 		}
-		int[][] result = new int[2][];
+		int[][] result = new int[1][];
 		result[0] = YamlLoader.getFromQuotes(input, YamlLoader.trim(input, index[0], index[1]));
-		result[1] = null;
 		return result;
 	}
 
