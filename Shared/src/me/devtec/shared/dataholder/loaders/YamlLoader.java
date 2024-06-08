@@ -24,14 +24,20 @@ public class YamlLoader extends EmptyLoader {
 	private int endIndex;
 	private StringContainer lines;
 
-	private static String lineChar = System.lineSeparator();
-
-	private final int[] readLine() {
+	private final int[] readLine(int lineSeparator) {
 		try {
 			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
-			startIndex = endIndex == -1 ? -1 : endIndex + lineChar.length();
-			endIndex = startIndex == -1 ? -1 : lines.indexOf(lineChar, startIndex);
+			startIndex = endIndex == -1 ? -1 : endIndex + lineSeparator;
+			endIndex = -1;
+			if (startIndex != -1)
+				for (int i = startIndex; i < lines.length(); ++i) {
+					char c = lines.charAt(i);
+					if (c == '\r' || c == '\n') {
+						endIndex = startIndex == -1 ? -1 : i;
+						break;
+					}
+				}
 		}
 	}
 
@@ -49,25 +55,35 @@ public class YamlLoader extends EmptyLoader {
 
 		lines = new StringContainer(input, 0, 0);
 		// Init
+		int lineSeparator = 1;
 		startIndex = 0;
-		endIndex = lines.indexOf(lineChar);
+		for (int i = 0; i < lines.length(); ++i) {
+			char c = lines.charAt(i);
+			if (c == '\r' || c == '\n') {
+				char prev = c;
+				if (i + 1 < lines.length() && ((c = lines.charAt(i + 1)) == '\r' || c == '\n') && c != prev)
+					++lineSeparator;
+				endIndex = i;
+				break;
+			}
+		}
+		int lineSepeparatorFinal = lineSeparator;
 
 		Queue<int[]> lines = new ConcurrentLinkedQueue<>();
 		int task = -1;
 		if (input.length() >= 20000)
 			task = new Tasker() {
-
 				@Override
 				public void run() {
 					int[] line;
-					while (!isCancelled() && (line = readLine()) != null)
+					while (!isCancelled() && (line = readLine(lineSepeparatorFinal)) != null)
 						lines.add(line);
 					readingReachedEnd = true;
 				}
 			}.runTask();
 		else {
 			int[] line;
-			while ((line = readLine()) != null)
+			while ((line = readLine(lineSepeparatorFinal)) != null)
 				lines.add(line);
 			readingReachedEnd = true;
 		}
