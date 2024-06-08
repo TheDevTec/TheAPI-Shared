@@ -60,50 +60,54 @@ public class TempList<V> extends AbstractList<V> {
 	@Override
 	public void add(int pos, V val) {
 		inactiveTask = 0;
-		queue.add(new Entry<V, Long>() {
-			long time = System.currentTimeMillis() / 50;
-
-			@Override
-			public V getKey() {
-				return val;
-			}
-
-			@Override
-			public Long getValue() {
-				return time;
-			}
-
-			@Override
-			public Long setValue(Long value) {
-				time = value;
-				return time;
-			}
-		});
-		if (task == 0)
-			task = new Tasker() {
+		synchronized (queue) {
+			queue.add(new Entry<V, Long>() {
+				long time = System.currentTimeMillis() / 50;
 
 				@Override
-				public void run() {
-					Iterator<Entry<V, Long>> iterator = queue.iterator();
-					while (iterator.hasNext()) {
-						Entry<V, Long> entry = iterator.next();
-						if (entry.getValue() - System.currentTimeMillis() / 50 + cacheTime <= 0) {
-							iterator.remove();
-							RemoveCallback<V> callback = getCallback();
-							if (callback != null)
-								callback.call(entry.getKey());
-						}
-					}
-					if (queue.isEmpty())
-						if (inactiveTask == 0)
-							inactiveTask = System.currentTimeMillis() / 1000 + DEFAULT_WAIT_TIME;
-						else if (inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
-							task = 0;
-							cancel();
+				public V getKey() {
+					return val;
+				}
+
+				@Override
+				public Long getValue() {
+					return time;
+				}
+
+				@Override
+				public Long setValue(Long value) {
+					time = value;
+					return time;
+				}
+			});
+			if (task == 0)
+				task = new Tasker() {
+
+					@Override
+					public void run() {
+						synchronized (queue) {
+							Iterator<Entry<V, Long>> iterator = queue.iterator();
+							while (iterator.hasNext()) {
+								Entry<V, Long> entry = iterator.next();
+								if (entry.getValue() - System.currentTimeMillis() / 50 + cacheTime <= 0) {
+									iterator.remove();
+									RemoveCallback<V> callback = getCallback();
+									if (callback != null)
+										callback.call(entry.getKey());
+								}
+							}
+							if (queue.isEmpty())
+								if (inactiveTask == 0)
+									inactiveTask = System.currentTimeMillis() / 1000 + DEFAULT_WAIT_TIME;
+								else if (inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
+									task = 0;
+									cancel();
+								}
 						}
 
-				}
-			}.runRepeating(1, 1);
+					}
+				}.runRepeating(1, 1);
+		}
 	}
 
 	@Override
@@ -134,24 +138,26 @@ public class TempList<V> extends AbstractList<V> {
 	}
 
 	public boolean update(V value) {
-		Iterator<Entry<V, Long>> it = queue.iterator();
-		if (value == null)
-			while (it.hasNext()) {
-				Entry<V, Long> entry = it.next();
-				if (entry.getKey() == null) {
-					entry.setValue(System.currentTimeMillis() / 50);
-					return true;
+		synchronized (queue) {
+			Iterator<Entry<V, Long>> it = queue.iterator();
+			if (value == null)
+				while (it.hasNext()) {
+					Entry<V, Long> entry = it.next();
+					if (entry.getKey() == null) {
+						entry.setValue(System.currentTimeMillis() / 50);
+						return true;
+					}
 				}
-			}
-		else
-			while (it.hasNext()) {
-				Entry<V, Long> entry = it.next();
-				if (value.equals(entry.getKey())) {
-					entry.setValue(System.currentTimeMillis() / 50);
-					return true;
+			else
+				while (it.hasNext()) {
+					Entry<V, Long> entry = it.next();
+					if (value.equals(entry.getKey())) {
+						entry.setValue(System.currentTimeMillis() / 50);
+						return true;
+					}
 				}
-			}
-		return false;
+			return false;
+		}
 	}
 
 	/**
@@ -160,7 +166,9 @@ public class TempList<V> extends AbstractList<V> {
 	public Entry<V, Long> getRaw(int index) {
 		if (index < 0 || index >= size())
 			return null;
-		return queue.get(index);
+		synchronized (queue) {
+			return queue.get(index);
+		}
 	}
 
 	/**
@@ -169,18 +177,20 @@ public class TempList<V> extends AbstractList<V> {
 	public long getTimeOf(int index) {
 		if (index < 0 || index >= size())
 			return 0;
-		return queue.get(index).getValue();
+		synchronized (queue) {
+			return queue.get(index).getValue();
+		}
 	}
 
 	/**
 	 * @apiNote Get expire time of specified item
 	 */
 	public long getTimeOf(V value) {
-		Iterator<Entry<V, Long>> iterator = queue.iterator();
-		while (iterator.hasNext()) {
-			Entry<V, Long> next = iterator.next();
-			if (value == null ? next.getKey() == null : value.equals(next.getKey()))
-				return next.getValue();
+		synchronized (queue) {
+			for (Entry<V, Long> next : queue) {
+				if (value == null ? next.getKey() == null : value.equals(next.getKey()))
+					return next.getValue();
+			}
 		}
 		return 0;
 	}
@@ -189,8 +199,10 @@ public class TempList<V> extends AbstractList<V> {
 	public V remove(int index) {
 		if (index < 0 || index >= size())
 			return null;
-		Entry<V, Long> removed = queue.remove(index);
-		return removed == null ? null : removed.getKey();
+		synchronized (queue) {
+			Entry<V, Long> removed = queue.remove(index);
+			return removed == null ? null : removed.getKey();
+		}
 	}
 
 	@Override
@@ -201,14 +213,16 @@ public class TempList<V> extends AbstractList<V> {
 	@Override
 	public String toString() {
 		StringContainer container = new StringContainer(size() * 8).append('[');
-		Iterator<Entry<V, Long>> iterator = queue.iterator();
-		boolean first = true;
-		while (iterator.hasNext()) {
-			if (first)
-				first = false;
-			else
-				container.append(',').append(' ');
-			container.append(iterator.next().getKey() + "");
+		synchronized (queue) {
+			Iterator<Entry<V, Long>> iterator = queue.iterator();
+			boolean first = true;
+			while (iterator.hasNext()) {
+				if (first)
+					first = false;
+				else
+					container.append(',').append(' ');
+				container.append(iterator.next().getKey() + "");
+			}
 		}
 		return container.append(']').toString();
 	}
