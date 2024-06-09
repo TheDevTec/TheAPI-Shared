@@ -125,9 +125,9 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 			while (entries[index] != null) {
 				if (entries[index].getKey().equals(key)) {
 					V value = entries[index].getValue();
-					entries[index] = null;
 					size--;
 					removeFromLinkedList((WeakEntry) entries[index]);
+					entries[index] = null;
 					rehash();
 					return value;
 				}
