@@ -55,6 +55,7 @@ public class PropertiesLoader extends EmptyLoader {
 		// Init
 		int lineSeparator = 1;
 		startIndex = 0;
+		endIndex = -1;
 		for (int i = 0; i < lines.length(); ++i) {
 			char c = lines.charAt(i);
 			if (c == '\r' || c == '\n') {
