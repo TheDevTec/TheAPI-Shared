@@ -1,7 +1,6 @@
 package me.devtec.shared.utility;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
@@ -66,14 +65,6 @@ public class StreamUtils {
 				sb.ensureCapacity(sb.length() + res);
 				System.arraycopy(buffer, 0, sb.getValueWithoutTrim(), sb.length(), res);
 				sb.increaseCount(res);
-				if (!(stream instanceof FileInputStream)) {
-					int i;
-					for (i = sb.length() - res; i < sb.length(); ++i) {
-						char c = sb.charAt(i);
-						if (c == '\n')
-							sb.replace(i, ++i, System.lineSeparator());
-					}
-				}
 			}
 			return sb.toString();
 		} catch (Exception err) {
