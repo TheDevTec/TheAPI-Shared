@@ -575,7 +575,6 @@ public class YamlLoader extends EmptyLoader {
 					inQuotes = false;
 					endOfString = i;
 				} else if (c == '\\' && i + 1 < container[1] && lines.charAt(i + 1) == firstChar) {
-					++i;
 					if (indexes == null) {
 						length = container[1] - container[0];
 						indexes = new int[] { length - (container[1] - i) };
@@ -585,6 +584,7 @@ public class YamlLoader extends EmptyLoader {
 						copy[indexes.length] = length - (container[1] - i);
 						indexes = copy;
 					}
+					++i;
 				}
 			} else if (c == '#' && !foundHash) {
 				splitIndexStart = i;
