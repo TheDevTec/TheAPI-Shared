@@ -95,11 +95,11 @@ public class EmptyLoader extends DataLoader {
 					modified = true;
 				if (data.remove(key) != null)
 					modified = true;
-				key = key + '.';
-				Iterator<String> itr = getKeys().iterator();
+				key += '.';
+				Iterator<Entry<String, DataValue>> itr = entrySet().iterator();
 				while (itr.hasNext()) {
-					String section = itr.next();
-					if (section.startsWith(key)) {
+					Entry<String, DataValue> section = itr.next();
+					if (section.getKey().startsWith(key)) {
 						itr.remove();
 						modified = true;
 					}
@@ -114,14 +114,14 @@ public class EmptyLoader extends DataLoader {
 			boolean modified = false;
 			if (data.remove(key) != null)
 				modified = true;
-			key = key + '.';
-			Iterator<String> itr = getKeys().iterator();
+			key += '.';
+			Iterator<Entry<String, DataValue>> itr = entrySet().iterator();
 			while (itr.hasNext()) {
-				String section = itr.next();
-				if (section.startsWith(key)) {
+				Entry<String, DataValue> section = itr.next();
+				if (section.getKey().startsWith(key)) {
 					itr.remove();
 					modified = true;
-				} else if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.'))
+				} else if (section.getKey().startsWith(primaryKey) && (section.getKey().length() == primaryKey.length() || section.getKey().charAt(primaryKey.length()) == '.'))
 					onlyOne = false;
 			}
 			if (onlyOne && primaryKeys.remove(primaryKey))
