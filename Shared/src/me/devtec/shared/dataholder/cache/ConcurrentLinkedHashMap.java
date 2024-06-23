@@ -1,12 +1,9 @@
 package me.devtec.shared.dataholder.cache;
 
 import java.util.AbstractSet;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -209,30 +206,76 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 
 	@Override
 	public Set<K> keySet() {
-		lock.lock();
-		try {
-			Set<K> keys = new HashSet<>();
-			if (head != null)
-				for (WeakEntry entry = head; entry != null; entry = entry.next)
-					keys.add(entry.getKey());
-			return keys;
-		} finally {
-			lock.unlock();
-		}
+		return new AbstractSet<K>() {
+			@Override
+			public Iterator<K> iterator() {
+				return new Iterator<K>() {
+					boolean first = true;
+					private WeakEntry entry;
+
+					@Override
+					public void remove() {
+						ConcurrentLinkedHashMap.this.remove(entry.getKey());
+					}
+
+					@Override
+					public boolean hasNext() {
+						return first ? head != null : entry.next != null;
+					}
+
+					@Override
+					public K next() {
+						if (first) {
+							first = false;
+							return (entry = head).getKey();
+						}
+						return (entry = entry.next).getKey();
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return size;
+			}
+		};
 	}
 
 	@Override
 	public Collection<V> values() {
-		lock.lock();
-		try {
-			List<V> values = new ArrayList<>();
-			if (head != null)
-				for (WeakEntry entry = head; entry != null; entry = entry.next)
-					values.add(entry.getValue());
-			return values;
-		} finally {
-			lock.unlock();
-		}
+		return new AbstractSet<V>() {
+			@Override
+			public Iterator<V> iterator() {
+				return new Iterator<V>() {
+					boolean first = true;
+					private WeakEntry entry;
+
+					@Override
+					public void remove() {
+						ConcurrentLinkedHashMap.this.remove(entry.getKey());
+					}
+
+					@Override
+					public boolean hasNext() {
+						return first ? head != null : entry.next != null;
+					}
+
+					@Override
+					public V next() {
+						if (first) {
+							first = false;
+							return (entry = head).getValue();
+						}
+						return (entry = entry.next).getValue();
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return size;
+			}
+		};
 	}
 
 	@Override
