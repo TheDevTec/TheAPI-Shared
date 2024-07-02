@@ -47,7 +47,8 @@ public class Ref {
 		if (type.isBukkit()) {
 			if (serverVersion.indexOf('.') != -1) {
 				Ref.intVer = ParseUtils.getInt(Ref.ver.split("\\.")[1]);
-				Ref.intRelease = ParseUtils.getInt(Ref.ver.split("\\.")[2]); // !!! This is not true
+				if (Ref.ver.split("\\.").length > 2)
+					Ref.intRelease = ParseUtils.getInt(Ref.ver.split("\\.")[2]); // !!! This is not true
 				return;
 			}
 			Ref.intVer = ParseUtils.getInt(Ref.ver.split("_")[1]);
