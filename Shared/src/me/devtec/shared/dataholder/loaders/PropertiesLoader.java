@@ -22,11 +22,11 @@ public class PropertiesLoader extends EmptyLoader {
 	private int endIndex;
 	private StringContainer lines;
 
-	private final int[] readLine(int lineSeparator) {
+	private final int[] readLine() {
 		try {
 			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
-			startIndex = endIndex == -1 ? -1 : endIndex + lineSeparator;
+			startIndex = endIndex == -1 ? -1 : endIndex + 1;
 			endIndex = -1;
 			if (startIndex != -1)
 				for (int i = startIndex; i < lines.length(); ++i) {
@@ -53,20 +53,19 @@ public class PropertiesLoader extends EmptyLoader {
 
 		lines = new StringContainer(input, 0, 0);
 		// Init
-		int lineSeparator = 1;
 		startIndex = 0;
 		endIndex = -1;
 		for (int i = 0; i < lines.length(); ++i) {
 			char c = lines.charAt(i);
 			if (c == '\r' || c == '\n') {
-				char prev = c;
-				if (i + 1 < lines.length() && ((c = lines.charAt(i + 1)) == '\r' || c == '\n') && c != prev)
-					++lineSeparator;
+				if (i == startIndex) {
+					++startIndex;
+					continue;
+				}
 				endIndex = i;
 				break;
 			}
 		}
-		int lineSepeparatorFinal = lineSeparator;
 
 		Queue<int[]> lines = new ConcurrentLinkedQueue<>();
 		int task = -1;
@@ -75,14 +74,14 @@ public class PropertiesLoader extends EmptyLoader {
 				@Override
 				public void run() {
 					int[] line;
-					while (!isCancelled() && (line = readLine(lineSepeparatorFinal)) != null)
+					while (!isCancelled() && (line = readLine()) != null)
 						lines.add(line);
 					readingReachedEnd = true;
 				}
 			}.runTask();
 		else {
 			int[] line;
-			while ((line = readLine(lineSepeparatorFinal)) != null)
+			while ((line = readLine()) != null)
 				lines.add(line);
 			readingReachedEnd = true;
 		}
