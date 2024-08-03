@@ -67,6 +67,10 @@ public class StringContainer implements CharSequence {
 			value = Arrays.copyOf(value, newCapacity(minimumCapacity));
 	}
 
+	public boolean isEmpty(){
+		return length()==0;
+	}
+
 	private int newCapacity(int minCapacity) {
 		// overflow-conscious code
 		int newCapacity = (value.length << 1) + 2;
