@@ -1,5 +1,5 @@
 How to include the API with Maven:
-`
+```xml
 <repositories>
     <repository>
         <id>jitpack.io</id>
@@ -13,12 +13,16 @@ How to include the API with Maven:
         <version>12.9.3</version>
         <scope>provided</scope>
     </dependency>
-</dependencies>`
+</dependencies>
+```
+
 How to include the API with Gradle:
-`
+
+```gradle
 repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
     compileOnly "com.github.TheDevTec:TheAPI-Shared:12.9.3"
-}`
+}
+```
