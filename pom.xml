@@ -5,10 +5,16 @@
 
     <groupId>me.devtec.theapi</groupId>
     <artifactId>TheAPI-Shared</artifactId>
-    <version>12.9.3</version>
+    <version>12.9.4</version>
     <name>TheAPI-Shared</name>
-    <packaging>pom</packaging>
-
+    <packaging>jar</packaging>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/thedevtec/github-releases</url>
+        </repository>
+    </distributionManagement>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
