@@ -6,19 +6,17 @@
     <groupId>me.devtec.theapi</groupId>
     <artifactId>TheAPI-Shared</artifactId>
     <version>12.9.3</version>
+    <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <build>
-        <defaultGoal>clean install</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.13.0</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -27,13 +25,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
-                        <phase>verify</phase>
                         <goals>
-                            <goal>jar-no-fork</goal>
+                            <goal>jar</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -41,19 +38,18 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.8.0</version>
                 <configuration>
-                    <show>public</show>
-                    <windowtitle>TheAPI-Shared</windowtitle>
-                    <verbose>false</verbose>
-                    <author>true</author>
-                    <version>true</version>
-                    <linksource>true</linksource>
-                    <notimestamp>true</notimestamp>
-                    <bottom><![CDATA[<b>DevTec, 2024</b>]]></bottom>
-                    <reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
-                    <destDir>javadoc-latest</destDir>
+                    <source>8</source>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
