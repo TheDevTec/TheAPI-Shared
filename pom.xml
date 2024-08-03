@@ -14,11 +14,47 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <build>
+        <defaultGoal>clean install</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <show>public</show>
+                    <windowtitle>TheAPI-Shared</windowtitle>
+                    <verbose>false</verbose>
+                    <author>true</author>
+                    <version>true</version>
+                    <linksource>true</linksource>
+                    <notimestamp>true</notimestamp>
+                    <bottom><![CDATA[<b>DevTec, 2024</b>]]></bottom>
+                    <reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
+                    <destDir>javadoc-latest</destDir>
+                </configuration>
             </plugin>
         </plugins>
     </build>
