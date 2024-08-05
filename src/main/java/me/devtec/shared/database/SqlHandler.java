@@ -441,8 +441,16 @@ public class SqlHandler implements DatabaseHandler {
 	public boolean exists(SelectQuery query) throws SQLException {
 		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
 		int index = 1;
-		for (Object[] keyWithValue : query.where)
-			prepared.setObject(index++, keyWithValue[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) keyWithValue[1]) : keyWithValue[1]);
+		for (Object[] pair : query.where)
+			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		for (Object[] pair : query.like)
+			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		for (List<Object[]>[] where : query.whereOr) {
+			for (Object[] pair : where[0])
+				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+			for (Object[] pair : where[1])
+				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		}
 		ResultSet set = prepared.executeQuery();
 		return set == null ? false : set.next();
 	}
@@ -474,8 +482,17 @@ public class SqlHandler implements DatabaseHandler {
 	public Result get(SelectQuery query) throws SQLException {
 		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
 		int index = 1;
-		for (Object[] keyWithValue : query.where)
-			prepared.setObject(index++, keyWithValue[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) keyWithValue[1]) : keyWithValue[1]);
+		for (Object[] pair : query.where)
+			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		for (Object[] pair : query.like)
+			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		for (List<Object[]>[] where : query.whereOr) {
+			for (Object[] pair : where[0])
+				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+			for (Object[] pair : where[1])
+				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		}
+
 		ResultSet set = prepared.executeQuery();
 		String[] lookup = query.getSearch();
 		if (set != null && set.next()) {
@@ -535,8 +552,16 @@ public class SqlHandler implements DatabaseHandler {
 		for (String[] keyWithValue : query.values)
 			prepared.setObject(index++, keyWithValue[1]);
 		// Next are "ifs"
-		for (Object[] keyWithValue : query.where)
-			prepared.setObject(index++, keyWithValue[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) keyWithValue[1]) : keyWithValue[1]);
+		for (Object[] pair : query.where)
+			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		for (Object[] pair : query.like)
+			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		for (List<Object[]>[] where : query.whereOr) {
+			for (Object[] pair : where[0])
+				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+			for (Object[] pair : where[1])
+				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		}
 		return prepared.executeUpdate() != 0;
 	}
 
@@ -585,8 +610,16 @@ public class SqlHandler implements DatabaseHandler {
 		PreparedStatement prepared = prepareStatement(buildRemoveCommand(query, true));
 		int index = 1;
 		// Values are first
-		for (Object[] keyWithValue : query.where)
-			prepared.setObject(index++, keyWithValue[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) keyWithValue[1]) : keyWithValue[1]);
+		for (Object[] pair : query.where)
+			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		for (Object[] pair : query.like)
+			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		for (List<Object[]>[] where : query.whereOr) {
+			for (Object[] pair : where[0])
+				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+			for (Object[] pair : where[1])
+				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		}
 		return prepared.executeUpdate() != 0;
 	}
 
