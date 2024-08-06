@@ -483,23 +483,17 @@ public class SqlHandler implements DatabaseHandler {
 		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
 		int index = 0;
 		for (Object[] pair : query.where) {
-			System.out.println("Set to "+(index+1)+" value: "+(pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]));
 			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		}
 		for (Object[] pair : query.like) {
-			System.out.println("Set to "+(index+1)+" value: "+(pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]));
 			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		}
 		for (List<Object[]>[] where : query.whereOr) {
 			for (Object[] pair : where[0]){
-				System.out.println("Set to "+(index+1)+" value: "+(pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]));
 			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);}
 			for (Object[] pair : where[1]){
-				System.out.println("Set to "+(index+1)+" value: "+(pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]));
 			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);}
 		}
-		System.out.println("Total modified raws: "+index);
-		System.out.println("Index: "+prepared.toString());
 		ResultSet set = prepared.executeQuery();
 		String[] lookup = query.getSearch();
 		if (set != null && set.next()) {
