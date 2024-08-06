@@ -58,7 +58,7 @@ public class SqlHandler implements DatabaseHandler {
 		}
 		builder.append(' ');
 		builder.append("from").append(' ');
-		builder.append('`').append(query.table).append('`');
+		builder.append('\'').append(query.table).append('\'');
 		first = true;
 		if (safeMode) {
 			for (Object[] pair : query.where) {
@@ -67,7 +67,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=').append('?');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=').append('?');
 			}
 			for (Object[] pair : query.like) {
 				if (first) {
@@ -75,7 +75,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like").append('?');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like").append('?');
 			}
 			for (List<Object[]>[] where : query.whereOr) {
 				builder.append(' ').append("or");
@@ -86,7 +86,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=').append('?');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=').append('?');
 				}
 				for (Object[] pair : where[1]) {
 					if (first) {
@@ -94,7 +94,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like").append('?');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like").append('?');
 				}
 			}
 		} else {
@@ -104,7 +104,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=');
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -116,7 +116,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like");
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like");
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -131,7 +131,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=');
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -143,7 +143,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like");
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like");
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -152,7 +152,7 @@ public class SqlHandler implements DatabaseHandler {
 			}
 		}
 		if (query.sorting != null)
-			builder.append(' ').append("order").append(' ').append("by").append(' ').append('`').append(StringUtils.join(query.sortingKey, ",").replace("'", "\\'")).append('`').append(' ')
+			builder.append(' ').append("order").append(' ').append("by").append(' ').append('\'').append(StringUtils.join(query.sortingKey, ",").replace("'", "\\'")).append('\'').append(' ')
 					.append(query.sorting == Sorting.UP || query.sorting == Sorting.HIGHEST_TO_LOWEST ? "DESC" : "ASC");
 		if (query.limit != null)
 			builder.append(' ').append("limit").append(' ').append(query.limit);
@@ -165,7 +165,7 @@ public class SqlHandler implements DatabaseHandler {
 
 	public String buildInsertCommand(InsertQuery query, boolean safeMode) {
 		StringContainer builder = new StringContainer(32).append("insert into ");
-		builder.append('`').append(query.table).append('`').append(' ');
+		builder.append('\'').append(query.table).append('\'').append(' ');
 		builder.append("values").append('(');
 		if (safeMode) {
 			boolean first = true;
@@ -195,7 +195,7 @@ public class SqlHandler implements DatabaseHandler {
 
 	public String buildUpdateCommand(UpdateQuery query, boolean safeMode) {
 		StringContainer builder = new StringContainer(32).append("update ");
-		builder.append('`').append(query.table).append('`').append(' ');
+		builder.append('\'').append(query.table).append('\'').append(' ');
 		builder.append("set");
 
 		boolean first = true;
@@ -205,7 +205,7 @@ public class SqlHandler implements DatabaseHandler {
 					first = false;
 				else
 					builder.append(',');
-				builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('?');
+				builder.append(' ').append('\'').append(val[0].replace("'", "\\'")).append('\'').append('=').append('?');
 			}
 			first = true;
 			for (Object[] pair : query.where) {
@@ -214,7 +214,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=').append('?');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=').append('?');
 			}
 			for (Object[] pair : query.like) {
 				if (first) {
@@ -222,7 +222,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like").append('?');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like").append('?');
 			}
 			for (List<Object[]>[] where : query.whereOr) {
 				builder.append(' ').append("or");
@@ -233,7 +233,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=').append('?');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=').append('?');
 				}
 				for (Object[] pair : where[1]) {
 					if (first) {
@@ -241,7 +241,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like").append('?');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like").append('?');
 				}
 			}
 		} else {
@@ -250,7 +250,7 @@ public class SqlHandler implements DatabaseHandler {
 					first = false;
 				else
 					builder.append(',');
-				builder.append(' ').append('`').append(val[0].replace("'", "\\'")).append('`').append('=').append('\'').append((val[1] + "").replace("'", "\\'")).append('\'');
+				builder.append(' ').append('\'').append(val[0].replace("'", "\\'")).append('\'').append('=').append('\'').append((val[1] + "").replace("'", "\\'")).append('\'');
 			}
 			first = true;
 			for (Object[] pair : query.where) {
@@ -259,7 +259,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=');
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -271,7 +271,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like");
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like");
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -286,7 +286,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=');
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -298,7 +298,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like");
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like");
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -317,7 +317,7 @@ public class SqlHandler implements DatabaseHandler {
 
 	public String buildRemoveCommand(RemoveQuery query, boolean safeMode) {
 		StringContainer builder = new StringContainer(32).append("delete from ");
-		builder.append('`').append(query.table).append('`');
+		builder.append('\'').append(query.table).append('\'');
 		boolean first = true;
 		if (safeMode) {
 			for (Object[] pair : query.where) {
@@ -326,7 +326,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=').append('?');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=').append('?');
 			}
 			for (Object[] pair : query.like) {
 				if (first) {
@@ -334,7 +334,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like").append('?');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like").append('?');
 			}
 			for (List<Object[]>[] where : query.whereOr) {
 				builder.append(' ').append("or");
@@ -345,7 +345,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=').append('?');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=').append('?');
 				}
 				for (Object[] pair : where[1]) {
 					if (first) {
@@ -353,7 +353,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like").append('?');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like").append('?');
 				}
 			}
 		} else {
@@ -363,7 +363,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=');
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=');
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -375,7 +375,7 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(' ').append("where");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like");
+				builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like");
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -390,7 +390,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append('=');
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append('=');
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -402,7 +402,7 @@ public class SqlHandler implements DatabaseHandler {
 						builder.append(' ').append("where");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append('`').append(pair[0].toString().replace("'", "\\'")).append('`').append("like");
+					builder.append(' ').append('\'').append(pair[0].toString().replace("'", "\\'")).append('\'').append("like");
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -457,7 +457,7 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean createTable(String name, Row[] values) throws SQLException {
-		return prepareStatement("CREATE TABLE IF NOT EXISTS `" + name + "`(" + buildTableValues(values) + ")").execute();
+		return prepareStatement("CREATE TABLE IF NOT EXISTS \'" + name + "\'(" + buildTableValues(values) + ")").execute();
 	}
 
 	public String buildTableValues(Row[] values) {
@@ -467,7 +467,7 @@ public class SqlHandler implements DatabaseHandler {
 			if (!first)
 				builder.append(',');
 			first = false;
-			builder.append('`').append(row.getFieldName().replace("'", "\\'")).append('`').append(' ').append(row.getFieldType().toLowerCase()).append(' ')
+			builder.append('\'').append(row.getFieldName().replace("'", "\\'")).append('\'').append(' ').append(row.getFieldType().toLowerCase()).append(' ')
 					.append(row.isNulled() ? "NULL" : "NOT NULL");
 		}
 		return builder.toString();
@@ -480,6 +480,7 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public Result get(SelectQuery query) throws SQLException {
+		System.out.println(buildSelectCommand(query, true));
 		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
 		int index = 1;
 		for (Object[] pair : query.where)
@@ -492,7 +493,6 @@ public class SqlHandler implements DatabaseHandler {
 			for (Object[] pair : where[1])
 				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		}
-
 		ResultSet set = prepared.executeQuery();
 		String[] lookup = query.getSearch();
 		if (set != null && set.next()) {
@@ -638,7 +638,7 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public Row[] getTableValues(String name) throws SQLException {
-		ResultSet set = prepareStatement("DESCRIBE `" + name + "`").executeQuery();
+		ResultSet set = prepareStatement("DESCRIBE \'" + name + "\'").executeQuery();
 		if (set == null || !set.next())
 			return null;
 		List<Row> rows = new ArrayList<>();
