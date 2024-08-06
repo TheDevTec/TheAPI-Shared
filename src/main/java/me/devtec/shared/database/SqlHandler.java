@@ -72,10 +72,10 @@ public class SqlHandler implements DatabaseHandler {
 			for (Object[] pair : query.like) {
 				if (first) {
 					first = false;
-					builder.append(' ').append("where");
+					builder.append(' ').append("like");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like").append('?');
+				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=').append('?');
 			}
 			for (List<Object[]>[] where : query.whereOr) {
 				builder.append(' ').append("or");
@@ -91,10 +91,10 @@ public class SqlHandler implements DatabaseHandler {
 				for (Object[] pair : where[1]) {
 					if (first) {
 						first = false;
-						builder.append(' ').append("where");
+						builder.append(' ').append("like");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like").append('?');
+					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=').append('?');
 				}
 			}
 		} else {
@@ -113,10 +113,10 @@ public class SqlHandler implements DatabaseHandler {
 			for (Object[] pair : query.like) {
 				if (first) {
 					first = false;
-					builder.append(' ').append("where");
+					builder.append(' ').append("like");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like");
+				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=');
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -140,10 +140,10 @@ public class SqlHandler implements DatabaseHandler {
 				for (Object[] pair : where[1]) {
 					if (first) {
 						first = false;
-						builder.append(' ').append("where");
+						builder.append(' ').append("like");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like");
+					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=');
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -219,10 +219,10 @@ public class SqlHandler implements DatabaseHandler {
 			for (Object[] pair : query.like) {
 				if (first) {
 					first = false;
-					builder.append(' ').append("where");
+					builder.append(' ').append("like");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like").append('?');
+				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=').append('?');
 			}
 			for (List<Object[]>[] where : query.whereOr) {
 				builder.append(' ').append("or");
@@ -238,10 +238,10 @@ public class SqlHandler implements DatabaseHandler {
 				for (Object[] pair : where[1]) {
 					if (first) {
 						first = false;
-						builder.append(' ').append("where");
+						builder.append(' ').append("like");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like").append('?');
+					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=').append('?');
 				}
 			}
 		} else {
@@ -268,10 +268,10 @@ public class SqlHandler implements DatabaseHandler {
 			for (Object[] pair : query.like) {
 				if (first) {
 					first = false;
-					builder.append(' ').append("where");
+					builder.append(' ').append("like");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like");
+				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=');
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -295,10 +295,10 @@ public class SqlHandler implements DatabaseHandler {
 				for (Object[] pair : where[1]) {
 					if (first) {
 						first = false;
-						builder.append(' ').append("where");
+						builder.append(' ').append("like");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like");
+					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=');
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -331,10 +331,10 @@ public class SqlHandler implements DatabaseHandler {
 			for (Object[] pair : query.like) {
 				if (first) {
 					first = false;
-					builder.append(' ').append("where");
+					builder.append(' ').append("like");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like").append('?');
+				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=').append('?');
 			}
 			for (List<Object[]>[] where : query.whereOr) {
 				builder.append(' ').append("or");
@@ -350,10 +350,10 @@ public class SqlHandler implements DatabaseHandler {
 				for (Object[] pair : where[1]) {
 					if (first) {
 						first = false;
-						builder.append(' ').append("where");
+						builder.append(' ').append("like");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like").append('?');
+					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append(' ').append('=').append('?');
 				}
 			}
 		} else {
@@ -372,10 +372,10 @@ public class SqlHandler implements DatabaseHandler {
 			for (Object[] pair : query.like) {
 				if (first) {
 					first = false;
-					builder.append(' ').append("where");
+					builder.append(' ').append("like");
 				} else
 					builder.append(' ').append("and");
-				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like");
+				builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append(' ').append('=');
 				if (pair[1] instanceof SelectQuery)
 					builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 				else
@@ -399,10 +399,10 @@ public class SqlHandler implements DatabaseHandler {
 				for (Object[] pair : where[1]) {
 					if (first) {
 						first = false;
-						builder.append(' ').append("where");
+						builder.append(' ').append("like");
 					} else
 						builder.append(' ').append("and");
-					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append("like");
+					builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append(' ').append('=');
 					if (pair[1] instanceof SelectQuery)
 						builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 					else
@@ -457,7 +457,7 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean createTable(String name, Row[] values) throws SQLException {
-		return prepareStatement("CREATE TABLE IF NOT EXISTS \'" + name + "\'(" + buildTableValues(values) + ")").execute();
+		return prepareStatement("CREATE TABLE IF NOT EXISTS " + name + "(" + buildTableValues(values) + ")").execute();
 	}
 
 	public String buildTableValues(Row[] values) {
@@ -465,7 +465,7 @@ public class SqlHandler implements DatabaseHandler {
 		boolean first = true;
 		for (Row row : values) {
 			if (!first)
-				builder.append(',');
+				builder.append(',').append(' ');
 			first = false;
 			builder.append(row.getFieldName().replace("'", "\\'")).append(' ').append(row.getFieldType().toLowerCase()).append(' ')
 					.append(row.isNulled() ? "NULL" : "NOT NULL");
@@ -481,17 +481,25 @@ public class SqlHandler implements DatabaseHandler {
 	@Override
 	public Result get(SelectQuery query) throws SQLException {
 		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
-		int index = 1;
-		for (Object[] pair : query.where)
-			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		for (Object[] pair : query.like)
-			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		for (List<Object[]>[] where : query.whereOr) {
-			for (Object[] pair : where[0])
-				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-			for (Object[] pair : where[1])
-				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		int index = 0;
+		for (Object[] pair : query.where) {
+			System.out.println("Set to "+(index+1)+" value: "+(pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]));
+			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		}
+		for (Object[] pair : query.like) {
+			System.out.println("Set to "+(index+1)+" value: "+(pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]));
+			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+		}
+		for (List<Object[]>[] where : query.whereOr) {
+			for (Object[] pair : where[0]){
+				System.out.println("Set to "+(index+1)+" value: "+(pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]));
+			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);}
+			for (Object[] pair : where[1]){
+				System.out.println("Set to "+(index+1)+" value: "+(pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]));
+			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);}
+		}
+		System.out.println("Total modified raws: "+index);
+		System.out.println("Index: "+prepared.toString());
 		ResultSet set = prepared.executeQuery();
 		String[] lookup = query.getSearch();
 		if (set != null && set.next()) {
@@ -537,29 +545,29 @@ public class SqlHandler implements DatabaseHandler {
 	@Override
 	public boolean insert(InsertQuery query) throws SQLException {
 		PreparedStatement prepared = prepareStatement(buildInsertCommand(query, true));
-		int index = 1;
+		int index = 0;
 		for (String value : query.values)
-			prepared.setObject(index++, value);
+			prepared.setObject(++index, value);
 		return prepared.executeUpdate() != 0;
 	}
 
 	@Override
 	public boolean update(UpdateQuery query) throws SQLException {
 		PreparedStatement prepared = prepareStatement(buildUpdateCommand(query, true));
-		int index = 1;
+		int index = 0;
 		// Values are first
 		for (String[] keyWithValue : query.values)
-			prepared.setObject(index++, keyWithValue[1]);
+			prepared.setObject(++index, keyWithValue[1]);
 		// Next are "ifs"
 		for (Object[] pair : query.where)
-			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		for (Object[] pair : query.like)
-			prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		for (List<Object[]>[] where : query.whereOr) {
 			for (Object[] pair : where[0])
-				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+				prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 			for (Object[] pair : where[1])
-				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+				prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		}
 		return prepared.executeUpdate() != 0;
 	}
