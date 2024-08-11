@@ -173,7 +173,7 @@ public class DatabaseAPI {
 	private static void checkOrDownloadIfNeeded(String string) {
 		File file = new File("plugins/TheAPI/libraries/" + string + ".jar");
 		if (!file.exists())
-			API.library.downloadFileFromUrl("https://github.com/TheDevTec/TheAPI/raw/master/" + string + ".jar", file);
+			API.library.downloadFileFromUrl("https://github.com/TheDevTec/TheAPI/raw/main/" + string + ".jar", file);
 		API.library.load(file);
 	}
 }
