@@ -5,16 +5,9 @@
 
     <groupId>me.devtec.theapi</groupId>
     <artifactId>TheAPI-Shared</artifactId>
-    <version>12.9.6</version>
+    <version>12.9.7</version>
     <name>TheAPI-Shared</name>
     <packaging>jar</packaging>
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/thedevtec/github-releases</url>
-        </repository>
-    </distributionManagement>
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -42,23 +35,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.8.0</version>
-                <configuration>
-                    <show>public</show>
-                    <windowtitle>TheAPI-Shared</windowtitle>
-                    <verbose>false</verbose>
-                    <author>true</author>
-                    <version>true</version>
-                    <linksource>true</linksource>
-                    <notimestamp>true</notimestamp>
-                    <bottom><![CDATA[<b>TheDevTec, 2024</b>]]></bottom>
-                    <reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
-                    <destDir>javadoc-latest</destDir>
-                </configuration>
             </plugin>
         </plugins>
     </build>
