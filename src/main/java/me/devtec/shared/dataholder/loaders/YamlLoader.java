@@ -621,10 +621,15 @@ public class YamlLoader extends EmptyLoader {
 			i++;
 		}
 
-		int[][] result = new int[2][];
-		result[0] = trim(lines, input[0] + posFromStart, i);
-		if (i < input[1])
-			result[1] = new int[] { i, input[1] };
+		int[] trimmedValue = trim(lines, input[0] + posFromStart, i);
+		if (i < input[1]) {
+			int[][] result = new int[2][];
+			result[0] = trimmedValue;
+			result[1] = new int[]{i, input[1]};
+			return result;
+		}
+		int[][] result = new int[1][];
+		result[0]=trimmedValue;
 		return result;
 	}
 
