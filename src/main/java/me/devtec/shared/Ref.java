@@ -420,11 +420,7 @@ public class Ref {
 			}
 		} else {
 			Class<?> startClass = clazz;
-			Class<?>[] params = new Class<?>[bricks.length];
-			for (int i = 0; i < params.length; ++i) {
-				Object brick = bricks[i];
-				params[i] = brick == null ? null : brick instanceof Class ? (Class<?>) brick : brick.getClass();
-			}
+			Class<?>[] params = buildParams(bricks);
 			while (startClass != null) {
 				for (Method m : Ref.getDeclaredMethods(clazz))
 					if (m.getName().equals(name) && m.getParameterTypes().length == params.length && areSame(params, m.getParameterTypes())) {
@@ -435,6 +431,15 @@ public class Ref {
 			}
 		}
 		return null;
+	}
+
+	private static Class<?>[] buildParams(Object[] bricks) {
+		Class<?>[] params = new Class<?>[bricks.length];
+		for (int i = 0; i < params.length; ++i) {
+			Object brick = bricks[i];
+			params[i] = brick == null ? null : brick instanceof Class ? (Class<?>) brick : brick.getClass();
+		}
+		return params;
 	}
 
 	public static Constructor<?> findConstructor(Class<?> clazz, Object... bricks) {
@@ -450,11 +455,7 @@ public class Ref {
 			}
 		} else {
 			Class<?> startClass = clazz;
-			Class<?>[] params = new Class<?>[bricks.length];
-			for (int i = 0; i < params.length; ++i) {
-				Object brick = bricks[i];
-				params[i] = brick == null ? null : brick instanceof Class ? (Class<?>) brick : brick.getClass();
-			}
+			Class<?>[] params = buildParams(bricks);
 			while (startClass != null) {
 				for (Constructor<?> m : Ref.getDeclaredConstructors(clazz))
 					if (m.getParameterTypes().length == params.length && areSame(params, m.getParameterTypes())) {

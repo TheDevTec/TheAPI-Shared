@@ -1,6 +1,7 @@
 package me.devtec.shared.utility;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -220,37 +221,45 @@ public class MathUtils {
 		if (start != -1)
 			operation.add(Pair.of(prevOperation, minus ? -ParseUtils.getDouble(expression, start, endPos) : ParseUtils.getDouble(expression, start, endPos)));
 		// *, /
-		for (int i = 0; i < operation.size() - 1; ++i) {
-			Pair pair = operation.get(i);
+		Iterator<Pair> itr = operation.iterator();
+		while (itr.hasNext()) {
+			Pair pair = itr.next();
 			switch ((char) pair.getKey()) {
-			case '*': {
-				operation.remove(i);
-				Pair current = operation.get(i);
-				current.setValue((double) pair.getValue() * (double) current.getValue());
-				break;
-			}
-			case '/': {
-				operation.remove(i);
-				Pair current = operation.get(i);
-				current.setValue((double) pair.getValue() / (double) current.getValue());
-				break;
-			}
+				case '*': {
+					itr.remove();
+					if(itr.hasNext()) {
+						Pair current = itr.next();
+						current.setValue((double) pair.getValue() * (double) current.getValue());
+					}
+					break;
+				}
+				case '/': {
+					itr.remove();
+					if(itr.hasNext()) {
+						Pair current = itr.next();
+						current.setValue((double) pair.getValue() / (double) current.getValue());
+					}
+					break;
+				}
 			}
 		}
 		// -, +
-		for (int i = 0; i < operation.size() - 1; ++i) {
-			Pair pair = operation.remove(i);
+		itr = operation.iterator();
+		while (itr.hasNext()) {
+			Pair pair = itr.next();
 			switch ((char) pair.getKey()) {
-			case '-':
-			case '+':
-				Pair current = operation.get(i);
-				if ((char) current.getKey() == '/')
-					current.setValue((double) pair.getValue() / (double) current.getValue());
-				else if ((char) current.getKey() == '*')
-					current.setValue((double) pair.getValue() * (double) current.getValue());
-				else
-					current.setValue((double) current.getValue() + (double) pair.getValue());
-				break;
+				case '-':
+				case '+':
+					if(itr.hasNext()) {
+						Pair current = itr.next();
+						if ((char) current.getKey() == '/')
+							current.setValue((double) pair.getValue() / (double) current.getValue());
+						else if ((char) current.getKey() == '*')
+							current.setValue((double) pair.getValue() * (double) current.getValue());
+						else
+							current.setValue((double) current.getValue() + (double) pair.getValue());
+					}
+					break;
 			}
 		}
 		double result = 0;

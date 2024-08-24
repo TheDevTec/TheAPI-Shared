@@ -202,7 +202,7 @@ public class JsonUtils {
                             return array;
                         case "enum":
                             Object obj = map.get("e");
-                            return obj == null ? s : Ref.getNulled(c, type.toString());
+                            return obj == null ? s : Ref.getNulled(c, type);
                         case "collection": {
                             Object object;
                             try {

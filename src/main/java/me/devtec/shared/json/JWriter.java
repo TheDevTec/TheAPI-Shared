@@ -1,6 +1,7 @@
 package me.devtec.shared.json;
 
 import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.json.custom.CustomJsonWriter;
 
 public interface JWriter {
 
@@ -13,17 +14,7 @@ public interface JWriter {
 			if (s == null)
 				return "null";
 			if (s instanceof CharSequence) {
-				StringContainer container = new StringContainer(s.toString());
-				int i = container.length();
-				while (i != -1) {
-					char c = container.charAt(i);
-					if (c == '"')
-						container.insert(i, '\\');
-					--i;
-				}
-				container.insert(0, '"');
-				container.append('"');
-				return container.toString();
+				return CustomJsonWriter.parseToString(s.toString());
 			}
 			return s instanceof Number || s instanceof Character ? '\'' + s.toString() + '\'' : toGson(writeWithoutParse(s));
 		} catch (Exception ignored) {

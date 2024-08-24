@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public final class ConcurrentSet<E> extends AbstractSet<E> implements Serializable {
-	private static final long serialVersionUID = -6761513279741915432L;
 
 	private final ConcurrentMap<E, Boolean> map;
 

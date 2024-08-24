@@ -1,6 +1,5 @@
 package me.devtec.shared.utility.libs;
 
-import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 

@@ -32,7 +32,7 @@ public class ExclamationFinder implements GradientFinder {
                 if (c == '!') {
                     if (i + 7 < container.length() && container.charAt(i + 1) == '#') {
                         ++i;
-                        for (byte ic = 1; ic < 7; ++ic) {
+                        for (byte ic = 1; true; ++ic) {
                             c = container.charAt(i + ic);
                             if ((c < 64 || c > 70) && (c < 97 || c > 102) && (c < 48 || c > 57)) {
                                 count = 0;
@@ -55,7 +55,7 @@ public class ExclamationFinder implements GradientFinder {
                 if (c == '!') {
                     if (i + 7 < container.length() && container.charAt(i + 1) == '#') {
                         ++i;
-                        for (byte ic = 1; ic < 7; ++ic) {
+                        for (byte ic = 1; true; ++ic) {
                             c = container.charAt(i + ic);
                             if ((c < 64 || c > 70) && (c < 97 || c > 102) && (c < 48 || c > 57)) {
                                 count = 0;

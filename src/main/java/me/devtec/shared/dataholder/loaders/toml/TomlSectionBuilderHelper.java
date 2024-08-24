@@ -173,7 +173,7 @@ public class TomlSectionBuilderHelper {
 						return result;
 					}
 					Section section = itr.next();
-					currentItr = startIterator(container, values, section.keyName, section.value, section, markSaved);
+					currentItr = startIterator(container, values, section.value, section, markSaved);
 					CharSequence next = currentItr.next();
 					if (next == null) {
 						if (currentItr != null && currentItr.hasNext() || itr.hasNext())
@@ -192,7 +192,7 @@ public class TomlSectionBuilderHelper {
 						return result;
 					}
 					Section section = itrSecond.next();
-					currentItr = startIterator(container, values, section.keyName, section.value, section, markSaved);
+					currentItr = startIterator(container, values, section.value, section, markSaved);
 					CharSequence next = currentItr.next();
 					if (next == null) {
 						if (currentItr != null && currentItr.hasNext() || itrSecond.hasNext())
@@ -208,52 +208,14 @@ public class TomlSectionBuilderHelper {
 		};
 	}
 
-	public static Iterator<CharSequence> startIterator(StringContainer container, StringArrayList values, String section, DataValue dataVal, Section linked, boolean markSaved) {
+	public static Iterator<CharSequence> startIterator(StringContainer container, StringArrayList values, DataValue dataVal, Section linked, boolean markSaved) {
 		if (dataVal == null)
-			return new Iterator<CharSequence>() {
-				final Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
-
-				@Override
-				public boolean hasNext() {
-					return currentItr != null && currentItr.hasNext();
-				}
-
-				@Override
-				public CharSequence next() {
-					if (currentItr.hasNext()) {
-						CharSequence result = currentItr.next();
-						if (result != null)
-							return result;
-						return currentItr.hasNext() ? next() : null;
-					}
-					return null;
-				}
-
-			};
+			return getCharSequenceIterator(container, values, linked, markSaved);
 		if (markSaved)
 			dataVal.modified = false;
 
 		if (dataVal.value == null)
-			return new Iterator<CharSequence>() {
-				final Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
-
-				@Override
-				public boolean hasNext() {
-					return currentItr != null && currentItr.hasNext();
-				}
-
-				@Override
-				public CharSequence next() {
-					if (currentItr.hasNext()) {
-						CharSequence result = currentItr.next();
-						if (result != null)
-							return result;
-						return currentItr.hasNext() ? next() : null;
-					}
-					return null;
-				}
-
-			};
+			return getCharSequenceIterator(container, values, linked, markSaved);
 		String commentAfterValue = dataVal.commentAfterValue;
 		Collection<String> comments = dataVal.comments;
 		Iterator<String> commentsItr = comments != null && !comments.isEmpty() ? comments.iterator() : null;
@@ -268,11 +230,10 @@ public class TomlSectionBuilderHelper {
 					public boolean hasNext() {
 						switch (type) {
 						case 0:
-							return commentsItr.hasNext();
+						case 2:
+							return commentsItr!=null && commentsItr.hasNext();
 						case 1:
 							return true;
-						case 2:
-							return currentItr != null && currentItr.hasNext();
 						}
 						return false;
 					}
@@ -281,7 +242,7 @@ public class TomlSectionBuilderHelper {
 					public CharSequence next() {
 						switch (type) {
 						case 0:
-							while (commentsItr.hasNext()) {
+							while (commentsItr!=null && commentsItr.hasNext()) {
 								String comment = commentsItr.next();
 								container.clear();
 								String result = values.add(container.append(comment).append(System.lineSeparator()));
@@ -318,11 +279,10 @@ public class TomlSectionBuilderHelper {
 					public boolean hasNext() {
 						switch (type) {
 						case 0:
-							return commentsItr.hasNext();
+						case 2:
+							return commentsItr!=null && commentsItr.hasNext();
 						case 1:
 							return true;
-						case 2:
-							return currentItr != null && currentItr.hasNext();
 						}
 						return false;
 					}
@@ -331,7 +291,7 @@ public class TomlSectionBuilderHelper {
 					public CharSequence next() {
 						switch (type) {
 						case 0:
-							while (commentsItr.hasNext()) {
+							while (commentsItr!=null && commentsItr.hasNext()) {
 								String comment = commentsItr.next();
 								container.clear();
 								String result = values.add(container.append(comment).append(System.lineSeparator()));
@@ -368,11 +328,10 @@ public class TomlSectionBuilderHelper {
 					public boolean hasNext() {
 						switch (type) {
 						case 0:
-							return commentsItr.hasNext();
+						case 2:
+							return commentsItr!=null && commentsItr.hasNext();
 						case 1:
 							return true;
-						case 2:
-							return currentItr != null && currentItr.hasNext();
 						}
 						return false;
 					}
@@ -381,7 +340,7 @@ public class TomlSectionBuilderHelper {
 					public CharSequence next() {
 						switch (type) {
 						case 0:
-							while (commentsItr.hasNext()) {
+							while (commentsItr!=null && commentsItr.hasNext()) {
 								String comment = commentsItr.next();
 								container.clear();
 								String result = values.add(container.append(comment).append(System.lineSeparator()));
@@ -409,6 +368,10 @@ public class TomlSectionBuilderHelper {
 					}
 
 				};
+		return getCharSequenceIterator(container, values, linked, markSaved);
+	}
+
+	private static Iterator<CharSequence> getCharSequenceIterator(StringContainer container, StringArrayList values, Section linked, boolean markSaved) {
 		return new Iterator<CharSequence>() {
 			final Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
 
@@ -443,14 +406,7 @@ public class TomlSectionBuilderHelper {
 
 			@Override
 			public boolean hasNext() {
-				if (section == null) {
-					section = keys[pos++];
-					commentsItr = section.value != null && section.value.comments != null ? section.value.comments.iterator() : null;
-					mode = commentsItr == null ? (byte) 1 : 0;
-					if (!hasNext())
-						mode = 2;
-					foundAnySub |= section.sub != null;
-				}
+				nextSection();
 				switch (mode) {
 				case 0:
 					return commentsItr != null && commentsItr.hasNext() && section.value != null && section.value.value != null;
@@ -472,8 +428,7 @@ public class TomlSectionBuilderHelper {
 				return false;
 			}
 
-			@Override
-			public CharSequence next() {
+			private void nextSection() {
 				if (section == null) {
 					section = keys[pos++];
 					commentsItr = section.value != null && section.value.comments != null ? section.value.comments.iterator() : null;
@@ -482,6 +437,11 @@ public class TomlSectionBuilderHelper {
 						mode = 2;
 					foundAnySub |= section.sub != null;
 				}
+			}
+
+			@Override
+			public CharSequence next() {
+				nextSection();
 				switch (mode) {
 				case 0: {
 					CharSequence result = currentItr.next();
@@ -504,6 +464,8 @@ public class TomlSectionBuilderHelper {
 								section.value.value instanceof String ? (String) section.value.value : section.value.value.toString(), '"', section.value.commentAfterValue));
 					else
 						result = values.add(appendName(container, section, !ignoreIsKey && section.isKey, Json.writer().write(section.value.value), (char) 0, section.value.commentAfterValue));
+					if(markSaved)
+						section.value.modified=false;
 					ignoreIsKey = true;
 					mode = 2;
 					if (result != null)

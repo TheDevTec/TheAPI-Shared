@@ -142,7 +142,7 @@ public class ComponentAPI {
 					continue;
 				}
 				container.append('§').append(afterSymbol);
-				continue charLoop;
+				continue;
 			}
 			container.append(c);
 			if (urlMode)
@@ -581,7 +581,7 @@ public class ComponentAPI {
 					}
                     if (c == '/') {
                         lookingMode = 4; // Read until space
-                        break switchCase;
+                        break;
                     } else {
                         lookingMode = 0;
                         spaceFinder = 0;

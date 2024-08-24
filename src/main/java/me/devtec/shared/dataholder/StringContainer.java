@@ -270,7 +270,7 @@ public class StringContainer implements CharSequence {
 		return this;
 	}
 
-	public StringContainer replace(int start, int end, String str) {
+	public StringContainer replace(int start, int end, CharSequence str) {
 		if (end > count)
 			end = count;
 
@@ -279,20 +279,16 @@ public class StringContainer implements CharSequence {
 		ensureCapacityInternal(newCount);
 
 		System.arraycopy(value, end, value, start + len, count - end);
-		str.getChars(0, len, value, start);
-		count = newCount;
-		return this;
-	}
-
-	public StringContainer replace(int start, int end, StringContainer str) {
-		if (end > count)
-			end = count;
-		int len = str.length();
-		int newCount = count + len - (end - start);
-		ensureCapacityInternal(newCount);
-
-		System.arraycopy(value, end, value, start + len, count - end);
-		str.getChars(0, len, value, count);
+		if(str instanceof String)
+			((String)str).getChars(0, len, value, start);
+		else
+		if(str instanceof StringBuilder)
+			((StringBuilder)str).getChars(0, len, value, start);
+		else
+		if(str instanceof StringContainer)
+			((StringContainer)str).getChars(0, len, value, start);
+		else
+			str.toString().getChars(0, len, value, start);
 		count = newCount;
 		return this;
 	}

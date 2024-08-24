@@ -58,25 +58,7 @@ public class MergeStandards {
 			boolean change = false;
 			try {
                 for (Entry<String, DataValue> key : merge.getDataLoader().entrySet()) {
-                    DataValue val = key.getValue();
-                    DataValue configVal = null;
-                    if (val.commentAfterValue != null) {
-                        configVal = config.getDataLoader().getOrCreate(key.getKey());
-                        if (configVal.commentAfterValue == null) {
-                            configVal.commentAfterValue = val.commentAfterValue;
-                            configVal.modified = true;
-                            change = true;
-                        }
-                    }
-                    if (val.comments != null && !val.comments.isEmpty()) {
-                        if (configVal == null)
-                            configVal = config.getDataLoader().getOrCreate(key.getKey());
-                        if (configVal.comments == null || configVal.comments.isEmpty()) {
-                            configVal.comments = val.comments;
-                            configVal.modified = true;
-                            change = true;
-                        }
-                    }
+					change |= mergeDataComments(config, key);
                 }
 			} catch (Exception ignored) {
 			}
@@ -92,16 +74,7 @@ public class MergeStandards {
 			boolean change = false;
 			try {
                 for (Entry<String, DataValue> key : merge.getDataLoader().entrySet()) {
-                    DataValue val = key.getValue();
-                    DataValue configVal = config.getDataLoader().get(key.getKey());
-                    if (configVal == null || configVal.value == null) {
-                        if (configVal == null)
-                            configVal = config.getDataLoader().getOrCreate(key.getKey());
-                        configVal.value = val.value;
-                        configVal.writtenValue = val.writtenValue;
-                        configVal.modified = true;
-                        change = true;
-                    }
+					change |= mergeDataValue(config, key);
                 }
 			} catch (Exception ignored) {
 			}
@@ -134,16 +107,7 @@ public class MergeStandards {
 						for (String section : sections)
 							if (key.getKey().startsWith(section) && (key.getKey().length() == section.length() || key.getKey().charAt(section.length()) == '.'))
 								continue loop;
-						DataValue val = key.getValue();
-						DataValue configVal = config.getDataLoader().get(key.getKey());
-						if (configVal == null || configVal.value == null) {
-							if (configVal == null)
-								configVal = config.getDataLoader().getOrCreate(key.getKey());
-							configVal.value = val.value;
-							configVal.writtenValue = val.writtenValue;
-							configVal.modified = true;
-							change = true;
-						}
+						change |= mergeDataValue(config, key);
 					}
 				} catch (Exception ignored) {
 				}
@@ -164,25 +128,7 @@ public class MergeStandards {
 						for (String section : sections)
 							if (key.getKey().startsWith(section) && (key.getKey().length() == section.length() || key.getKey().charAt(section.length()) == '.'))
 								continue loop;
-						DataValue val = key.getValue();
-						DataValue configVal = null;
-						if (val.commentAfterValue != null) {
-							configVal = config.getDataLoader().getOrCreate(key.getKey());
-							if (configVal.commentAfterValue == null) {
-								configVal.commentAfterValue = val.commentAfterValue;
-								configVal.modified = true;
-								change = true;
-							}
-						}
-						if (val.comments != null && !val.comments.isEmpty()) {
-							if (configVal == null)
-								configVal = config.getDataLoader().getOrCreate(key.getKey());
-							if (configVal.comments == null || configVal.comments.isEmpty()) {
-								configVal.comments = val.comments;
-								configVal.modified = true;
-								change = true;
-							}
-						}
+						change |= mergeDataComments(config, key);
 					}
 				} catch (Exception ignored) {
 				}
@@ -192,5 +138,43 @@ public class MergeStandards {
 		merge[2] = ADD_MISSING_HEADER;
 		merge[3] = ADD_MISSING_FOOTER;
 		return merge;
+	}
+
+	private static boolean mergeDataValue(Config config, Entry<String, DataValue> key) {
+		DataValue val = key.getValue();
+		DataValue configVal = config.getDataLoader().get(key.getKey());
+		if (configVal == null || configVal.value == null) {
+			if (configVal == null)
+				configVal = config.getDataLoader().getOrCreate(key.getKey());
+			configVal.value = val.value;
+			configVal.writtenValue = val.writtenValue;
+			configVal.modified = true;
+			return true;
+		}
+		return false;
+	}
+
+	private static boolean mergeDataComments(Config config, Entry<String, DataValue> key){
+		DataValue val = key.getValue();
+		DataValue configVal = null;
+		boolean change = false;
+		if (val.commentAfterValue != null) {
+			configVal = config.getDataLoader().getOrCreate(key.getKey());
+			if (configVal.commentAfterValue == null) {
+				configVal.commentAfterValue = val.commentAfterValue;
+				configVal.modified = true;
+				change = true;
+			}
+		}
+		if (val.comments != null && !val.comments.isEmpty()) {
+			if (configVal == null)
+				configVal = config.getDataLoader().getOrCreate(key.getKey());
+			if (configVal.comments == null || configVal.comments.isEmpty()) {
+				configVal.comments = val.comments;
+				configVal.modified = true;
+				change = true;
+			}
+		}
+		return change;
 	}
 }

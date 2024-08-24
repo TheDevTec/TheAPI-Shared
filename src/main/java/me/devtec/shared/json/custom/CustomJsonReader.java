@@ -551,7 +551,7 @@ public class CustomJsonReader implements JReader {
 				case CLOSED_BRACKET:
                     case COMMA:
                         if (key != null)
-						return Pair.of(null, pos);
+							return Pair.of(null, pos);
 					return Pair.of(mapResult, pos);
                     case SKIP_N:
 				case SKIP_R:

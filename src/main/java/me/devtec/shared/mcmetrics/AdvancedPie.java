@@ -21,6 +21,10 @@ public class AdvancedPie extends CustomChart {
 
 	@Override
 	protected Map<String, Object> getChartData() throws Exception {
+		return getStringObjectMap(callable);
+	}
+
+	protected static Map<String, Object> getStringObjectMap(Callable<Map<String, Integer>> callable) throws Exception {
 		Map<String, Object> valuesBuilder = new HashMap<>();
 
 		Map<String, Integer> map = callable.call();

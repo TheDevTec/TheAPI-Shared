@@ -15,6 +15,7 @@ import me.devtec.shared.annotations.Comment;
 import me.devtec.shared.annotations.Nonnull;
 import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataLoaderConstructor;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.dataholder.loaders.constructor.LoaderPriority;
@@ -180,13 +181,36 @@ public abstract class DataLoader implements Cloneable {
 	@Nonnull
 	public abstract DataValue getOrCreate(@Nonnull String key);
 
+	@Comment(comment = "Saves the entire structure to single String")
+	@Nonnull
+	public String saveAsString(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
+		return saveAsContainer(config, markSaved).toString();
+	}
+
 	@Comment(comment = "Saves the entire structure to byte[]")
 	@Nonnull
-	public abstract byte[] save(@Nonnull Config config, boolean markSaved);
+	public byte[] save(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
+		return saveAsContainer(config, markSaved).getBytes();
+	}
+
+	@Comment(comment = "Saves the entire structure to StringContainer")
+	@Nonnull
+	public StringContainer saveAsContainer(Config config, boolean markSaved) {
+		Checkers.nonNull(config, "Config");
+		int size = config.getDataLoader().get().size();
+		StringContainer builder = new StringContainer(size * 20);
+		Iterator<CharSequence> itr = saveAsIterator(config, markSaved);
+		while (itr!=null && itr.hasNext())
+			builder.append(itr.next());
+		return builder;
+	}
 
 	@Comment(comment = "Saves the entire structure to Iterator<byte[]> which prevent from overload")
 	@Nullable
-	public Iterator<CharSequence> saveAsIterator(@Nonnull Config config, boolean markSaved) {
+	public Iterator<CharSequence> saveAsIterator(@Nonnull Config config, boolean markSaved){
+		Checkers.nonNull(config, "Config");
 		return null;
 	}
 
@@ -194,10 +218,6 @@ public abstract class DataLoader implements Cloneable {
 	public boolean supportsIteratorMode() {
 		return false;
 	}
-
-	@Comment(comment = "Saves the entire structure to String")
-	@Nonnull
-	public abstract String saveAsString(@Nonnull Config config, boolean markSaved);
 
 	@Comment(comment = "Gets the name of this DataLoader")
 	@Nonnull

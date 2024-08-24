@@ -184,28 +184,6 @@ public class TomlLoader extends EmptyLoader {
 	}
 
 	@Override
-	public String saveAsString(Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		return saveAsContainer(config, markSaved).toString();
-	}
-
-	@Override
-	public byte[] save(Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		return saveAsContainer(config, markSaved).getBytes();
-	}
-
-	public StringContainer saveAsContainer(Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		int size = config.getDataLoader().get().size();
-		StringContainer builder = new StringContainer(size * 20);
-		Iterator<CharSequence> itr = saveAsIterator(config, markSaved);
-		while (itr.hasNext())
-			builder.append(itr.next());
-		return builder;
-	}
-
-	@Override
 	public boolean supportsIteratorMode() {
 		return true;
 	}
@@ -213,52 +191,7 @@ public class TomlLoader extends EmptyLoader {
 	@Override
 	public Iterator<CharSequence> saveAsIterator(@Nonnull Config config, boolean markSaved) {
 		Checkers.nonNull(config, "Config");
-		return new Iterator<CharSequence>() {
-			// 0=header
-			// 1=lines
-			// 2=footer
-			byte phase = 0;
-			int posInPhase = 0;
-			Iterator<CharSequence> list;
-
-			@Override
-			public CharSequence next() {
-				switch (phase) {
-				case 0:
-					return config.getDataLoader().getHeader() instanceof List ? ((List<String>) config.getDataLoader().getHeader()).get(posInPhase++) + System.lineSeparator()
-							: config.getDataLoader().getHeader().toArray(new String[0])[posInPhase++] + System.lineSeparator();
-				case 1:
-					return list.next();
-				case 2:
-					return config.getDataLoader().getFooter() instanceof List ? ((List<String>) config.getDataLoader().getFooter()).get(posInPhase++) + System.lineSeparator()
-							: config.getDataLoader().getFooter().toArray(new String[0])[posInPhase++] + System.lineSeparator();
-				}
-				return null;
-			}
-
-			@Override
-			public boolean hasNext() {
-				switch (phase) {
-				case 0:
-					if (config.getDataLoader().getHeader().isEmpty() || config.getDataLoader().getHeader().size() == posInPhase) {
-						phase = 1;
-						posInPhase = 0;
-						list = TomlSectionBuilderHelper.prepareBuilder(config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
-						return hasNext();
-					}
-					return true;
-				case 1:
-					if (list.hasNext())
-						return true;
-					phase = 2;
-					posInPhase = 0;
-					return hasNext();
-				case 2:
-                    return !config.getDataLoader().getFooter().isEmpty() && config.getDataLoader().getFooter().size() != posInPhase;
-                }
-				return false;
-			}
-		};
+		return YamlLoader.saveAsIteratorAs(config, markSaved, false);
 	}
 
 	protected static int[][] readConfigLine(StringContainer input, int[] index) {

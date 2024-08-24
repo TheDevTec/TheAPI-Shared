@@ -43,22 +43,7 @@ public class StringUtils {
 				decimalPart = 0;
 			}
 			sb.append(integerPart);
-			if (decimalPart != 0) {
-				sb.append('.');
-				if (decimalPart < 10) {
-					sb.append('0');
-					sb.append(decimalPart);
-				} else {
-					double smaller = (double) decimalPart / 10;
-					if (MathUtils.hasDecimal(smaller))
-						sb.append(decimalPart);
-					else
-						sb.append((long) smaller);
-				}
-			}
-			if (minus)
-				sb.insert(0, '-');
-			return sb.toString();
+			return formatDouble(minus, decimalPart, sb);
 		}
 		case NORMAL: {
 			boolean minus = false;
@@ -87,22 +72,7 @@ public class StringUtils {
 				integerPart /= 10;
 				count++;
 			} while (integerPart > 0);
-			if (decimalPart != 0) {
-				sb.append('.');
-				if (decimalPart < 10) {
-					sb.append('0');
-					sb.append(decimalPart);
-				} else {
-					double smaller = (double) decimalPart / 10;
-					if (MathUtils.hasDecimal(smaller))
-						sb.append(decimalPart);
-					else
-						sb.append((long) smaller);
-				}
-			}
-			if (minus)
-				sb.insert(0, '-');
-			return sb.toString();
+			return formatDouble(minus, decimalPart, sb);
 		}
 		case COMPLEX: {
 			double testValue = value < 0 ? value * -1 : value;
@@ -157,6 +127,25 @@ public class StringUtils {
 			break;
 		}
 		return value + "";
+	}
+
+	private static String formatDouble(boolean minus, long decimalPart, StringContainer sb) {
+		if (decimalPart != 0) {
+			sb.append('.');
+			if (decimalPart < 10) {
+				sb.append('0');
+				sb.append(decimalPart);
+			} else {
+				double smaller = (double) decimalPart / 10;
+				if (MathUtils.hasDecimal(smaller))
+					sb.append(decimalPart);
+				else
+					sb.append((long) smaller);
+			}
+		}
+		if (minus)
+			sb.insert(0, '-');
+		return sb.toString();
 	}
 
 	/**

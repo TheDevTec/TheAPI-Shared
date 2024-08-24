@@ -21,9 +21,7 @@ public class DataValue {
 	}
 
 	public static DataValue of(String writtenValue, Object value, String commentAfterValue) {
-		DataValue data = new DataValue();
-		data.value = value;
-		data.writtenValue = writtenValue;
+        DataValue data = of(writtenValue, value);
 		data.commentAfterValue = commentAfterValue;
 		return data;
 	}

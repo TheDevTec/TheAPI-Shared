@@ -229,18 +229,8 @@ public class API {
 					charLoop: for (int i = 0; i < text.length(); ++i) {
 						char c = text.charAt(i);
 						if (c == '&' && i + 7 < text.length() && text.charAt(i + 1) == '#') {
-							for (int ic = 2; ic < 8; ++ic) {
-								char cn = text.charAt(i + ic);
-								if ((((cn < 64) || (cn > 70)) && ((cn < 97) || (cn > 102)) && ((cn < 48) || (cn > 57))))
-									continue charLoop;
-							}
-							text.setCharAt(i, '§');
-							text.setCharAt(++i, 'x');
-							for (int run = 0; run < 6; ++run) {
-								text.insert(++i, '§');
-								++i;
-								text.setCharAt(i, Character.toLowerCase(text.charAt(i)));
-							}
+							if (isHexColor(text, i)) continue charLoop;
+							i = addHexColor(text, i);
 						} else if (c == '#' && i + 6 < text.length()) {
 							for (int ic = 1; ic < 7; ++ic) {
 								char cn = text.charAt(i + ic);
@@ -263,20 +253,10 @@ public class API {
 					charLoop: for (int i = 0; i < text.length(); ++i) {
 						char c = text.charAt(i);
 						if (c == '<' && i + 8 < text.length() && text.charAt(i + 1) == '#') {
-							for (int ic = 2; ic < 8; ++ic) {
-								char cn = text.charAt(i + ic);
-								if ((((cn < 64) || (cn > 70)) && ((cn < 97) || (cn > 102)) && ((cn < 48) || (cn > 57))))
-									continue charLoop;
-							}
+							if (isHexColor(text, i)) continue;
 							if (text.charAt(i + 8) == '>') {
 								text.deleteCharAt(i + 8);
-								text.setCharAt(i, '§');
-								text.setCharAt(++i, 'x');
-								for (int run = 0; run < 6; ++run) {
-									text.insert(++i, '§');
-									++i;
-									text.setCharAt(i, Character.toLowerCase(text.charAt(i)));
-								}
+								i = addHexColor(text, i);
 							}
 						}
 					}
@@ -360,6 +340,26 @@ public class API {
 			}
 		}
 
+		private int addHexColor(StringContainer text, int i) {
+			text.setCharAt(i, '§');
+			text.setCharAt(++i, 'x');
+			for (int run = 0; run < 6; ++run) {
+				text.insert(++i, '§');
+				++i;
+				text.setCharAt(i, Character.toLowerCase(text.charAt(i)));
+			}
+			return i;
+		}
+
+		private boolean isHexColor(StringContainer text, int i) {
+			for (int ic = 2; ic < 8; ++ic) {
+				char cn = text.charAt(i + ic);
+				if ((((cn < 64) || (cn > 70)) && ((cn < 97) || (cn > 102)) && ((cn < 48) || (cn > 57))))
+					return true;
+			}
+			return false;
+		}
+
 		private boolean matchAction(String action, long value) {
 			String[] split = action.split(" ");
 			if (action.startsWith("=="))
@@ -428,13 +428,10 @@ public class API {
 									break;
 								}
 								cn = Character.toLowerCase(input.charAt(++i));
-								if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
-									color.append(cn);
+								if(checkIfValidHexColor(cn, color)){
 									continue;
 								}
-								// invalid hex
 								--i;
-								color.clear();
 								break;
 							}
 						}
@@ -452,37 +449,40 @@ public class API {
 						color.clear();
 						formats.clear();
 						if (i + 6 < input.length()) {
-							color.append('#');
-							for (int count = 0; count < 6; ++count) {
-								char cn = input.charAt(++i);
-								if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
-									color.append(cn);
-									continue;
-								}
-								--i;
-								color.clear();
-								break;
-							}
+							i = appendHexColor(input, color, i);
 						}
 						break;
 					default:
 						break;
 					}
 				} else if (c == '#' && i + 6 < input.length()) {
-					color.append('#');
-					for (int count = 0; count < 6; ++count) {
-						char cn = input.charAt(++i);
-						if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
-							color.append(cn);
-							continue;
-						}
-						--i;
-						color.clear();
-						break;
-					}
+					i = appendHexColor(input, color, i);
 				}
 			}
 			return new String[] {color.isEmpty() ? null : color.toString(), formats.isEmpty() ? null : formats.toString() };
+		}
+
+		private int appendHexColor(String input, StringContainer color, int i) {
+			color.append('#');
+			for (int count = 0; count < 6; ++count) {
+				char cn = input.charAt(++i);
+				if(checkIfValidHexColor(cn, color)){
+					continue;
+				}
+				--i;
+				break;
+			}
+			return i;
+		}
+
+		private boolean checkIfValidHexColor(char cn, StringContainer color) {
+			if (cn >= 64 && cn <= 70 || cn >= 97 && cn <= 102 || cn >= 48 && cn <= 57) {
+				color.append(cn);
+				return true;
+			}
+			// invalid hex
+			color.clear();
+			return false;
 		}
 
 		public String rainbow(String text, String firstHex, String secondHex, List<String> protectedStrings) {
