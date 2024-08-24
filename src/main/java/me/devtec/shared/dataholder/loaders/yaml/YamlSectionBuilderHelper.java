@@ -17,9 +17,9 @@ public class YamlSectionBuilderHelper {
 
 	public static class StringArrayList {
 
-		private static final int BUFFER_SIZE = 1024 * 32;
+		private static final int BUFFER_SIZE = 1024 * 4;
 
-		private StringContainer container = new StringContainer(BUFFER_SIZE);
+		private final StringContainer container = new StringContainer(BUFFER_SIZE);
 
 		public String add(CharSequence e) {
 			if (e == null)
@@ -135,8 +135,7 @@ public class YamlSectionBuilderHelper {
 		public boolean equals(Object obj) {
 			if (obj instanceof Section) {
 				Section sec = (Section) obj;
-				if (sec.keyName.equals(keyName) && sec.space == space)
-					return true;
+                return sec.keyName.equals(keyName) && sec.space == space;
 			}
 			return false;
 		}
@@ -154,7 +153,7 @@ public class YamlSectionBuilderHelper {
 		for (Entry<String, DataValue> entry : dataLoader.entrySet()) {
 			container.clear();
 			container.append(entry.getKey());
-			Section main = null;
+			Section main;
 			if (prevParent != null && (container.startsWith(prevParent.fullName(fullNameContainer), 0)
 					|| (prevParent = prevParent.parent) != null && container.startsWith(prevParent.fullName(fullNameContainer), 0))) {
 				container.delete(0, prevParent.fullName(fullNameContainer).length());
@@ -163,9 +162,9 @@ public class YamlSectionBuilderHelper {
 				int pos = container.indexOf('.');
 				if (pos == -1)
 					continue;
-				String primaryKey = pos == -1 ? container.toString() : container.substring(0, pos);
+				String primaryKey = container.substring(0, pos);
 				container.delete(0, primaryKey.length() + 1);
-				main = prevParent = map.get(primaryKey);
+				main = map.get(primaryKey);
 			}
 			Section sec = main.create(container.toString());
 			sec.value = entry.getValue();
@@ -268,7 +267,7 @@ public class YamlSectionBuilderHelper {
 				public boolean hasNext() {
 					switch (type) {
 					case 0:
-						return commentsItr.hasNext();
+						return commentsItr!=null && commentsItr.hasNext();
 					case 1:
 						return true;
 					case 2:
@@ -281,14 +280,9 @@ public class YamlSectionBuilderHelper {
 				public CharSequence next() {
 					switch (type) {
 					case 0:
-						while (commentsItr.hasNext()) {
-							String comment = commentsItr.next();
-							container.clear();
-							for (int i = 0; i < linked.space; ++i)
-								container.append(' ').append(' ');
-							String result = values.add(container.append(comment).append(System.lineSeparator()));
-							if (result != null)
-								return result;
+						while (commentsItr!=null && commentsItr.hasNext()) {
+							CharSequence result = getCharSequence(commentsItr, container, linked, values);
+							if (result != null) return result;
 						}
 						type = 1;
 						return hasNext() ? next() : null;
@@ -332,7 +326,7 @@ public class YamlSectionBuilderHelper {
 						public boolean hasNext() {
 							switch (type) {
 							case 0:
-								return commentsItr.hasNext();
+								return commentsItr!=null && commentsItr.hasNext();
 							case 1:
 								return true;
 							case 2:
@@ -345,14 +339,9 @@ public class YamlSectionBuilderHelper {
 						public CharSequence next() {
 							switch (type) {
 							case 0:
-								while (commentsItr.hasNext()) {
-									String comment = commentsItr.next();
-									container.clear();
-									for (int i = 0; i < linked.space; ++i)
-										container.append(' ').append(' ');
-									String result = values.add(container.append(comment).append(System.lineSeparator()));
-									if (result != null)
-										return result;
+								while (commentsItr!=null && commentsItr.hasNext()) {
+									CharSequence result = getCharSequence(commentsItr, container, linked, values);
+									if (result != null) return result;
 								}
 								type = 1;
 								return hasNext() ? next() : null;
@@ -383,67 +372,9 @@ public class YamlSectionBuilderHelper {
 						}
 
 					};
-				if (dataVal.writtenValue != null)
-					return new Iterator<CharSequence>() {
-						byte type = commentsItr != null ? (byte) 0 : (byte) 1;
-						int pos = 0;
-						Iterator<CharSequence> currentItr;
-
-						@Override
-						public boolean hasNext() {
-							switch (type) {
-							case 0:
-								return commentsItr.hasNext();
-							case 1:
-								return true;
-							case 2:
-								return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
-							}
-							return false;
-						}
-
-						@Override
-						public CharSequence next() {
-							switch (type) {
-							case 0:
-								while (commentsItr.hasNext()) {
-									String comment = commentsItr.next();
-									container.clear();
-									for (int i = 0; i < linked.space; ++i)
-										container.append(' ').append(' ');
-									String result = values.add(container.append(comment).append(System.lineSeparator()));
-									if (result != null)
-										return result;
-								}
-								type = 1;
-								return hasNext() ? next() : null;
-							case 1: {
-								type = 2;
-								String result = values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
-								if (result != null)
-									return result;
-								return hasNext() ? next() : null;
-							}
-							case 2:
-								if (currentItr != null && currentItr.hasNext()) {
-									CharSequence result = currentItr.next();
-									if (result != null)
-										return result;
-									return hasNext() ? next() : null;
-								}
-								Section sub = linked.sub[pos++];
-								currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
-
-								CharSequence result = currentItr.next();
-								if (result != null)
-									return result;
-								if (hasNext())
-									return next();
-							}
-							return null;
-						}
-
-					};
+				if (dataVal.writtenValue != null) {
+					return getCharSequenceIterator(container, values, section, dataVal, linked, markSaved, commentAfterValue, commentsItr);
+				}
 				Iterator<?> itr = ((Collection<?>) value).iterator();
 				return new Iterator<CharSequence>() {
 					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
@@ -454,7 +385,7 @@ public class YamlSectionBuilderHelper {
 					public boolean hasNext() {
 						switch (type) {
 						case 0:
-							return commentsItr.hasNext();
+							return commentsItr!=null && commentsItr.hasNext();
 						case 1:
 							return true;
 						case 2:
@@ -469,14 +400,9 @@ public class YamlSectionBuilderHelper {
 					public CharSequence next() {
 						switch (type) {
 						case 0:
-							while (commentsItr.hasNext()) {
-								String comment = commentsItr.next();
-								container.clear();
-								for (int i = 0; i < linked.space; ++i)
-									container.append(' ').append(' ');
-								String result = values.add(container.append(comment).append(System.lineSeparator()));
-								if (result != null)
-									return result;
+							while (commentsItr!=null && commentsItr.hasNext()) {
+								CharSequence result = getCharSequence(commentsItr, container, linked, values);
+								if (result != null) return result;
 							}
 							type = 1;
 							return hasNext() ? next() : null;
@@ -517,66 +443,7 @@ public class YamlSectionBuilderHelper {
 				};
 			} else if ((size = Array.getLength(value)) != 0)
 				if (dataVal.writtenValue != null)
-					return new Iterator<CharSequence>() {
-						byte type = commentsItr != null ? (byte) 0 : (byte) 1;
-						int pos = 0;
-						Iterator<CharSequence> currentItr;
-
-						@Override
-						public boolean hasNext() {
-							switch (type) {
-							case 0:
-								return commentsItr.hasNext();
-							case 1:
-								return true;
-							case 2:
-								return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
-							}
-							return false;
-						}
-
-						@Override
-						public CharSequence next() {
-							switch (type) {
-							case 0:
-								while (commentsItr.hasNext()) {
-									String comment = commentsItr.next();
-									container.clear();
-									for (int i = 0; i < linked.space; ++i)
-										container.append(' ').append(' ');
-									String result = values.add(container.append(comment).append(System.lineSeparator()));
-									if (result != null)
-										return result;
-								}
-								type = 1;
-								return hasNext() ? next() : null;
-							case 1: {
-								type = 2;
-								String result = values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
-								if (result != null)
-									return result;
-								return hasNext() ? next() : null;
-							}
-							case 2:
-								if (currentItr != null && currentItr.hasNext()) {
-									CharSequence result = currentItr.next();
-									if (result != null)
-										return result;
-									return hasNext() ? next() : null;
-								}
-								Section sub = linked.sub[pos++];
-								currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
-
-								CharSequence result = currentItr.next();
-								if (result != null)
-									return result;
-								if (hasNext())
-									return next();
-							}
-							return null;
-						}
-
-					};
+					return getCharSequenceIterator(container, values, section, dataVal, linked, markSaved, commentAfterValue, commentsItr);
 				else
 					return new Iterator<CharSequence>() {
 						byte type = commentsItr != null ? (byte) 0 : (byte) 1;
@@ -587,7 +454,7 @@ public class YamlSectionBuilderHelper {
 						public boolean hasNext() {
 							switch (type) {
 							case 0:
-								return commentsItr.hasNext();
+								return commentsItr!=null && commentsItr.hasNext();
 							case 1:
 								return true;
 							case 2:
@@ -602,14 +469,9 @@ public class YamlSectionBuilderHelper {
 						public CharSequence next() {
 							switch (type) {
 							case 0:
-								while (commentsItr.hasNext()) {
-									String comment = commentsItr.next();
-									container.clear();
-									for (int i = 0; i < linked.space; ++i)
-										container.append(' ').append(' ');
-									String result = values.add(container.append(comment).append(System.lineSeparator()));
-									if (result != null)
-										return result;
+								while (commentsItr!=null && commentsItr.hasNext()) {
+									CharSequence result = getCharSequence(commentsItr, container, linked, values);
+									if (result != null) return result;
 								}
 								type = 1;
 								return hasNext() ? next() : null;
@@ -660,7 +522,7 @@ public class YamlSectionBuilderHelper {
 					public boolean hasNext() {
 						switch (type) {
 						case 0:
-							return commentsItr.hasNext();
+							return commentsItr!=null && commentsItr.hasNext();
 						case 1:
 							return true;
 						case 2:
@@ -673,14 +535,9 @@ public class YamlSectionBuilderHelper {
 					public CharSequence next() {
 						switch (type) {
 						case 0:
-							while (commentsItr.hasNext()) {
-								String comment = commentsItr.next();
-								container.clear();
-								for (int i = 0; i < linked.space; ++i)
-									container.append(' ').append(' ');
-								String result = values.add(container.append(comment).append(System.lineSeparator()));
-								if (result != null)
-									return result;
+							while (commentsItr!=null && commentsItr.hasNext()) {
+								CharSequence result = getCharSequence(commentsItr, container, linked, values);
+								if (result != null) return result;
 							}
 							type = 1;
 							return hasNext() ? next() : null;
@@ -721,7 +578,7 @@ public class YamlSectionBuilderHelper {
 				public boolean hasNext() {
 					switch (type) {
 					case 0:
-						return commentsItr.hasNext();
+						return commentsItr!=null && commentsItr.hasNext();
 					case 1:
 						return true;
 					case 2:
@@ -734,14 +591,9 @@ public class YamlSectionBuilderHelper {
 				public CharSequence next() {
 					switch (type) {
 					case 0:
-						while (commentsItr.hasNext()) {
-							String comment = commentsItr.next();
-							container.clear();
-							for (int i = 0; i < linked.space; ++i)
-								container.append(' ').append(' ');
-							String result = values.add(container.append(comment).append(System.lineSeparator()));
-							if (result != null)
-								return result;
+						while (commentsItr!=null && commentsItr.hasNext()) {
+							CharSequence result = getCharSequence(commentsItr, container, linked, values);
+							if (result != null) return result;
 						}
 						type = 1;
 						return hasNext() ? next() : null;
@@ -783,7 +635,7 @@ public class YamlSectionBuilderHelper {
 				public boolean hasNext() {
 					switch (type) {
 					case 0:
-						return commentsItr.hasNext();
+						return commentsItr!=null && commentsItr.hasNext();
 					case 1:
 						return true;
 					case 2:
@@ -796,14 +648,9 @@ public class YamlSectionBuilderHelper {
 				public CharSequence next() {
 					switch (type) {
 					case 0:
-						while (commentsItr.hasNext()) {
-							String comment = commentsItr.next();
-							container.clear();
-							for (int i = 0; i < linked.space; ++i)
-								container.append(' ').append(' ');
-							String result = values.add(container.append(comment).append(System.lineSeparator()));
-							if (result != null)
-								return result;
+						while (commentsItr!=null && commentsItr.hasNext()) {
+							CharSequence result = getCharSequence(commentsItr, container, linked, values);
+							if (result != null) return result;
 						}
 						type = 1;
 						return hasNext() ? next() : null;
@@ -844,7 +691,7 @@ public class YamlSectionBuilderHelper {
 				public boolean hasNext() {
 					switch (type) {
 					case 0:
-						return commentsItr.hasNext();
+						return commentsItr!=null && commentsItr.hasNext();
 					case 1:
 						return true;
 					case 2:
@@ -857,14 +704,9 @@ public class YamlSectionBuilderHelper {
 				public CharSequence next() {
 					switch (type) {
 					case 0:
-						while (commentsItr.hasNext()) {
-							String comment = commentsItr.next();
-							container.clear();
-							for (int i = 0; i < linked.space; ++i)
-								container.append(' ').append(' ');
-							String result = values.add(container.append(comment).append(System.lineSeparator()));
-							if (result != null)
-								return result;
+						while (commentsItr!=null && commentsItr.hasNext()) {
+							CharSequence result = getCharSequence(commentsItr, container, linked, values);
+							if (result != null) return result;
 						}
 						type = 1;
 						return hasNext() ? next() : null;
@@ -904,7 +746,7 @@ public class YamlSectionBuilderHelper {
 			public boolean hasNext() {
 				switch (type) {
 				case 0:
-					return commentsItr.hasNext();
+					return commentsItr!=null && commentsItr.hasNext();
 				case 1:
 					return true;
 				case 2:
@@ -923,14 +765,9 @@ public class YamlSectionBuilderHelper {
 				}
 				switch (type) {
 				case 0:
-					while (commentsItr.hasNext()) {
-						String comment = commentsItr.next();
-						container.clear();
-						for (int i = 0; i < linked.space; ++i)
-							container.append(' ').append(' ');
-						String result = values.add(container.append(comment).append(System.lineSeparator()));
-						if (result != null)
-							return result;
+					while (commentsItr!=null && commentsItr.hasNext()) {
+						CharSequence result = getCharSequence(commentsItr, container, linked, values);
+						if (result != null) return result;
 					}
 					type = 1;
 					return hasNext() ? next() : null;
@@ -956,6 +793,72 @@ public class YamlSectionBuilderHelper {
 
 		};
 	}
+
+	private static Iterator<CharSequence> getCharSequenceIterator(StringContainer container, StringArrayList values, String section, DataValue dataVal, Section linked, boolean markSaved, String commentAfterValue, Iterator<String> commentsItr) {
+		return new Iterator<CharSequence>() {
+			byte type = commentsItr != null ? (byte) 0 : (byte) 1;
+			int pos = 0;
+			Iterator<CharSequence> currentItr;
+
+			@Override
+			public boolean hasNext() {
+				switch (type) {
+				case 0:
+					return commentsItr.hasNext();
+				case 1:
+					return true;
+				case 2:
+					return currentItr != null && currentItr.hasNext() || pos == -1 || linked.sub != null && linked.sub.length > pos;
+				}
+				return false;
+			}
+
+			@Override
+			public CharSequence next() {
+				switch (type) {
+				case 0:
+					while (commentsItr.hasNext()) {
+						CharSequence result = getCharSequence(commentsItr, container, linked, values);
+						if (result != null) return result;
+					}
+					type = 1;
+					return hasNext() ? next() : null;
+				case 1: {
+					type = 2;
+					String result = values.add(appendName(container, linked.space, section, dataVal.writtenValue, (char) 0, commentAfterValue));
+					if (result != null)
+						return result;
+					return hasNext() ? next() : null;
+				}
+				case 2:
+					if (currentItr != null && currentItr.hasNext()) {
+						CharSequence result = currentItr.next();
+						if (result != null)
+							return result;
+						return hasNext() ? next() : null;
+					}
+					Section sub = linked.sub[pos++];
+					currentItr = startIterator(container, values, sub.keyName, sub.value, sub, markSaved);
+
+					CharSequence result = currentItr.next();
+					if (result != null)
+						return result;
+					if (hasNext())
+						return next();
+				}
+				return null;
+			}
+
+		};
+	}
+
+	private static CharSequence getCharSequence(Iterator<String> commentsItr, StringContainer container, Section linked, StringArrayList values) {
+		String comment = commentsItr.next();
+		container.clear();
+		for (int i = 0; i < linked.space; ++i)
+			container.append(' ').append(' ');
+        return values.add(container.append(comment).append(System.lineSeparator()));
+    }
 
 	private static CharSequence appendName(StringContainer container, int space, String section) {
 		container.clear();
