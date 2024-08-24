@@ -15,10 +15,7 @@ public class DataValue {
 	public boolean modified;
 
 	public static DataValue of(String writtenValue, Object value, String commentAfterValue, List<String> comments) {
-		DataValue data = new DataValue();
-		data.value = value;
-		data.writtenValue = writtenValue;
-		data.commentAfterValue = commentAfterValue;
+        DataValue data = of(writtenValue, value, commentAfterValue);
 		data.comments = comments;
 		return data;
 	}

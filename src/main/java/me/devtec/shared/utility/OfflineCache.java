@@ -14,7 +14,7 @@ public class OfflineCache {
 	private final String USER_FORMAT = "https://api.ashcon.app/mojang/v2/user/%s";
 	protected final Map<String, Query> values = new ConcurrentHashMap<>();
 
-	private boolean onlineMode;
+	private final boolean onlineMode;
 
 	public OfflineCache(boolean onlineMode) {
 		this.onlineMode = onlineMode;
@@ -38,7 +38,7 @@ public class OfflineCache {
 	public String lookupNameFromMojang(String name) {
 		try {
 			return (String) ((Map<String, Object>) Json.reader().simpleRead(StreamUtils.fromStream(new URL(String.format(USER_FORMAT, name)).openStream()))).get("username");
-		} catch (Exception error) {
+		} catch (Exception ignored) {
 		}
 		return name;
 	}
@@ -47,7 +47,7 @@ public class OfflineCache {
 	public UUID lookupIdFromMojang(String name) {
 		try {
 			return UUID.fromString((String) ((Map<String, Object>) Json.reader().simpleRead(StreamUtils.fromStream(new URL(String.format(USER_FORMAT, name)).openStream()))).get("uuid"));
-		} catch (Exception error) {
+		} catch (Exception ignored) {
 		}
 		return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
 	}

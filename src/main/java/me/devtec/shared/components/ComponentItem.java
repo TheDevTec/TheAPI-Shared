@@ -8,7 +8,7 @@ import me.devtec.shared.json.Json;
 public class ComponentItem extends Component {
 
 	private String id;
-	private int count = 1;
+	private int count;
 	private String nbt;
 
 	public ComponentItem(String id, int count) {

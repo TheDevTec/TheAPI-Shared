@@ -2,15 +2,15 @@ package me.devtec.shared.utility;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 
 public interface LibraryLoader {
-	public default void downloadFileFromUrl(String fileUrl, String pathFile) {
+	default void downloadFileFromUrl(String fileUrl, String pathFile) {
 		try {
 			this.downloadFileFromUrl(new URL(fileUrl), new File(pathFile));
 		} catch (MalformedURLException e) {
@@ -18,7 +18,7 @@ public interface LibraryLoader {
 		}
 	}
 
-	public default void downloadFileFromUrl(String fileUrl, File file) {
+	default void downloadFileFromUrl(String fileUrl, File file) {
 		try {
 			this.downloadFileFromUrl(new URL(fileUrl), file);
 		} catch (MalformedURLException e) {
@@ -26,7 +26,7 @@ public interface LibraryLoader {
 		}
 	}
 
-	public default void downloadFileFromUrl(URL url, File file) {
+	default void downloadFileFromUrl(URL url, File file) {
 		try {
 			if (file.exists() && !file.delete())
 				return;
@@ -39,7 +39,7 @@ public interface LibraryLoader {
 				try (InputStream in = conn.getInputStream()) {
 					byte[] buf = new byte[4096];
 					int r;
-					try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+					try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(file.toPath()))) {
 						while ((r = in.read(buf)) != -1)
 							out.write(buf, 0, r);
 					} catch (Exception e) {
@@ -54,7 +54,7 @@ public interface LibraryLoader {
 		}
 	}
 
-	public void load(File file);
+	void load(File file);
 
-	public boolean isLoaded(File file);
+	boolean isLoaded(File file);
 }

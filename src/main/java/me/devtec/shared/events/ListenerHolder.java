@@ -1,10 +1,7 @@
 package me.devtec.shared.events;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import me.devtec.shared.Ref;
 
@@ -93,7 +90,7 @@ public class ListenerHolder {
 				continue; // Event doesn't have getHandlerList method.
 			}
 			Object result = Ref.invokeStatic(method);
-			if (result == null || !(result instanceof List)) {
+			if (!(result instanceof List)) {
 				System.out.println("[TheAPI ListenerHolder] Event '" + event.getCanonicalName() + "' have incorrect result of 'public static getHandlerList()' method.");
 				try {
 					System.out.println("[TheAPI ListenerHolder] Plugin file: " + event.getProtectionDomain().getCodeSource().getLocation().getFile());
@@ -105,7 +102,7 @@ public class ListenerHolder {
 			}
 			List<ListenerHolder> listeners = (List<ListenerHolder>) result;
 			listeners.add(this);
-			listeners.sort((o1, o2) -> o1.priority - o2.priority);
+			listeners.sort(Comparator.comparingInt(o -> o.priority));
 			okListeners.add(event);
 		}
 		listen = Collections.unmodifiableList(okListeners);
@@ -127,8 +124,7 @@ public class ListenerHolder {
 	public boolean equals(Object obj) {
 		if (obj instanceof ListenerHolder) {
 			ListenerHolder holder = (ListenerHolder) obj;
-			if (holder.listener.equals(listener) && holder.priority == priority && holder.getEvents().equals(listen))
-				return true;
+            return holder.listener.equals(listener) && holder.priority == priority && holder.getEvents().equals(listen);
 		}
 		return false;
 	}

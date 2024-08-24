@@ -44,7 +44,7 @@ public class Scheduler {
 					Thread.sleep(delay * 50);
 				if (!Scheduler.isCancelled(id))
 					r.run();
-			} catch (InterruptedException | ThreadDeath hide) {
+			} catch (InterruptedException | ThreadDeath ignored) {
 			} catch (Throwable err) {
 				err.printStackTrace();
 			}
@@ -63,7 +63,7 @@ public class Scheduler {
 					r.run();
 					Thread.sleep(period * 50);
 				}
-			} catch (InterruptedException | ThreadDeath hide) {
+			} catch (InterruptedException | ThreadDeath ignored) {
 			} catch (Throwable err) {
 				err.printStackTrace();
 			}
@@ -96,7 +96,7 @@ public class Scheduler {
 					}
 					if (onFinish != null && !Scheduler.isCancelled(id))
 						onFinish.run();
-				} catch (InterruptedException | ThreadDeath hide) {
+				} catch (InterruptedException | ThreadDeath ignored) {
 				} catch (Throwable err) {
 					err.printStackTrace();
 				}

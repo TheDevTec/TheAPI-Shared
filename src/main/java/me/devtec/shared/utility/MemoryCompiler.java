@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.security.SecureClassLoader;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,12 +24,12 @@ import me.devtec.shared.Ref;
 
 public class MemoryCompiler {
 
-	public static String allJars = System.getProperty("java.class.path").charAt(0) == '/' ? System.getProperty("java.class.path") : "./" + System.getProperty("java.class.path");
+	public static final String allJars = System.getProperty("java.class.path").charAt(0) == '/' ? System.getProperty("java.class.path") : "./" + System.getProperty("java.class.path");
 
 	private JavaFileManager fileManager;
-	private String fullName;
-	private String sourceCode;
-	private ClassLoader original;
+	private final String fullName;
+	private final String sourceCode;
+	private final ClassLoader original;
 
 	public MemoryCompiler(ClassLoader loader, String fullName, File pathToJavaFile) {
 		if (!pathToJavaFile.exists())
@@ -63,7 +64,7 @@ public class MemoryCompiler {
 
 	private void compile() {
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		compiler.getTask(null, fileManager, null, Arrays.asList("-nowarn", "-cp", allJars), null, Arrays.asList(new CharSequenceJavaFileObject(fullName, sourceCode))).call();
+		compiler.getTask(null, fileManager, null, Arrays.asList("-nowarn", "-cp", allJars), null, Collections.singletonList(new CharSequenceJavaFileObject(fullName, sourceCode))).call();
 	}
 
 	public Class<?> buildClass() {
@@ -76,12 +77,12 @@ public class MemoryCompiler {
 		return null;
 	}
 
-	public class CharSequenceJavaFileObject extends SimpleJavaFileObject {
+	public static class CharSequenceJavaFileObject extends SimpleJavaFileObject {
 
 		/**
 		 * CharSequence representing the source code to be compiled
 		 */
-		private CharSequence content;
+		private final CharSequence content;
 
 		public CharSequenceJavaFileObject(String className, CharSequence content) {
 			super(URI.create("string:///" + className.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
@@ -96,7 +97,7 @@ public class MemoryCompiler {
 
 	@SuppressWarnings("rawtypes")
 	public class ClassFileManager extends ForwardingJavaFileManager {
-		Map<String, JavaClassObject> loaded = new HashMap<>();
+		final Map<String, JavaClassObject> loaded = new HashMap<>();
 
 		@SuppressWarnings("unchecked")
 		public ClassFileManager(StandardJavaFileManager standardManager) {
@@ -108,7 +109,7 @@ public class MemoryCompiler {
 			return new SecureClassLoader(original) {
 
 				@Override
-				protected Class<?> findClass(String name) throws ClassNotFoundException {
+				protected Class<?> findClass(String name) {
 					JavaClassObject javaClassObject = loaded.get(name);
 					if (javaClassObject == null)
 						return Ref.getClass(name);
@@ -120,14 +121,14 @@ public class MemoryCompiler {
 		}
 
 		@Override
-		public JavaFileObject getJavaFileForOutput(Location location, String className, JavaFileObject.Kind kind, FileObject sibling) throws IOException {
+		public JavaFileObject getJavaFileForOutput(Location location, String className, JavaFileObject.Kind kind, FileObject sibling) {
 			JavaClassObject javaClassObject = new JavaClassObject(className, kind);
 			loaded.put(className, javaClassObject);
 			return javaClassObject;
 		}
 	}
 
-	public class JavaClassObject extends SimpleJavaFileObject {
+	public static class JavaClassObject extends SimpleJavaFileObject {
 		protected final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
 		public JavaClassObject(String name, Kind kind) {
@@ -139,7 +140,7 @@ public class MemoryCompiler {
 		}
 
 		@Override
-		public OutputStream openOutputStream() throws IOException {
+		public OutputStream openOutputStream() {
 			return bos;
 		}
 	}

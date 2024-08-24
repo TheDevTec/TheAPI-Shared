@@ -17,7 +17,7 @@ import me.devtec.shared.json.Json;
 public class TomlSectionBuilderHelper {
 
 	public static class Section {
-		public String keyName;
+		public final String keyName;
 		public DataValue value;
 		public Section[] sub;
 		public Section parent;
@@ -104,8 +104,7 @@ public class TomlSectionBuilderHelper {
 		public boolean equals(Object obj) {
 			if (obj instanceof Section) {
 				Section sec = (Section) obj;
-				if (sec.keyName.equals(keyName))
-					return true;
+                return sec.keyName.equals(keyName);
 			}
 			return false;
 		}
@@ -124,7 +123,7 @@ public class TomlSectionBuilderHelper {
 		for (Entry<String, DataValue> entry : dataLoader.entrySet()) {
 			container.clear();
 			container.append(entry.getKey());
-			Section main = null;
+			Section main;
 			if (prevParent != null && (container.startsWith(prevParent.fullName(fullNameContainer, false), 0)
 					|| (prevParent = prevParent.parent) != null && container.startsWith(prevParent.fullName(fullNameContainer, false), 0))) {
 				container.delete(0, prevParent.fullName(fullNameContainer, false).length());
@@ -133,11 +132,11 @@ public class TomlSectionBuilderHelper {
 				int pos = container.indexOf('.');
 				if (pos == -1)
 					continue;
-				String primaryKey = pos == -1 ? container.toString() : container.substring(0, pos);
+				String primaryKey = container.substring(0, pos);
 				container.delete(0, primaryKey.length() + 1);
-				main = prevParent = map.get(primaryKey);
+				main = map.get(primaryKey);
 				if (main == null)
-					map.put(primaryKey, main = prevParent = keysWithoutSub.remove(primaryKey));
+					map.put(primaryKey, main = keysWithoutSub.remove(primaryKey));
 			}
 			Section sec = main.create(container.toString());
 			sec.value = entry.getValue();
@@ -212,7 +211,7 @@ public class TomlSectionBuilderHelper {
 	public static Iterator<CharSequence> startIterator(StringContainer container, StringArrayList values, String section, DataValue dataVal, Section linked, boolean markSaved) {
 		if (dataVal == null)
 			return new Iterator<CharSequence>() {
-				Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
+				final Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
 
 				@Override
 				public boolean hasNext() {
@@ -236,7 +235,7 @@ public class TomlSectionBuilderHelper {
 
 		if (dataVal.value == null)
 			return new Iterator<CharSequence>() {
-				Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
+				final Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
 
 				@Override
 				public boolean hasNext() {
@@ -263,7 +262,7 @@ public class TomlSectionBuilderHelper {
 			if (dataVal.writtenValue != null)
 				return new Iterator<CharSequence>() {
 					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
-					Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, values, linked.sub, markSaved);
+					final Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, values, linked.sub, markSaved);
 
 					@Override
 					public boolean hasNext() {
@@ -313,7 +312,7 @@ public class TomlSectionBuilderHelper {
 			else if (value instanceof CharSequence)
 				return new Iterator<CharSequence>() {
 					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
-					Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, values, linked.sub, markSaved);
+					final Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, values, linked.sub, markSaved);
 
 					@Override
 					public boolean hasNext() {
@@ -363,7 +362,7 @@ public class TomlSectionBuilderHelper {
 			else
 				return new Iterator<CharSequence>() {
 					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
-					Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, values, linked.sub, markSaved);
+					final Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, values, linked.sub, markSaved);
 
 					@Override
 					public boolean hasNext() {
@@ -411,7 +410,7 @@ public class TomlSectionBuilderHelper {
 
 				};
 		return new Iterator<CharSequence>() {
-			Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
+			final Iterator<CharSequence> currentItr = linked.sub != null ? startMultipleIterate(container, values, linked.sub, markSaved) : null;
 
 			@Override
 			public boolean hasNext() {
@@ -498,13 +497,13 @@ public class TomlSectionBuilderHelper {
 				case 1: {
 					String result;
 					if (section.value.writtenValue != null)
-						result = values.add(appendName(container, section, !ignoreIsKey ? section.isKey : false, section.value.writtenValue, section.value.value instanceof String ? '"' : (char) 0,
+						result = values.add(appendName(container, section, !ignoreIsKey && section.isKey, section.value.writtenValue, section.value.value instanceof String ? '"' : (char) 0,
 								section.value.commentAfterValue));
 					else if (section.value.value instanceof CharSequence)
-						result = values.add(appendName(container, section, !ignoreIsKey ? section.isKey : false,
+						result = values.add(appendName(container, section, !ignoreIsKey && section.isKey,
 								section.value.value instanceof String ? (String) section.value.value : section.value.value.toString(), '"', section.value.commentAfterValue));
 					else
-						result = values.add(appendName(container, section, !ignoreIsKey ? section.isKey : false, Json.writer().write(section.value.value), (char) 0, section.value.commentAfterValue));
+						result = values.add(appendName(container, section, !ignoreIsKey && section.isKey, Json.writer().write(section.value.value), (char) 0, section.value.commentAfterValue));
 					ignoreIsKey = true;
 					mode = 2;
 					if (result != null)

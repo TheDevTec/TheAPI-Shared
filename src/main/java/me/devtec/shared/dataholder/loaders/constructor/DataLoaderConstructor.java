@@ -6,12 +6,12 @@ import me.devtec.shared.dataholder.loaders.DataLoader;
 public interface DataLoaderConstructor {
 
 	@Nonnull
-	public DataLoader construct();
+    DataLoader construct();
 
 	@Nonnull
-	public String name();
+    String name();
 
-	public default boolean isConstructorOf(@Nonnull String type) {
+	default boolean isConstructorOf(@Nonnull String type) {
 		return name().equalsIgnoreCase(type);
 	}
 }

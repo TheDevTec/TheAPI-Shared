@@ -3,8 +3,8 @@ package me.devtec.shared.utility;
 import me.devtec.shared.utility.StringUtils.FormatType;
 
 public class MemoryAPI {
-	private static double mb = 1048576;
-	private static double max = Runtime.getRuntime().maxMemory() / MemoryAPI.mb;
+	private static final double mb = 1048576;
+	private static final double max = Runtime.getRuntime().maxMemory() / MemoryAPI.mb;
 
 	public static double getFreeMemory(boolean inPercentage) {
 		if (!inPercentage)

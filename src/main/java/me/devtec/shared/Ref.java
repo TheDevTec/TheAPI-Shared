@@ -18,14 +18,14 @@ public class Ref {
 			Field f = Unsafe.class.getDeclaredField("theUnsafe");
 			f.setAccessible(true);
 			unsafe = (Unsafe) f.get(null);
-		} catch (Exception err) {
+		} catch (Exception ignored) {
 		}
 	}
 
 	public enum ServerType {
 		BUKKIT(true), SPIGOT(true), PAPER(true), BUNGEECORD(false), VELOCITY(false), CUSTOM(false); // Is it minecraft?
 
-		boolean bukkit;
+		final boolean bukkit;
 
 		ServerType(boolean bukkit) {
 			this.bukkit = bukkit;
@@ -99,8 +99,7 @@ public class Ref {
 		} catch (Exception e) {
 			if (Modifier.isFinal(f.getModifiers())) {
 				setFinal(main, f, o);
-				return;
-			}
+            }
 		}
 	}
 
@@ -118,7 +117,7 @@ public class Ref {
 			}
 			long offset = getUnsafe().objectFieldOffset(f);
 			unsafe.putObject(main, offset, o);
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 	}
 
@@ -139,7 +138,7 @@ public class Ref {
 			Object staticBase = getUnsafe().staticFieldBase(f);
 			long offset = getUnsafe().staticFieldOffset(f);
 			unsafe.putObject(staticBase, offset, o);
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 	}
 
@@ -270,7 +269,7 @@ public class Ref {
 				Field field = mainClass.getDeclaredField(name);
 				field.setAccessible(true);
 				return field;
-			} catch (Exception | NoSuchFieldError err) {
+			} catch (Exception | NoSuchFieldError ignored) {
 			}
 			mainClass = mainClass.getSuperclass();
 		}
@@ -373,7 +372,7 @@ public class Ref {
 					found = startClass.getDeclaredMethod(name);
 					found.setAccessible(true);
 					return found;
-				} catch (Exception | NoSuchMethodError err) {
+				} catch (Exception | NoSuchMethodError ignored) {
 
 				}
 				startClass = startClass.getSuperclass();
@@ -386,7 +385,7 @@ public class Ref {
 					found = startClass.getDeclaredMethod(name, params);
 					found.setAccessible(true);
 					return found;
-				} catch (Exception | NoSuchMethodError err) {
+				} catch (Exception | NoSuchMethodError ignored) {
 
 				}
 				startClass = startClass.getSuperclass();

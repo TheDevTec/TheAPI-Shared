@@ -14,9 +14,9 @@ import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.scheduler.Tasker;
 
 public class TempList<V> extends AbstractList<V> {
-	private static long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
+	private static final long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
 
-	private List<Entry<V, Long>> queue = new ArrayList<>();
+	private final List<Entry<V, Long>> queue = new ArrayList<>();
 	private long cacheTime;
 	private RemoveCallback<V> callback;
 
@@ -36,8 +36,7 @@ public class TempList<V> extends AbstractList<V> {
 	 */
 	public TempList(long cacheTime, Collection<V> collection) {
 		this(cacheTime);
-		for (V value : collection)
-			add(value);
+        this.addAll(collection);
 	}
 
 	public RemoveCallback<V> getCallback() {

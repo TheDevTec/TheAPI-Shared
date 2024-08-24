@@ -4,17 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface ComponentTransformer<T> {
-	public default T fromString(String string) {
+	default T fromString(String string) {
 		return this.fromComponent(ComponentAPI.fromString(string));
 	}
 
-	public default T[] fromStringArray(String string) {
+	default T[] fromStringArray(String string) {
 		return this.fromComponents(ComponentAPI.fromString(string));
 	}
 
-	public Component toComponent(T value);
+	Component toComponent(T value);
 
-	public default Component toComponent(T[] value) {
+	default Component toComponent(T[] value) {
 		Component comp = new Component("");
 		List<Component> extra = new ArrayList<>();
 		for (T t : value)
@@ -23,11 +23,11 @@ public interface ComponentTransformer<T> {
 		return comp;
 	}
 
-	public T fromComponent(Component component);
+	T fromComponent(Component component);
 
-	public T fromComponent(List<Component> components);
+	T fromComponent(List<Component> components);
 
-	public T[] fromComponents(Component component);
+	T[] fromComponents(Component component);
 
-	public T[] fromComponents(List<Component> components);
+	T[] fromComponents(List<Component> components);
 }

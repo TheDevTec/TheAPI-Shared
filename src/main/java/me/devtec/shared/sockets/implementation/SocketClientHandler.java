@@ -26,15 +26,15 @@ public class SocketClientHandler implements SocketClient {
 	private Socket socket;
 	private boolean connected;
 	private boolean manuallyClosed;
-	private byte[] password;
+	private final byte[] password;
 
 	private DataInputStream in;
 	private DataOutputStream out;
 	private int ping;
-	private Queue<SocketAction> actions = new LinkedBlockingDeque<>();
-	private Queue<Integer> unlockReadActions = new LinkedBlockingDeque<>();
+	private final Queue<SocketAction> actions = new LinkedBlockingDeque<>();
+	private final Queue<Integer> unlockReadActions = new LinkedBlockingDeque<>();
 
-	private Map<Integer, SocketAction> writeActions = new ConcurrentHashMap<>();
+	private final Map<Integer, SocketAction> writeActions = new ConcurrentHashMap<>();
 
 	private boolean lock;
 
@@ -83,7 +83,7 @@ public class SocketClientHandler implements SocketClient {
 				if (!checkRawConnected())
 					try {
 						Thread.sleep(5000);
-					} catch (Exception e) {
+					} catch (Exception ignored) {
 					}
 			}
 			if (!API.isEnabled())
@@ -121,7 +121,7 @@ public class SocketClientHandler implements SocketClient {
 			connected = false;
 			try {
 				Thread.sleep(5000);
-			} catch (Exception err) {
+			} catch (Exception ignored) {
 			}
 			start();
 		}
@@ -138,7 +138,7 @@ public class SocketClientHandler implements SocketClient {
 			while (API.isEnabled() && isConnected()) {
 				try {
 					Thread.sleep(100);
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 				}
 				if (isLocked())
 					continue;
@@ -177,7 +177,7 @@ public class SocketClientHandler implements SocketClient {
 			Socket socket = new Socket(ip, port);
 			socket.setReuseAddress(true);
 			return socket;
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 		return null;
 	}
@@ -188,7 +188,7 @@ public class SocketClientHandler implements SocketClient {
 		connected = false;
 		try {
 			socket.close();
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 		lock = false;
 		socket = null;

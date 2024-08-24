@@ -5,14 +5,14 @@ import java.net.URL;
 import java.net.URLConnection;
 
 public class RjarURLStreamHandler extends java.net.URLStreamHandler {
-	private ClassLoader classLoader;
+	private final ClassLoader classLoader;
 
 	public RjarURLStreamHandler(ClassLoader classLoader) {
 		this.classLoader = classLoader;
 	}
 
 	@Override
-	protected URLConnection openConnection(URL u) throws IOException {
+	protected URLConnection openConnection(URL u) {
 		return new RjarURLConnection(u, classLoader);
 	}
 

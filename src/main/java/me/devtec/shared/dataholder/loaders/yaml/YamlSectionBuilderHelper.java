@@ -49,8 +49,8 @@ public class YamlSectionBuilderHelper {
 	}
 
 	public static class Section {
-		public int space;
-		public String keyName;
+		public final int space;
+		public final String keyName;
 		public DataValue value;
 		public Section[] sub;
 		public Section parent;
@@ -886,17 +886,13 @@ public class YamlSectionBuilderHelper {
 				container.append(value);
 			else
 				container.append(queto).append(replaceWithEscape(value, queto)).append(queto);
-			if (comment != null && !comment.trim().isEmpty())
-				if (comment.charAt(0) == ' ')
-					container.append(comment);
-				else
-					container.append(' ').append(comment);
-		} else if (comment != null && !comment.trim().isEmpty())
-			if (comment.charAt(0) == ' ')
-				container.append(comment);
-			else
-				container.append(' ').append(comment);
-		container.append(System.lineSeparator());
+        }
+        if (comment != null && !comment.trim().isEmpty())
+            if (comment.charAt(0) == ' ')
+                container.append(comment);
+            else
+                container.append(' ').append(comment);
+        container.append(System.lineSeparator());
 		return container;
 	}
 

@@ -53,6 +53,6 @@ public class HoverEvent {
 	}
 
 	public enum Action {
-		SHOW_ENTITY, SHOW_ITEM, SHOW_TEXT;
-	}
+		SHOW_ENTITY, SHOW_ITEM, SHOW_TEXT
+    }
 }

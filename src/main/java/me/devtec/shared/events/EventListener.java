@@ -2,11 +2,11 @@ package me.devtec.shared.events;
 
 public interface EventListener {
 
-	public static final int LOWEST = 0;
-	public static final int LOW = 1;
-	public static final int NORMAL = 2;
-	public static final int HIGH = 3;
-	public static final int HIGHEST = 4;
+	int LOWEST = 0;
+	int LOW = 1;
+	int NORMAL = 2;
+	int HIGH = 3;
+	int HIGHEST = 4;
 
 	void listen(Event event);
 

@@ -9,7 +9,7 @@ import me.devtec.shared.events.Event;
 import me.devtec.shared.events.ListenerHolder;
 
 public class ServerClientPreConnectEvent extends Event implements Cancellable {
-	static List<ListenerHolder> handlers = new ArrayList<>();
+	static final List<ListenerHolder> handlers = new ArrayList<>();
 
 	private final Socket socket;
 	private final String serverName;

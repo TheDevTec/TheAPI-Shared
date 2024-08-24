@@ -93,9 +93,7 @@ public class ArrayUtils {
 		int length = Array.getLength(array) + 1;
 		if (position < 0 || position >= length)
 			throw new IndexOutOfBoundsException("Array length is " + (length - 1) + ", insert position is " + position);
-		if (position >= length)
-			position = length + 1;
-		Object newInstance = array.getClass().getComponentType() == Object[].class ? new Object[length] : Array.newInstance(array.getClass().getComponentType(), length);
+        Object newInstance = array.getClass().getComponentType() == Object[].class ? new Object[length] : Array.newInstance(array.getClass().getComponentType(), length);
 		System.arraycopy(array, 0, newInstance, 0, position);
 		System.arraycopy(array, position, newInstance, position + 1, length - position - 1);
 		Array.set(newInstance, position, value);

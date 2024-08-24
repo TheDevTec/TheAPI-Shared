@@ -8,7 +8,7 @@ import me.devtec.shared.Pair;
 
 public class MathUtils {
 
-	public static Random random = new Random();
+	public static final Random random = new Random();
 
 	/**
 	 * @apiNote The method first casts the double value to an int using a simple
@@ -18,7 +18,6 @@ public class MathUtils {
 	 *          representation of the original double value. The result of this
 	 *          calculation is either 0 or 1, which is then subtracted from the cast
 	 *          value and returned as the final result.
-	 * @param value
 	 * @return int
 	 */
 	public static int floor(double value) {
@@ -36,7 +35,6 @@ public class MathUtils {
 	 *          subtracts 1 from the casted long value to return the floor value,
 	 *          otherwise, it returns the casted long value which represents the
 	 *          ceiling value.
-	 * @param value
 	 * @return long
 	 */
 	public static long floorOrCeilLong(double value) {
@@ -48,7 +46,6 @@ public class MathUtils {
 	 * @apiNote The method always returns a non-negative integer that is the
 	 *          smallest integer greater than or equal to the absolute value of the
 	 *          input value.
-	 * @param value
 	 * @return int
 	 */
 	public static int absRoundUp(double value) {
@@ -57,7 +54,6 @@ public class MathUtils {
 
 	/**
 	 * @apiNote The method checks if number has decimals (number.decimals)
-	 * @param num
 	 * @return boolean
 	 */
 	public static boolean hasDecimal(double num) {
@@ -187,7 +183,7 @@ public class MathUtils {
 					if (start == -1)
 						if (prevOperation != '-' ? c == '-' : c == '+')
 							minus = true;
-						else if (c == '-' && prevOperation == '-')
+						else if (c == '-')
 							minus = false;
 
 					if (start != -1) {
@@ -258,10 +254,9 @@ public class MathUtils {
 			}
 		}
 		double result = 0;
-		for (int i = 0; i < operation.size(); ++i) {
-			Pair pair = operation.get(i);
-			result += (double) pair.getValue();
-		}
+        for (Pair pair : operation) {
+            result += (double) pair.getValue();
+        }
 		return result;
 	}
 

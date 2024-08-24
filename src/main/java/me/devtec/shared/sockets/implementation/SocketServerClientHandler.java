@@ -25,15 +25,15 @@ public class SocketServerClientHandler implements SocketClient {
 	private final Socket socket;
 	private final SocketServer socketServer;
 
-	private DataInputStream in;
-	private DataOutputStream out;
+	private final DataInputStream in;
+	private final DataOutputStream out;
 	private boolean connected = true;
 	private boolean manuallyClosed;
 	private int ping;
-	private Queue<SocketAction> actions = new LinkedBlockingDeque<>();
-	private Queue<Integer> unlockReadActions = new LinkedBlockingDeque<>();
+	private final Queue<SocketAction> actions = new LinkedBlockingDeque<>();
+	private final Queue<Integer> unlockReadActions = new LinkedBlockingDeque<>();
 
-	private Map<Integer, SocketAction> writeActions = new ConcurrentHashMap<>();
+	private final Map<Integer, SocketAction> writeActions = new ConcurrentHashMap<>();
 
 	private boolean lock;
 
@@ -54,7 +54,7 @@ public class SocketServerClientHandler implements SocketClient {
 			while (API.isEnabled() && isConnected()) {
 				try {
 					Thread.sleep(100);
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 				}
 				if (isLocked())
 					continue;
@@ -125,7 +125,7 @@ public class SocketServerClientHandler implements SocketClient {
 		connected = false;
 		try {
 			socket.close();
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 		lock = false;
 		getSocketServer().notifyDisconnect(this);

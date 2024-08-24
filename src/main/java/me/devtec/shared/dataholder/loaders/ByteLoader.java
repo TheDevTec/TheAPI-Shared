@@ -39,7 +39,7 @@ public class ByteLoader extends EmptyLoader {
 			if (s == null)
 				return "null";
 			return s instanceof CharSequence || s instanceof Number || s instanceof Character ? s.toString() : Json.writer().toGson(Json.writer().writeWithoutParse(s));
-		} catch (Exception err) {
+		} catch (Exception ignored) {
 		}
 		return null;
 	}
@@ -88,7 +88,7 @@ public class ByteLoader extends EmptyLoader {
 				String writtenValue = new String(valueBytes, StandardCharsets.UTF_8);
 				loader.set(new String(keyBytes, StandardCharsets.UTF_8), DataValue.of(writtenValue, Json.reader().read(writtenValue)));
 			}
-		} catch (Exception err) {
+		} catch (Exception ignored) {
 		}
 	}
 

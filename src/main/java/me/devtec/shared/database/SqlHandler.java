@@ -17,8 +17,8 @@ import me.devtec.shared.utility.StringUtils;
 
 public class SqlHandler implements DatabaseHandler {
 	private Connection sql;
-	private DatabaseSettings settings;
-	private String path;
+	private final DatabaseSettings settings;
+	private final String path;
 
 	public SqlHandler(String path, DatabaseSettings settings) throws SQLException {
 		this.settings = settings;
@@ -35,7 +35,7 @@ public class SqlHandler implements DatabaseHandler {
 					try {
 						if (SqlHandler.this.isConnected())
 							sql.prepareStatement("select 1").executeQuery().next();
-					} catch (Exception doNotIddle2) {
+					} catch (Exception ignored) {
 					}
 				}
 			}
@@ -183,7 +183,7 @@ public class SqlHandler implements DatabaseHandler {
 					first = false;
 				else
 					builder.append(',').append(' ');
-				builder.append('"').append((val + "").replace("'", "\\'")).append('"');
+				builder.append('"').append((val).replace("'", "\\'")).append('"');
 			}
 		}
 		return builder.append(')').toString();
@@ -250,7 +250,7 @@ public class SqlHandler implements DatabaseHandler {
 					first = false;
 				else
 					builder.append(',');
-				builder.append(' ').append(val[0].replace("'", "\\'")).append('=').append((val[1] + "").replace("'", "\\'"));
+				builder.append(' ').append(val[0].replace("'", "\\'")).append('=').append((val[1]).replace("'", "\\'"));
 			}
 			first = true;
 			for (Object[] pair : query.where) {
@@ -425,7 +425,7 @@ public class SqlHandler implements DatabaseHandler {
 		if (sql != null)
 			try {
 				sql.close();
-			} catch (Exception er) {
+			} catch (Exception ignored) {
 			}
 		sql = DriverManager.getConnection(path, settings.getUser(), settings.getPassword());
 		sql.setAutoCommit(true);
@@ -452,7 +452,7 @@ public class SqlHandler implements DatabaseHandler {
 				prepared.setObject(index++, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		}
 		ResultSet set = prepared.executeQuery();
-		return set == null ? false : set.next();
+		return set != null && set.next();
 	}
 
 	@Override
@@ -629,9 +629,8 @@ public class SqlHandler implements DatabaseHandler {
 		ResultSet set = prepareStatement("SHOW TABLES").executeQuery();
 		if (set != null && set.next()) {
 			List<String> tables = new ArrayList<>();
-			tables.add(set.getString(0));
-			while (set.next())
-				tables.add(set.getString(0));
+            do tables.add(set.getString(0));
+            while (set.next());
 			return tables;
 		}
 		return null;
@@ -639,7 +638,7 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public Row[] getTableValues(String name) throws SQLException {
-		ResultSet set = prepareStatement("DESCRIBE \'" + name + "\'").executeQuery();
+		ResultSet set = prepareStatement("DESCRIBE '" + name + "'").executeQuery();
 		if (set == null || !set.next())
 			return null;
 		List<Row> rows = new ArrayList<>();

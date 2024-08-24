@@ -20,7 +20,7 @@ public class RegexFinder implements GradientFinder {
 	}
 
 	private int skipChars;
-	private Matcher matcher;
+	private final Matcher matcher;
 	// Match
 	private String firstHex;
 	private int firstHexLength;
@@ -36,7 +36,7 @@ public class RegexFinder implements GradientFinder {
 
 	@Override
 	public boolean find() {
-		boolean match = false;
+		boolean match;
 		if (skipChars != 0) {
 			match = matcher.find(skipChars);
 			skipChars = 0;

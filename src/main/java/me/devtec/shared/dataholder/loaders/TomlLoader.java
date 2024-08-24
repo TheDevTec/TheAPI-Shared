@@ -26,7 +26,7 @@ public class TomlLoader extends EmptyLoader {
 	private int endIndex;
 	private StringContainer lines;
 
-	private final int[] readLine() {
+	private int[] readLine() {
 		try {
 			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
@@ -36,7 +36,7 @@ public class TomlLoader extends EmptyLoader {
 				for (int i = startIndex; i < lines.length(); ++i) {
 					char c = lines.charAt(i);
 					if (c == '\r' || c == '\n') {
-						endIndex = startIndex == -1 ? -1 : i;
+						endIndex = i;
 						break;
 					}
 				}
@@ -92,8 +92,8 @@ public class TomlLoader extends EmptyLoader {
 		}
 
 		List<String> comments = null;
-		List<Map<Object, Object>> list = null;
-		Map<Object, Object> map = null;
+		List<Map<Object, Object>> list;
+		Map<Object, Object> map;
 		int mode = 0;
 		StringContainer mainPath = null;
 
@@ -118,7 +118,7 @@ public class TomlLoader extends EmptyLoader {
 
 			if (parts.length == 1) {
 				if (comments != null)
-					if (mode == 0 || mode != 1)
+					if (mode != 1)
 						set(this.lines.substring(parts[0][0], parts[0][1]), DataValue.of(null, "", null, comments));
 					else {
 						CharSequence seq = this.lines.subSequence(parts[0][0], parts[0][1]);
@@ -136,10 +136,8 @@ public class TomlLoader extends EmptyLoader {
 				DataValue probablyCreated = get(inString);
 				if (mode != 2 && probablyCreated == null && comments != null)
 					set(inString, DataValue.of(null, null, null, comments));
-				map = null;
-				list = null;
 
-				if (mode == 2) {
+                if (mode == 2) {
 					list = probablyCreated != null && probablyCreated.value != null ? (List<Map<Object, Object>>) probablyCreated.value : new ArrayList<>();
 					if (probablyCreated == null || probablyCreated.value == null)
 						set(inString, DataValue.of(null, list, null, comments));
@@ -155,7 +153,7 @@ public class TomlLoader extends EmptyLoader {
 			int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 			String comment = readerValue.length == 1 ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
 
-			if (mode == 0 || mode != 1)
+			if (mode != 1)
 				set(this.lines.substring(parts[0][0], parts[0][1]),
 						DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
 								Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
@@ -167,8 +165,7 @@ public class TomlLoader extends EmptyLoader {
 				mainPath.delete(mainPath.length() - seq.length() - 1, mainPath.length());
 			}
 			comments = null;
-			continue;
-		}
+        }
 		if (task != -1)
 			Scheduler.cancelTask(task);
 		if (comments != null) {
@@ -257,10 +254,8 @@ public class TomlLoader extends EmptyLoader {
 					posInPhase = 0;
 					return hasNext();
 				case 2:
-					if (config.getDataLoader().getFooter().isEmpty() || config.getDataLoader().getFooter().size() == posInPhase)
-						return false;
-					return true;
-				}
+                    return !config.getDataLoader().getFooter().isEmpty() && config.getDataLoader().getFooter().size() != posInPhase;
+                }
 				return false;
 			}
 		};

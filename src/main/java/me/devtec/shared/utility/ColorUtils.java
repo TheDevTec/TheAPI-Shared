@@ -13,7 +13,7 @@ import me.devtec.shared.utility.colors.HexReplacer;
 
 public class ColorUtils {
 
-	public static ColormaticFactory color = new ColormaticFactory() {
+	public static final ColormaticFactory color = new ColormaticFactory() {
 	};
 
 	public static String tagPrefix = "!";
@@ -70,7 +70,7 @@ public class ColorUtils {
 
 			// Branch found, follow it
 			if (previous != null)
-				while (!left.isEmpty()) {
+				while (true) {
 					if (previous.sub == null)
 						break;
 
@@ -80,7 +80,7 @@ public class ColorUtils {
 							found = true;
 							previous = branch;
 							left = left.substring(1);
-							if (left.length() == 0) {
+							if (left.isEmpty()) {
 								if (previous.value == null) {
 									previous.value = value;
 									previous.length = replace.length();
@@ -144,7 +144,7 @@ public class ColorUtils {
 		 * @apiNote Generates random color depends on software & version
 		 * @author justADeni
 		 */
-		public default String generateColor() {
+		default String generateColor() {
 			seed ^= seed << 21;
 			seed ^= seed >>> 35;
 			seed ^= seed << 4;
@@ -155,21 +155,21 @@ public class ColorUtils {
 		/**
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public default String[] getLastColors(String text) {
+		default String[] getLastColors(String text) {
 			return API.basics().getLastColors(text);
 		}
 
 		/**
 		 * @apiNote Replace #RRGGBB hex color depends on software
 		 */
-		public default String replaceHex(String text) {
+		default String replaceHex(String text) {
 			return replaceHex(new StringContainer(text, 0, 14 * 2)).toString();
 		}
 
 		/**
 		 * @apiNote Replace #RRGGBB hex color depends on software
 		 */
-		public default StringContainer replaceHex(StringContainer text) {
+		default StringContainer replaceHex(StringContainer text) {
 			hexReplacer.apply(text, 0, text.length());
 			return text;
 		}
@@ -178,7 +178,7 @@ public class ColorUtils {
 		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public default String gradient(String msg, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
+		default String gradient(String msg, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
 			return gradient(new StringContainer(msg), 0, msg.length(), firstHex, secondHex, protectedStrings).toString();
 		}
 
@@ -186,7 +186,7 @@ public class ColorUtils {
 		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public default String rainbow(String msg, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
+		default String rainbow(String msg, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
 			return rainbow(new StringContainer(msg), 0, msg.length(), firstHex, secondHex, protectedStrings).toString();
 		}
 
@@ -194,7 +194,7 @@ public class ColorUtils {
 		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public default StringContainer gradient(StringContainer container, int start, int end, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
+		default StringContainer gradient(StringContainer container, int start, int end, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
 			API.basics().gradient(container, start, end, firstHex, secondHex, protectedStrings);
 			return container;
 		}
@@ -203,7 +203,7 @@ public class ColorUtils {
 		 * @param protectedStrings List of strings which not be colored via gradient
 		 * @apiNote @see {@link API#basics()}
 		 */
-		public default StringContainer rainbow(StringContainer container, int start, int end, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
+		default StringContainer rainbow(StringContainer container, int start, int end, @Nullable String firstHex, @Nullable String secondHex, @Nullable List<String> protectedStrings) {
 			API.basics().rainbow(container, start, end, firstHex, secondHex, protectedStrings);
 			return container;
 		}
@@ -406,8 +406,7 @@ public class ColorUtils {
 					container.delete(i, i + 2);
 					--i;
 				}
-				continue;
-			}
+            }
 		}
 		return container;
 	}

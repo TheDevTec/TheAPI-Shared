@@ -5,7 +5,7 @@ import me.devtec.shared.dataholder.StringContainer;
 public class ArrowsWithExclamationFinder implements GradientFinder {
 
 	private transient int i;
-	private StringContainer container;
+	private final StringContainer container;
 	// Match
 	private String firstHex;
 	private int firstHexLength;
@@ -29,63 +29,55 @@ public class ArrowsWithExclamationFinder implements GradientFinder {
 			char c = container.charAt(i);
 			switch (mode) {
 			case 0:
-				switch (c) {
-				case '<':
-					if (i + 9 < container.length() && container.charAt(i + 1) == '!' && container.charAt(i + 2) == '#') {
-						i += 2;
-						for (byte ic = 1; ic < 7; ++ic) {
-							c = container.charAt(i + ic);
-							if ((c < 64 || c > 70) && (c < 97 || c > 102) && (c < 48 || c > 57)) {
-								count = 0;
-								break;
-							}
-							if (++count == 6) {
-								if (container.charAt(i + 7) == '>') {
-									i += 8;
-									startAt = i;
-									count = 0;
-									mode = 1; // looking for second
-									firstHex = container.substring(startAt - 8, startAt - 1);
-									firstHexLength = 10;
-								} else
-									count = 0;
-								break;
-							}
-						}
-					}
-					break;
-				default:
-					break;
-				}
+                if (c == '<') {
+                    if (i + 9 < container.length() && container.charAt(i + 1) == '!' && container.charAt(i + 2) == '#') {
+                        i += 2;
+                        for (byte ic = 1; ic < 7; ++ic) {
+                            c = container.charAt(i + ic);
+                            if ((c < 64 || c > 70) && (c < 97 || c > 102) && (c < 48 || c > 57)) {
+                                count = 0;
+                                break;
+                            }
+                            if (++count == 6) {
+                                if (container.charAt(i + 7) == '>') {
+                                    i += 8;
+                                    startAt = i;
+                                    count = 0;
+                                    mode = 1; // looking for second
+                                    firstHex = container.substring(startAt - 8, startAt - 1);
+                                    firstHexLength = 10;
+                                } else
+                                    count = 0;
+                                break;
+                            }
+                        }
+                    }
+                }
 				break;
 			case 1:
-				switch (c) {
-				case '<':
-					if (i + 9 < container.length() && container.charAt(i + 1) == '!' && container.charAt(i + 2) == '#') {
-						i += 2;
-						for (byte ic = 1; ic < 7; ++ic) {
-							c = container.charAt(i + ic);
-							if ((c < 64 || c > 70) && (c < 97 || c > 102) && (c < 48 || c > 57)) {
-								count = 0;
-								break;
-							}
-							if (++count == 6) {
-								if (container.charAt(i + 7) == '>') {
-									endAt = i - 2;
-									i += 8;
-									secondHex = container.substring(endAt + 2, endAt + 9);
-									secondHexLength = 10;
-									return true;
-								}
-								count = 0;
-								break;
-							}
-						}
-					}
-					break;
-				default:
-					break;
-				}
+                if (c == '<') {
+                    if (i + 9 < container.length() && container.charAt(i + 1) == '!' && container.charAt(i + 2) == '#') {
+                        i += 2;
+                        for (byte ic = 1; ic < 7; ++ic) {
+                            c = container.charAt(i + ic);
+                            if ((c < 64 || c > 70) && (c < 97 || c > 102) && (c < 48 || c > 57)) {
+                                count = 0;
+                                break;
+                            }
+                            if (++count == 6) {
+                                if (container.charAt(i + 7) == '>') {
+                                    endAt = i - 2;
+                                    i += 8;
+                                    secondHex = container.substring(endAt + 2, endAt + 9);
+                                    secondHexLength = 10;
+                                    return true;
+                                }
+                                count = 0;
+                                break;
+                            }
+                        }
+                    }
+                }
 				break;
 			}
 		}

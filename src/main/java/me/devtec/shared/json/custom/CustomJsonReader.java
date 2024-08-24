@@ -66,23 +66,24 @@ public class CustomJsonReader implements JReader {
 			case 0:
 				switch (character) {
 				case CLOSED_BRACKET:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						listResult.add(container.toString());
 						container.clear();
 					}
 					awaitingAction = 4;
 					continue;
-				case OPEN_BRACE:
+				case OPEN_BRACE: {
 					++pos;
 					Pair pair = readMap(text, pos, to, container);
 					container.clear();
 					listResult.add(pair.getKey() == null ? text.substring(pos - 1, (int) pair.getValue()) : pair.getKey());
 					pos = (int) pair.getValue() - 1;
 					awaitingAction = 1;
+				}
 					continue;
 				case OPEN_BRACKET:
 					++pos;
-					pair = readList(text, pos, to, container);
+					Pair pair = readList(text, pos, to, container);
 					container.clear();
 					listResult.add(pair.getKey() == null ? text.substring(pos - 1, (int) pair.getValue()) : pair.getKey());
 					pos = (int) pair.getValue() - 1;
@@ -167,14 +168,14 @@ public class CustomJsonReader implements JReader {
 			case 1:
 				switch (character) {
 				case CLOSED_BRACKET:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						listResult.add(container.toString());
 						container.clear();
 					}
 					awaitingAction = 4;
 					continue;
 				case COMMA:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						listResult.add(container.toString());
 						container.clear();
 					}
@@ -187,14 +188,14 @@ public class CustomJsonReader implements JReader {
 			case 2:
 				switch (character) {
 				case CLOSED_BRACKET:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						listResult.add(ParseUtils.getNumber(container));
 						container.clear();
 					}
 					awaitingAction = 4;
 					continue;
 				case COMMA:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						listResult.add(ParseUtils.getNumber(container));
 						container.clear();
 					}
@@ -226,14 +227,14 @@ public class CustomJsonReader implements JReader {
 			case 3:
 				switch (character) {
 				case CLOSED_BRACKET:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						listResult.add(container.trim().toString());
 						container.clear();
 					}
 					awaitingAction = 4;
 					continue;
 				case COMMA:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						listResult.add(container.trim().toString());
 						container.clear();
 					}
@@ -251,10 +252,9 @@ public class CustomJsonReader implements JReader {
 				switch (character) {
 				case CLOSED_BRACKET:
 				case CLOSED_BRACE:
-					return Pair.of(listResult, pos);
-				case COMMA:
-					return Pair.of(listResult, pos);
-				case SKIP_N:
+                    case COMMA:
+                        return Pair.of(listResult, pos);
+                    case SKIP_N:
 				case SKIP_R:
 				case SPACE:
 				case TAB:
@@ -289,7 +289,7 @@ public class CustomJsonReader implements JReader {
 			case 0:
 				switch (character) {
 				case CLOSED_BRACE:
-					if (anyKey && container.length() > 0) {
+					if (anyKey && !container.isEmpty()) {
 						Object result = container.toString();
 						mapResult.put(key, result);
 						key = null;
@@ -330,7 +330,7 @@ public class CustomJsonReader implements JReader {
 						container.append(character);
 					}
 					continue;
-				case OPEN_BRACE:
+				case OPEN_BRACE: {
 					++pos;
 					awaitingAction = 1;
 					Pair pair = readMap(text, pos, to, container);
@@ -344,11 +344,12 @@ public class CustomJsonReader implements JReader {
 						key = null;
 					}
 					pos = (int) pair.getValue() - 1;
+				}
 					continue;
 				case OPEN_BRACKET:
 					++pos;
 					awaitingAction = 1;
-					pair = readList(text, pos, to, container);
+					Pair pair = readList(text, pos, to, container);
 					container.clear();
 					if (!anyKey) {
 						key = pair.getKey() == null ? text.substring(pos - 1, (int) pair.getValue()) : pair.getKey();
@@ -429,7 +430,7 @@ public class CustomJsonReader implements JReader {
 			case 1:
 				switch (character) {
 				case CLOSED_BRACE:
-					if (anyKey && container.length() > 0) {
+					if (anyKey && !container.isEmpty()) {
 						Object result = container.toString();
 						mapResult.put(key, result);
 						key = null;
@@ -438,7 +439,7 @@ public class CustomJsonReader implements JReader {
 					awaitingAction = 4;
 					continue;
 				case COLON:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						key = container.toString();
 						container.clear();
 						anyKey = true;
@@ -447,11 +448,10 @@ public class CustomJsonReader implements JReader {
 					awaitingAction = 0;
 					continue;
 				case COMMA:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						mapResult.put(key, container.toString());
 						container.clear();
-						key = null;
-					}
+                    }
 					// RESET
 					awaitingAction = 0;
 					key = null;
@@ -462,7 +462,7 @@ public class CustomJsonReader implements JReader {
 			case 2: // numbers mode
 				switch (character) {
 				case CLOSED_BRACE:
-					if (anyKey && container.length() > 0) {
+					if (anyKey && !container.isEmpty()) {
 						Object result = ParseUtils.getNumber(container);
 						mapResult.put(key, result);
 						key = null;
@@ -471,7 +471,7 @@ public class CustomJsonReader implements JReader {
 					awaitingAction = 4;
 					continue;
 				case COLON:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						key = ParseUtils.getNumber(container);
 						container.clear();
 						anyKey = true;
@@ -480,11 +480,10 @@ public class CustomJsonReader implements JReader {
 					awaitingAction = 0;
 					continue;
 				case COMMA:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						mapResult.put(key, ParseUtils.getNumber(container));
 						container.clear();
-						key = null;
-					}
+                    }
 					// RESET
 					awaitingAction = 0;
 					key = null;
@@ -514,7 +513,7 @@ public class CustomJsonReader implements JReader {
 			case 3: // text mode
 				switch (character) {
 				case CLOSED_BRACE:
-					if (anyKey && container.length() > 0) {
+					if (anyKey && !container.isEmpty()) {
 						Object result = container.trim().toString();
 						mapResult.put(key, result);
 						key = null;
@@ -522,7 +521,7 @@ public class CustomJsonReader implements JReader {
 					awaitingAction = 4;
 					continue;
 				case COLON:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						key = container.trim().toString();
 						container.clear();
 						anyKey = true;
@@ -531,11 +530,10 @@ public class CustomJsonReader implements JReader {
 					awaitingAction = 0;
 					continue;
 				case COMMA:
-					if (container.length() > 0) {
+					if (!container.isEmpty()) {
 						mapResult.put(key, container.trim().toString());
 						container.clear();
-						key = null;
-					}
+                    }
 					// RESET
 					awaitingAction = 0;
 					key = null;
@@ -551,14 +549,11 @@ public class CustomJsonReader implements JReader {
 				switch (character) {
 				case CLOSED_BRACE:
 				case CLOSED_BRACKET:
-					if (key != null)
+                    case COMMA:
+                        if (key != null)
 						return Pair.of(null, pos);
 					return Pair.of(mapResult, pos);
-				case COMMA:
-					if (key != null)
-						return Pair.of(null, pos);
-					return Pair.of(mapResult, pos);
-				case SKIP_N:
+                    case SKIP_N:
 				case SKIP_R:
 				case SPACE:
 				case TAB:
@@ -585,23 +580,17 @@ public class CustomJsonReader implements JReader {
 	}
 
 	private static boolean readTrue(StringContainer text, int pos, int to, boolean map) {
-		if (pos + 3 < to && text.charAt(pos + 1) == 'r' && text.charAt(pos + 2) == 'u' && text.charAt(pos + 3) == 'e' && (pos + 4 >= to || pos + 4 < to && isAllowedEnding(text.charAt(pos + 4), map)))
-			return true;
-		return false;
-	}
+        return pos + 3 < to && text.charAt(pos + 1) == 'r' && text.charAt(pos + 2) == 'u' && text.charAt(pos + 3) == 'e' && (pos + 4 >= to || pos + 4 < to && isAllowedEnding(text.charAt(pos + 4), map));
+    }
 
 	private static boolean readFalse(StringContainer text, int pos, int to, boolean map) {
-		if (pos + 4 < to && text.charAt(pos + 1) == 'a' && text.charAt(pos + 2) == 'l' && text.charAt(pos + 3) == 's' && text.charAt(pos + 4) == 'e'
-				&& (pos + 5 >= to || pos + 5 < to && isAllowedEnding(text.charAt(pos + 5), map)))
-			return true;
-		return false;
-	}
+        return pos + 4 < to && text.charAt(pos + 1) == 'a' && text.charAt(pos + 2) == 'l' && text.charAt(pos + 3) == 's' && text.charAt(pos + 4) == 'e'
+                && (pos + 5 >= to || pos + 5 < to && isAllowedEnding(text.charAt(pos + 5), map));
+    }
 
 	private static boolean readNull(StringContainer text, int pos, int to, boolean map) {
-		if (pos + 3 < to && text.charAt(pos + 1) == 'u' && text.charAt(pos + 2) == 'l' && text.charAt(pos + 3) == 'l' && (pos + 4 >= to || pos + 4 < to && isAllowedEnding(text.charAt(pos + 4), map)))
-			return true;
-		return false;
-	}
+        return pos + 3 < to && text.charAt(pos + 1) == 'u' && text.charAt(pos + 2) == 'l' && text.charAt(pos + 3) == 'l' && (pos + 4 >= to || pos + 4 < to && isAllowedEnding(text.charAt(pos + 4), map));
+    }
 
 	// space, comma, tab, \r, \n, ], } or : (if field map is true)
 	private static boolean isAllowedEnding(char charAt, boolean map) {
@@ -628,26 +617,27 @@ public class CustomJsonReader implements JReader {
 		text.replace("\\u003d", "=");
 		char first = text.charAt(0);
 		switch (first) {
-		case OPEN_BRACKET:
+		case OPEN_BRACKET: {
 			Pair result = readList(text, 1, text.length(), new StringContainer());
 			if (result.getKey() != null) {
 				for (int pos = (int) result.getValue(); pos < text.length(); ++pos) {
 					char character = text.charAt(pos);
 					switch (character) {
-					case SKIP_N:
-					case SKIP_R:
-					case SPACE:
-					case TAB:
-						continue;
-					default:
-						return text.toString();
+						case SKIP_N:
+						case SKIP_R:
+						case SPACE:
+						case TAB:
+							continue;
+						default:
+							return text.toString();
 					}
 				}
 				return result.getKey();
 			}
 			return text.toString();
+		}
 		case OPEN_BRACE:
-			result = readMap(text, 1, text.length(), new StringContainer());
+			Pair result = readMap(text, 1, text.length(), new StringContainer());
 			if (result.getKey() != null) {
 				for (int pos = (int) result.getValue(); pos < text.length(); ++pos) {
 					char character = text.charAt(pos);

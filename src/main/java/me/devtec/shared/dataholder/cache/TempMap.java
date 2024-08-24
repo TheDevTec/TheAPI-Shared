@@ -11,9 +11,9 @@ import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.scheduler.Tasker;
 
 public class TempMap<K, V> extends AbstractMap<K, V> {
-	private static long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
+	private static final long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
 
-	private Map<Entry<K, V>, Long> queue = new ConcurrentHashMap<>();
+	private final Map<Entry<K, V>, Long> queue = new ConcurrentHashMap<>();
 	private long cacheTime;
 	private RemoveCallback<Entry<K, V>> callback;
 
@@ -56,15 +56,13 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 	@Override
 	public V put(K key, V val) {
 		inactiveTask = System.currentTimeMillis() / 1000L + DEFAULT_WAIT_TIME;
-		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<Entry<K, V>, Long> value = iterator.next();
-			if (Objects.equals(value.getKey().getKey(), key)) {
-				V previous = value.getKey().setValue(val);
-				value.setValue(System.currentTimeMillis() / 50L);
-				return previous;
-			}
-		}
+        for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
+            if (Objects.equals(value.getKey().getKey(), key)) {
+                V previous = value.getKey().setValue(val);
+                value.setValue(System.currentTimeMillis() / 50L);
+                return previous;
+            }
+        }
 		Entry<K, V> entry = new Entry<K, V>() {
 			V value = val;
 
@@ -122,25 +120,21 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 	}
 
 	public long getTimeOf(K key) {
-		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<Entry<K, V>, Long> value = iterator.next();
-			if (value.getKey().getKey().equals(key))
-				return value.getValue();
-		}
+        for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
+            if (value.getKey().getKey().equals(key))
+                return value.getValue();
+        }
 		return 0;
 	}
 
 	@Override
 	public V get(Object key) {
-		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<Entry<K, V>, Long> value = iterator.next();
-			if (value.getKey().getKey().equals(key)) {
-				value.setValue(System.currentTimeMillis() / 50L);
-				return value.getKey().getValue();
-			}
-		}
+        for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
+            if (value.getKey().getKey().equals(key)) {
+                value.setValue(System.currentTimeMillis() / 50L);
+                return value.getKey().getValue();
+            }
+        }
 		return null;
 	}
 
@@ -148,35 +142,33 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 	 * @apiNote Get Entry with value from key without updating time
 	 */
 	public Entry<V, Long> getRaw(Object key) {
-		Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<Entry<K, V>, Long> value = iterator.next();
-			if (value.getKey().getKey().equals(key)) {
-				value.setValue(System.currentTimeMillis() / 50L);
-				return new Entry<V, Long>() {
+        for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
+            if (value.getKey().getKey().equals(key)) {
+                value.setValue(System.currentTimeMillis() / 50L);
+                return new Entry<V, Long>() {
 
-					@Override
-					public V getKey() {
-						return value.getKey().getValue();
-					}
+                    @Override
+                    public V getKey() {
+                        return value.getKey().getValue();
+                    }
 
-					@Override
-					public Long getValue() {
-						return value.getValue();
-					}
+                    @Override
+                    public Long getValue() {
+                        return value.getValue();
+                    }
 
-					@Override
-					public Long setValue(Long value) {
-						throw new UnsupportedOperationException("You can't modify value inside Entry of TempMap");
-					}
+                    @Override
+                    public Long setValue(Long value) {
+                        throw new UnsupportedOperationException("You can't modify value inside Entry of TempMap");
+                    }
 
-					@Override
-					public String toString() {
-						return getKey() + "=" + getValue();
-					}
-				};
-			}
-		}
+                    @Override
+                    public String toString() {
+                        return getKey() + "=" + getValue();
+                    }
+                };
+            }
+        }
 		return null;
 	}
 

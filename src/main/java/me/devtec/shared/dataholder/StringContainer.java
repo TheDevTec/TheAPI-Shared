@@ -82,7 +82,7 @@ public class StringContainer implements CharSequence {
 	private int hugeCapacity(int minCapacity) {
 		if (Integer.MAX_VALUE - minCapacity < 0)
 			throw new OutOfMemoryError();
-		return minCapacity > MAX_ARRAY_SIZE ? minCapacity : MAX_ARRAY_SIZE;
+		return Math.max(minCapacity, MAX_ARRAY_SIZE);
 	}
 
 	@Override
@@ -334,14 +334,12 @@ public class StringContainer implements CharSequence {
 
 		// Fall thru to fast mode for smaller numbers
 		// assert(i2 <= 65536, i2);
-		for (;;) {
-			q2 = i2 * 52429 >>> 16 + 3;
-			r = i2 - ((q2 << 3) + (q2 << 1)); // r = i2-(q2*10) ...
-			buf[--charPos] = digits[r];
-			i2 = q2;
-			if (i2 == 0)
-				break;
-		}
+        do {
+            q2 = i2 * 52429 >>> 16 + 3;
+            r = i2 - ((q2 << 3) + (q2 << 1)); // r = i2-(q2*10) ...
+            buf[--charPos] = digits[r];
+            i2 = q2;
+        } while (i2 != 0);
 		if (sign != 0)
 			buf[--charPos] = sign;
 	}
@@ -631,7 +629,7 @@ public class StringContainer implements CharSequence {
 	}
 
 	public boolean startsWith(CharSequence prefix, int toffset) {
-		char ta[] = value;
+		char[] ta = value;
 		int to = toffset;
 		int po = 0;
 		int pc = prefix.length();

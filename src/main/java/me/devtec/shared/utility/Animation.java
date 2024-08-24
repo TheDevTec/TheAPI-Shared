@@ -3,9 +3,9 @@ package me.devtec.shared.utility;
 import java.util.List;
 
 public class Animation {
-	private List<String> lines;
+	private final List<String> lines;
 	private long last = System.currentTimeMillis() / 50;
-	private long ticks;
+	private final long ticks;
 	private int pos;
 
 	public Animation(List<String> text, long ticks) {

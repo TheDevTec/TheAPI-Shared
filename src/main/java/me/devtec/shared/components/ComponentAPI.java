@@ -13,7 +13,7 @@ import me.devtec.shared.json.Json;
 import me.devtec.shared.utility.ColorUtils;
 
 public class ComponentAPI {
-	static Map<String, ComponentTransformer<?>> transformers = new HashMap<>();
+	static final Map<String, ComponentTransformer<?>> transformers = new HashMap<>();
 	static Boolean hexModeEnabled;
 
 	public static ComponentTransformer<?> transformer(String name) {
@@ -48,7 +48,7 @@ public class ComponentAPI {
 		if (input == null)
 			return null;
 		return ComponentAPI.fromString(input,
-				/* Depends on version & software */ hexModeEnabled == null ? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.serverType().isBukkit() && Ref.isNewerThan(15)) : hexModeEnabled,
+				/* Depends on version & software */ hexModeEnabled == null ? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15)) : hexModeEnabled,
 				true);
 	}
 
@@ -56,7 +56,7 @@ public class ComponentAPI {
 		if (input == null)
 			return null;
 		return ComponentAPI.fromString(input,
-				hexMode ? hexModeEnabled == null ? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.serverType().isBukkit() && Ref.isNewerThan(15)) : hexModeEnabled : false, true);
+                hexMode ? hexModeEnabled == null ? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15)) : hexModeEnabled : false, true);
 	}
 
 	public static Component fromString(String input, boolean hexMode, boolean urlMode) {
@@ -111,8 +111,7 @@ public class ComponentAPI {
 							i += 12;
 							continue charLoop;
 						}
-						continue;
-					}
+                    }
 				else if (isColorChar(afterSymbol)) {
 					if (component.colorToChar() == afterSymbol)
 						continue;
@@ -197,11 +196,11 @@ public class ComponentAPI {
 							lookingMode = 0;
 							spaceFinder = 0;
 						}
-						break switchCase;
+						break;
 					}
 					if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_') {
 						++count;
-						break switchCase;
+						break;
 					}
 					if (c == ' ')
 						spaceFinder = privatePos + 1;
@@ -214,7 +213,7 @@ public class ComponentAPI {
 						lookingMode = 0; // Start
 						spaceFinder = 0;
 						count = 0;
-						break switchCase;
+						break;
 					}
 					if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
 						if (++count == 1 && prevCount >= 4)
@@ -354,20 +353,14 @@ public class ComponentAPI {
 								}
 								break switchCase;
 							case 'e':
-								if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
+                                case 'r':
+                                    if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
 									container.append('u');
 									i += 1;
 									lookingMode = 4; // Read until space
 								}
 								break switchCase;
-							case 'r':
-								if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
-									container.append('u');
-									i += 1;
-									lookingMode = 4; // Read until space
-								}
-								break switchCase;
-							case 'f':
+                                case 'f':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'u' && input.charAt(i + 2) == 'n') {
 									container.append('u').append('n');
 									i += 2;
@@ -395,7 +388,7 @@ public class ComponentAPI {
 								}
 								break switchCase;
 							}
-						break switchCase;
+						break;
 					}
 					if (c == '.') { // xxx.
 						if (count >= 4) {
@@ -405,7 +398,7 @@ public class ComponentAPI {
 							lookingMode = 0;
 							spaceFinder = 0;
 						}
-						break switchCase;
+						break;
 					}
 					lookingMode = 0;
 					spaceFinder = 0;
@@ -549,20 +542,14 @@ public class ComponentAPI {
 								}
 								break switchCase;
 							case 'e':
-								if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
+                                case 'r':
+                                    if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
 									container.append('u');
 									i += 1;
 									lookingMode = 4; // Read until space
 								}
 								break switchCase;
-							case 'r':
-								if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
-									container.append('u');
-									i += 1;
-									lookingMode = 4; // Read until space
-								}
-								break switchCase;
-							case 'f':
+                                case 'f':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'u' && input.charAt(i + 2) == 'n') {
 									container.append('u').append('n');
 									i += 2;
@@ -590,17 +577,15 @@ public class ComponentAPI {
 								}
 								break switchCase;
 							}
-						break switchCase;
-					}
-					switch (c) {
-					case '/':
-						lookingMode = 4; // Read until space
-						break switchCase;
-					default:
-						lookingMode = 0;
-						spaceFinder = 0;
 						break;
 					}
+                    if (c == '/') {
+                        lookingMode = 4; // Read until space
+                        break switchCase;
+                    } else {
+                        lookingMode = 0;
+                        spaceFinder = 0;
+                    }
 					break;
 				case 4:
 					if (c == ' ') {
@@ -629,7 +614,7 @@ public class ComponentAPI {
 								main.getExtra().get(middle).setClickEvent(event);
 
 							// start
-							Component withUrl = new Component(start.getText().substring(spaceFinder, start.getText().length())).copyOf(start);
+							Component withUrl = new Component(start.getText().substring(spaceFinder)).copyOf(start);
 							withUrl.setClickEvent(event);
 							main.getExtra().add(componentStartAt + 1, withUrl);
 							start.setText(start.getText().substring(0, spaceFinder));
@@ -679,7 +664,7 @@ public class ComponentAPI {
 					main.getExtra().get(middle).setClickEvent(event);
 
 				// start
-				Component withUrl = new Component(start.getText().substring(spaceFinder, start.getText().length())).copyOf(start);
+				Component withUrl = new Component(start.getText().substring(spaceFinder)).copyOf(start);
 				withUrl.setClickEvent(event);
 				main.getExtra().add(componentStartAt + 1, withUrl);
 				start.setText(start.getText().substring(0, spaceFinder));
@@ -761,12 +746,12 @@ public class ComponentAPI {
 		if (map.containsKey("hoverEvent")) {
 			Map<String, String> value = (Map<String, String>) map.get("hoverEvent");
 			Object val = value.getOrDefault("value", value.get("contents"));
-			component.setHoverEvent(new HoverEvent(HoverEvent.Action.valueOf((value.get("action") + "").toUpperCase()),
-					val instanceof Collection ? fromJson((Collection<?>) val) : val instanceof Map ? fromJson((Map<String, Object>) val) : fromString(val + "")));
+			component.setHoverEvent(new HoverEvent(HoverEvent.Action.valueOf((value.get("action")).toUpperCase()),
+                    fromString(val + "")));
 		}
 		if (map.containsKey("clickEvent")) {
 			Map<String, String> value = (Map<String, String>) map.get("clickEvent");
-			component.setClickEvent(new ClickEvent(ClickEvent.Action.valueOf((value.get("action") + "").toUpperCase()), value.get("value") + ""));
+			component.setClickEvent(new ClickEvent(ClickEvent.Action.valueOf((value.get("action")).toUpperCase()), value.get("value")));
 		}
 		if (map.containsKey("insertion"))
 			component.setInsertion(map.get("insertion") + "");
@@ -811,7 +796,7 @@ public class ComponentAPI {
 	}
 
 	private static boolean isFormat(char afterSymbol) {
-		return afterSymbol >= 'r' && afterSymbol <= 'R' || afterSymbol >= 'k' && afterSymbol <= 'o' || afterSymbol >= 'K' && afterSymbol <= 'O';
+		return afterSymbol >= 'k' && afterSymbol <= 'o' || afterSymbol >= 'K' && afterSymbol <= 'O';
 	}
 
 	private static String getColor(Object color) {

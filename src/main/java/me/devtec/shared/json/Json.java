@@ -9,8 +9,8 @@ import me.devtec.shared.json.custom.CustomJsonWriter;
 
 public class Json {
 
-	private static List<DataReader> readers = new ArrayList<>();
-	private static List<DataWriter> writers = new ArrayList<>();
+	private static final List<DataReader> readers = new ArrayList<>();
+	private static final List<DataWriter> writers = new ArrayList<>();
 
 	private static JReader reader = new CustomJsonReader();
 	private static JWriter writer = new CustomJsonWriter();
@@ -21,14 +21,14 @@ public class Json {
 	}
 
 	public static Object processDataReaders(Map<String, Object> map) {
-		Object result = null;
+		Object result;
 		for (DataReader reader : Json.readers)
 			if (reader.isAllowed(map)) {
 				result = reader.read(map);
 				if (result != null)
 					return result;
 			}
-		return result;
+		return null;
 	}
 
 	public static Map<String, Object> processDataWriters(Object obj) {
@@ -74,15 +74,15 @@ public class Json {
 		Json.writers.remove(writer);
 	}
 
-	public static interface DataReader {
-		public boolean isAllowed(Map<String, Object> map);
+	public interface DataReader {
+		boolean isAllowed(Map<String, Object> map);
 
-		public Object read(Map<String, Object> map);
+		Object read(Map<String, Object> map);
 	}
 
-	public static interface DataWriter {
-		public boolean isAllowed(Object object);
+	public interface DataWriter {
+		boolean isAllowed(Object object);
 
-		public Map<String, Object> write(Object object);
+		Map<String, Object> write(Object object);
 	}
 }

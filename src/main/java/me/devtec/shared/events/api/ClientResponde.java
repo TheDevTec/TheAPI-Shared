@@ -17,7 +17,7 @@ public enum ClientResponde {
 	// OTHER
 	PING(127), PONG(-127), READ_ACTION(20), RECEIVE_ACTION(21), UKNOWN(-1);
 
-	private int id;
+	private final int id;
 
 	ClientResponde(int id) {
 		this.id = id;

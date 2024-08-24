@@ -6,9 +6,9 @@ public class BlockMathIterator implements Iterable<double[]> {
 	private final double sizeZ;
 	private final double sizeY;
 	private final double sizeX;
-	private double baseZ;
-	private double baseX;
-	private double baseY;
+	private final double baseZ;
+	private final double baseX;
+	private final double baseY;
 	private double x;
 	private double y;
 	private double z;

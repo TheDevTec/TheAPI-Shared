@@ -13,7 +13,7 @@ import me.devtec.shared.utility.StringUtils;
 
 @SuppressWarnings("unchecked")
 public class CommandHolder<S> {
-	private CommandStructure<S> structure;
+	private final CommandStructure<S> structure;
 
 	private Object registeredCommandObject;
 	private String cmd;
@@ -23,7 +23,7 @@ public class CommandHolder<S> {
 		this.structure = structure;
 	}
 
-	private String[] EMPTY_ARRAY = { "" };
+	private final String[] EMPTY_ARRAY = { "" };
 
 	public Collection<String> tablist(Object obj, String[] args) {
 		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))

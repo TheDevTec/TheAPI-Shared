@@ -1,11 +1,7 @@
 package me.devtec.shared;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,8 +44,8 @@ public class API {
 
 	// Offline users cache
 	private static OfflineCache cache;
-	private static Map<UUID, Config> users = new ConcurrentHashMap<>();
-	private static List<Pair> savingQueue = new TempList<Pair>(600).setCallback(pair -> {
+	private static final Map<UUID, Config> users = new ConcurrentHashMap<>();
+	private static final List<Pair> savingQueue = new TempList<Pair>(600).setCallback(pair -> {
 		Config cached = (Config) pair.getValue();
 		UserDataUnloadEvent event = new UserDataUnloadEvent((UUID) pair.getKey(), cached);
 		EventManager.call(event);
@@ -67,7 +63,7 @@ public class API {
 		for (String uuid : rawData.getKeys())
 			try {
 				API.cache.setLookup(UUID.fromString(uuid), rawData.getString(uuid));
-			} catch (Exception err) {
+			} catch (Exception ignored) {
 			}
 	}
 
@@ -153,7 +149,7 @@ public class API {
 
 	public static class Basics {
 
-		int[][] EMPTY_ARRAY = {};
+		final int[][] EMPTY_ARRAY = {};
 
 		public void load() {
 			String path = Ref.serverType().isBukkit() || Ref.serverType() == ServerType.BUNGEECORD || Ref.serverType() == ServerType.VELOCITY ? "plugins/TheAPI/" : "TheAPI/";
@@ -164,7 +160,7 @@ public class API {
 					Arrays.asList("# Modes: 1, 2, 3, 4, REGEX", "# ", "# Mode 1: !#rrggbb[TEXT]!#rrggbb", "# Mode 2: <#hex>[TEXT]<#secondHex>", "# Mode 3: <!#hex>[TEXT]<!#secondHex>",
 							"# Mode 4: <#hex>[TEXT]</#secondHex>", "# Mode REGEX: [prefix1]#rrggbb[suffix1][TEXT][prefix2]#rrggbb[suffix2] - Settings in the gradient section"));
 			tags.setIfAbsent("hex-mode", 1, Arrays.asList("# Modes: 1, 2", "# ", "# Mode 1: &#rrggbb or #rrggbb", "# Mode 2: <#rrggbb>"));
-			tags.setIfAbsent("gradient.firstHex.prefix", "!", Arrays.asList("# !#rrggbb TEXT !#rrggbb"));
+			tags.setIfAbsent("gradient.firstHex.prefix", "!", Collections.singletonList("# !#rrggbb TEXT !#rrggbb"));
 			tags.setIfAbsent("gradient.firstHex.suffix", "");
 			tags.setIfAbsent("gradient.secondHex.prefix", "!");
 			tags.setIfAbsent("gradient.secondHex.suffix", "");
@@ -219,10 +215,7 @@ public class API {
 				case 3:
 					ColorUtils.gradientFinderConstructor = ArrowsWithExclamationFinder::new;
 					break;
-				case 4:
-					ColorUtils.gradientFinderConstructor = ClassicArrowsFinder::new;
-					break;
-				case 5:
+                    case 5:
 					ColorUtils.gradientFinderConstructor = ExclamationArrowsFinder::new;
 					break;
 				default:
@@ -294,9 +287,9 @@ public class API {
 			for (String tag : tags.getKeys("tags"))
 				ColorUtils.registerColorTag(ColorUtils.tagPrefix + tag, tags.getString("tags." + tag));
 			Config config = new Config(path + "config.yml");
-			config.setIfAbsent("timeConvertor.settings.defaultlyDigits", false, Arrays.asList("# If plugin isn't using own split, use defaulty digitals? 300 -> 5:00"));
-			config.setIfAbsent("timeConvertor.settings.defaultSplit", " ", Arrays.asList("# If plugin isn't using own split, api'll use this split"));
-			config.setIfAbsent("timeConvertor.years.matcher", "y|years?", Arrays.asList("# Pattern matcher (regex)"));
+			config.setIfAbsent("timeConvertor.settings.defaultlyDigits", false, Collections.singletonList("# If plugin isn't using own split, use defaulty digitals? 300 -> 5:00"));
+			config.setIfAbsent("timeConvertor.settings.defaultSplit", " ", Collections.singletonList("# If plugin isn't using own split, api'll use this split"));
+			config.setIfAbsent("timeConvertor.years.matcher", "y|years?", Collections.singletonList("# Pattern matcher (regex)"));
 			config.setIfAbsent("timeConvertor.years.convertor", Arrays.asList("<=1  year", ">1  years"), Arrays.asList("# >=X value is higher or equals to X", "# <=X value is lower or equals to X",
 					"# >X value is higher than X", "# <X value is lower than X", "# ==X value equals to X", "# !=X value doesn't equals to X"));
 			config.setIfAbsent("timeConvertor.months.matcher", "mo|mon|months?");
@@ -339,7 +332,7 @@ public class API {
 
 			for (TimeFormat format : TimeFormat.values())
 				TimeUtils.timeConvertor.put(format, new TimeFormatter() {
-					Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor." + format.name().toLowerCase() + ".matcher") + ")");
+					final Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor." + format.name().toLowerCase() + ".matcher") + ")");
 
 					@Override
 					public Matcher matcher(String text) {
@@ -489,18 +482,18 @@ public class API {
 					}
 				}
 			}
-			return new String[] { color.length() == 0 ? null : color.toString(), formats.length() == 0 ? null : formats.toString() };
+			return new String[] {color.isEmpty() ? null : color.toString(), formats.isEmpty() ? null : formats.toString() };
 		}
 
 		public String rainbow(String text, String firstHex, String secondHex, List<String> protectedStrings) {
 			if (text == null)
-				return text;
+				return null;
 			return rainbow(text, 0, text.length(), firstHex, secondHex, protectedStrings);
 		}
 
 		public String rainbow(String text, int start, int end, String firstHex, String secondHex, List<String> protectedStrings) {
 			if (text == null)
-				return text;
+				return null;
 			StringContainer container = new StringContainer(text);
 			rawGradient(container, start, end, firstHex, secondHex, false, protectedStrings);
 			return container.toString();
@@ -508,13 +501,13 @@ public class API {
 
 		public String gradient(String text, String firstHex, String secondHex, List<String> protectedStrings) {
 			if (text == null)
-				return text;
+				return null;
 			return gradient(text, 0, text.length(), firstHex, secondHex, protectedStrings);
 		}
 
 		public String gradient(String text, int start, int end, String firstHex, String secondHex, List<String> protectedStrings) {
 			if (text == null)
-				return text;
+				return null;
 			StringContainer container = new StringContainer(text);
 			rawGradient(container, start, end, firstHex, secondHex, true, protectedStrings);
 			return container.toString();
@@ -536,8 +529,8 @@ public class API {
 			rawGradient(container, start, end, firstHex, secondHex, true, protectedStrings);
 		}
 
-		private char[] EMPTY_CHAR_ARRAY = {};
-		private char[] RESET_CHAR_ARRAY = { '§', 'r' };
+		private final char[] EMPTY_CHAR_ARRAY = {};
+		private final char[] RESET_CHAR_ARRAY = { '§', 'r' };
 
 		private void rawGradient(StringContainer container, int start, int end, String firstHex, String secondHex, boolean defaultRainbow, List<String> protectedStrings) {
 			boolean inRainbow = defaultRainbow;
@@ -608,9 +601,7 @@ public class API {
 				intervalR = ((rgb >> 16 & 0xFF) - r) / (float) (totalSize - 1);
 				intervalG = ((rgb >> 8 & 0xFF) - g) / (float) (totalSize - 1);
 				intervalB = ((rgb & 0xFF) - b) / (float) (totalSize - 1);
-				firstHex = null;
-				secondHex = null;
-			}
+            }
 
 			int i = start - 1;
 			for (int step = 0; step < totalSize; ++step) {

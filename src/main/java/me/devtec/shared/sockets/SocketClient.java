@@ -18,41 +18,41 @@ import me.devtec.shared.sockets.implementation.SocketClientHandler;
 
 public interface SocketClient {
 
-	static AtomicInteger ID_GEN = new AtomicInteger(1);
+	AtomicInteger ID_GEN = new AtomicInteger(1);
 
-	public Queue<Integer> readActionsAfterUnlock();
+	Queue<Integer> readActionsAfterUnlock();
 
-	public Queue<SocketAction> actionsAfterUnlock();
+	Queue<SocketAction> actionsAfterUnlock();
 
-	public Map<Integer, SocketAction> getWriteActions();
+	Map<Integer, SocketAction> getWriteActions();
 
-	public String serverName();
+	String serverName();
 
-	public String ip();
+	String ip();
 
-	public int port();
+	int port();
 
-	public DataInputStream getInputStream();
+	DataInputStream getInputStream();
 
-	public DataOutputStream getOutputStream();
+	DataOutputStream getOutputStream();
 
-	public Socket getSocket();
+	Socket getSocket();
 
-	public int ping();
+	int ping();
 
-	public void lock();
+	void lock();
 
-	public void unlock();
+	void unlock();
 
-	public boolean isConnected();
+	boolean isConnected();
 
 	/**
 	 * @apiNote Checks if this isn't server-side client and can reconnect back to
 	 *          the server
 	 */
-	public boolean canReconnect();
+    boolean canReconnect();
 
-	public boolean isLocked();
+	boolean isLocked();
 
 	/**
 	 * @throws SocketException If client can't be connected back to the server.
@@ -60,23 +60,23 @@ public interface SocketClient {
 	 *                         client (bridge). Check method
 	 *                         {@link SocketClient#canReconnect()}
 	 */
-	public void start() throws SocketException;
+    void start() throws SocketException;
 
-	public void stop();
+	void stop();
 
-	public boolean isRawConnected();
+	boolean isRawConnected();
 
-	public boolean isManuallyClosed();
+	boolean isManuallyClosed();
 
-	public default boolean shouldAddToQueue() {
+	default boolean shouldAddToQueue() {
 		return !isConnected() || isLocked();
 	}
 
-	public default void write(String fileName, File file) {
+	default void write(String fileName, File file) {
 		writeWithData(null, fileName, file);
 	}
 
-	public default ClientResponde readUntilFind(ClientResponde... specified) throws IOException {
+	default ClientResponde readUntilFind(ClientResponde... specified) throws IOException {
 		while (API.isEnabled() && isRawConnected()) {
 			int task = getInputStream().readInt();
 			ClientResponde responde = ClientResponde.fromResponde(task);
@@ -89,7 +89,7 @@ public interface SocketClient {
 		return null;
 	}
 
-	public default void writeWithData(Config data, String fileName, File file) {
+	default void writeWithData(Config data, String fileName, File file) {
 		if (fileName == null || file == null)
 			return;
 		if (shouldAddToQueue()) {
@@ -117,12 +117,12 @@ public interface SocketClient {
 			if (canReconnect())
 				try {
 					start();
-				} catch (Exception e1) {
+				} catch (Exception ignored) {
 				}
 		}
 	}
 
-	public default void write(Config data) {
+	default void write(Config data) {
 		if (data == null)
 			return;
 		if (shouldAddToQueue()) {
@@ -147,40 +147,40 @@ public interface SocketClient {
 			if (canReconnect())
 				try {
 					start();
-				} catch (Exception e1) {
+				} catch (Exception ignored) {
 				}
 		}
 	}
 
-	public default void write(File file) {
+	default void write(File file) {
 		if (file == null)
 			return;
 		writeWithData(null, file.getName(), file);
 	}
 
-	public default void writeWithData(Config data, File file) {
+	default void writeWithData(Config data, File file) {
 		if (data == null || file == null)
 			return;
 		writeWithData(data, file.getName(), file);
 	}
 
-	public default void processReadActions() {
+	default void processReadActions() {
 		while (!readActionsAfterUnlock().isEmpty()) {
 			Integer value = readActionsAfterUnlock().poll();
 			if (value == null)
 				break;
 			try {
 				SocketUtils.process(this, value);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 		}
 	}
 
-	public static void setServerName(String serverName) {
+	static void setServerName(String serverName) {
 		SocketClientHandler.serverName = serverName.getBytes();
 	}
 
-	public static SocketClientHandler openConnection(String ip, int port, String password) {
+	static SocketClientHandler openConnection(String ip, int port, String password) {
 		SocketClientHandler client = new SocketClientHandler(ip, port, password);
 		client.start();
 		return client;

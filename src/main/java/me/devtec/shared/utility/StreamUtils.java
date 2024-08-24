@@ -43,7 +43,7 @@ public class StreamUtils {
 		} finally {
 			try {
 				stream.close();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 		}
 	}

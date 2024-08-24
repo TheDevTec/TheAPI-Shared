@@ -22,7 +22,7 @@ public class PropertiesLoader extends EmptyLoader {
 	private int endIndex;
 	private StringContainer lines;
 
-	private final int[] readLine() {
+	private int[] readLine() {
 		try {
 			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
@@ -32,7 +32,7 @@ public class PropertiesLoader extends EmptyLoader {
 				for (int i = startIndex; i < lines.length(); ++i) {
 					char c = lines.charAt(i);
 					if (c == '\r' || c == '\n') {
-						endIndex = startIndex == -1 ? -1 : i;
+						endIndex = i;
 						break;
 					}
 				}
@@ -135,8 +135,7 @@ public class PropertiesLoader extends EmptyLoader {
 					DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
 							Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
 			comments = null;
-			continue;
-		}
+        }
 		if (task != -1)
 			Scheduler.cancelTask(task);
 		if (comments != null) {

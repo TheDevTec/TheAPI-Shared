@@ -7,8 +7,8 @@ import me.devtec.shared.commands.holder.CommandExecutor;
 import me.devtec.shared.commands.holder.CommandTabExecutor;
 
 public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructure<S> {
-	private static String[] EMPTY_STRING = {};
-	private CallableArgument<S> futureArgs;
+	private static final String[] EMPTY_STRING = {};
+	private final CallableArgument<S> futureArgs;
 
 	protected CallableArgumentCommandStructure(CommandStructure<S> parent, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx, CallableArgument<S> future) {
 		super(parent, null, length, ex, tabEx, CallableArgumentCommandStructure.EMPTY_STRING);
@@ -34,6 +34,6 @@ public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructur
 	}
 
 	public interface CallableArgument<S> {
-		public Collection<String> call(S sender, CommandStructure<S> structure, String[] args);
+		Collection<String> call(S sender, CommandStructure<S> structure, String[] args);
 	}
 }

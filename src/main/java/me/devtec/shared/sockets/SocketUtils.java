@@ -115,7 +115,7 @@ public class SocketUtils {
 					out.writeLong(size);
 					out.flush();
 					FileInputStream fileInputStream = new FileInputStream(file);
-					int bytes = 0;
+					int bytes;
 					byte[] buffer = new byte[READ_FILE_LIMIT];
 					long total = 0;
 					while (total < size && (bytes = fileInputStream.read(buffer, 0, size - total > buffer.length ? buffer.length : (int) (size - total))) > 0) {
@@ -136,7 +136,7 @@ public class SocketUtils {
 				if (client.canReconnect())
 					try {
 						client.start();
-					} catch (SocketException e1) {
+					} catch (SocketException ignored) {
 					}
 			}
 			return;
@@ -155,7 +155,7 @@ public class SocketUtils {
 			if (client.canReconnect())
 				try {
 					client.start();
-				} catch (SocketException e1) {
+				} catch (SocketException ignored) {
 				}
 		}
 	}
@@ -217,7 +217,7 @@ public class SocketUtils {
 			file.getParentFile().mkdirs();
 		try {
 			file.createNewFile();
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 		return file;
 	}

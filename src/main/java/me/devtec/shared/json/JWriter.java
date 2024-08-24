@@ -26,7 +26,7 @@ public interface JWriter {
 				return container.toString();
 			}
 			return s instanceof Number || s instanceof Character ? '\'' + s.toString() + '\'' : toGson(writeWithoutParse(s));
-		} catch (Exception err) {
+		} catch (Exception ignored) {
 		}
 		return null;
 	}

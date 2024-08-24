@@ -10,7 +10,7 @@ import me.devtec.shared.events.ListenerHolder;
 import me.devtec.shared.sockets.SocketClient;
 
 public class ServerClientPreReceiveFileEvent extends Event implements Cancellable {
-	static List<ListenerHolder> handlers = new ArrayList<>();
+	static final List<ListenerHolder> handlers = new ArrayList<>();
 
 	private String fileName;
 	private String fileDirectory;

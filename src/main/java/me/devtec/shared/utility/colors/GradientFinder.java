@@ -1,19 +1,19 @@
 package me.devtec.shared.utility.colors;
 
 public interface GradientFinder {
-	public boolean find();
+	boolean find();
 
-	public String getFirstHex();
+	String getFirstHex();
 
-	public int getFirstHexLength();
+	int getFirstHexLength();
 
-	public String getSecondHex();
+	String getSecondHex();
 
-	public int getSecondHexLength();
+	int getSecondHexLength();
 
-	public int getStart();
+	int getStart();
 
-	public int getEnd();
+	int getEnd();
 
-	public void skip(int characters);
+	void skip(int characters);
 }

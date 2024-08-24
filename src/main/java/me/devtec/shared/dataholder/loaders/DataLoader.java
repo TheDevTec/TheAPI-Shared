@@ -23,7 +23,7 @@ import me.devtec.shared.utility.StreamUtils;
 public abstract class DataLoader implements Cloneable {
 
 	// Data loaders hierarchy
-	public static Map<LoaderPriority, List<DataLoaderConstructor>> dataLoaders = new HashMap<>();
+	public static final Map<LoaderPriority, List<DataLoaderConstructor>> dataLoaders = new HashMap<>();
 
 	// Do not modify!
 	private static boolean anyLoaderWhichAllowFiles;

@@ -7,7 +7,7 @@ import me.devtec.shared.utility.ParseUtils;
 
 public interface JReader {
 	// For complex objects
-	public default Object read(String json) {
+	default Object read(String json) {
 		if (json == null || json.isEmpty())
 			return json;
 		Object simpleRead = simpleRead(json);
@@ -17,7 +17,7 @@ public interface JReader {
 	}
 
 	// For lists or maps
-	public default Object simpleRead(String json) {
+	default Object simpleRead(String json) {
 		if (json == null || json.isEmpty())
 			return json;
 		char first = json.charAt(0);
@@ -38,18 +38,17 @@ public interface JReader {
 			if (first == '{')
 				try {
 					read = fromGson(json, Map.class);
-				} catch (Exception er) {
+				} catch (Exception ignored) {
 				}
-			else if (first == '[')
-				try {
-					read = fromGson(json, Collection.class);
-				} catch (Exception err) {
+			else try {
+                read = fromGson(json, Collection.class);
+            } catch (Exception ignored) {
 
-				}
+            }
 			return read == null ? json : read;
 		}
 		return json;
 	}
 
-	public Object fromGson(String json, Class<?> clazz);
+	Object fromGson(String json, Class<?> clazz);
 }

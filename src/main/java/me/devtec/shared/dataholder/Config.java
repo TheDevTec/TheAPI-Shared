@@ -12,15 +12,8 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.annotations.Nonnull;
@@ -187,7 +180,7 @@ public class Config {
 	}
 
 	public Config setFile(@Nullable File file) {
-		if (file == null ? this.file == null : file.equals(this.file))
+		if (Objects.equals(file, this.file))
 			return this;
 		markModified();
 		this.file = file;
@@ -228,7 +221,7 @@ public class Config {
 			getDataLoader().set(key, val = DataValue.of(value));
 			val.modified = true;
 			markModified();
-		} else if (val.value == null && value != null || val.value != null && !val.value.equals(value)) {
+		} else if (val.value == null || !val.value.equals(value)) {
 			val.value = value;
 			val.writtenValue = null;
 			val.modified = true;
@@ -253,7 +246,8 @@ public class Config {
 		return null;
 	}
 
-	public Config setComments(@Nonnull String key, @Nullable List<String> value) {
+	@SuppressWarnings("SlowListContainsAll")
+    public Config setComments(@Nonnull String key, @Nullable List<String> value) {
 		Checkers.nonNull(key, "Key");
 		if (value == null || value.isEmpty()) {
 			DataValue val = getDataLoader().get(key);
@@ -294,7 +288,7 @@ public class Config {
 			return this;
 		}
 		DataValue val = getDataLoader().getOrCreate(key);
-		if (val.commentAfterValue == null || !comment.equals(val.commentAfterValue)) {
+		if (!comment.equals(val.commentAfterValue)) {
 			val.commentAfterValue = comment;
 			val.modified = true;
 			markModified();
@@ -377,11 +371,11 @@ public class Config {
 		try {
 			if (clazz == String.class || clazz == CharSequence.class)
 				return clazz.cast(getString(key));
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 		try {
 			return clazz.cast(get(key, defaultValue));
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 		return defaultValue;
 	}
@@ -521,7 +515,7 @@ public class Config {
 	public Collection<Object> getList(@Nonnull String key, @Nullable Collection<Object> defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (value == null || !(value instanceof Collection))
+		if (!(value instanceof Collection))
 			return defaultValue;
 		return new ArrayList<>((Collection<?>) value);
 	}
@@ -537,7 +531,7 @@ public class Config {
 		for (Object o : collection)
 			try {
 				list.add(o == null ? null : clazz.cast(o));
-			} catch (Exception er) {
+			} catch (Exception ignored) {
 			}
 		return list;
 	}
@@ -878,7 +872,7 @@ public class Config {
 				Scheduler.getManager().register(updaterWatcher = () -> {
 					try {
 						watchService.close();
-					} catch (IOException e) {
+					} catch (IOException ignored) {
 					}
 				});
 

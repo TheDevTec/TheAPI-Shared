@@ -27,7 +27,7 @@ public class SpigotUpdateChecker {
 	public SpigotUpdateChecker reconnect() {
 		try {
 			checkURL = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + id);
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 		return this;
 	}

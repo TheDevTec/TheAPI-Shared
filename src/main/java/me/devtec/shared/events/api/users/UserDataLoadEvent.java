@@ -17,7 +17,7 @@ import me.devtec.shared.events.ListenerHolder;
  *
  */
 public class UserDataLoadEvent extends Event {
-	static List<ListenerHolder> handlers = new ArrayList<>();
+	static final List<ListenerHolder> handlers = new ArrayList<>();
 
 	private final UUID ownerId;
 	private final Config config;

@@ -7,12 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.IntFunction;
 import java.util.zip.GZIPOutputStream;
 
@@ -112,25 +107,29 @@ public class Metrics {
 	private Map<String, Object> getServerData() {
 		// platform
 		Map<String, Object> data = new HashMap<>();
-		if (platform.equals("bukkit")) {
-			data.put("playerAmount", gatheringInfoManager.getPlayers());
-			data.put("onlineMode", gatheringInfoManager.getOnlineMode());
-			data.put("bukkitVersion", gatheringInfoManager.getServerVersion());
-			data.put("bukkitName", gatheringInfoManager.getServerName());
-		} else if (platform.equals("bungeecord")) {
-			data.put("playerAmount", gatheringInfoManager.getPlayers());
-			data.put("managedServers", gatheringInfoManager.getManagedServers());
-			data.put("onlineMode", gatheringInfoManager.getOnlineMode());
-			data.put("bungeecordVersion", gatheringInfoManager.getServerVersion());
-			data.put("bungeecordName", gatheringInfoManager.getServerName());
-		} else if (platform.equals("velocity")) {
-			data.put("playerAmount", gatheringInfoManager.getPlayers());
-			data.put("managedServers", gatheringInfoManager.getManagedServers());
-			data.put("onlineMode", gatheringInfoManager.getOnlineMode());
-			data.put("velocityVersionVersion", gatheringInfoManager.getServerVersion());
-			data.put("velocityVersionName", gatheringInfoManager.getServerName());
-			data.put("velocityVersionVendor", gatheringInfoManager.getServerVersionVendor());
-		}
+        switch (platform) {
+            case "bukkit":
+                data.put("playerAmount", gatheringInfoManager.getPlayers());
+                data.put("onlineMode", gatheringInfoManager.getOnlineMode());
+                data.put("bukkitVersion", gatheringInfoManager.getServerVersion());
+                data.put("bukkitName", gatheringInfoManager.getServerName());
+                break;
+            case "bungeecord":
+                data.put("playerAmount", gatheringInfoManager.getPlayers());
+                data.put("managedServers", gatheringInfoManager.getManagedServers());
+                data.put("onlineMode", gatheringInfoManager.getOnlineMode());
+                data.put("bungeecordVersion", gatheringInfoManager.getServerVersion());
+                data.put("bungeecordName", gatheringInfoManager.getServerName());
+                break;
+            case "velocity":
+                data.put("playerAmount", gatheringInfoManager.getPlayers());
+                data.put("managedServers", gatheringInfoManager.getManagedServers());
+                data.put("onlineMode", gatheringInfoManager.getOnlineMode());
+                data.put("velocityVersionVersion", gatheringInfoManager.getServerVersion());
+                data.put("velocityVersionName", gatheringInfoManager.getServerName());
+                data.put("velocityVersionVendor", gatheringInfoManager.getServerVersionVendor());
+                break;
+        }
 		data.put("javaVersion", System.getProperty("java.version"));
 		data.put("osName", System.getProperty("os.name"));
 		data.put("osArch", System.getProperty("os.arch"));
@@ -141,14 +140,7 @@ public class Metrics {
 		Map<String, Object> pluginData = new HashMap<>();
 		pluginData.put("pluginVersion", pluginVersion);
 		pluginData.put("id", pluginId);
-		Map<String, Object>[] chartData = customCharts.stream().map(CustomChart::getRequestJsonObject).filter(t -> t != null).toArray(new IntFunction<Map<String, Object>[]>() {
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public Map<String, Object>[] apply(int value) {
-				return new HashMap[value];
-			}
-		});
+		Map<String, Object>[] chartData = customCharts.stream().map(CustomChart::getRequestJsonObject).filter(Objects::nonNull).toArray((IntFunction<Map<String, Object>[]>) HashMap[]::new);
 		pluginData.put("customCharts", chartData);
 
 		data.put("service", pluginData);

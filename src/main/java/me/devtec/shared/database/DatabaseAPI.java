@@ -6,24 +6,24 @@ import java.sql.SQLException;
 import me.devtec.shared.API;
 
 public class DatabaseAPI {
-	public static interface DatabaseSettings {
-		public DatabaseSettings attributes(String attributes);
+	public interface DatabaseSettings {
+		DatabaseSettings attributes(String attributes);
 
-		public String getUser();
+		String getUser();
 
-		public String getPassword();
+		String getPassword();
 
-		public String getConnectionString();
+		String getConnectionString();
 	}
 
 	public static class SqlDatabaseSettings implements DatabaseSettings {
-		private String ip;
-		private String database;
-		private String username;
-		private String password;
-		private int port;
+		private final String ip;
+		private final String database;
+		private final String username;
+		private final String password;
+		private final int port;
 		private String attributes;
-		private String sqlType;
+		private final String sqlType;
 
 		public SqlDatabaseSettings(DatabaseType sqlType, String ip, int port, String database, String username, String password) {
 			this.ip = ip;
@@ -60,11 +60,11 @@ public class DatabaseAPI {
 	}
 
 	public static class SqliteDatabaseSettings implements DatabaseSettings {
-		private String file;
-		private String username;
-		private String password;
+		private final String file;
+		private final String username;
+		private final String password;
 		private String attributes;
-		private String sqlType;
+		private final String sqlType;
 
 		public SqliteDatabaseSettings(DatabaseType sqlType, String file, String username, String password) {
 			this.file = file;
@@ -98,8 +98,8 @@ public class DatabaseAPI {
 	public enum DatabaseType {
 		MYSQL("mysql", false), MARIADB("mariadb", false), SQLSERVER("sqlserver", false), SQLITE("sqlite", true), H2("h2", true);
 
-		private String name;
-		private boolean fileBased;
+		private final String name;
+		private final boolean fileBased;
 
 		DatabaseType(String name, boolean fileBased) {
 			this.name = name;

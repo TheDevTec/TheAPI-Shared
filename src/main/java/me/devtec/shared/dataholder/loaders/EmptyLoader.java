@@ -90,10 +90,8 @@ public class EmptyLoader extends DataLoader {
 			int pos = key.indexOf('.');
 			String primaryKey = pos == -1 ? key : key.substring(0, pos);
 			if (pos == -1) {
-				boolean modified = false;
-				if (primaryKeys.remove(primaryKey))
-					modified = true;
-				if (data.remove(key) != null)
+				boolean modified = primaryKeys.remove(primaryKey);
+                if (data.remove(key) != null)
 					modified = true;
 				key += '.';
 				Iterator<Entry<String, DataValue>> itr = entrySet().iterator();
@@ -111,10 +109,8 @@ public class EmptyLoader extends DataLoader {
 				return modified;
 			}
 			boolean onlyOne = true;
-			boolean modified = false;
-			if (data.remove(key) != null)
-				modified = true;
-			key += '.';
+			boolean modified = data.remove(key) != null;
+            key += '.';
 			Iterator<Entry<String, DataValue>> itr = entrySet().iterator();
 			while (itr.hasNext()) {
 				Entry<String, DataValue> section = itr.next();

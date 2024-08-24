@@ -11,9 +11,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class PlaceholderAPI {
-	public static Pattern placeholderLookup = Pattern.compile("\\%(.*?)\\%"); // %PLACEHOLDER_NAME%
+	public static final Pattern placeholderLookup = Pattern.compile("\\%(.*?)\\%"); // %PLACEHOLDER_NAME%
 
-	private static List<PlaceholderExpansion> extensions = new ArrayList<>();
+	private static final List<PlaceholderExpansion> extensions = new ArrayList<>();
 	public static Consumer<PlaceholderExpansion> registerConsumer;
 	public static Consumer<PlaceholderExpansion> unregisterConsumer;
 	public static PlaceholderExpansion PAPI_BRIDGE;
@@ -48,15 +48,13 @@ public class PlaceholderAPI {
 		Matcher match = PlaceholderAPI.placeholderLookup.matcher(text);
 		while (match.find()) {
 			String placeholder = match.group(1);
-			Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
-			while (iterator.hasNext()) {
-				PlaceholderExpansion ext = iterator.next();
-				if (placeholder.startsWith(ext.getName().toLowerCase() + "_")) {
-					String value = ext.apply(placeholder, player);
-					if (value != null && !value.equals(placeholder))
-						text = text.replace(match.group(), value);
-				}
-			}
+            for (PlaceholderExpansion ext : PlaceholderAPI.extensions) {
+                if (placeholder.startsWith(ext.getName().toLowerCase() + "_")) {
+                    String value = ext.apply(placeholder, player);
+                    if (value != null && !value.equals(placeholder))
+                        text = text.replace(match.group(), value);
+                }
+            }
 			if (PlaceholderAPI.PAPI_BRIDGE != null) {
 				String value = PlaceholderAPI.PAPI_BRIDGE.apply(placeholder, player);
 				if (value != null && !value.equals(placeholder))
@@ -76,32 +74,23 @@ public class PlaceholderAPI {
 	}
 
 	public static PlaceholderExpansion getExpansion(String extensionName) {
-		Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
-		while (iterator.hasNext()) {
-			PlaceholderExpansion reg = iterator.next();
-			if (reg.getName().equalsIgnoreCase(extensionName))
-				return reg;
-		}
+        for (PlaceholderExpansion reg : PlaceholderAPI.extensions) {
+            if (reg.getName().equalsIgnoreCase(extensionName))
+                return reg;
+        }
 		return null;
 	}
 
 	public static boolean isRegistered(String extensionName) {
-		Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
-		while (iterator.hasNext()) {
-			PlaceholderExpansion reg = iterator.next();
-			if (reg.getName().equalsIgnoreCase(extensionName))
-				return true;
-		}
+        for (PlaceholderExpansion reg : PlaceholderAPI.extensions) {
+            if (reg.getName().equalsIgnoreCase(extensionName))
+                return true;
+        }
 		return false;
 	}
 
 	public static void unregister(String extensionName) {
-		Iterator<PlaceholderExpansion> iterator = PlaceholderAPI.extensions.iterator();
-		while (iterator.hasNext()) {
-			PlaceholderExpansion reg = iterator.next();
-			if (reg.getName().equalsIgnoreCase(extensionName))
-				iterator.remove();
-		}
+        PlaceholderAPI.extensions.removeIf(reg -> reg.getName().equalsIgnoreCase(extensionName));
 	}
 
 	public static void unregisterAll() {

@@ -26,8 +26,8 @@ public class CommandStructure<S> {
 	private PermissionChecker<S> permissionChecker;
 	private final CommandStructure<S> parent;
 
-	private Map<Selector, SelectorCommandStructure<S>> selectors = new ConcurrentHashMap<>();
-	private List<ArgumentCommandStructure<S>> arguments = new ArrayList<>();
+	private final Map<Selector, SelectorCommandStructure<S>> selectors = new ConcurrentHashMap<>();
+	private final List<ArgumentCommandStructure<S>> arguments = new ArrayList<>();
 	private CommandExecutor<S> fallback;
 	private CooldownDetection<S> detection;
 	private Class<S> senderClass;
@@ -38,7 +38,7 @@ public class CommandStructure<S> {
 	}
 
 	public interface CooldownDetection<T> {
-		public boolean waiting(T sender, CommandStructure<T> structure, String[] args);
+		boolean waiting(T sender, CommandStructure<T> structure, String[] args);
 	}
 
 	public CommandStructure<S> cooldownDetection(CooldownDetection<S> detection) {
@@ -324,10 +324,8 @@ public class CommandStructure<S> {
 					noPerms = true;
 					continue;
 				}
-				List<CommandStructure<S>> list = structures.get(sub.getPriority());
-				if (list == null)
-					structures.put(sub.getPriority(), list = new LinkedList<>());
-				list.add(sub);
+                List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
+                list.add(sub);
 			}
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
 			if (API.selectorUtils.check(s, sub.getSelector(), arg)) {
@@ -336,10 +334,8 @@ public class CommandStructure<S> {
 					noPerms = true;
 					continue;
 				}
-				List<CommandStructure<S>> list = structures.get(sub.getPriority());
-				if (list == null)
-					structures.put(sub.getPriority(), list = new LinkedList<>());
-				list.add(sub);
+                List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
+                list.add(sub);
 			}
 		List<CommandStructure<S>> list = new LinkedList<>();
 		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
@@ -350,18 +346,14 @@ public class CommandStructure<S> {
 	public final List<CommandStructure<S>> getNextStructures(S s) {
 		Map<Integer, List<CommandStructure<S>>> structures = new TreeMap<>();
 		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
-				List<CommandStructure<S>> list = structures.get(sub.getPriority());
-				if (list == null)
-					structures.put(sub.getPriority(), list = new LinkedList<>());
-				list.add(sub);
+			if (sub.getPermission() == null || sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
+                List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
+                list.add(sub);
 			}
 		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (sub.getPermission() == null ? true : sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
-				List<CommandStructure<S>> list = structures.get(sub.getPriority());
-				if (list == null)
-					structures.put(sub.getPriority(), list = new LinkedList<>());
-				list.add(sub);
+			if (sub.getPermission() == null || sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
+                List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
+                list.add(sub);
 			}
 		List<CommandStructure<S>> list = new LinkedList<>();
 		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())

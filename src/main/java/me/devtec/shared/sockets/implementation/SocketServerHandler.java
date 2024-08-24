@@ -104,7 +104,7 @@ public class SocketServerHandler implements SocketServer {
 								break;
 							}
 						Thread.sleep(sleepTime);
-					} catch (Exception e) {
+					} catch (Exception ignored) {
 					}
 				}
 			}).start();
@@ -126,7 +126,7 @@ public class SocketServerHandler implements SocketServer {
 					}
 					try {
 						Thread.sleep(5000);
-					} catch (Exception e) {
+					} catch (Exception ignored) {
 
 					}
 				}
@@ -177,7 +177,7 @@ public class SocketServerHandler implements SocketServer {
 				out.writeInt(ClientResponde.ACCEPTED_LOGIN.getResponde());
 				out.flush();
 				connected.add(new SocketServerClientHandler(this, in, out, serverName, socket));
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 		else
 			try {
@@ -228,10 +228,10 @@ public class SocketServerHandler implements SocketServer {
 							out.writeInt(ClientResponde.ACCEPTED_LOGIN.getResponde());
 							out.flush();
 							connected.add(new SocketServerClientHandler(this, in, out, serverName, socket));
-						} catch (Exception e) {
+						} catch (Exception ignored) {
 						}
 				}).start();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 	}
 

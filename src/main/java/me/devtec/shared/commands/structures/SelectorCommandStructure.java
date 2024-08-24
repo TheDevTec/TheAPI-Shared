@@ -8,7 +8,7 @@ import me.devtec.shared.commands.holder.CommandTabExecutor;
 import me.devtec.shared.commands.selectors.Selector;
 
 public class SelectorCommandStructure<S> extends CommandStructure<S> {
-	private Selector selector;
+	private final Selector selector;
 	private CommandTabExecutor<S> tabEx;
 
 	protected SelectorCommandStructure(CommandStructure<S> parent, Selector selector, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {

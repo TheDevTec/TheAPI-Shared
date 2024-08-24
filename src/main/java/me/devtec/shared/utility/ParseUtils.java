@@ -15,8 +15,7 @@ public class ParseUtils {
 	 * @return boolean
 	 */
 	public static boolean getBoolean(String text) {
-		return text == null || text.length() != 4 ? false
-				: toLowerCase(text.charAt(0)) == 't' && toLowerCase(text.charAt(1)) == 'r' && toLowerCase(text.charAt(2)) == 'u' && toLowerCase(text.charAt(3)) == SMALL_E;
+		return text != null && text.length() == 4 && toLowerCase(text.charAt(0)) == 't' && toLowerCase(text.charAt(1)) == 'r' && toLowerCase(text.charAt(2)) == 'u' && toLowerCase(text.charAt(3)) == SMALL_E;
 	}
 
 	/**
@@ -415,7 +414,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -443,8 +442,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 19 || totalWidth == 19 && overLimit == 1)
 				return 0;
@@ -480,7 +478,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -508,8 +506,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 19 || totalWidth == 19 && overLimit == 1)
 				return 0;
@@ -543,7 +540,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -572,8 +569,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 19 || totalWidth == 19 && overLimit == 1)
 				return false;
@@ -605,7 +601,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -634,8 +630,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 19 || totalWidth == 19 && overLimit == 1)
 				return false;
@@ -706,7 +701,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -734,8 +729,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 10 || totalWidth == 10 && overLimit == 1)
 				return 0;
@@ -772,7 +766,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -800,8 +794,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 10 || totalWidth == 10 && overLimit == 1)
 				return 0;
@@ -835,7 +828,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -864,8 +857,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 10 || totalWidth == 10 && overLimit == 1)
 				return false;
@@ -897,7 +889,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -926,8 +918,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 10 || totalWidth == 10 && overLimit == 1)
 				return false;
@@ -1108,7 +1099,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -1137,8 +1128,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 3 || totalWidth == 3 && overLimit == 1)
 				return false;
@@ -1183,7 +1173,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -1211,8 +1201,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 5 || totalWidth == 5 && overLimit == 1)
 				return 0;
@@ -1246,7 +1235,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -1275,8 +1264,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 5 || totalWidth == 5 && overLimit == 1)
 				return false;
@@ -1325,7 +1313,7 @@ public class ParseUtils {
 		byte totalWidth = 0;
 		byte overLimit = 0;
 		boolean onLimit = false;
-		int limit = 0;
+		int limit;
 
 		for (int i = start; i < end; ++i) {
 			char c = text.charAt(i);
@@ -1353,8 +1341,7 @@ public class ParseUtils {
 				if (digit != limit)
 					if (digit > limit)
 						overLimit = 1;
-					else if (digit < limit)
-						onLimit = false;
+					else onLimit = false;
 			}
 			if (++totalWidth > 5 || totalWidth == 5 && overLimit == 1)
 				return 0;

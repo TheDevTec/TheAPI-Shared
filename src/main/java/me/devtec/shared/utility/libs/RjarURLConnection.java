@@ -8,7 +8,7 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 
 public class RjarURLConnection extends URLConnection {
-	private ClassLoader classLoader;
+	private final ClassLoader classLoader;
 
 	public RjarURLConnection(URL url, ClassLoader classLoader) {
 		super(url);
@@ -16,7 +16,7 @@ public class RjarURLConnection extends URLConnection {
 	}
 
 	@Override
-	public void connect() throws IOException {
+	public void connect() {
 	}
 
 	@Override

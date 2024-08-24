@@ -21,7 +21,7 @@ public class StringUtils {
 
 	/**
 	 * @apiNote Format double and remove unused zeros on the end
-	 * 
+	 * <p>
 	 *          Format types: {@link FormatType#BASIC} 1000.01
 	 *          {@link FormatType#NORMAL} 1,000.01 {@link FormatType#COMPLEX}
 	 *          {Normal type} + BalanceType (k, m, b, t...)
@@ -111,45 +111,45 @@ public class StringUtils {
 					return "-∞";
 				return "∞";
 			}
-			if (testValue >= 1.0E60 && testValue <= 1.0E63)
+			if (testValue >= 1.0E60)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E60) + "NOV";
-			if (testValue >= 1.0E57 && testValue <= 1.0E60)
+			if (testValue >= 1.0E57)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E57) + "OCT";
-			if (testValue >= 1.0E54 && testValue <= 1.0E57)
+			if (testValue >= 1.0E54)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E54) + "SEP";
-			if (testValue >= 1.0E51 && testValue <= 1.0E54)
+			if (testValue >= 1.0E51)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E51) + "SED";
-			if (testValue >= 1.0E48 && testValue <= 1.0E51)
+			if (testValue >= 1.0E48)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E48) + "QUI";
-			if (testValue >= 1.0E45 && testValue <= 1.0E48)
+			if (testValue >= 1.0E45)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E45) + "QUA";
-			if (testValue >= 1.0E42 && testValue <= 1.0E45)
+			if (testValue >= 1.0E42)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E42) + "tre";
-			if (testValue >= 1.0E39 && testValue <= 1.0E42)
+			if (testValue >= 1.0E39)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E39) + "duo";
-			if (testValue >= 1.0E36 && testValue <= 1.0E39)
+			if (testValue >= 1.0E36)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E36) + "und";
-			if (testValue >= 1.0E33 && testValue <= 1.0E36)
+			if (testValue >= 1.0E33)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E33) + "dec";
-			if (testValue >= 1.0E30 && testValue <= 1.0E33)
+			if (testValue >= 1.0E30)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E30) + "non";
-			if (testValue >= 1.0E27 && testValue <= 1.0E30)
+			if (testValue >= 1.0E27)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E27) + "oct";
-			if (testValue >= 1.0E24 && testValue <= 1.0E27)
+			if (testValue >= 1.0E24)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E24) + "sep";
-			if (testValue >= 1.0E21 && testValue <= 1.0E24) // No, it's not "sex"...
+			if (testValue >= 1.0E21) // No, it's not "sex"...
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E21) + "sex";
-			if (testValue >= 1.0E18 && testValue <= 1.0E21)
+			if (testValue >= 1.0E18)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E18) + "qui";
-			if (testValue >= 1.0E15 && testValue <= 1.0E18)
+			if (testValue >= 1.0E15)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E15) + "qua";
-			if (testValue >= 1.0E12 && testValue <= 1.0E15)
+			if (testValue >= 1.0E12)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E12) + "t";
-			if (testValue >= 1.0E9 && testValue <= 1.0E12)
+			if (testValue >= 1.0E9)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E9) + "b";
-			if (testValue >= 1.0E6 && testValue <= 1.0E9)
+			if (testValue >= 1.0E6)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E6) + "m";
-			if (testValue >= 1000 && testValue <= 1.0E6)
+			if (testValue >= 1000)
 				return StringUtils.formatDouble(FormatType.NORMAL, value / 1000) + "k";
 			return StringUtils.formatDouble(FormatType.NORMAL, value);
 		}
@@ -251,7 +251,7 @@ public class StringUtils {
 	}
 
 	/**
-	 * @apiNote Join Iterable into one String with split String {@link me.devtec.shared.utility.StringUtils#join(Iterable, String, int, int)}
+	 * @apiNote Join Iterable into one String with split String
 	 * @param split Split string (defaulty ' ')
 	 * @param start Start argument (defaulty 0)
 	 * @param end   Last argument (defaultly -1)
@@ -296,7 +296,7 @@ public class StringUtils {
 	}
 
 	/**
-	 * @apiNote Join objects into one String with split String {@link me.devtec.shared.utility.StringUtils#join(Object[], String, int, int)
+	 * @apiNote Join objects into one String with split String
 	 * @param split Split string (defaulty ' ')
 	 * @param start Start argument (defaulty 0)
 	 * @param end   Last argument (defaultly args.length)

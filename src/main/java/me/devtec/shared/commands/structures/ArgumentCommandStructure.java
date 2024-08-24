@@ -1,6 +1,5 @@
 package me.devtec.shared.commands.structures;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -10,9 +9,9 @@ import me.devtec.shared.commands.holder.CommandExecutor;
 import me.devtec.shared.commands.holder.CommandTabExecutor;
 
 public class ArgumentCommandStructure<S> extends CommandStructure<S> {
-	private List<String> args = new LinkedList<>();
+	private final List<String> args = new LinkedList<>();
 	private CommandTabExecutor<S> tabEx;
-	private int length;
+	private final int length;
 
 	protected ArgumentCommandStructure(CommandStructure<S> parent, String argument, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx, String[] aliases) {
 		super(parent, ex);
@@ -25,7 +24,7 @@ public class ArgumentCommandStructure<S> extends CommandStructure<S> {
 
 	@Override
 	public Collection<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
-		return tabEx != null ? tabEx.execute(sender, structure, arguments) : this.args.isEmpty() ? Arrays.asList("<args>") : this.args;
+		return tabEx != null ? tabEx.execute(sender, structure, arguments) : this.args.isEmpty() ? Collections.singletonList("<args>") : this.args;
 	}
 
 	/**

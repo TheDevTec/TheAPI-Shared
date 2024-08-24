@@ -10,7 +10,7 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.Inflater;
 
 public class Compressors {
-	static byte[] buf = new byte[1024];
+	static final byte[] buf = new byte[1024];
 
 	public static byte[] decompress(byte[] in) {
 		Inflater decompressor = new Inflater(true);
@@ -21,7 +21,7 @@ public class Compressors {
 			while (!decompressor.finished())
 				try {
 					bos.write(Compressors.buf, 0, decompressor.inflate(Compressors.buf));
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 				}
 			decompressor.reset();
 			result = bos.toByteArray();
@@ -47,7 +47,7 @@ public class Compressors {
 	}
 
 	public static class Compressor {
-		private ByteArrayOutputStream end = new ByteArrayOutputStream();
+		private final ByteArrayOutputStream end = new ByteArrayOutputStream();
 		private GZIPOutputStream compressor;
 		private ObjectOutputStream get;
 
@@ -55,14 +55,14 @@ public class Compressors {
 			try {
 				compressor = new GZIPOutputStream(end);
 				get = new ObjectOutputStream(compressor);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 		}
 
 		public Compressor add(Object o) {
 			try {
 				get.writeObject(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -70,7 +70,7 @@ public class Compressors {
 		public Compressor add(String o) {
 			try {
 				get.writeUTF(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -78,7 +78,7 @@ public class Compressors {
 		public Compressor add(boolean o) {
 			try {
 				get.writeBoolean(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -86,7 +86,7 @@ public class Compressors {
 		public Compressor add(float o) {
 			try {
 				get.writeFloat(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -94,7 +94,7 @@ public class Compressors {
 		public Compressor add(int o) {
 			try {
 				get.writeInt(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -102,7 +102,7 @@ public class Compressors {
 		public Compressor add(byte o) {
 			try {
 				get.writeByte(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -110,7 +110,7 @@ public class Compressors {
 		public Compressor add(double o) {
 			try {
 				get.writeDouble(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -118,7 +118,7 @@ public class Compressors {
 		public Compressor add(long o) {
 			try {
 				get.writeLong(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -126,7 +126,7 @@ public class Compressors {
 		public Compressor add(short o) {
 			try {
 				get.writeShort(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -134,7 +134,7 @@ public class Compressors {
 		public Compressor add(char o) {
 			try {
 				get.writeChar(o);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -145,7 +145,7 @@ public class Compressors {
 				compressor.flush();
 				compressor.finish();
 				end.flush();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return this;
 		}
@@ -155,7 +155,7 @@ public class Compressors {
 				get.close();
 				compressor.close();
 				end.close();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 		}
 
@@ -175,22 +175,22 @@ public class Compressors {
 				end = new ByteArrayInputStream(toDecompress);
 				decompressor = new GZIPInputStream(end);
 				get = new ObjectInputStream(decompressor);
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 		}
 
 		public Object readObject() {
 			try {
-				get.readObject();
-			} catch (Exception e) {
+				return get.readObject();
+			} catch (Exception ignored) {
 			}
 			return null;
 		}
 
 		public String readString() {
 			try {
-				get.readUTF();
-			} catch (Exception e) {
+				return get.readUTF();
+			} catch (Exception ignored) {
 			}
 			return null;
 		}
@@ -202,7 +202,7 @@ public class Compressors {
 		public boolean readBoolean() {
 			try {
 				return get.readBoolean();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return false;
 		}
@@ -210,7 +210,7 @@ public class Compressors {
 		public float readFloat() {
 			try {
 				return get.readFloat();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return 0;
 		}
@@ -218,7 +218,7 @@ public class Compressors {
 		public int readInt() {
 			try {
 				return get.readInt();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return 0;
 		}
@@ -226,7 +226,7 @@ public class Compressors {
 		public byte readByte() {
 			try {
 				return get.readByte();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return 0;
 		}
@@ -234,7 +234,7 @@ public class Compressors {
 		public double readDouble() {
 			try {
 				return get.readDouble();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return 0;
 		}
@@ -242,7 +242,7 @@ public class Compressors {
 		public long readLong() {
 			try {
 				return get.readLong();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return 0;
 		}
@@ -250,7 +250,7 @@ public class Compressors {
 		public short readShort() {
 			try {
 				return get.readShort();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return 0;
 		}
@@ -258,7 +258,7 @@ public class Compressors {
 		public char readChar() {
 			try {
 				return get.readChar();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			return 0;
 		}
@@ -268,7 +268,7 @@ public class Compressors {
 				get.close();
 				decompressor.close();
 				end.close();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 		}
 	}

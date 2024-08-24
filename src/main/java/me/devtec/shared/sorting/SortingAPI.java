@@ -51,13 +51,12 @@ public class SortingAPI {
 	}
 
 	public static class ComparKey<K, V> extends ComparableObject<K, V> {
-		K key;
-		V value;
-		boolean asc;
+		final K key;
+		final V value;
+		final boolean asc;
 
 		@Override
-		@SuppressWarnings({ "rawtypes" })
-		public int compareTo(ComparableObject o) {
+        public int compareTo(ComparableObject o) {
 			return SortingAPI.compare(asc, o.getKey(), key);
 		}
 
@@ -80,13 +79,12 @@ public class SortingAPI {
 	}
 
 	public static class ComparValue<K, V> extends ComparableObject<K, V> {
-		K key;
-		V value;
-		boolean asc;
+		final K key;
+		final V value;
+		final boolean asc;
 
 		@Override
-		@SuppressWarnings({ "rawtypes" })
-		public int compareTo(ComparableObject o) {
+        public int compareTo(ComparableObject o) {
 			return SortingAPI.compare(asc, o.getValue(), value);
 		}
 
@@ -110,6 +108,6 @@ public class SortingAPI {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static int compare(boolean asc, Object a, Object b) {
-		return asc ? a instanceof Comparable ? ((Comparable) a).compareTo(b) : a.toString().compareTo(b.toString()) : b instanceof Comparable ? ((Comparable) (b instanceof Comparable ? b : b.toString())).compareTo(a) : b.toString().compareTo(a.toString());
+		return asc ? a instanceof Comparable ? ((Comparable) a).compareTo(b) : a.toString().compareTo(b.toString()) : b instanceof Comparable ? ((Comparable) b).compareTo(a) : b.toString().compareTo(a.toString());
 	}
 }

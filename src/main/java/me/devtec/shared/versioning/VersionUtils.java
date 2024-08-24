@@ -3,9 +3,9 @@ package me.devtec.shared.versioning;
 import me.devtec.shared.utility.ParseUtils;
 
 public class VersionUtils {
-	public static enum Version {
-		OLDER_VERSION, NEWER_VERSION, SAME_VERSION, UKNOWN;
-	}
+	public enum Version {
+		OLDER_VERSION, NEWER_VERSION, SAME_VERSION, UKNOWN
+    }
 
 	public static Version getVersion(String version, String compareVersion) {
 		if (version == null || compareVersion == null)

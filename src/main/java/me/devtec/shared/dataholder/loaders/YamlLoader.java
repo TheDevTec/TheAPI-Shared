@@ -24,7 +24,7 @@ public class YamlLoader extends EmptyLoader {
 	private int endIndex;
 	private StringContainer lines;
 
-	private final int[] readLine() {
+	private int[] readLine() {
 		try {
 			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
 		} finally {
@@ -345,13 +345,14 @@ public class YamlLoader extends EmptyLoader {
 			Scheduler.cancelTask(task);
 		switch (readerMode) {
 		case 1:
-		case 3:
+		case 3: {
 			DataValue val = getOrCreate(key.toString());
 			val.value = list;
+		}
 			break;
 		case 2:
 			String writtenValue = stringContainer.toString();
-			val = getOrCreate(key.toString());
+			DataValue val = getOrCreate(key.toString());
 			val.value = writtenValue;
 			val.writtenValue = writtenValue;
 			break;
@@ -442,10 +443,8 @@ public class YamlLoader extends EmptyLoader {
 					posInPhase = 0;
 					return hasNext();
 				case 2:
-					if (config.getDataLoader().getFooter().isEmpty() || config.getDataLoader().getFooter().size() == posInPhase)
-						return false;
-					return true;
-				}
+                    return !config.getDataLoader().getFooter().isEmpty() && config.getDataLoader().getFooter().size() != posInPhase;
+                }
 				return false;
 			}
 		};
@@ -617,7 +616,7 @@ public class YamlLoader extends EmptyLoader {
 				else if (c == '#' && braceCount == 0 && bracketCount == 0)
 					break;
 				else if (c == '"' || c == '\'')
-					inQuotes = !inQuotes;
+					inQuotes = true;
 			i++;
 		}
 

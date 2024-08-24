@@ -5,21 +5,21 @@ import java.util.function.Consumer;
 
 public interface GatheringInfoManager {
 
-	public Consumer<String> getInfoLogger();
+	Consumer<String> getInfoLogger();
 
-	public BiConsumer<String, Throwable> getErrorLogger();
+	BiConsumer<String, Throwable> getErrorLogger();
 
-	public int getPlayers();
+	int getPlayers();
 
-	public int getOnlineMode();
+	int getOnlineMode();
 
-	public String getServerVersion();
+	String getServerVersion();
 
-	public String getServerName();
+	String getServerName();
 
 	// BungeeCord & Velocity
-	public int getManagedServers();
+    int getManagedServers();
 
 	// Velocity
-	public String getServerVersionVendor();
+    String getServerVersionVendor();
 }

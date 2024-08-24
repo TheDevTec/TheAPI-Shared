@@ -13,9 +13,9 @@ public class TimeUtils {
 	public enum TimeFormat {
 		YEARS(31556952, 365, "y"), MONTHS(2629746, 12, "mon"), DAYS(86400, 31, "d"), HOURS(3600, 24, "h"), MINUTES(60, 60, "m"), SECONDS(1, 60, "s");
 
-		private long seconds;
-		private double cast;
-		private String defaultSuffix;
+		private final long seconds;
+		private final double cast;
+		private final String defaultSuffix;
 
 		TimeFormat(long seconds, double cast, String defSuffix) {
 			this.seconds = seconds;
@@ -40,9 +40,9 @@ public class TimeUtils {
 		/**
 		 * @apiNote Nullable if settings isn't supported
 		 */
-		public String toString(long value);
+        String toString(long value);
 
-		public Matcher matcher(String text);
+		Matcher matcher(String text);
 	}
 
 	/**
@@ -71,7 +71,7 @@ public class TimeUtils {
 	 * @return String
 	 */
 	public static String timeToString(long period, String split, TimeFormat... disabled) {
-		boolean digit = split.length() == 1 ? split.charAt(0) == ':' : false;
+		boolean digit = split.length() == 1 && split.charAt(0) == ':';
 
 		if (period == 0L)
 			return digit ? "0" : timeConvertor.get(TimeFormat.SECONDS).toString(0);
@@ -213,7 +213,7 @@ public class TimeUtils {
 
 	private static void addFormat(StringContainer builder, String split, TimeFormat format, boolean digit, long time) {
 		if (time > 0) {
-			boolean notFirst = builder.length() != 0;
+			boolean notFirst = !builder.isEmpty();
 			if (notFirst)
 				builder.append(split);
 			if (digit) {
@@ -223,7 +223,7 @@ public class TimeUtils {
 			} else
 				builder.append(timeConvertor.get(format).toString(time));
 		} else if (digit) {
-			boolean notFirst = builder.length() != 0;
+			boolean notFirst = !builder.isEmpty();
 			if (notFirst)
 				builder.append(split).append("00");
 		}

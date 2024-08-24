@@ -11,22 +11,22 @@ import java.util.List;
 import me.devtec.shared.database.DatabaseAPI.DatabaseType;
 
 public interface DatabaseHandler {
-	public static class SelectQuery {
+	class SelectQuery {
 
 		public enum Sorting {
-			HIGHEST_TO_LOWEST, UP, LOWEST_TO_HIGHEST, DOWN;
-		}
+			HIGHEST_TO_LOWEST, UP, LOWEST_TO_HIGHEST, DOWN
+        }
 
-		protected String table;
-		protected String[] search;
+		protected final String table;
+		protected final String[] search;
 		protected String limit;
 		protected List<Object[]> where = new ArrayList<>();
 		protected List<Object[]> like = new ArrayList<>();
-		protected List<List<Object[]>[]> whereOr = new ArrayList<>();
+		protected final List<List<Object[]>[]> whereOr = new ArrayList<>();
 		protected byte mode;
 
 		protected Sorting sorting;
-		protected List<String> sortingKey = new ArrayList<>();
+		protected final List<String> sortingKey = new ArrayList<>();
 
 		private SelectQuery(String table, String... value) {
 			this.table = table;
@@ -97,10 +97,10 @@ public interface DatabaseHandler {
 		}
 	}
 
-	public static class InsertQuery {
+	class InsertQuery {
 
-		protected String table;
-		protected List<String> values = new ArrayList<>();
+		protected final String table;
+		protected final List<String> values = new ArrayList<>();
 
 		private InsertQuery(String table) {
 			this.table = table;
@@ -117,14 +117,14 @@ public interface DatabaseHandler {
 		}
 	}
 
-	public static class UpdateQuery {
+	class UpdateQuery {
 
-		protected String table;
+		protected final String table;
 		protected List<Object[]> where = new ArrayList<>();
 		protected List<Object[]> like = new ArrayList<>();
-		protected List<List<Object[]>[]> whereOr = new ArrayList<>();
+		protected final List<List<Object[]>[]> whereOr = new ArrayList<>();
 		protected byte mode;
-		protected List<String[]> values = new ArrayList<>();
+		protected final List<String[]> values = new ArrayList<>();
 		protected String limit = "1";
 
 		protected enum Action {
@@ -190,12 +190,12 @@ public interface DatabaseHandler {
 		}
 	}
 
-	public static class RemoveQuery {
+	class RemoveQuery {
 
-		protected String table;
+		protected final String table;
 		protected List<Object[]> where = new ArrayList<>();
 		protected List<Object[]> like = new ArrayList<>();
-		protected List<List<Object[]>[]> whereOr = new ArrayList<>();
+		protected final List<List<Object[]>[]> whereOr = new ArrayList<>();
 		protected byte mode;
 		protected String limit = "1";
 
@@ -253,13 +253,13 @@ public interface DatabaseHandler {
 		}
 	}
 
-	public static class Row {
-		private String field;
-		private String type;
-		private boolean nulled;
-		private String key;
-		private String defaultVal;
-		private String extra;
+	class Row {
+		private final String field;
+		private final String type;
+		private final boolean nulled;
+		private final String key;
+		private final String defaultVal;
+		private final String extra;
 
 		public Row(String fieldName, String fieldType, boolean nulled, String key, String defVal, String extra) {
 			field = fieldName;
@@ -367,9 +367,9 @@ public interface DatabaseHandler {
 		}
 	}
 
-	public static class Result implements Iterator<Result> {
+	class Result implements Iterator<Result> {
 		private Result next;
-		private String[] values;
+		private final String[] values;
 
 		protected Result(String[] value) {
 			values = value;

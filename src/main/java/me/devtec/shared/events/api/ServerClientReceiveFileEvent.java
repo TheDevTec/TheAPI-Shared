@@ -10,7 +10,7 @@ import me.devtec.shared.events.ListenerHolder;
 import me.devtec.shared.sockets.SocketClient;
 
 public class ServerClientReceiveFileEvent extends Event {
-	static List<ListenerHolder> handlers = new ArrayList<>();
+	static final List<ListenerHolder> handlers = new ArrayList<>();
 
 	private final File file;
 	private final Config data;

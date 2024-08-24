@@ -110,13 +110,12 @@ public class PercentageList<V> {
 
 		double random = MathUtils.randomDouble(totalChance);
 		double value = 0.0;
-		for (int i = 0; i < entries.size(); i++) {
-			Entry<V, Double> entry = entries.get(i);
-			double upperBound = value + entry.getValue();
-			if (random <= upperBound)
-				return entry.getKey();
-			value = upperBound;
-		}
+        for (Entry<V, Double> entry : entries) {
+            double upperBound = value + entry.getValue();
+            if (random <= upperBound)
+                return entry.getKey();
+            value = upperBound;
+        }
 		// If we get here, it means that random was greater than totalChance, so we
 		// return the last key
 		return entries.get(entries.size() - 1).getKey();
