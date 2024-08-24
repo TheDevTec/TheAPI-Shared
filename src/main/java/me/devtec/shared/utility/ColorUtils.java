@@ -13,7 +13,7 @@ import me.devtec.shared.utility.colors.HexReplacer;
 
 public class ColorUtils {
 
-	public static final ColormaticFactory color = new ColormaticFactory() {
+	public static ColormaticFactory color = new ColormaticFactory() {
 	};
 
 	public static String tagPrefix = "!";
