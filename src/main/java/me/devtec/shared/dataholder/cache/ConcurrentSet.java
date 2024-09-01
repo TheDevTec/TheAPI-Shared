@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@SuppressWarnings("serial")
 public final class ConcurrentSet<E> extends AbstractSet<E> implements Serializable {
 
 	private final ConcurrentMap<E, Boolean> map;

@@ -1,6 +1,5 @@
 package me.devtec.shared.json;
 
-import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.json.custom.CustomJsonWriter;
 
 public interface JWriter {

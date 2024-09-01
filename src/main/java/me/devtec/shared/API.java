@@ -250,7 +250,7 @@ public class API {
 				break;
 			case 2:
 				ColorUtils.hexReplacer = (text, start, end) -> {
-					charLoop: for (int i = 0; i < text.length(); ++i) {
+					for (int i = 0; i < text.length(); ++i) {
 						char c = text.charAt(i);
 						if (c == '<' && i + 8 < text.length() && text.charAt(i + 1) == '#') {
 							if (isHexColor(text, i)) continue;

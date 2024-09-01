@@ -55,6 +55,7 @@ public class SortingAPI {
 		final V value;
 		final boolean asc;
 
+		@SuppressWarnings("rawtypes")
 		@Override
         public int compareTo(ComparableObject o) {
 			return SortingAPI.compare(asc, o.getKey(), key);
@@ -83,6 +84,7 @@ public class SortingAPI {
 		final V value;
 		final boolean asc;
 
+		@SuppressWarnings("rawtypes")
 		@Override
         public int compareTo(ComparableObject o) {
 			return SortingAPI.compare(asc, o.getValue(), value);

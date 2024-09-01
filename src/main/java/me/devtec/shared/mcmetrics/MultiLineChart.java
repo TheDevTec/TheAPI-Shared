@@ -1,6 +1,5 @@
 package me.devtec.shared.mcmetrics;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
