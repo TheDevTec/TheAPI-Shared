@@ -138,6 +138,8 @@ public class TomlSectionBuilderHelper {
 				if (main == null)
 					map.put(primaryKey, main = keysWithoutSub.remove(primaryKey));
 			}
+			if(main==null)
+				continue;
 			Section sec = main.create(container.toString());
 			sec.value = entry.getValue();
 			prevParent = sec.parent;

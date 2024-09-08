@@ -166,6 +166,8 @@ public class YamlSectionBuilderHelper {
 				container.delete(0, primaryKey.length() + 1);
 				main = map.get(primaryKey);
 			}
+			if(main==null)
+				continue;
 			Section sec = main.create(container.toString());
 			sec.value = entry.getValue();
 			prevParent = sec.parent;
