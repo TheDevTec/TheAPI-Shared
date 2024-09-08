@@ -509,10 +509,10 @@ public class YamlLoader extends EmptyLoader {
 
 	protected static int[] getFromQuotes(StringContainer input, int start, int end) {
 		int len = end - start;
-		if (len <= 1)
+		if (len <= 2)
 			return new int[] { start, end };
-		char firstChar = input.charAt(0);
-		char lastChar = input.charAt(input.length() - 1);
+		char firstChar = input.charAt(start);
+		char lastChar = input.charAt(end-1);
 		if (firstChar == '\'' && lastChar == '\'' || firstChar == '"' && lastChar == '"')
 			return new int[] { start + 1, end - 1 };
 		return new int[] { start, end };
