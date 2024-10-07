@@ -818,7 +818,7 @@ public class Config {
 			return getDataLoader().save(this, markSaved);
 		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
 		if (loader != null)
-			return getDataLoader().save(this, markSaved);
+			return loader.save(this, markSaved);
 		return null;
 	}
 

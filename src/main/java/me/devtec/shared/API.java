@@ -45,6 +45,7 @@ public class API {
 	// Offline users cache
 	private static OfflineCache cache;
 	private static final Map<UUID, Config> users = new ConcurrentHashMap<>();
+	public static final int THREAD_COUNT = Math.max(1, (int)(Runtime.getRuntime().availableProcessors()/1.5));
 	private static final List<Pair> savingQueue = new TempList<Pair>(600).setCallback(pair -> {
 		Config cached = (Config) pair.getValue();
 		UserDataUnloadEvent event = new UserDataUnloadEvent((UUID) pair.getKey(), cached);

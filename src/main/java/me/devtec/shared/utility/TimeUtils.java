@@ -165,7 +165,7 @@ public class TimeUtils {
 
 		long time = 0;
 
-		if (period.contains(":")) {
+		if (period.indexOf(':')!=-1) {
 			String[] split = period.split(":");
 			switch (split.length) {
 			case 2: // mm:ss
@@ -225,7 +225,7 @@ public class TimeUtils {
 		} else if (digit) {
 			boolean notFirst = !builder.isEmpty();
 			if (notFirst)
-				builder.append(split).append("00");
+				builder.append(split).append('0').append('0');
 		}
 	}
 }

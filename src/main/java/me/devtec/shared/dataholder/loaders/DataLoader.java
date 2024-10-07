@@ -202,8 +202,9 @@ public abstract class DataLoader implements Cloneable {
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
 		Iterator<CharSequence> itr = saveAsIterator(config, markSaved);
-		while (itr!=null && itr.hasNext())
+		while (itr!=null && itr.hasNext()) {
 			builder.append(itr.next());
+		}
 		return builder;
 	}
 
