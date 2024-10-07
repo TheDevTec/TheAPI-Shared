@@ -1,13 +1,18 @@
 package me.devtec.shared.dataholder.loaders.yaml;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import me.devtec.shared.API;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.DataLoader;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -17,7 +22,7 @@ public class YamlSectionBuilderHelper {
 
 	public static class StringArrayList {
 
-		private static final int BUFFER_SIZE = 1024 * 4;
+		private static final int BUFFER_SIZE = 1024*16;
 
 		private final StringContainer container = new StringContainer(BUFFER_SIZE);
 
@@ -36,7 +41,7 @@ public class YamlSectionBuilderHelper {
 		public String complete() {
 			if (!container.isEmpty())
 				return container.toString();
-			return null;
+			return "";
 		}
 
 		public boolean isEmpty() {
@@ -49,130 +54,157 @@ public class YamlSectionBuilderHelper {
 	}
 
 	public static class Section {
-		public final int space;
-		public final String keyName;
-		public DataValue value;
-		public Section[] sub;
-		public Section parent;
+	    public final int space;
+	    public final String keyName;
+	    public DataValue value;
+	    public Section[] sub;
+	    public Section parent;
+		public int id;
 
-		public Section(Section parent, String key, DataValue val) {
-			this.parent = parent;
-			space = parent.space + 1;
-			keyName = key;
-			value = val;
-		}
+	    public Section(Section parent, String key, DataValue val) {
+	        this.parent = parent;
+	        space = parent.space + 1;
+	        keyName = key;
+	        value = val;
+	    }
 
-		public Section(String key, DataValue val) {
-			space = 0;
-			keyName = key;
-			value = val;
-		}
+	    public Section(String key, DataValue val) {
+	        space = 0;
+	        keyName = key;
+	        value = val;
+	    }
 
-		public void add(Section sec) {
-			if (sub == null)
-				sub = new Section[] { sec };
-			else {
-				Section[] copy = new Section[sub.length + 1];
-				System.arraycopy(sub, 0, copy, 0, sub.length);
-				copy[sub.length] = sec;
-				sub = copy;
-			}
-		}
+	    public synchronized void add(Section sec) {
+	        if (sub == null) {
+	            sub = new Section[]{sec};
+	        } else {
+	            Section[] copy = Arrays.copyOf(sub, sub.length + 1);
+	            copy[copy.length - 1] = sec;
+	            sub = copy;
+	            Arrays.sort(copy, (o1, o2) -> o1.id-o2.id);
+	        }
+	    }
 
-		public Section get(String name) {
-			for (Section section : sub)
-				if (section.keyName.equals(name))
-					return section;
-			return null;
-		}
+	    public Section get(String name) {
+	        if (sub != null)
+	            for (Section section : sub)
+	                if (section.keyName.equals(name))
+	                    return section;
+	        return null;
+	    }
 
-		public Section create(String name) {
-			Section current = this;
+	    public synchronized Section create(int id, String name) {
+	        Section current = this;
+	        int start = 0;
+	        int end = name.indexOf('.');
+	        if(end==-1)end=name.length();
+	        while(end!=-1) {
+	        	String key = name.substring(start, end);
+	            Section sec = current.get(key);
+	            if (sec == null) {
+	                sec = new Section(current, key, null);
+	                sec.id=id;
+	                current.add(sec);
+	            }
+	            current = sec;
 
-			int pos;
-			int lastPos = 0;
-			while ((pos = name.indexOf('.', lastPos)) != -1) {
-				String key = name.substring(lastPos, pos);
-				if (current.sub != null) {
-					Section sec = current.get(key);
-					if (sec == null) {
-						Section newMade = new Section(current, key, null);
-						current.add(newMade);
-						current = newMade;
-					} else
-						current = sec;
-				} else {
-					Section newMade = new Section(current, key, null);
-					current.add(newMade);
-					current = newMade;
-				}
-				lastPos = pos + 1;
-			}
-			// Final
-			String key = name.substring(lastPos);
-			if (current.sub == null) {
-				Section newMade = new Section(current, key, null);
-				current.add(newMade);
-				return newMade;
-			}
-			Section sec = current.get(key);
-			if (sec == null) {
-				Section newMade = new Section(current, key, null);
-				current.add(newMade);
-				return newMade;
-			}
-			return sec;
-		}
+	            if(end >= name.length() || start >= name.length())break;
+	        	start = end+1;
+	        	end = name.indexOf('.',start);
+	        	if(end==-1)end=name.length();
+	        }
+	        current.id=id;
+	        return current;
+	    }
 
-		public StringContainer fullName(StringContainer container) {
-			container.clear();
-			for (Section parent = this; parent != null; parent = parent.parent)
-				container.insert(0, '.').insert(0, parent.keyName);
-			return container;
-		}
+	    public StringContainer fullName(StringContainer container) {
+	        container.clear();
+	        for (Section parent = this; parent != null; parent = parent.parent) {
+	            container.insert(0, '.').insert(0, parent.keyName);
+	        }
+	        return container;
+	    }
 
-		@Override
-		public boolean equals(Object obj) {
-			if (obj instanceof Section) {
-				Section sec = (Section) obj;
-                return sec.keyName.equals(keyName) && sec.space == space;
-			}
-			return false;
-		}
-
+	    @Override
+	    public boolean equals(Object obj) {
+	        if (obj instanceof Section) {
+	            Section sec = (Section) obj;
+	            return sec.keyName.equals(keyName) && sec.space == space;
+	        }
+	        return false;
+	    }
 	}
+    
+    private static void processEntries(Map<String, Section> map, Set<Entry<String, DataValue>> set) {
+    	if(set.size()>=512) {
+            ExecutorService executor = Executors.newFixedThreadPool(API.THREAD_COUNT);
+            CountDownLatch latch = new CountDownLatch(set.size());
+            int id = 0;
+            for (Entry<String, DataValue> entry : set) {
+            	final int privateId = id++;
+                executor.submit(() -> {
+                    try {
+                        processEntry(privateId, map, entry.getKey(), entry.getValue());
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+            }
+            executor.shutdown();
+            return;
+    	}
+    	StringContainer container = new StringContainer(64);
+		Section prevParent = null;
+		StringContainer fullNameContainer = new StringContainer(64);
+
+		int id = 0;
+		for (Entry<String, DataValue> entry : set) {
+			int privateId = id++;
+		    container.clear();
+		    container.append(entry.getKey());
+		    Section main;
+
+		    if (prevParent != null && (container.startsWith(prevParent.fullName(fullNameContainer), 0)
+		            || (prevParent = prevParent.parent) != null && container.startsWith(prevParent.fullName(fullNameContainer), 0))) {
+		        container.delete(0, prevParent.fullName(fullNameContainer).length());
+		        main = prevParent;
+		    } else {
+		        int pos = container.indexOf('.');
+		        if (pos == -1) continue;
+		        String primaryKey = container.substring(0, pos);
+		        container.delete(0, primaryKey.length() + 1);
+		        main = map.get(primaryKey);
+		    }
+
+		    if (main == null) continue;
+
+		    Section sec = main.create(privateId, container.toString());
+		    sec.value = entry.getValue();
+		    prevParent = sec.parent;
+		}
+		container.clear();
+    }
+
+    private static void processEntry(int privateId, Map<String, Section> map, String key, DataValue value) {
+        int pos = key.indexOf('.');
+        Section currentSection = map.get(key.substring(0, pos));
+        currentSection = currentSection.create(privateId, key.substring(pos+1));
+        currentSection.value = value;
+    }
 
 	public static Iterator<CharSequence> prepareBuilder(Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
 		StringContainer container = new StringContainer(64);
 		Map<String, Section> map = new LinkedHashMap<>();
-		for (String primaryKey : primaryKeys)
-			map.put(primaryKey, new Section(primaryKey, dataLoader.get(primaryKey)));
 
-		Section prevParent = null;
-		StringContainer fullNameContainer = new StringContainer(64);
-		for (Entry<String, DataValue> entry : dataLoader.entrySet()) {
-			container.clear();
-			container.append(entry.getKey());
-			Section main;
-			if (prevParent != null && (container.startsWith(prevParent.fullName(fullNameContainer), 0)
-					|| (prevParent = prevParent.parent) != null && container.startsWith(prevParent.fullName(fullNameContainer), 0))) {
-				container.delete(0, prevParent.fullName(fullNameContainer).length());
-				main = prevParent;
-			} else {
-				int pos = container.indexOf('.');
-				if (pos == -1)
-					continue;
-				String primaryKey = container.substring(0, pos);
-				container.delete(0, primaryKey.length() + 1);
-				main = map.get(primaryKey);
-			}
-			if(main==null)
-				continue;
-			Section sec = main.create(container.toString());
-			sec.value = entry.getValue();
-			prevParent = sec.parent;
-		}
-		container.clear();
+		for (String primaryKey : primaryKeys)
+		    map.put(primaryKey, new Section(primaryKey, dataLoader.get(primaryKey)));
+
+		processEntries(map, dataLoader.entrySet());
 		StringArrayList values = new StringArrayList();
 		Iterator<Section> itr = map.values().iterator();
 		return new Iterator<CharSequence>() {
@@ -823,7 +855,7 @@ public class YamlSectionBuilderHelper {
 		container.clear();
 		for (int i = 0; i < space; ++i)
 			container.append(' ').append(' ');
-		if (section.charAt(0) == '#')
+		if (section.charAt(0)==' ' || section.charAt(section.length()-1)==' '|| section.indexOf('#')!=-1 || section.charAt(0)=='-')
 			container.append('\'').append(section).append('\'').append(':');
 		else
 			container.append(section).append(':');
