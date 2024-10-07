@@ -24,6 +24,8 @@ public class JsonUtils {
 	private static final Class<?> unmodifiableCollection = Ref.getClass("java.util.Collections$UnmodifiableCollection");
 	// Stream#toList()
 	private static final Class<?> immutableCollection = Ref.getClass("java.util.ImmutableCollections$AbstractImmutableCollection");
+	// Arrays#asList()
+	private static final Class<?> arraysCollection = Ref.getClass("java.util.Arrays$ArrayList");
 
 	// Collections#unmodifiable
 	private static final Class<?> unmodifiableMap = Ref.getClass("java.util.Collections$UnmodifiableMap");
@@ -63,7 +65,7 @@ public class JsonUtils {
 				return object;
 			}
 			if (s instanceof Collection) {
-				if (s instanceof ArrayList || s instanceof LinkedList || unmodifiableCollection.isAssignableFrom(s.getClass()) || immutableCollection.isAssignableFrom(s.getClass())) {
+				if (s instanceof ArrayList || s instanceof LinkedList || unmodifiableCollection.isAssignableFrom(s.getClass()) || immutableCollection.isAssignableFrom(s.getClass()) || arraysCollection !=null && arraysCollection.isAssignableFrom(s.getClass())) {
 					List<Object> obj = new LinkedList<>();
 					for (Object o : (Collection<?>) s)
 						obj.add(JsonUtils.writeWithoutParseStatic(o));
