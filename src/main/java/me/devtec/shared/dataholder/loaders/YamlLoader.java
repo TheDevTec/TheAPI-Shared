@@ -3,9 +3,12 @@ package me.devtec.shared.dataholder.loaders;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
+import me.devtec.shared.API;
 import me.devtec.shared.Pair;
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.annotations.Nonnull;
@@ -15,80 +18,99 @@ import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.dataholder.loaders.toml.TomlSectionBuilderHelper;
 import me.devtec.shared.dataholder.loaders.yaml.YamlSectionBuilderHelper;
 import me.devtec.shared.json.Json;
-import me.devtec.shared.scheduler.Scheduler;
-import me.devtec.shared.scheduler.Tasker;
 
 public class YamlLoader extends EmptyLoader {
 
-	private boolean readingReachedEnd;
-	private int startIndex;
-	private int endIndex;
+	private static final int CHUNK_SIZE = 1024*16;
+	
 	private StringContainer lines;
+	
+	private List<int[]> readLinesFromContainer(StringContainer lines) {
+	    ExecutorService executor = Executors.newFixedThreadPool(API.THREAD_COUNT);
+	    List<Future<List<int[]>>> futures = new ArrayList<>();
+	    List<int[]> allLinePositions = new ArrayList<>();
 
-	private int[] readLine() {
-		try {
-			return startIndex == -1 ? null : endIndex == -1 ? new int[] { startIndex, lines.length() } : new int[] { startIndex, endIndex };
-		} finally {
-			startIndex = endIndex == -1 ? -1 : endIndex + 1;
-			endIndex = -1;
-			if (startIndex != -1)
-				for (int i = startIndex; i < lines.length(); ++i) {
-					char c = lines.charAt(i);
-					if (c == '\r' || c == '\n') {
-						if (i == startIndex) {
-							++startIndex;
-							continue;
-						}
-						endIndex = startIndex == -1 ? -1 : i;
-						break;
-					}
-				}
-		}
+	    int totalLength = lines.length();
+	    int chunkCount = (totalLength + CHUNK_SIZE - 1) / CHUNK_SIZE;
+	    int lastEnd = 0;
+
+	    for (int i = 0; i < chunkCount; i++) {
+	        int start = i * CHUNK_SIZE;
+	        int end = Math.min(start + CHUNK_SIZE, totalLength);
+	        
+	        if (lastEnd > 0) {
+	            start = lastEnd;
+	        }
+	        if(i+1==chunkCount) {
+		        end = lines.length();
+	        }else
+	        	end = adjustEndPosition(lines, end);
+	        int fStart = start;
+	        int fEnd = end;
+	        futures.add(executor.submit(() -> readLinesInRange(lines, fStart, fEnd)));
+	        
+	        lastEnd = end;
+	    }
+	    for (Future<List<int[]>> future : futures) {
+	        try {
+	            List<int[]> chunkLines = future.get();
+	            allLinePositions.addAll(chunkLines);
+	        } catch (InterruptedException | ExecutionException e) {
+	        }
+	    }
+	    executor.shutdown();
+	    allLinePositions.sort((a, b) -> Integer.compare(a[0], b[0]));
+	    return allLinePositions;
 	}
 
-	@Override
-	public void reset() {
-		super.reset();
-		readingReachedEnd = false;
-	}
+    private int adjustEndPosition(StringContainer lines, int end) {
+        for (int i = end - 1; i >= 0; i--) {
+            if (isLineSeparator(lines, i)) {
+                return i + getLineSeparatorLength(lines, i);
+            }
+        }
+        return end;
+    }
 
+    private List<int[]> readLinesInRange(StringContainer lines, int start, int end) {
+        List<int[]> resultLines = new ArrayList<>();
+        int currentStart = start;
+
+        for (int i = start; i < end; i++) {
+            if (isLineSeparator(lines, i)) {
+                if (currentStart < i) {
+                    resultLines.add(new int[] { currentStart, i });
+                }
+                currentStart = i + getLineSeparatorLength(lines, i);
+            }
+        }
+        if (currentStart < end) {
+            if (currentStart < lines.length()) {
+                resultLines.add(new int[] { currentStart, end });
+            }
+        }
+        return resultLines;
+    }
+
+    private boolean isLineSeparator(StringContainer lines, int index) {
+        return (lines.charAt(index) == '\n') || (lines.charAt(index) == '\r');
+    }
+
+    private int getLineSeparatorLength(StringContainer lines, int index) {
+        if (lines.charAt(index) == '\r' && index + 1 < lines.length() && lines.charAt(index + 1) == '\n') {
+            return 2;
+        }
+        return 1;
+    }
+	
 	@Override
 	public void load(String input) {
 		if (input == null)
 			return;
 		reset();
-
+	
 		lines = new StringContainer(input, 0, 0);
-		// Init
-		startIndex = 0;
-		endIndex = -1;
-		for (int i = 0; i < lines.length(); ++i) {
-			char c = lines.charAt(i);
-			if (c == '\r' || c == '\n') {
-				endIndex = i;
-				break;
-			}
-		}
-
-		Queue<int[]> lines = new ConcurrentLinkedQueue<>();
-		int task = -1;
-		if (input.length() >= 20000)
-			task = new Tasker() {
-				@Override
-				public void run() {
-					int[] line;
-					while (!isCancelled() && (line = readLine()) != null)
-						lines.add(line);
-					readingReachedEnd = true;
-				}
-			}.runTask();
-		else {
-			int[] line;
-			while ((line = readLine()) != null)
-				lines.add(line);
-			readingReachedEnd = true;
-		}
-
+		
 		// Temp values
 		List<String> comments = null;
 		List<Object> list = null;
@@ -99,10 +121,7 @@ public class YamlLoader extends EmptyLoader {
 		int lastIndexOfDot = 0;
 
 		byte readerMode = 0;
-		while (!readingReachedEnd || !lines.isEmpty()) {
-			if (lines.isEmpty())
-				continue;
-			int[] line = lines.poll();
+        for (int[] line : readLinesFromContainer(lines)) {
 			int currentDepth = getDepth(this.lines, line);
 			int[] trimmed = trim(this.lines, line);
 			// Comments
@@ -342,8 +361,6 @@ public class YamlLoader extends EmptyLoader {
 				break;
 			}
 		}
-		if (task != -1)
-			Scheduler.cancelTask(task);
 		switch (readerMode) {
 		case 1:
 		case 3: {
