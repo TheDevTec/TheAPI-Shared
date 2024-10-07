@@ -1,19 +1,14 @@
 package me.devtec.shared.dataholder;
 
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+
+import me.devtec.shared.annotations.ScheduledForRemoval;
 
 public class StringContainer implements CharSequence {
 	private static final int DEFAULT_CAPACITY = 16;
 
 	private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-
-	private static final Charset charset = StandardCharsets.UTF_8;
 
 	// long utils
 	final static char[] DigitTens = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3',
@@ -49,6 +44,12 @@ public class StringContainer implements CharSequence {
 	public StringContainer(String text, int offset, int additionalCapacity) {
 		value = new char[(count = text.length() - offset) + Math.max(0, additionalCapacity)];
 		text.getChars(offset, text.length(), value, 0);
+	}
+
+	public StringContainer(char[] array, int size) {
+		value = new char[size+1];
+		System.arraycopy(array, 0, value, 0, Math.min(array.length, size));
+		count=size;
 	}
 
 	@Override
@@ -217,20 +218,53 @@ public class StringContainer implements CharSequence {
 	}
 
 	public byte[] getBytes() {
-		return getBytes(charset);
-	}
-
-	public byte[] getBytes(Charset charset) {
 		if (count == 0)
 			return new byte[0];
+		
+        int estimatedSize = count * 4;
+        byte[] byteBuffer = new byte[estimatedSize];
+        int bytePos = 0;
 
-		CharsetEncoder encoder = charset.newEncoder();
-		ByteBuffer bb = ByteBuffer.allocate((int) (count * (double) encoder.maxBytesPerChar()));
-		encoder.onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
-		CharBuffer cb = CharBuffer.wrap(value, 0, count);
-		encoder.encode(cb, bb, true);
-		encoder.flush(bb);
-		return Arrays.copyOf(bb.array(), bb.position());
+        for (int i = 0; i < count; i++) {
+            int codePoint = value[i];
+
+            if (codePoint <= 0x7F) {
+                // 1-byte (ASCII)
+                byteBuffer[bytePos++] = (byte) codePoint;
+            } else if (codePoint <= 0x7FF) {
+                // 2-byte
+                byteBuffer[bytePos++] = (byte) (0xC0 | (codePoint >> 6));
+                byteBuffer[bytePos++] = (byte) (0x80 | (codePoint & 0x3F));
+            } else if (Character.isSurrogate(value[i])) {
+                // 4-byte
+                if (i + 1 < count && Character.isSurrogatePair(value[i], value[i + 1])) {
+                    int high = value[i];
+                    int low = value[i + 1];
+                    codePoint = Character.toCodePoint((char) high, (char) low);
+                    i++;
+                    byteBuffer[bytePos++] = (byte) (0xF0 | (codePoint >> 18));
+                    byteBuffer[bytePos++] = (byte) (0x80 | ((codePoint >> 12) & 0x3F));
+                    byteBuffer[bytePos++] = (byte) (0x80 | ((codePoint >> 6) & 0x3F));
+                    byteBuffer[bytePos++] = (byte) (0x80 | (codePoint & 0x3F));
+                } else {
+                    throw new IllegalArgumentException("Invalid surrogate pair.");
+                }
+            } else {
+                // 3-byte
+                byteBuffer[bytePos++] = (byte) (0xE0 | (codePoint >> 12));
+                byteBuffer[bytePos++] = (byte) (0x80 | ((codePoint >> 6) & 0x3F));
+                byteBuffer[bytePos++] = (byte) (0x80 | (codePoint & 0x3F));
+            }
+        }
+        byte[] result = new byte[bytePos];
+        System.arraycopy(byteBuffer, 0, result, 0, bytePos);
+        return result;
+	}
+
+	@Deprecated
+	@ScheduledForRemoval(inVersion = "13.5")
+	public byte[] getBytes(Charset charset) {
+		return getBytes();
 	}
 
 	public char[] getValueWithoutTrim() {
