@@ -47,16 +47,14 @@ public class ComponentAPI {
 	public static Component fromString(String input) {
 		if (input == null)
 			return null;
-		return ComponentAPI.fromString(input,
-				/* Depends on version & software */ hexModeEnabled == null ? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15)) : hexModeEnabled,
+		return ComponentAPI.fromString(input, /* Depends on version & software */ hexModeEnabled == null ? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15)) : hexModeEnabled,
 				true);
 	}
 
 	public static Component fromString(String input, boolean hexMode) {
 		if (input == null)
 			return null;
-		return ComponentAPI.fromString(input,
-                hexMode ? hexModeEnabled == null ? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15)) : hexModeEnabled : false, true);
+		return ComponentAPI.fromString(input, hexMode ? hexModeEnabled == null ? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15)) : hexModeEnabled : false, true);
 	}
 
 	public static Component fromString(String input, boolean hexMode, boolean urlMode) {
@@ -111,7 +109,7 @@ public class ComponentAPI {
 							i += 12;
 							continue charLoop;
 						}
-                    }
+					}
 				else if (isColorChar(afterSymbol)) {
 					if (component.colorToChar() == afterSymbol)
 						continue;
@@ -353,14 +351,14 @@ public class ComponentAPI {
 								}
 								break switchCase;
 							case 'e':
-                                case 'r':
-                                    if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
+							case 'r':
+								if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
 									container.append('u');
 									i += 1;
 									lookingMode = 4; // Read until space
 								}
 								break switchCase;
-                                case 'f':
+							case 'f':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'u' && input.charAt(i + 2) == 'n') {
 									container.append('u').append('n');
 									i += 2;
@@ -542,14 +540,14 @@ public class ComponentAPI {
 								}
 								break switchCase;
 							case 'e':
-                                case 'r':
-                                    if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
+							case 'r':
+								if (i + 1 < input.length() && input.charAt(i + 1) == 'u') {
 									container.append('u');
 									i += 1;
 									lookingMode = 4; // Read until space
 								}
 								break switchCase;
-                                case 'f':
+							case 'f':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'u' && input.charAt(i + 2) == 'n') {
 									container.append('u').append('n');
 									i += 2;
@@ -579,13 +577,12 @@ public class ComponentAPI {
 							}
 						break;
 					}
-                    if (c == '/') {
-                        lookingMode = 4; // Read until space
-                        break;
-                    } else {
-                        lookingMode = 0;
-                        spaceFinder = 0;
-                    }
+					if (c == '/') {
+						lookingMode = 4; // Read until space
+						break;
+					}
+					lookingMode = 0;
+					spaceFinder = 0;
 					break;
 				case 4:
 					if (c == ' ') {
@@ -718,7 +715,10 @@ public class ComponentAPI {
 		Component component = new Component("");
 		for (Object val : collection)
 			if (val instanceof Map)
-				component.append(fromJson((Map<String, Object>) val));
+				if (component.getText() == null || component.getText().isEmpty())
+					component = fromJson((Map<String, Object>) val);
+				else
+					component.append(fromJson((Map<String, Object>) val));
 		return component;
 	}
 
@@ -745,18 +745,20 @@ public class ComponentAPI {
 			component.setStrikethrough((boolean) map.get("strikethrough"));
 		if (map.containsKey("hoverEvent")) {
 			Map<String, String> value = (Map<String, String>) map.get("hoverEvent");
-			Object val = value.getOrDefault("value", value.get("contents"));
-			component.setHoverEvent(new HoverEvent(HoverEvent.Action.valueOf((value.get("action")).toUpperCase()),
-                    fromString(val + "")));
+			Object val = value.getOrDefault("value", value.getOrDefault("content", value.get("contents")));
+			System.out.println(val.getClass());
+			component.setHoverEvent(new HoverEvent(HoverEvent.Action.valueOf(value.get("action").toUpperCase()),
+					val instanceof Collection ? fromJson((Collection<?>) val) : val instanceof Map ? fromJson(map) : fromString(val + "")));
 		}
 		if (map.containsKey("clickEvent")) {
 			Map<String, String> value = (Map<String, String>) map.get("clickEvent");
-			component.setClickEvent(new ClickEvent(ClickEvent.Action.valueOf((value.get("action")).toUpperCase()), value.get("value")));
+			component.setClickEvent(new ClickEvent(ClickEvent.Action.valueOf(value.get("action").toUpperCase()), value.get("value")));
 		}
 		if (map.containsKey("insertion"))
 			component.setInsertion(map.get("insertion") + "");
 		if (map.containsKey("extra")) {
 			Object extra = map.get("extra");
+			System.out.println(extra.getClass());
 			if (extra instanceof Map)
 				component.append(fromJson((Map<String, Object>) extra));
 			else if (extra instanceof Collection)

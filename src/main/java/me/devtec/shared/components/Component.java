@@ -447,14 +447,23 @@ public class Component {
 	public Map<String, Object> toJsonMapWithExtras() {
 		Map<String, Object> map = toJsonMap();
 		if (extra != null && !extra.isEmpty())
-			if (extra.size() == 1)
+			if (extra.size() == 1) {
+				if (getText() == null || getText().isEmpty())
+					return extra.get(0).toJsonMapWithExtras();
 				map.put("extra", extra.get(0).toJsonMapWithExtras());
-			else {
+			} else {
+				boolean start = true;
 				List<Map<String, Object>> list = new ArrayList<>();
 				for (Component children : extra)
-					if (!children.equals(this))
-						list.add(children.toJsonMapWithExtras());
-				map.put("extra", list);
+					if (!equals(children)) {
+						if ((getText() == null || getText().isEmpty()) && start)
+							map = children.toJsonMapWithExtras();
+						else
+							list.add(children.toJsonMapWithExtras());
+						start = false;
+					}
+				if (!list.isEmpty())
+					map.put("extra", list);
 			}
 		return map;
 	}
