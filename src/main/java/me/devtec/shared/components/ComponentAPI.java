@@ -746,7 +746,6 @@ public class ComponentAPI {
 		if (map.containsKey("hoverEvent")) {
 			Map<String, String> value = (Map<String, String>) map.get("hoverEvent");
 			Object val = value.getOrDefault("value", value.getOrDefault("content", value.get("contents")));
-			System.out.println(val.getClass());
 			component.setHoverEvent(new HoverEvent(HoverEvent.Action.valueOf(value.get("action").toUpperCase()),
 					val instanceof Collection ? fromJson((Collection<?>) val) : val instanceof Map ? fromJson(map) : fromString(val + "")));
 		}
@@ -758,7 +757,6 @@ public class ComponentAPI {
 			component.setInsertion(map.get("insertion") + "");
 		if (map.containsKey("extra")) {
 			Object extra = map.get("extra");
-			System.out.println(extra.getClass());
 			if (extra instanceof Map)
 				component.append(fromJson((Map<String, Object>) extra));
 			else if (extra instanceof Collection)
