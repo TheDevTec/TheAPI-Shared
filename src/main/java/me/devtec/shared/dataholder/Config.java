@@ -254,7 +254,7 @@ public class Config {
 		return null;
 	}
 
-    public Config setComments(@Nonnull String key, @Nullable List<String> value) {
+	public Config setComments(@Nonnull String key, @Nullable List<String> value) {
 		Checkers.nonNull(key, "Key");
 		if (value == null || value.isEmpty()) {
 			DataValue val = getDataLoader().get(key);
@@ -717,7 +717,7 @@ public class Config {
 	}
 
 	public void save() {
-		if (getDataLoader().name().equals("empty"))
+		if ("empty".equals(getDataLoader().name()))
 			this.save("yaml");
 		else
 			save(getDataLoader().name());
@@ -767,7 +767,7 @@ public class Config {
 	@Nonnull
 	@Override
 	public String toString() {
-		return toString(getDataLoader().name().equals("empty") ? DataType.BYTE.name() : getDataLoader().name(), false);
+		return toString("empty".equals(getDataLoader().name()) ? DataType.BYTE.name() : getDataLoader().name(), false);
 	}
 
 	@Nonnull

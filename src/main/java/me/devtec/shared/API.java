@@ -1,8 +1,15 @@
 package me.devtec.shared;
 
 import java.io.File;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,7 +52,8 @@ public class API {
 	// Offline users cache
 	private static OfflineCache cache;
 	private static final Map<UUID, Config> users = new ConcurrentHashMap<>();
-	public static final int THREAD_COUNT = Math.max(1, (int)(Runtime.getRuntime().availableProcessors()/1.5));
+	public static final int THREAD_COUNT = Math.max(1, (int) (Runtime.getRuntime().availableProcessors() / 1.5));
+	public static ExecutorService EXECUTOR;
 	private static final List<Pair> savingQueue = new TempList<Pair>(600).setCallback(pair -> {
 		Config cached = (Config) pair.getValue();
 		UserDataUnloadEvent event = new UserDataUnloadEvent((UUID) pair.getKey(), cached);
@@ -113,6 +121,8 @@ public class API {
 	public static void setEnabled(boolean status) {
 		API.enabled = status;
 		if (!status) {
+			EXECUTOR.shutdown();
+			EXECUTOR = null;
 			if (savingScheduler != 0)
 				Scheduler.cancelTask(savingScheduler);
 			savingScheduler = 0;
@@ -132,16 +142,19 @@ public class API {
 			// Unregister placeholders
 			PlaceholderAPI.unregisterAll();
 			Scheduler.cancelAll();
-		} else if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
-			savingScheduler = new Tasker() {
+		} else {
+			EXECUTOR = Executors.newFixedThreadPool(API.THREAD_COUNT);
+			if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
+				savingScheduler = new Tasker() {
 
-				@Override
-				public void run() {
-					// Save all players
-					for (Config config : API.users.values())
-						config.save("yaml");
-				}
-			}.runRepeating(432000, 432000); // Every 6 hours
+					@Override
+					public void run() {
+						// Save all players
+						for (Config config : API.users.values())
+							config.save("yaml");
+					}
+				}.runRepeating(432000, 432000); // Every 6 hours
+		}
 	}
 
 	public static boolean isEnabled() {
@@ -198,7 +211,7 @@ public class API {
 			ColorUtils.tagPrefix = tags.getString("hexTagPrefix");
 
 			// Unsupported mode
-			if (tags.getString("gradient-mode").equalsIgnoreCase("REGEX")) {
+			if ("REGEX".equalsIgnoreCase(tags.getString("gradient-mode"))) {
 				String firstPrefix = tags.getString("gradient.firstHex.prefix");
 				String secondPrefix = tags.getString("gradient.secondHex.prefix");
 				String firstSuffix = tags.getString("gradient.firstHex.suffix");
@@ -216,7 +229,7 @@ public class API {
 				case 3:
 					ColorUtils.gradientFinderConstructor = ArrowsWithExclamationFinder::new;
 					break;
-                    case 5:
+				case 5:
 					ColorUtils.gradientFinderConstructor = ExclamationArrowsFinder::new;
 					break;
 				default:
@@ -230,12 +243,13 @@ public class API {
 					charLoop: for (int i = 0; i < text.length(); ++i) {
 						char c = text.charAt(i);
 						if (c == '&' && i + 7 < text.length() && text.charAt(i + 1) == '#') {
-							if (isHexColor(text, i)) continue charLoop;
+							if (isHexColor(text, i))
+								continue charLoop;
 							i = addHexColor(text, i);
 						} else if (c == '#' && i + 6 < text.length()) {
 							for (int ic = 1; ic < 7; ++ic) {
 								char cn = text.charAt(i + ic);
-								if ((((cn < 64) || (cn > 70)) && ((cn < 97) || (cn > 102)) && ((cn < 48) || (cn > 57))))
+								if ((cn < 64 || cn > 70) && (cn < 97 || cn > 102) && (cn < 48 || cn > 57))
 									continue charLoop;
 							}
 							text.setCharAt(i, '§');
@@ -254,7 +268,8 @@ public class API {
 					for (int i = 0; i < text.length(); ++i) {
 						char c = text.charAt(i);
 						if (c == '<' && i + 8 < text.length() && text.charAt(i + 1) == '#') {
-							if (isHexColor(text, i)) continue;
+							if (isHexColor(text, i))
+								continue;
 							if (text.charAt(i + 8) == '>') {
 								text.deleteCharAt(i + 8);
 								i = addHexColor(text, i);
@@ -355,7 +370,7 @@ public class API {
 		private boolean isHexColor(StringContainer text, int i) {
 			for (int ic = 2; ic < 8; ++ic) {
 				char cn = text.charAt(i + ic);
-				if ((((cn < 64) || (cn > 70)) && ((cn < 97) || (cn > 102)) && ((cn < 48) || (cn > 57))))
+				if ((cn < 64 || cn > 70) && (cn < 97 || cn > 102) && (cn < 48 || cn > 57))
 					return true;
 			}
 			return false;
@@ -429,9 +444,8 @@ public class API {
 									break;
 								}
 								cn = Character.toLowerCase(input.charAt(++i));
-								if(checkIfValidHexColor(cn, color)){
+								if (checkIfValidHexColor(cn, color))
 									continue;
-								}
 								--i;
 								break;
 							}
@@ -449,27 +463,24 @@ public class API {
 					case '#':
 						color.clear();
 						formats.clear();
-						if (i + 6 < input.length()) {
+						if (i + 6 < input.length())
 							i = appendHexColor(input, color, i);
-						}
 						break;
 					default:
 						break;
 					}
-				} else if (c == '#' && i + 6 < input.length()) {
+				} else if (c == '#' && i + 6 < input.length())
 					i = appendHexColor(input, color, i);
-				}
 			}
-			return new String[] {color.isEmpty() ? null : color.toString(), formats.isEmpty() ? null : formats.toString() };
+			return new String[] { color.isEmpty() ? null : color.toString(), formats.isEmpty() ? null : formats.toString() };
 		}
 
 		private int appendHexColor(String input, StringContainer color, int i) {
 			color.append('#');
 			for (int count = 0; count < 6; ++count) {
 				char cn = input.charAt(++i);
-				if(checkIfValidHexColor(cn, color)){
+				if (checkIfValidHexColor(cn, color))
 					continue;
-				}
 				--i;
 				break;
 			}
@@ -602,7 +613,7 @@ public class API {
 				intervalR = ((rgb >> 16 & 0xFF) - r) / (float) (totalSize - 1);
 				intervalG = ((rgb >> 8 & 0xFF) - g) / (float) (totalSize - 1);
 				intervalB = ((rgb & 0xFF) - b) / (float) (totalSize - 1);
-            }
+			}
 
 			int i = start - 1;
 			for (int step = 0; step < totalSize; ++step) {

@@ -3,9 +3,8 @@ package me.devtec.shared.dataholder.loaders;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import me.devtec.shared.API;
@@ -21,96 +20,95 @@ import me.devtec.shared.json.Json;
 
 public class YamlLoader extends EmptyLoader {
 
-	private static final int CHUNK_SIZE = 1024*16;
-	
+	private static final int CHUNK_SIZE = 1024 * 16;
+
 	private StringContainer lines;
-	
+
 	private List<int[]> readLinesFromContainer(StringContainer lines) {
-	    ExecutorService executor = Executors.newFixedThreadPool(API.THREAD_COUNT);
-	    List<Future<List<int[]>>> futures = new ArrayList<>();
-	    List<int[]> allLinePositions = new ArrayList<>();
+		List<Future<List<int[]>>> futures = new ArrayList<>();
+		List<int[]> allLinePositions = new ArrayList<>();
 
-	    int totalLength = lines.length();
-	    int chunkCount = (totalLength + CHUNK_SIZE - 1) / CHUNK_SIZE;
-	    int lastEnd = 0;
+		int totalLength = lines.length();
+		int chunkCount = (totalLength + CHUNK_SIZE - 1) / CHUNK_SIZE;
+		int lastEnd = 0;
 
-	    for (int i = 0; i < chunkCount; i++) {
-	        int start = i * CHUNK_SIZE;
-	        int end = Math.min(start + CHUNK_SIZE, totalLength);
-	        
-	        if (lastEnd > 0) {
-	            start = lastEnd;
-	        }
-	        if(i+1==chunkCount) {
-		        end = lines.length();
-	        }else
-	        	end = adjustEndPosition(lines, end);
-	        int fStart = start;
-	        int fEnd = end;
-	        futures.add(executor.submit(() -> readLinesInRange(lines, fStart, fEnd)));
-	        
-	        lastEnd = end;
-	    }
-	    for (Future<List<int[]>> future : futures) {
-	        try {
-	            List<int[]> chunkLines = future.get();
-	            allLinePositions.addAll(chunkLines);
-	        } catch (InterruptedException | ExecutionException e) {
-	        }
-	    }
-	    executor.shutdown();
-	    allLinePositions.sort((a, b) -> Integer.compare(a[0], b[0]));
-	    return allLinePositions;
+		for (int i = 0; i < chunkCount; i++) {
+			int start = i * CHUNK_SIZE;
+			int end = Math.min(start + CHUNK_SIZE, totalLength);
+
+			if (lastEnd > 0)
+				start = lastEnd;
+			if (i + 1 == chunkCount)
+				end = lines.length();
+			else
+				end = adjustEndPosition(lines, end);
+			int fStart = start;
+			int fEnd = end;
+			futures.add(API.EXECUTOR.submit(() -> readLinesInRange(lines, fStart, fEnd)));
+
+			lastEnd = end;
+		}
+		for (Future<List<int[]>> future : futures)
+			try {
+				List<int[]> chunkLines = future.get();
+				allLinePositions.addAll(chunkLines);
+			} catch (InterruptedException | ExecutionException e) {
+			}
+		allLinePositions.sort((a, b) -> Integer.compare(a[0], b[0]));
+		int prev = 0;
+		ListIterator<int[]> itr = allLinePositions.listIterator();
+		while (itr.hasNext()) {
+			int[] i = itr.next();
+			if (prev - i[0] < -2) {
+				itr.previous();
+				itr.add(new int[] { prev, i[0] });
+				itr.next();
+			}
+			prev = i[1];
+		}
+		return allLinePositions;
 	}
 
-    private int adjustEndPosition(StringContainer lines, int end) {
-        for (int i = end - 1; i >= 0; i--) {
-            if (isLineSeparator(lines, i)) {
-                return i + getLineSeparatorLength(lines, i);
-            }
-        }
-        return end;
-    }
+	private int adjustEndPosition(StringContainer lines, int end) {
+		for (int i = end - 1; i >= 0; i--)
+			if (isLineSeparator(lines, i))
+				return i + getLineSeparatorLength(lines, i);
+		return end;
+	}
 
-    private List<int[]> readLinesInRange(StringContainer lines, int start, int end) {
-        List<int[]> resultLines = new ArrayList<>();
-        int currentStart = start;
+	private List<int[]> readLinesInRange(StringContainer lines, int start, int end) {
+		List<int[]> resultLines = new ArrayList<>();
+		int currentStart = start;
 
-        for (int i = start; i < end; i++) {
-            if (isLineSeparator(lines, i)) {
-                if (currentStart < i) {
-                    resultLines.add(new int[] { currentStart, i });
-                }
-                currentStart = i + getLineSeparatorLength(lines, i);
-            }
-        }
-        if (currentStart < end) {
-            if (currentStart < lines.length()) {
-                resultLines.add(new int[] { currentStart, end });
-            }
-        }
-        return resultLines;
-    }
+		for (int i = start; i < end; i++)
+			if (isLineSeparator(lines, i)) {
+				if (currentStart < i)
+					resultLines.add(new int[] { currentStart, i });
+				currentStart = i + getLineSeparatorLength(lines, i);
+			}
+		if (currentStart < end && currentStart < lines.length())
+			resultLines.add(new int[] { currentStart, end });
+		return resultLines;
+	}
 
-    private boolean isLineSeparator(StringContainer lines, int index) {
-        return (lines.charAt(index) == '\n') || (lines.charAt(index) == '\r');
-    }
+	private boolean isLineSeparator(StringContainer lines, int index) {
+		return lines.charAt(index) == '\n' || lines.charAt(index) == '\r';
+	}
 
-    private int getLineSeparatorLength(StringContainer lines, int index) {
-        if (lines.charAt(index) == '\r' && index + 1 < lines.length() && lines.charAt(index + 1) == '\n') {
-            return 2;
-        }
-        return 1;
-    }
-	
+	private int getLineSeparatorLength(StringContainer lines, int index) {
+		if (lines.charAt(index) == '\r' && index + 1 < lines.length() && lines.charAt(index + 1) == '\n')
+			return 2;
+		return 1;
+	}
+
 	@Override
 	public void load(String input) {
 		if (input == null)
 			return;
 		reset();
-	
+
 		lines = new StringContainer(input, 0, 0);
-		
+
 		// Temp values
 		List<String> comments = null;
 		List<Object> list = null;
@@ -121,25 +119,25 @@ public class YamlLoader extends EmptyLoader {
 		int lastIndexOfDot = 0;
 
 		byte readerMode = 0;
-        for (int[] line : readLinesFromContainer(lines)) {
-			int currentDepth = getDepth(this.lines, line);
-			int[] trimmed = trim(this.lines, line);
+		for (int[] line : readLinesFromContainer(lines)) {
+			int currentDepth = getDepth(lines, line);
+			int[] trimmed = trim(lines, line);
 			// Comments
-			if (trimmed[0] == trimmed[1] || this.lines.charAt(trimmed[0]) == '#') {
+			if (trimmed[0] == trimmed[1] || lines.charAt(trimmed[0]) == '#') {
 				if (comments == null)
 					comments = new ArrayList<>();
-				comments.add(trimmed[0] == trimmed[1] ? "" : this.lines.substring(trimmed[0], trimmed[1]));
+				comments.add(trimmed[0] == trimmed[1] ? "" : lines.substring(trimmed[0], trimmed[1]));
 				continue;
 			}
 
 			switch (readerMode) {
 			case 0: { // Section: value/empty
-				int[][] parts = readConfigLine(this.lines, trimmed);
+				int[][] parts = readConfigLine(lines, trimmed);
 				if (parts == null) // Invalid section
 					continue;
 
 				// Key
-				lastIndexOfDot = buildKey(this.lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
+				lastIndexOfDot = buildKey(lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
 				depth = currentDepth;
 
 				if (parts.length == 1) {
@@ -153,45 +151,45 @@ public class YamlLoader extends EmptyLoader {
 				}
 
 				// Value
-				Object readerValueParsed = splitFromComment(this.lines, 0, parts[1]);
+				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 				int[] value = readerValue[0];
 				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 || readerValue[1] == null ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+				String comment = readerValue.length == 1 || readerValue[1] == null ? null : lines.substring(readerValue[1][0], readerValue[1][1]);
 				if (value[1] - value[0] > 0) {
-					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && this.lines.charAt(value[0]) == '|') {
+					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
 						readerMode = 2;
 						set(key.toString(), DataValue.of(null, "|", comment, comments));
 						stringContainer = new StringContainer(64);
 						comments = null;
 						continue;
 					}
-					if (value[1] - value[0] == 2 && parts[1][1] - parts[1][0] == 2 && this.lines.charAt(value[0]) == '|' && this.lines.charAt(value[0] + 1) == '-') {
+					if (value[1] - value[0] == 2 && parts[1][1] - parts[1][0] == 2 && lines.charAt(value[0]) == '|' && lines.charAt(value[0] + 1) == '-') {
 						readerMode = 3;
 						set(key.toString(), DataValue.of(null, "|-", comment, comments));
 						comments = null;
 						continue;
 					}
-					set(key.toString(), DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
-							Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
+					set(key.toString(), DataValue.of(indexes == null ? lines.substring(value[0], value[1]) : removeCharsAt(lines.subSequence(value[0], value[1]), indexes),
+							Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
 				} else
-					set(key.toString(), DataValue.of(parts[1][1] - parts[1][0] >= 1 && this.lines.charAt(parts[1][0]) != '"' && this.lines.charAt(parts[1][0]) != '\'' ? null : "",
-							parts[1][1] - parts[1][0] >= 1 && this.lines.charAt(parts[1][0]) != '"' && this.lines.charAt(parts[1][0]) != '\'' ? null : "", comment, comments));
+					set(key.toString(), DataValue.of(parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"' && lines.charAt(parts[1][0]) != '\'' ? null : "",
+							parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"' && lines.charAt(parts[1][0]) != '\'' ? null : "", comment, comments));
 				comments = null;
 			}
 				break;
 			case 1: { // List or Section to break
-				if (trimmed[1] - trimmed[0] > 2 && this.lines.charAt(trimmed[0]) == '-' && this.lines.charAt(trimmed[0] + 1) == ' ') {
+				if (trimmed[1] - trimmed[0] > 2 && lines.charAt(trimmed[0]) == '-' && lines.charAt(trimmed[0] + 1) == ' ') {
 					if (list == null)
 						list = new ArrayList<>();
-					Object readerValueParsed = splitFromComment(this.lines, 2, trimmed);
+					Object readerValueParsed = splitFromComment(lines, 2, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 					int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 					list.add(Json.reader()
-							.read(indexes == null ? this.lines.substring(readerValue[0][0], readerValue[0][1]) : removeCharsAt(this.lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes)));
+							.read(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1]) : removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes)));
 					continue;
 				}
-				int[][] parts = readConfigLine(this.lines, trimmed);
+				int[][] parts = readConfigLine(lines, trimmed);
 				if (parts == null)
 					continue;
 
@@ -203,7 +201,7 @@ public class YamlLoader extends EmptyLoader {
 					list = null;
 				}
 
-				lastIndexOfDot = buildKey(this.lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
+				lastIndexOfDot = buildKey(lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
 				depth = currentDepth;
 				if (parts.length == 1) {
 					readerMode = 1; // List or Section to break
@@ -215,41 +213,40 @@ public class YamlLoader extends EmptyLoader {
 					continue;
 				}
 				// Value
-				Object readerValueParsed = splitFromComment(this.lines, 0, parts[1]);
+				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 				int[] value = readerValue[0];
 				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 || readerValue[1] == null ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+				String comment = readerValue.length == 1 || readerValue[1] == null ? null : lines.substring(readerValue[1][0], readerValue[1][1]);
 				if (value[1] - value[0] > 0) {
-					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && this.lines.charAt(value[0]) == '|') {
+					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
 						readerMode = 2;
 						set(key.toString(), DataValue.of(null, "|", comment, comments));
 						stringContainer = new StringContainer(64);
 						comments = null;
 						continue;
 					}
-					if (value[1] - value[0] == 2 && parts[1][1] - parts[1][0] == 2 && this.lines.charAt(value[0]) == '|' && this.lines.charAt(value[0] + 1) == '-') {
+					if (value[1] - value[0] == 2 && parts[1][1] - parts[1][0] == 2 && lines.charAt(value[0]) == '|' && lines.charAt(value[0] + 1) == '-') {
 						readerMode = 3;
 						set(key.toString(), DataValue.of(null, "|-", comment, comments));
 						comments = null;
 						continue;
 					}
-					set(key.toString(), DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
-							Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
+					set(key.toString(), DataValue.of(indexes == null ? lines.substring(value[0], value[1]) : removeCharsAt(lines.subSequence(value[0], value[1]), indexes),
+							Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
 				} else
-					set(key.toString(), DataValue.of(parts[1][1] - parts[1][0] >= 1 && this.lines.charAt(parts[1][0]) != '"' && this.lines.charAt(parts[1][0]) != '\'' ? null : "",
-							parts[1][1] - parts[1][0] >= 1 && this.lines.charAt(parts[1][0]) != '"' && this.lines.charAt(parts[1][0]) != '\'' ? null : "", comment, comments));
+					set(key.toString(), DataValue.of(parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"' && lines.charAt(parts[1][0]) != '\'' ? null : "",
+							parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"' && lines.charAt(parts[1][0]) != '\'' ? null : "", comment, comments));
 				comments = null;
 			}
 				break;
 			case 2: { // String reader
-				int[][] parts = readConfigLine(this.lines, trimmed);
+				int[][] parts = readConfigLine(lines, trimmed);
 				if (parts == null) {
-					Object readerValueParsed = splitFromComment(this.lines, 0, trimmed);
+					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 					int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-					stringContainer.append(
-							indexes == null ? this.lines.substring(readerValue[0][0], readerValue[0][1]) : removeCharsAt(this.lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
+					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1]) : removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
 					continue;
 				}
 
@@ -262,7 +259,7 @@ public class YamlLoader extends EmptyLoader {
 					val.writtenValue = value;
 				}
 
-				lastIndexOfDot = buildKey(this.lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
+				lastIndexOfDot = buildKey(lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
 				depth = currentDepth;
 				if (parts.length == 1) {
 					readerMode = 1; // List or Section to break
@@ -274,41 +271,41 @@ public class YamlLoader extends EmptyLoader {
 					continue;
 				}
 				// Value
-				Object readerValueParsed = splitFromComment(this.lines, 0, parts[1]);
+				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 				int[] value = readerValue[0];
 				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 || readerValue[1] == null ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+				String comment = readerValue.length == 1 || readerValue[1] == null ? null : lines.substring(readerValue[1][0], readerValue[1][1]);
 				if (value[1] - value[0] > 0) {
-					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && this.lines.charAt(value[0]) == '|') {
+					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
 						readerMode = 2;
 						set(key.toString(), DataValue.of(null, "|", comment, comments));
 						stringContainer = new StringContainer(64);
 						comments = null;
 						continue;
 					}
-					if (value[1] - value[0] == 2 && parts[1][1] - parts[1][0] == 2 && this.lines.charAt(value[0]) == '|' && this.lines.charAt(value[0] + 1) == '-') {
+					if (value[1] - value[0] == 2 && parts[1][1] - parts[1][0] == 2 && lines.charAt(value[0]) == '|' && lines.charAt(value[0] + 1) == '-') {
 						readerMode = 3;
 						set(key.toString(), DataValue.of(null, "|-", comment, comments));
 						comments = null;
 						continue;
 					}
-					set(key.toString(), DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
-							Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
+					set(key.toString(), DataValue.of(indexes == null ? lines.substring(value[0], value[1]) : removeCharsAt(lines.subSequence(value[0], value[1]), indexes),
+							Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
 				} else
-					set(key.toString(), DataValue.of(parts[1][1] - parts[1][0] >= 1 && this.lines.charAt(parts[1][0]) != '"' && this.lines.charAt(parts[1][0]) != '\'' ? null : "",
-							parts[1][1] - parts[1][0] >= 1 && this.lines.charAt(parts[1][0]) != '"' && this.lines.charAt(parts[1][0]) != '\'' ? null : "", comment, comments));
+					set(key.toString(), DataValue.of(parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"' && lines.charAt(parts[1][0]) != '\'' ? null : "",
+							parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"' && lines.charAt(parts[1][0]) != '\'' ? null : "", comment, comments));
 				comments = null;
 			}
 				break;
 			case 3: { // List reader
-				int[][] parts = readConfigLine(this.lines, trimmed);
+				int[][] parts = readConfigLine(lines, trimmed);
 				if (parts == null) {
-					Object readerValueParsed = splitFromComment(this.lines, 0, trimmed);
+					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 					int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 					list.add(Json.reader()
-							.read(indexes == null ? this.lines.substring(readerValue[0][0], readerValue[0][1]) : removeCharsAt(this.lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes)));
+							.read(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1]) : removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes)));
 					continue;
 				}
 
@@ -320,7 +317,7 @@ public class YamlLoader extends EmptyLoader {
 					list = null;
 				}
 
-				lastIndexOfDot = buildKey(this.lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
+				lastIndexOfDot = buildKey(lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
 				depth = currentDepth;
 				if (parts.length == 1) {
 					readerMode = 1; // List or Section to break
@@ -332,30 +329,30 @@ public class YamlLoader extends EmptyLoader {
 					continue;
 				}
 				// Value
-				Object readerValueParsed = splitFromComment(this.lines, 0, parts[1]);
+				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
 				int[] value = readerValue[0];
 				int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
-				String comment = readerValue.length == 1 || readerValue[1] == null ? null : this.lines.substring(readerValue[1][0], readerValue[1][1]);
+				String comment = readerValue.length == 1 || readerValue[1] == null ? null : lines.substring(readerValue[1][0], readerValue[1][1]);
 				if (value[1] - value[0] > 0) {
-					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && this.lines.charAt(value[0]) == '|') {
+					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
 						readerMode = 2;
 						set(key.toString(), DataValue.of(null, "|", comment, comments));
 						stringContainer = new StringContainer(64);
 						comments = null;
 						continue;
 					}
-					if (value[1] - value[0] == 2 && parts[1][1] - parts[1][0] == 2 && this.lines.charAt(value[0]) == '|' && this.lines.charAt(value[0] + 1) == '-') {
+					if (value[1] - value[0] == 2 && parts[1][1] - parts[1][0] == 2 && lines.charAt(value[0]) == '|' && lines.charAt(value[0] + 1) == '-') {
 						readerMode = 3;
 						set(key.toString(), DataValue.of(null, "|-", comment, comments));
 						comments = null;
 						continue;
 					}
-					set(key.toString(), DataValue.of(indexes == null ? this.lines.substring(value[0], value[1]) : removeCharsAt(this.lines.subSequence(value[0], value[1]), indexes),
-							Json.reader().read(this.lines.substring(value[0], value[1])), comment, comments));
+					set(key.toString(), DataValue.of(indexes == null ? lines.substring(value[0], value[1]) : removeCharsAt(lines.subSequence(value[0], value[1]), indexes),
+							Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
 				} else
-					set(key.toString(), DataValue.of(parts[1][1] - parts[1][0] >= 1 && this.lines.charAt(parts[1][0]) != '"' && this.lines.charAt(parts[1][0]) != '\'' ? null : "",
-							parts[1][1] - parts[1][0] >= 1 && this.lines.charAt(parts[1][0]) != '"' && this.lines.charAt(parts[1][0]) != '\'' ? null : "", comment, comments));
+					set(key.toString(), DataValue.of(parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"' && lines.charAt(parts[1][0]) != '\'' ? null : "",
+							parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"' && lines.charAt(parts[1][0]) != '\'' ? null : "", comment, comments));
 				comments = null;
 			}
 				break;
@@ -401,7 +398,7 @@ public class YamlLoader extends EmptyLoader {
 		return saveAsIteratorAs(config, markSaved, true);
 	}
 
-	protected static Iterator<CharSequence> saveAsIteratorAs(@Nonnull Config config, boolean markSaved, boolean asYaml){
+	protected static Iterator<CharSequence> saveAsIteratorAs(@Nonnull Config config, boolean markSaved, boolean asYaml) {
 		return new Iterator<CharSequence>() {
 			// 0=header
 			// 1=lines
@@ -413,14 +410,14 @@ public class YamlLoader extends EmptyLoader {
 			@Override
 			public CharSequence next() {
 				switch (phase) {
-					case 0:
-						return config.getDataLoader().getHeader() instanceof List ? ((List<String>) config.getDataLoader().getHeader()).get(posInPhase++) + System.lineSeparator()
-								: config.getDataLoader().getHeader().toArray(new String[0])[posInPhase++] + System.lineSeparator();
-					case 1:
-						return list.next();
-					case 2:
-						return config.getDataLoader().getFooter() instanceof List ? ((List<String>) config.getDataLoader().getFooter()).get(posInPhase++) + System.lineSeparator()
-								: config.getDataLoader().getFooter().toArray(new String[0])[posInPhase++] + System.lineSeparator();
+				case 0:
+					return config.getDataLoader().getHeader() instanceof List ? ((List<String>) config.getDataLoader().getHeader()).get(posInPhase++) + System.lineSeparator()
+							: config.getDataLoader().getHeader().toArray(new String[0])[posInPhase++] + System.lineSeparator();
+				case 1:
+					return list.next();
+				case 2:
+					return config.getDataLoader().getFooter() instanceof List ? ((List<String>) config.getDataLoader().getFooter()).get(posInPhase++) + System.lineSeparator()
+							: config.getDataLoader().getFooter().toArray(new String[0])[posInPhase++] + System.lineSeparator();
 				}
 				return null;
 			}
@@ -428,25 +425,25 @@ public class YamlLoader extends EmptyLoader {
 			@Override
 			public boolean hasNext() {
 				switch (phase) {
-					case 0:
-						if (config.getDataLoader().getHeader().isEmpty() || config.getDataLoader().getHeader().size() == posInPhase) {
-							phase = 1;
-							posInPhase = 0;
-							if(asYaml)
-								list = YamlSectionBuilderHelper.prepareBuilder(config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
-							else
-								list = TomlSectionBuilderHelper.prepareBuilder(config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
-							return hasNext();
-						}
-						return true;
-					case 1:
-						if (list.hasNext())
-							return true;
-						phase = 2;
+				case 0:
+					if (config.getDataLoader().getHeader().isEmpty() || config.getDataLoader().getHeader().size() == posInPhase) {
+						phase = 1;
 						posInPhase = 0;
+						if (asYaml)
+							list = YamlSectionBuilderHelper.prepareBuilder(config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
+						else
+							list = TomlSectionBuilderHelper.prepareBuilder(config.getDataLoader().getPrimaryKeys(), config.getDataLoader(), markSaved);
 						return hasNext();
-					case 2:
-						return !config.getDataLoader().getFooter().isEmpty() && config.getDataLoader().getFooter().size() != posInPhase;
+					}
+					return true;
+				case 1:
+					if (list.hasNext())
+						return true;
+					phase = 2;
+					posInPhase = 0;
+					return hasNext();
+				case 2:
+					return !config.getDataLoader().getFooter().isEmpty() && config.getDataLoader().getFooter().size() != posInPhase;
 				}
 				return false;
 			}
@@ -529,7 +526,7 @@ public class YamlLoader extends EmptyLoader {
 		if (len <= 2)
 			return new int[] { start, end };
 		char firstChar = input.charAt(start);
-		char lastChar = input.charAt(end-1);
+		char lastChar = input.charAt(end - 1);
 		if (firstChar == '\'' && lastChar == '\'' || firstChar == '"' && lastChar == '"')
 			return new int[] { start + 1, end - 1 };
 		return new int[] { start, end };
@@ -627,11 +624,11 @@ public class YamlLoader extends EmptyLoader {
 		if (i < input[1]) {
 			int[][] result = new int[2][];
 			result[0] = trimmedValue;
-			result[1] = new int[]{i, input[1]};
+			result[1] = new int[] { i, input[1] };
 			return result;
 		}
 		int[][] result = new int[1][];
-		result[0]=trimmedValue;
+		result[0] = trimmedValue;
 		return result;
 	}
 

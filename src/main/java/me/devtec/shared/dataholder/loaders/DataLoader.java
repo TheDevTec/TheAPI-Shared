@@ -202,15 +202,14 @@ public abstract class DataLoader implements Cloneable {
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
 		Iterator<CharSequence> itr = saveAsIterator(config, markSaved);
-		while (itr!=null && itr.hasNext()) {
+		while (itr != null && itr.hasNext())
 			builder.append(itr.next());
-		}
 		return builder;
 	}
 
 	@Comment(comment = "Saves the entire structure to Iterator<byte[]> which prevent from overload")
 	@Nullable
-	public Iterator<CharSequence> saveAsIterator(@Nonnull Config config, boolean markSaved){
+	public Iterator<CharSequence> saveAsIterator(@Nonnull Config config, boolean markSaved) {
 		Checkers.nonNull(config, "Config");
 		return null;
 	}

@@ -40,53 +40,56 @@ public class TomlSectionBuilderHelper {
 			keyName = key;
 			value = val;
 		}
-		
+
 		public boolean isKey() {
 			return isKey;
 		}
 
 		public synchronized void add(Section sec) {
-	        if (sub == null) {
-	            sub = new Section[]{sec};
-	        } else {
-	            Section[] copy = Arrays.copyOf(sub, sub.length + 1);
-	            copy[copy.length - 1] = sec;
-	            sub = copy;
-	            Arrays.sort(copy, (o1, o2) -> o1.id-o2.id);
-	        }
-	    }
+			if (sub == null)
+				sub = new Section[] { sec };
+			else {
+				Section[] copy = Arrays.copyOf(sub, sub.length + 1);
+				copy[copy.length - 1] = sec;
+				sub = copy;
+				Arrays.sort(copy, (o1, o2) -> o1.id - o2.id);
+			}
+		}
 
-	    public Section get(String name) {
-	        if (sub != null)
-	            for (Section section : sub)
-	                if (section.keyName.equals(name))
-	                    return section;
-	        return null;
-	    }
+		public Section get(String name) {
+			if (sub != null)
+				for (Section section : sub)
+					if (section.keyName.equals(name))
+						return section;
+			return null;
+		}
 
-	    public synchronized Section create(int id, String name) {
-	        Section current = this;
-	        int start = 0;
-	        int end = name.indexOf('.');
-	        if(end==-1)end=name.length();
-	        while(end!=-1) {
-	        	String key = name.substring(start, end);
-	            Section sec = current.get(key);
-	            if (sec == null) {
-	                sec = new Section(current, key, null);
-	                sec.id=id;
-	                current.add(sec);
-	            }
-	            current = sec;
-	            
-	            if(end >= name.length() || start >= name.length())break;
-	        	start = end+1;
-	        	end = name.indexOf('.',start);
-	        	if(end==-1)end=name.length();
-	        }
-	        current.id=id;
-	        return current;
-	    }
+		public synchronized Section create(int id, String name) {
+			Section current = this;
+			int start = 0;
+			int end = name.indexOf('.');
+			if (end == -1)
+				end = name.length();
+			while (end != -1) {
+				String key = name.substring(start, end);
+				Section sec = current.get(key);
+				if (sec == null) {
+					sec = new Section(current, key, null);
+					sec.id = id;
+					current.add(sec);
+				}
+				current = sec;
+
+				if (end >= name.length() || start >= name.length())
+					break;
+				start = end + 1;
+				end = name.indexOf('.', start);
+				if (end == -1)
+					end = name.length();
+			}
+			current.id = id;
+			return current;
+		}
 
 		public StringContainer fullName(StringContainer container, boolean correct) {
 			container.clear();
@@ -101,42 +104,42 @@ public class TomlSectionBuilderHelper {
 		public boolean equals(Object obj) {
 			if (obj instanceof Section) {
 				Section sec = (Section) obj;
-                return sec.keyName.equals(keyName);
+				return sec.keyName.equals(keyName);
 			}
 			return false;
 		}
 
 	}
-    
-    private static void processEntries(Map<String, Section> keysWithoutSub, Map<String, Section> map, Set<Entry<String, DataValue>> set) {
-    	if(set.size()>=512) {
-            ExecutorService executor = Executors.newFixedThreadPool(API.THREAD_COUNT);
-            CountDownLatch latch = new CountDownLatch(set.size());
-            int id = 0;
-            for (Entry<String, DataValue> entry : set) {
-    			int privateId = id++;
-                executor.submit(() -> {
-                    try {
-                        processEntry(privateId, keysWithoutSub, map, entry.getKey(), entry.getValue());
-                    }catch(Exception e) {
-                    	e.printStackTrace();
-                    }finally {
-                        latch.countDown();
-                    }
-                });
-            }
 
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-            }
-            executor.shutdown();
-            return;
-    	}
-    	StringContainer container = new StringContainer(64);
+	private static void processEntries(Map<String, Section> keysWithoutSub, Map<String, Section> map, Set<Entry<String, DataValue>> set) {
+		if (set.size() >= 512) {
+			ExecutorService executor = Executors.newFixedThreadPool(API.THREAD_COUNT);
+			CountDownLatch latch = new CountDownLatch(set.size());
+			int id = 0;
+			for (Entry<String, DataValue> entry : set) {
+				int privateId = id++;
+				executor.submit(() -> {
+					try {
+						processEntry(privateId, keysWithoutSub, map, entry.getKey(), entry.getValue());
+					} catch (Exception e) {
+						e.printStackTrace();
+					} finally {
+						latch.countDown();
+					}
+				});
+			}
+
+			try {
+				latch.await();
+			} catch (InterruptedException e) {
+			}
+			executor.shutdown();
+			return;
+		}
+		StringContainer container = new StringContainer(64);
 		Section prevParent = null;
 		StringContainer fullNameContainer = new StringContainer(64);
-        int id = 0;
+		int id = 0;
 		for (Entry<String, DataValue> entry : set) {
 			int privateId = id++;
 			container.clear();
@@ -155,30 +158,32 @@ public class TomlSectionBuilderHelper {
 				main = map.get(primaryKey);
 				if (main == null) {
 					main = keysWithoutSub.remove(primaryKey);
-					if(main==null)continue;
+					if (main == null)
+						continue;
 					map.put(primaryKey, main);
 				}
 			}
-			Section sec = main.create(privateId,container.toString());
+			Section sec = main.create(privateId, container.toString());
 			sec.value = entry.getValue();
-			sec.isKey=false;
+			sec.isKey = false;
 			prevParent = sec.parent;
 		}
 		container.clear();
-    }
+	}
 
-    private static void processEntry(int privateId, Map<String, Section> keysWithoutSub, Map<String, Section> map, String key, DataValue value) {
-        int pos = key.indexOf('.');
-        String primaryKey = key.substring(0, pos);
-        Section currentSection = map.get(primaryKey);
+	private static void processEntry(int privateId, Map<String, Section> keysWithoutSub, Map<String, Section> map, String key, DataValue value) {
+		int pos = key.indexOf('.');
+		String primaryKey = key.substring(0, pos);
+		Section currentSection = map.get(primaryKey);
 		if (currentSection == null) {
 			currentSection = keysWithoutSub.remove(primaryKey);
-			if(currentSection==null)return;
+			if (currentSection == null)
+				return;
 			map.put(primaryKey, currentSection);
 		}
-        currentSection = currentSection.create(privateId, key.substring(pos+1));
-        currentSection.value = value;
-    }
+		currentSection = currentSection.create(privateId, key.substring(pos + 1));
+		currentSection.value = value;
+	}
 
 	public static Iterator<CharSequence> prepareBuilder(Set<String> primaryKeys, DataLoader dataLoader, boolean markSaved) {
 		StringContainer container = new StringContainer(64);
@@ -211,7 +216,8 @@ public class TomlSectionBuilderHelper {
 			public CharSequence next() {
 				while (currentItr != null && currentItr.hasNext()) {
 					CharSequence next = values.add(currentItr.next());
-					if(next!=null)return next;
+					if (next != null)
+						return next;
 				}
 				switch (modeStep) {
 				case 0: {
@@ -221,7 +227,11 @@ public class TomlSectionBuilderHelper {
 					}
 					Section section = itr.next();
 					currentItr = startIterator(container, section.value, section, markSaved);
-					return next();
+					if (hasNext())
+						return next();
+					String result = values.complete();
+					values.clear();
+					return result;
 				}
 				case 1:
 					if (!itrSecond.hasNext()) {
@@ -231,7 +241,11 @@ public class TomlSectionBuilderHelper {
 					}
 					Section section = itrSecond.next();
 					currentItr = startIterator(container, section.value, section, markSaved);
-					return next();
+					if (hasNext())
+						return next();
+					String result = values.complete();
+					values.clear();
+					return result;
 				}
 				return null;
 			}
@@ -260,9 +274,9 @@ public class TomlSectionBuilderHelper {
 					public boolean hasNext() {
 						switch (type) {
 						case 0:
-							return commentsItr!=null && commentsItr.hasNext();
+							return commentsItr != null && commentsItr.hasNext();
 						case 2:
-							return currentItr!=null && currentItr.hasNext();
+							return currentItr != null && currentItr.hasNext();
 						case 1:
 							return true;
 						}
@@ -273,7 +287,7 @@ public class TomlSectionBuilderHelper {
 					public CharSequence next() {
 						switch (type) {
 						case 0:
-							if (commentsItr!=null && commentsItr.hasNext()) {
+							if (commentsItr != null && commentsItr.hasNext()) {
 								container.clear();
 								return container.append(commentsItr.next()).append(System.lineSeparator());
 							}
@@ -303,9 +317,9 @@ public class TomlSectionBuilderHelper {
 					public boolean hasNext() {
 						switch (type) {
 						case 0:
-							return commentsItr!=null && commentsItr.hasNext();
+							return commentsItr != null && commentsItr.hasNext();
 						case 2:
-							return currentItr!=null && currentItr.hasNext();
+							return currentItr != null && currentItr.hasNext();
 						case 1:
 							return true;
 						}
@@ -316,7 +330,7 @@ public class TomlSectionBuilderHelper {
 					public CharSequence next() {
 						switch (type) {
 						case 0:
-							if (commentsItr!=null && commentsItr.hasNext()) {
+							if (commentsItr != null && commentsItr.hasNext()) {
 								container.clear();
 								return container.append(commentsItr.next()).append(System.lineSeparator());
 							}
@@ -346,9 +360,9 @@ public class TomlSectionBuilderHelper {
 					public boolean hasNext() {
 						switch (type) {
 						case 0:
-							return commentsItr!=null && commentsItr.hasNext();
+							return commentsItr != null && commentsItr.hasNext();
 						case 2:
-							return currentItr!=null && currentItr.hasNext();
+							return currentItr != null && currentItr.hasNext();
 						case 1:
 							return true;
 						}
@@ -359,7 +373,7 @@ public class TomlSectionBuilderHelper {
 					public CharSequence next() {
 						switch (type) {
 						case 0:
-							if (commentsItr!=null && commentsItr.hasNext()) {
+							if (commentsItr != null && commentsItr.hasNext()) {
 								container.clear();
 								return container.append(commentsItr.next()).append(System.lineSeparator());
 							}
@@ -395,41 +409,42 @@ public class TomlSectionBuilderHelper {
 			@Override
 			public boolean hasNext() {
 				nextSection();
-				boolean b=false;
+				boolean b = false;
 				switch (mode) {
 				case 0:
-					b= section.value != null && section.value.value != null;
+					b = section.value != null && section.value.value != null;
 					break;
 				case 1:
-					b= commentsItr != null && commentsItr.hasNext() || section.value != null && section.value.value != null;
+					b = commentsItr != null && commentsItr.hasNext() || section.value != null && section.value.value != null;
 					break;
 				case 2:
-					b= section.value != null && section.value.value != null;
+					b = section.value != null && section.value.value != null;
 					break;
 				case 3:
-					b= currentItr == null || pos < keys.length;
+					b = currentItr == null || pos < keys.length;
 					break;
 				case 4:
-					if(currentItr == null && foundAnySub) {
-						b= true;
+					if (currentItr == null && foundAnySub) {
+						b = true;
 						break;
 					}
-					b= currentItr != null && currentItr.hasNext() || pos < keys.length;
+					b = currentItr != null && currentItr.hasNext() || pos < keys.length;
 					break;
 				}
 				return b;
 			}
 
 			private void nextSection() {
-				if(mode==0 && section==null) {
+				if (mode == 0 && section == null) {
 					while (keys.length > pos) {
 						section = keys[pos++];
 						commentsItr = section.value != null && section.value.comments != null ? section.value.comments.iterator() : null;
-						foundAnySub|=section.sub!=null;
-						if (hasNext()) return;
+						foundAnySub |= section.sub != null;
+						if (hasNext())
+							return;
 					}
-					pos=0;
-					mode=4;
+					pos = 0;
+					mode = 4;
 				}
 			}
 
@@ -442,7 +457,7 @@ public class TomlSectionBuilderHelper {
 					return appendParentName(container, section.parent);
 				}
 				case 1: {
-					if (commentsItr!=null && commentsItr.hasNext()) {
+					if (commentsItr != null && commentsItr.hasNext()) {
 						container.clear();
 						return container.append(commentsItr.next()).append(System.lineSeparator());
 					}
@@ -454,15 +469,14 @@ public class TomlSectionBuilderHelper {
 				case 2: {
 					StringContainer result;
 					if (section.value.writtenValue != null)
-						result = appendName(container, section, section.value.writtenValue, section.value.value instanceof String ? '"' : (char) 0,
-								section.value.commentAfterValue);
+						result = appendName(container, section, section.value.writtenValue, section.value.value instanceof String ? '"' : (char) 0, section.value.commentAfterValue);
 					else if (section.value.value instanceof CharSequence)
-						result = appendName(container, section,
-								section.value.value instanceof String ? (String) section.value.value : section.value.value.toString(), '"', section.value.commentAfterValue);
+						result = appendName(container, section, section.value.value instanceof String ? (String) section.value.value : section.value.value.toString(), '"',
+								section.value.commentAfterValue);
 					else
 						result = appendName(container, section, Json.writer().write(section.value.value), (char) 0, section.value.commentAfterValue);
-					if(markSaved)
-						section.value.modified=false;
+					if (markSaved)
+						section.value.modified = false;
 					mode = 3;
 					return result;
 				}
@@ -475,25 +489,27 @@ public class TomlSectionBuilderHelper {
 					section = keys[pos++];
 					commentsItr = section.value != null && section.value.comments != null ? section.value.comments.iterator() : null;
 					mode = commentsItr != null ? (byte) 1 : 2;
-					foundAnySub|=section.sub!=null;
+					foundAnySub |= section.sub != null;
 					if (!hasNext()) {
 						mode = 4;
-						pos=0;
+						pos = 0;
 					}
 					return hasNext() ? next() : null;
 				}
 				case 4:
-					if(currentItr!=null && currentItr.hasNext()) {
+					if (currentItr != null && currentItr.hasNext()) {
 						CharSequence next = currentItr.next();
-						if(next!=null)return next;
+						if (next != null)
+							return next;
 					}
-					while(pos < keys.length) {
+					while (pos < keys.length) {
 						Section sub = keys[pos++];
 						if (sub.sub != null) {
 							currentItr = startMultipleIterate(container, sub.sub, markSaved);
-							if (currentItr.hasNext()){
+							if (currentItr.hasNext()) {
 								CharSequence next = currentItr.next();
-								if(next!=null)return next;
+								if (next != null)
+									return next;
 							}
 						}
 					}
