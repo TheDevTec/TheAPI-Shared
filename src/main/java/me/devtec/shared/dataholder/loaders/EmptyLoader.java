@@ -12,6 +12,7 @@ import java.util.Set;
 
 import me.devtec.shared.Ref;
 import me.devtec.shared.annotations.Checkers;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.cache.ConcurrentLinkedHashMap;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
@@ -162,6 +163,12 @@ public class EmptyLoader extends DataLoader {
 	}
 
 	@Override
+	public void load(StringContainer container, List<int[]> input) {
+		reset();
+		loaded = true;
+	}
+
+	@Override
 	public Collection<String> getHeader() {
 		return header;
 	}
@@ -236,6 +243,11 @@ public class EmptyLoader extends DataLoader {
 				return this;
 			}
 		}.step();
+	}
+
+	@Override
+	public boolean supportsReadingLines() {
+		return false;
 	}
 
 	@Override

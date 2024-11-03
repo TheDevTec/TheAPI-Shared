@@ -22,7 +22,7 @@ public class JsonLoader extends EmptyLoader {
 			return;
 		char startChar = input.isEmpty() ? 0 : lookupForStart(input);
 		char endChar = input.isEmpty() ? 0 : lookupForEnd(input);
-		if ((((startChar != '{') || (endChar != '}')) && ((startChar != '[') || (endChar != ']'))))
+		if ((startChar != '{' || endChar != '}') && (startChar != '[' || endChar != ']'))
 			return;
 		reset();
 		try {
@@ -93,7 +93,7 @@ public class JsonLoader extends EmptyLoader {
 	}
 
 	private boolean isApplicable(Object value) {
-		return (!(value instanceof CharSequence) && !(value instanceof Number) && !(value instanceof Boolean));
+		return !(value instanceof CharSequence) && !(value instanceof Number) && !(value instanceof Boolean);
 	}
 
 	@Override

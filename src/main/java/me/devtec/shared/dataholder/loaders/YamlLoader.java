@@ -3,11 +3,7 @@ package me.devtec.shared.dataholder.loaders;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
-import me.devtec.shared.API;
 import me.devtec.shared.Pair;
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.annotations.Nonnull;
@@ -20,94 +16,13 @@ import me.devtec.shared.json.Json;
 
 public class YamlLoader extends EmptyLoader {
 
-	private static final int CHUNK_SIZE = 1024 * 16;
-
 	private StringContainer lines;
 
-	private List<int[]> readLinesFromContainer(StringContainer lines) {
-		List<Future<List<int[]>>> futures = new ArrayList<>();
-		List<int[]> allLinePositions = new ArrayList<>();
-
-		int totalLength = lines.length();
-		int chunkCount = (totalLength + CHUNK_SIZE - 1) / CHUNK_SIZE;
-		int lastEnd = 0;
-
-		for (int i = 0; i < chunkCount; i++) {
-			int start = i * CHUNK_SIZE;
-			int end = Math.min(start + CHUNK_SIZE, totalLength);
-
-			if (lastEnd > 0)
-				start = lastEnd;
-			if (i + 1 == chunkCount)
-				end = lines.length();
-			else
-				end = adjustEndPosition(lines, end);
-			int fStart = start;
-			int fEnd = end;
-			futures.add(API.EXECUTOR.submit(() -> readLinesInRange(lines, fStart, fEnd)));
-
-			lastEnd = end;
-		}
-		for (Future<List<int[]>> future : futures)
-			try {
-				List<int[]> chunkLines = future.get();
-				allLinePositions.addAll(chunkLines);
-			} catch (InterruptedException | ExecutionException e) {
-			}
-		allLinePositions.sort((a, b) -> Integer.compare(a[0], b[0]));
-		int prev = 0;
-		ListIterator<int[]> itr = allLinePositions.listIterator();
-		while (itr.hasNext()) {
-			int[] i = itr.next();
-			if (prev - i[0] < -2) {
-				itr.previous();
-				itr.add(new int[] { prev, i[0] });
-				itr.next();
-			}
-			prev = i[1];
-		}
-		return allLinePositions;
-	}
-
-	private int adjustEndPosition(StringContainer lines, int end) {
-		for (int i = end - 1; i >= 0; i--)
-			if (isLineSeparator(lines, i))
-				return i + getLineSeparatorLength(lines, i);
-		return end;
-	}
-
-	private List<int[]> readLinesInRange(StringContainer lines, int start, int end) {
-		List<int[]> resultLines = new ArrayList<>();
-		int currentStart = start;
-
-		for (int i = start; i < end; i++)
-			if (isLineSeparator(lines, i)) {
-				if (currentStart < i)
-					resultLines.add(new int[] { currentStart, i });
-				currentStart = i + getLineSeparatorLength(lines, i);
-			}
-		if (currentStart < end && currentStart < lines.length())
-			resultLines.add(new int[] { currentStart, end });
-		return resultLines;
-	}
-
-	private boolean isLineSeparator(StringContainer lines, int index) {
-		return lines.charAt(index) == '\n' || lines.charAt(index) == '\r';
-	}
-
-	private int getLineSeparatorLength(StringContainer lines, int index) {
-		if (lines.charAt(index) == '\r' && index + 1 < lines.length() && lines.charAt(index + 1) == '\n')
-			return 2;
-		return 1;
-	}
-
 	@Override
-	public void load(String input) {
-		if (input == null)
-			return;
+	public void load(StringContainer container, List<int[]> input) {
 		reset();
 
-		lines = new StringContainer(input, 0, 0);
+		lines = container;
 
 		// Temp values
 		List<String> comments = null;
@@ -119,7 +34,7 @@ public class YamlLoader extends EmptyLoader {
 		int lastIndexOfDot = 0;
 
 		byte readerMode = 0;
-		for (int[] line : readLinesFromContainer(lines)) {
+		for (int[] line : input) {
 			int currentDepth = getDepth(lines, line);
 			int[] trimmed = trim(lines, line);
 			// Comments
@@ -385,6 +300,14 @@ public class YamlLoader extends EmptyLoader {
 					footer = comments;
 		}
 		loaded = comments != null || !data.isEmpty();
+	}
+
+	@Override
+	public void load(String input) {
+		if (input == null)
+			return;
+		StringContainer container = new StringContainer(input, 0, 0);
+		load(container, LoaderReadUtil.readLinesFromContainer(container));
 	}
 
 	@Override
@@ -655,6 +578,11 @@ public class YamlLoader extends EmptyLoader {
 			if (c == ' ' || c == '	')
 				++depth;
 		return depth / 2;
+	}
+
+	@Override
+	public boolean supportsReadingLines() {
+		return true;
 	}
 
 	@Override

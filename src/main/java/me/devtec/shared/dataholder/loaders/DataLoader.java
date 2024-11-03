@@ -163,7 +163,12 @@ public abstract class DataLoader implements Cloneable {
 	public abstract void reset();
 
 	@Comment(comment = "Loads the contents of the file.")
+	public abstract void load(StringContainer container, @Nonnull List<int[]> input);
+
+	@Comment(comment = "Loads the contents of the file.")
 	public abstract void load(@Nullable String input);
+
+	public abstract boolean supportsReadingLines();
 
 	@Comment(comment = "Loads the file. If the class doesn't override this method on its own, StreamUtils will be used to read the contents of the file.")
 	public void load(@Nonnull File file) {
@@ -255,11 +260,12 @@ public abstract class DataLoader implements Cloneable {
 	@Nonnull
 	public static DataLoader findLoaderFor(@Nonnull File input) {
 		Checkers.nonNull(input, "Input File");
-		String inputString;
 		if (!anyLoaderWhichAllowFiles)
 			return findLoaderFor(StreamUtils.fromStream(input));
 		if (input.length() > 0L) {
-			inputString = null;
+			String inputString = null;
+			List<int[]> inputLines = null;
+			StringContainer container = null;
 			loadersLoop: for (LoaderPriority priority : LoaderPriority.values())
 				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
 					DataLoader loader = constructor.construct();
@@ -271,7 +277,14 @@ public abstract class DataLoader implements Cloneable {
 							if (inputString == null)
 								break loadersLoop;
 						}
-						loader.load(inputString);
+						if (loader.supportsReadingLines()) {
+							if (container == null) {
+								container = new StringContainer(inputString, 0, 0);
+								inputLines = LoaderReadUtil.readLinesFromContainer(container);
+							}
+							loader.load(container, inputLines);
+						} else
+							loader.load(inputString);
 					}
 					if (loader.isLoaded())
 						return loader;
@@ -289,7 +302,12 @@ public abstract class DataLoader implements Cloneable {
 			for (LoaderPriority priority : LoaderPriority.values())
 				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
 					DataLoader loader = constructor.construct();
-					loader.load(inputString);
+					if (loader.supportsReadingLines()) {
+						StringContainer container = new StringContainer(inputString, 0, 0);
+						List<int[]> inputLines = LoaderReadUtil.readLinesFromContainer(container);
+						loader.load(container, inputLines);
+					} else
+						loader.load(inputString);
 					if (loader.isLoaded())
 						return loader;
 				}
