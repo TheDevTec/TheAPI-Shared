@@ -141,7 +141,7 @@ public class YamlSectionBuilderHelper {
 			int id = 0;
 			for (Entry<String, DataValue> entry : set) {
 				final int privateId = id++;
-				API.EXECUTOR.submit(() -> {
+				API.getExecutor().submit(() -> {
 					try {
 						processEntry(privateId, map, entry.getKey(), entry.getValue());
 					} finally {

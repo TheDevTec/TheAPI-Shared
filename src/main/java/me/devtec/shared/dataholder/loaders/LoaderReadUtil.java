@@ -32,7 +32,7 @@ public class LoaderReadUtil {
 				end = adjustEndPosition(lines, end);
 			int fStart = start;
 			int fEnd = end;
-			futures.add(API.EXECUTOR.submit(() -> readLinesInRange(lines, fStart, fEnd)));
+			futures.add(API.getExecutor().submit(() -> readLinesInRange(lines, fStart, fEnd)));
 
 			lastEnd = end;
 		}

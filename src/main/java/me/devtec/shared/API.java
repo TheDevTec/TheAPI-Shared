@@ -53,7 +53,7 @@ public class API {
 	private static OfflineCache cache;
 	private static final Map<UUID, Config> users = new ConcurrentHashMap<>();
 	public static final int THREAD_COUNT = Math.max(1, (int) (Runtime.getRuntime().availableProcessors() / 1.5));
-	public static ExecutorService EXECUTOR;
+	private static ExecutorService EXECUTOR;
 	private static final List<Pair> savingQueue = new TempList<Pair>(600).setCallback(pair -> {
 		Config cached = (Config) pair.getValue();
 		UserDataUnloadEvent event = new UserDataUnloadEvent((UUID) pair.getKey(), cached);
@@ -66,6 +66,12 @@ public class API {
 	// Other cool things
 	private static final Basics basics = new Basics();
 	private static volatile boolean enabled = true;
+
+	public static ExecutorService getExecutor() {
+		if (EXECUTOR == null)
+			EXECUTOR = Executors.newFixedThreadPool(API.THREAD_COUNT);
+		return EXECUTOR;
+	}
 
 	public static void initOfflineCache(boolean onlineMode, Config rawData) {
 		API.cache = new OfflineCache(onlineMode);
@@ -142,19 +148,16 @@ public class API {
 			// Unregister placeholders
 			PlaceholderAPI.unregisterAll();
 			Scheduler.cancelAll();
-		} else {
-			EXECUTOR = Executors.newFixedThreadPool(API.THREAD_COUNT);
-			if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
-				savingScheduler = new Tasker() {
+		} else if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
+			savingScheduler = new Tasker() {
 
-					@Override
-					public void run() {
-						// Save all players
-						for (Config config : API.users.values())
-							config.save("yaml");
-					}
-				}.runRepeating(432000, 432000); // Every 6 hours
-		}
+				@Override
+				public void run() {
+					// Save all players
+					for (Config config : API.users.values())
+						config.save("yaml");
+				}
+			}.runRepeating(432000, 432000); // Every 6 hours
 	}
 
 	public static boolean isEnabled() {

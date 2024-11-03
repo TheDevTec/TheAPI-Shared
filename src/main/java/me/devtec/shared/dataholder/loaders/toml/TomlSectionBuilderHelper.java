@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import me.devtec.shared.API;
 import me.devtec.shared.dataholder.StringContainer;
@@ -113,12 +111,11 @@ public class TomlSectionBuilderHelper {
 
 	private static void processEntries(Map<String, Section> keysWithoutSub, Map<String, Section> map, Set<Entry<String, DataValue>> set) {
 		if (set.size() >= 512) {
-			ExecutorService executor = Executors.newFixedThreadPool(API.THREAD_COUNT);
 			CountDownLatch latch = new CountDownLatch(set.size());
 			int id = 0;
 			for (Entry<String, DataValue> entry : set) {
 				int privateId = id++;
-				executor.submit(() -> {
+				API.getExecutor().submit(() -> {
 					try {
 						processEntry(privateId, keysWithoutSub, map, entry.getKey(), entry.getValue());
 					} catch (Exception e) {
@@ -133,7 +130,6 @@ public class TomlSectionBuilderHelper {
 				latch.await();
 			} catch (InterruptedException e) {
 			}
-			executor.shutdown();
 			return;
 		}
 		StringContainer container = new StringContainer(64);
