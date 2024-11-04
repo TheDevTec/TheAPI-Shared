@@ -3,6 +3,7 @@ package me.devtec.shared.dataholder.loaders;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -99,5 +100,21 @@ public class JsonLoader extends EmptyLoader {
 	@Override
 	public String name() {
 		return "json";
+	}
+
+	public static Map<String, Object> parseToJson(Config data) {
+		Map<String, Object> config = new LinkedHashMap<>();
+		for (Entry<String, DataValue> entry : data.getDataLoader().entrySet())
+			if (entry.getValue() != null)
+				config.put(entry.getKey(), entry.getValue().value);
+		return config;
+	}
+
+	public static JsonLoader parseFromJson(Map<String, Object> json) {
+		JsonLoader loader = new JsonLoader();
+		loader.loaded = true;
+		for (Entry<String, Object> entry : json.entrySet())
+			loader.set(entry.getKey(), DataValue.of(entry.getValue()));
+		return loader;
 	}
 }
