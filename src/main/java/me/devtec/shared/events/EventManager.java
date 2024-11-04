@@ -34,13 +34,15 @@ public class EventManager {
 		List<ListenerHolder> result = event.getHandlers();
 		if (result.isEmpty())
 			return; // Prevent from creating unused Iterator
-
-		for (ListenerHolder holder : result)
+		int size = result.size();
+		for (int i = 0; i < size; ++i) {
+			ListenerHolder holder = result.get(i);
 			try {
 				holder.listener.listen(event);
 			} catch (Exception error) {
 				error.printStackTrace();
 			}
+		}
 	}
 
 	@SuppressWarnings("unchecked")
