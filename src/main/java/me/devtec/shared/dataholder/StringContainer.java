@@ -47,9 +47,9 @@ public class StringContainer implements CharSequence {
 	}
 
 	public StringContainer(char[] array, int size) {
-		value = new char[size+1];
+		value = new char[size + 1];
 		System.arraycopy(array, 0, value, 0, Math.min(array.length, size));
-		count=size;
+		count = size;
 	}
 
 	@Override
@@ -68,8 +68,8 @@ public class StringContainer implements CharSequence {
 			value = Arrays.copyOf(value, newCapacity(minimumCapacity));
 	}
 
-	public boolean isEmpty(){
-		return length()==0;
+	public boolean isEmpty() {
+		return length() == 0;
 	}
 
 	private int newCapacity(int minCapacity) {
@@ -218,47 +218,49 @@ public class StringContainer implements CharSequence {
 	}
 
 	public byte[] getBytes() {
-		if (count == 0)
+		return getBytes(this);
+	}
+
+	public static byte[] getBytes(CharSequence input) {
+		if (input.isEmpty())
 			return new byte[0];
-		
-        int estimatedSize = count * 4;
-        byte[] byteBuffer = new byte[estimatedSize];
-        int bytePos = 0;
 
-        for (int i = 0; i < count; i++) {
-            int codePoint = value[i];
+		int estimatedSize = input.length() * 4;
+		byte[] byteBuffer = new byte[estimatedSize];
+		int bytePos = 0;
 
-            if (codePoint <= 0x7F) {
-                // 1-byte (ASCII)
-                byteBuffer[bytePos++] = (byte) codePoint;
-            } else if (codePoint <= 0x7FF) {
-                // 2-byte
-                byteBuffer[bytePos++] = (byte) (0xC0 | (codePoint >> 6));
-                byteBuffer[bytePos++] = (byte) (0x80 | (codePoint & 0x3F));
-            } else if (Character.isSurrogate(value[i])) {
-                // 4-byte
-                if (i + 1 < count && Character.isSurrogatePair(value[i], value[i + 1])) {
-                    int high = value[i];
-                    int low = value[i + 1];
-                    codePoint = Character.toCodePoint((char) high, (char) low);
-                    i++;
-                    byteBuffer[bytePos++] = (byte) (0xF0 | (codePoint >> 18));
-                    byteBuffer[bytePos++] = (byte) (0x80 | ((codePoint >> 12) & 0x3F));
-                    byteBuffer[bytePos++] = (byte) (0x80 | ((codePoint >> 6) & 0x3F));
-                    byteBuffer[bytePos++] = (byte) (0x80 | (codePoint & 0x3F));
-                } else {
-                    throw new IllegalArgumentException("Invalid surrogate pair.");
-                }
-            } else {
-                // 3-byte
-                byteBuffer[bytePos++] = (byte) (0xE0 | (codePoint >> 12));
-                byteBuffer[bytePos++] = (byte) (0x80 | ((codePoint >> 6) & 0x3F));
-                byteBuffer[bytePos++] = (byte) (0x80 | (codePoint & 0x3F));
-            }
-        }
-        byte[] result = new byte[bytePos];
-        System.arraycopy(byteBuffer, 0, result, 0, bytePos);
-        return result;
+		for (int i = 0; i < input.length(); i++) {
+			int codePoint = input.charAt(i);
+
+			if (codePoint <= 0x7F)
+				// 1-byte (ASCII)
+				byteBuffer[bytePos++] = (byte) codePoint;
+			else {
+				if (codePoint <= 0x7FF)
+					// 2-byte
+					byteBuffer[bytePos++] = (byte) (0xC0 | codePoint >> 6);
+				else {
+					if (Character.isSurrogate(input.charAt(i))) {
+						// 4-byte
+						if (i + 1 >= input.length() || !Character.isSurrogatePair(input.charAt(i), input.charAt(i + 1)))
+							throw new IllegalArgumentException("Invalid surrogate pair.");
+						int high = input.charAt(i);
+						int low = input.charAt(i + 1);
+						codePoint = Character.toCodePoint((char) high, (char) low);
+						i++;
+						byteBuffer[bytePos++] = (byte) (0xF0 | codePoint >> 18);
+						byteBuffer[bytePos++] = (byte) (0x80 | codePoint >> 12 & 0x3F);
+					} else
+						// 3-byte
+						byteBuffer[bytePos++] = (byte) (0xE0 | codePoint >> 12);
+					byteBuffer[bytePos++] = (byte) (0x80 | codePoint >> 6 & 0x3F);
+				}
+				byteBuffer[bytePos++] = (byte) (0x80 | codePoint & 0x3F);
+			}
+		}
+		byte[] result = new byte[bytePos];
+		System.arraycopy(byteBuffer, 0, result, 0, bytePos);
+		return result;
 	}
 
 	@Deprecated
@@ -313,14 +315,12 @@ public class StringContainer implements CharSequence {
 		ensureCapacityInternal(newCount);
 
 		System.arraycopy(value, end, value, start + len, count - end);
-		if(str instanceof String)
-			((String)str).getChars(0, len, value, start);
-		else
-		if(str instanceof StringBuilder)
-			((StringBuilder)str).getChars(0, len, value, start);
-		else
-		if(str instanceof StringContainer)
-			((StringContainer)str).getChars(0, len, value, start);
+		if (str instanceof String)
+			((String) str).getChars(0, len, value, start);
+		else if (str instanceof StringBuilder)
+			((StringBuilder) str).getChars(0, len, value, start);
+		else if (str instanceof StringContainer)
+			((StringContainer) str).getChars(0, len, value, start);
 		else
 			str.toString().getChars(0, len, value, start);
 		count = newCount;
@@ -364,12 +364,12 @@ public class StringContainer implements CharSequence {
 
 		// Fall thru to fast mode for smaller numbers
 		// assert(i2 <= 65536, i2);
-        do {
-            q2 = i2 * 52429 >>> 16 + 3;
-            r = i2 - ((q2 << 3) + (q2 << 1)); // r = i2-(q2*10) ...
-            buf[--charPos] = digits[r];
-            i2 = q2;
-        } while (i2 != 0);
+		do {
+			q2 = i2 * 52429 >>> 16 + 3;
+			r = i2 - ((q2 << 3) + (q2 << 1)); // r = i2-(q2*10) ...
+			buf[--charPos] = digits[r];
+			i2 = q2;
+		} while (i2 != 0);
 		if (sign != 0)
 			buf[--charPos] = sign;
 	}
