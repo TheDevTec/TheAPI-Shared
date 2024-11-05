@@ -287,9 +287,9 @@ public class SqlHandler implements DatabaseHandler {
 				List<String> val = new ArrayList<>();
 				while (true)
 					try {
-						System.out.println(set.getObject(size, Object.class) + ":" + set.getInt(size));
 						val.add(set.getObject(size++, Object.class) + "");
 					} catch (Exception err) {
+						err.printStackTrace();
 						break;
 					}
 				Result res = new Result(val.toArray(new String[size -= 2]));
