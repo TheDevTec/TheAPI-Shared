@@ -77,7 +77,8 @@ public class SqlHandler implements DatabaseHandler {
 		builder.append("values").append('(');
 		if (safeMode) {
 			boolean first = true;
-			for (String element : query.values) {
+			int size = query.values.size();
+			for (int i = 0; i < size; ++i) {
 				if (first)
 					first = false;
 				else
@@ -283,22 +284,21 @@ public class SqlHandler implements DatabaseHandler {
 		String[] lookup = query.getSearch();
 		if (set != null && set.next()) {
 			if (lookup.length == 1 && "*".equals(lookup[0])) {
-				int size = 1;
+				int size = 0;
 				List<String> val = new ArrayList<>();
 				while (true)
 					try {
-						val.add(set.getObject(size++, Object.class) + "");
+						val.add(set.getObject(++size) + "");
 					} catch (Exception err) {
-						err.printStackTrace();
 						break;
 					}
-				Result res = new Result(val.toArray(new String[size -= 2]));
+				Result res = new Result(val.toArray(new String[size - 1]));
 				Result main = res;
 				Result next = main;
 				while (set.next()) {
-					String[] vals = new String[size];
-					for (int i = 0; i < size; ++i)
-						vals[i] = set.getObject(i + 1, Object.class) + "";
+					String[] vals = new String[size - 1];
+					for (int i = 0; i < size - 1; ++i)
+						vals[i] = set.getObject(i + 1) + "";
 					res = new Result(vals);
 					next.nextResult(next = res);
 				}
@@ -306,14 +306,14 @@ public class SqlHandler implements DatabaseHandler {
 			}
 			String[] vals = new String[query.search.length];
 			for (int i = 0; i < query.search.length; ++i)
-				vals[i] = set.getObject(query.search[i], Object.class) + "";
+				vals[i] = set.getObject(query.search[i]) + "";
 			Result res = new Result(vals);
 			Result main = res;
 			Result next = main;
 			while (set.next()) {
 				vals = new String[query.search.length];
 				for (int i = 0; i < query.search.length; ++i)
-					vals[i] = set.getObject(query.search[i], Object.class) + "";
+					vals[i] = set.getObject(query.search[i]) + "";
 				res = new Result(vals);
 				next.nextResult(next = res);
 			}
