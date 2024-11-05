@@ -279,7 +279,7 @@ public class SqlHandler implements DatabaseHandler {
 	public boolean deleteTable(String name) throws SQLException {
 		return prepareStatement("DROP TABLE " + name).execute();
 	}
-
+	
 	@Override
 	public Result get(SelectQuery query) throws SQLException {
 		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
@@ -288,12 +288,12 @@ public class SqlHandler implements DatabaseHandler {
 		ResultSet set = prepared.executeQuery();
 		String[] lookup = query.getSearch();
 		if (set != null && set.next()) {
-			if (lookup.length == 1 && lookup[0].equals("*")) {
+			if (lookup.length == 1 && "*".equals(lookup[0])) {
 				int size = 1;
 				List<String> val = new ArrayList<>();
 				while (true)
 					try {
-						val.add(String.valueOf(set.getObject(size++)));
+						val.add(set.getString(size++)+"");
 					} catch (Exception err) {
 						break;
 					}
@@ -303,7 +303,7 @@ public class SqlHandler implements DatabaseHandler {
 				while (set.next()) {
 					String[] vals = new String[size];
 					for (int i = 0; i < size; ++i)
-						vals[i] = String.valueOf(set.getObject(i + 1));
+						vals[i] = set.getString(i + 1)+"";
 					res = new Result(vals);
 					next.nextResult(next = res);
 				}
@@ -311,14 +311,14 @@ public class SqlHandler implements DatabaseHandler {
 			}
 			String[] vals = new String[query.search.length];
 			for (int i = 0; i < query.search.length; ++i)
-				vals[i] = String.valueOf(set.getObject(query.search[i]));
+				vals[i] = set.getString(query.search[i]) + "";
 			Result res = new Result(vals);
 			Result main = res;
 			Result next = main;
 			while (set.next()) {
 				vals = new String[query.search.length];
 				for (int i = 0; i < query.search.length; ++i)
-					vals[i] = String.valueOf(set.getObject(query.search[i]));
+					vals[i] = set.getString(query.search[i]) + "";
 				res = new Result(vals);
 				next.nextResult(next = res);
 			}
