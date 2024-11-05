@@ -77,7 +77,7 @@ public class SqlHandler implements DatabaseHandler {
 		builder.append("values").append('(');
 		if (safeMode) {
 			boolean first = true;
-			for (int i = 0; i < query.values.size(); ++i) {
+			for (String element : query.values) {
 				if (first)
 					first = false;
 				else
@@ -115,8 +115,8 @@ public class SqlHandler implements DatabaseHandler {
 					builder.append(',');
 				builder.append(' ').append(val[0].replace("'", "\\'")).append('=').append('?');
 			}
-            buildArgs(builder, query.where, query.like, true);
-            for (List<Object[]>[] where : query.whereOr)
+			buildArgs(builder, query.where, query.like, true);
+			for (List<Object[]>[] where : query.whereOr)
 				buildWhereOrArgs(builder, where, true);
 		} else {
 			for (String[] val : query.values) {
@@ -124,7 +124,7 @@ public class SqlHandler implements DatabaseHandler {
 					first = false;
 				else
 					builder.append(',');
-				builder.append(' ').append(val[0].replace("'", "\\'")).append('=').append((val[1]).replace("'", "\\'"));
+				builder.append(' ').append(val[0].replace("'", "\\'")).append('=').append(val[1].replace("'", "\\'"));
 			}
 			buildArgs(builder, query.where, query.like, false);
 			for (List<Object[]>[] where : query.whereOr)
@@ -161,15 +161,13 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	private void buildWhereOrArgs(StringContainer builder, List<Object[]>[] where, boolean safeMode) {
-		boolean first=true;
+		boolean first = true;
 		builder.append(' ').append("or");
-		for (Object[] pair : where[0]) {
+		for (Object[] pair : where[0])
 			first = buildWherePair(builder, safeMode, first, pair);
-		}
-		first=true;
-		for (Object[] pair : where[1]) {
+		first = true;
+		for (Object[] pair : where[1])
 			first = buildLikePair(builder, safeMode, first, pair);
-		}
 	}
 
 	private boolean buildLikePair(StringContainer builder, boolean safeMode, boolean first, Object[] pair) {
@@ -192,25 +190,22 @@ public class SqlHandler implements DatabaseHandler {
 
 	private boolean appendValue(StringContainer builder, boolean safeMode, boolean first, Object[] pair) {
 		builder.append(' ').append(pair[0].toString().replace("'", "\\'")).append('=');
-		if(safeMode)
+		if (safeMode)
 			builder.append('?');
+		else if (pair[1] instanceof SelectQuery)
+			builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
 		else
-			if (pair[1] instanceof SelectQuery)
-				builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
-			else
-				builder.append((pair[1] + "").replace("'", "\\'"));
+			builder.append((pair[1] + "").replace("'", "\\'"));
 		return first;
 	}
 
 	private void buildArgs(StringContainer builder, List<Object[]> where2, List<Object[]> like, boolean safeMode) {
 		boolean first = true;
-		for (Object[] pair : where2) {
+		for (Object[] pair : where2)
 			first = buildWherePair(builder, safeMode, first, pair);
-		}
 		first = true;
-		for (Object[] pair : like) {
+		for (Object[] pair : like)
 			first = buildLikePair(builder, safeMode, first, pair);
-		}
 	}
 
 	@Override
@@ -269,8 +264,7 @@ public class SqlHandler implements DatabaseHandler {
 			if (!first)
 				builder.append(',').append(' ');
 			first = false;
-			builder.append(row.getFieldName().replace("'", "\\'")).append(' ').append(row.getFieldType().toLowerCase()).append(' ')
-					.append(row.isNulled() ? "NULL" : "NOT NULL");
+			builder.append(row.getFieldName().replace("'", "\\'")).append(' ').append(row.getFieldType().toLowerCase()).append(' ').append(row.isNulled() ? "NULL" : "NOT NULL");
 		}
 		return builder.toString();
 	}
@@ -279,7 +273,7 @@ public class SqlHandler implements DatabaseHandler {
 	public boolean deleteTable(String name) throws SQLException {
 		return prepareStatement("DROP TABLE " + name).execute();
 	}
-	
+
 	@Override
 	public Result get(SelectQuery query) throws SQLException {
 		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
@@ -293,7 +287,8 @@ public class SqlHandler implements DatabaseHandler {
 				List<String> val = new ArrayList<>();
 				while (true)
 					try {
-						val.add(set.getString(size++)+"");
+						System.out.println(set.getObject(size, Object.class) + ":" + set.getInt(size));
+						val.add(set.getObject(size++, Object.class) + "");
 					} catch (Exception err) {
 						break;
 					}
@@ -303,7 +298,7 @@ public class SqlHandler implements DatabaseHandler {
 				while (set.next()) {
 					String[] vals = new String[size];
 					for (int i = 0; i < size; ++i)
-						vals[i] = set.getString(i + 1)+"";
+						vals[i] = set.getObject(i + 1, Object.class) + "";
 					res = new Result(vals);
 					next.nextResult(next = res);
 				}
@@ -311,14 +306,14 @@ public class SqlHandler implements DatabaseHandler {
 			}
 			String[] vals = new String[query.search.length];
 			for (int i = 0; i < query.search.length; ++i)
-				vals[i] = set.getString(query.search[i]) + "";
+				vals[i] = set.getObject(query.search[i], Object.class) + "";
 			Result res = new Result(vals);
 			Result main = res;
 			Result next = main;
 			while (set.next()) {
 				vals = new String[query.search.length];
 				for (int i = 0; i < query.search.length; ++i)
-					vals[i] = set.getString(query.search[i]) + "";
+					vals[i] = set.getObject(query.search[i], Object.class) + "";
 				res = new Result(vals);
 				next.nextResult(next = res);
 			}
@@ -328,17 +323,15 @@ public class SqlHandler implements DatabaseHandler {
 	}
 
 	private void fillPreparedStatement(PreparedStatement prepared, int index, List<Object[]> where2, List<Object[]> like, List<List<Object[]>[]> whereOr) throws SQLException {
-		for (Object[] pair : where2) {
+		for (Object[] pair : where2)
 			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		}
-		for (Object[] pair : like) {
+		for (Object[] pair : like)
 			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		}
 		for (List<Object[]>[] where : whereOr) {
-			for (Object[] pair : where[0]){
-			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);}
-			for (Object[] pair : where[1]){
-			prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);}
+			for (Object[] pair : where[0])
+				prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
+			for (Object[] pair : where[1])
+				prepared.setObject(++index, pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
 		}
 	}
 
@@ -415,8 +408,9 @@ public class SqlHandler implements DatabaseHandler {
 		ResultSet set = prepareStatement("SHOW TABLES").executeQuery();
 		if (set != null && set.next()) {
 			List<String> tables = new ArrayList<>();
-            do tables.add(set.getString(0));
-            while (set.next());
+			do
+				tables.add(set.getString(0));
+			while (set.next());
 			return tables;
 		}
 		return null;
@@ -429,7 +423,7 @@ public class SqlHandler implements DatabaseHandler {
 			return null;
 		List<Row> rows = new ArrayList<>();
 		while (set.next())
-			rows.add(new Row(set.getString(0), set.getString(1), set.getString(2).equals("YES"), set.getString(3), set.getString(4), set.getString(5)));
+			rows.add(new Row(set.getString(0), set.getString(1), "YES".equals(set.getString(2)), set.getString(3), set.getString(4), set.getString(5)));
 		return rows.toArray(new Row[0]);
 	}
 
