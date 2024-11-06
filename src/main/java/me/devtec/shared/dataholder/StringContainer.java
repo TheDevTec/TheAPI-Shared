@@ -68,6 +68,7 @@ public class StringContainer implements CharSequence {
 			value = Arrays.copyOf(value, newCapacity(minimumCapacity));
 	}
 
+	@Override
 	public boolean isEmpty() {
 		return length() == 0;
 	}
@@ -222,7 +223,7 @@ public class StringContainer implements CharSequence {
 	}
 
 	public static byte[] getBytes(CharSequence input) {
-		if (input.length() > 0)
+		if (input.length() == 0)
 			return new byte[0];
 
 		int estimatedSize = input.length() * 4;
