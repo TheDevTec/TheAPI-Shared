@@ -91,7 +91,6 @@ public class PropertiesLoader extends EmptyLoader {
 
 	@Override
 	public StringContainer saveAsContainer(Config config, boolean markSaved) {
-		System.out.println("saving as container");
 		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
@@ -125,7 +124,6 @@ public class PropertiesLoader extends EmptyLoader {
 		} catch (Exception er) {
 			er.printStackTrace();
 		}
-		System.out.println(builder.toString());
 		return builder;
 	}
 
