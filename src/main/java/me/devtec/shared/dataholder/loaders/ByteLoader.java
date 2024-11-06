@@ -110,7 +110,7 @@ public class ByteLoader extends EmptyLoader {
 				continue;
 			return null;
 		}
-		return container.getBytes(StandardCharsets.ISO_8859_1);
+		return container.getBytes();
 	}
 
 	public void load(byte[] byteData) {

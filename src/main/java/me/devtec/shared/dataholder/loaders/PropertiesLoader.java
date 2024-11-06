@@ -90,19 +90,8 @@ public class PropertiesLoader extends EmptyLoader {
 	}
 
 	@Override
-	public String saveAsString(Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		return saveAsContainer(config, markSaved).toString();
-	}
-
-	@Override
-	public byte[] save(Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		return saveAsContainer(config, markSaved).getBytes();
-	}
-
-	@Override
 	public StringContainer saveAsContainer(Config config, boolean markSaved) {
+		System.out.println("saving as container");
 		Checkers.nonNull(config, "Config");
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
@@ -121,8 +110,9 @@ public class PropertiesLoader extends EmptyLoader {
 			if (markSaved)
 				key.getValue().modified = false;
 			if (key.getValue().value == null) {
+				builder.append(key.getKey()).append('=');
 				if (key.getValue().commentAfterValue != null)
-					builder.append(key.getKey()).append('=').append(key.getValue().commentAfterValue);
+					builder.append(' ').append(key.getValue().commentAfterValue);
 				continue;
 			}
 			builder.append(key.getKey()).append('=').append(Json.writer().write(key.getValue().value));
@@ -135,6 +125,7 @@ public class PropertiesLoader extends EmptyLoader {
 		} catch (Exception er) {
 			er.printStackTrace();
 		}
+		System.out.println(builder.toString());
 		return builder;
 	}
 
