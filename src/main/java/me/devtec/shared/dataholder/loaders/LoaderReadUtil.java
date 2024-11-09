@@ -17,6 +17,7 @@ public class LoaderReadUtil {
 		List<int[]> allLinePositions = new ArrayList<>();
 
 		int totalLength = lines.length();
+		int maxLength = totalLength - 1;
 		int chunkCount = (totalLength + CHUNK_SIZE - 1) / CHUNK_SIZE;
 		int lastEnd = 0;
 
@@ -26,13 +27,13 @@ public class LoaderReadUtil {
 
 			if (lastEnd > 0)
 				start = lastEnd;
-			if (i + 1 == chunkCount)
-				end = lines.length();
+			if (i + 1 >= chunkCount)
+				end = maxLength;
 			else
-				end = adjustEndPosition(lines, end);
+				end = Math.min(adjustEndPosition(lines, end), maxLength);
 			int fStart = start;
 			int fEnd = end;
-			futures.add(API.getExecutor().submit(() -> readLinesInRange(lines, fStart, fEnd)));
+			futures.add(API.getExecutor().submit(() -> readLinesInRange(lines, fStart, fEnd, maxLength)));
 
 			lastEnd = end;
 		}
@@ -64,7 +65,7 @@ public class LoaderReadUtil {
 		return end;
 	}
 
-	private static List<int[]> readLinesInRange(StringContainer lines, int start, int end) {
+	private static List<int[]> readLinesInRange(StringContainer lines, int start, int end, int maxLength) {
 		List<int[]> resultLines = new ArrayList<>();
 		int currentStart = start;
 
@@ -76,7 +77,7 @@ public class LoaderReadUtil {
 			}
 		if (currentStart < end)
 			if (currentStart < lines.length())
-				resultLines.add(new int[] { currentStart, end });
+				resultLines.add(new int[] { currentStart, Math.min(end, maxLength) });
 		return resultLines;
 	}
 
