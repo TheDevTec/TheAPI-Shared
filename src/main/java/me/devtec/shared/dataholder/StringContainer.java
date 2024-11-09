@@ -68,7 +68,6 @@ public class StringContainer implements CharSequence {
 			value = Arrays.copyOf(value, newCapacity(minimumCapacity));
 	}
 
-	@Override
 	public boolean isEmpty() {
 		return length() == 0;
 	}
