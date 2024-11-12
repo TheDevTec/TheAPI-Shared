@@ -127,7 +127,8 @@ public class API {
 	public static void setEnabled(boolean status) {
 		API.enabled = status;
 		if (!status) {
-			EXECUTOR.shutdown();
+			if (EXECUTOR != null)
+				EXECUTOR.shutdown();
 			EXECUTOR = null;
 			if (savingScheduler != 0)
 				Scheduler.cancelTask(savingScheduler);
