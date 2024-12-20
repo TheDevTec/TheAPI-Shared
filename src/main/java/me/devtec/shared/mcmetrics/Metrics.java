@@ -7,7 +7,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.IntFunction;
 import java.util.zip.GZIPOutputStream;
 
@@ -71,19 +77,19 @@ public class Metrics {
 	public Metrics(String pluginVersion, int pluginId) {
 		this.pluginVersion = pluginVersion;
 		this.pluginId = pluginId;
-		if (Ref.serverType().isBukkit())
+		if (Ref.serverType().isBukkit()) {
 			platform = "bukkit";
-		else if (Ref.serverType() == ServerType.BUNGEECORD)
+		} else if (Ref.serverType() == ServerType.BUNGEECORD) {
 			platform = "bungeecord";
-		else if (Ref.serverType() == ServerType.VELOCITY)
+		} else if (Ref.serverType() == ServerType.VELOCITY) {
 			platform = "velocity";
-		else {
+		} else {
 			platform = "uknown";
 			return;
 		}
 		long initialDelay = (long) (20 * 60 * (3 + Math.random() * 3));
 		long secondDelay = (long) (20 * 60 * (Math.random() * 30));
-		if (enabled)
+		if (enabled) {
 			taskId = new Tasker() {
 
 				@Override
@@ -91,11 +97,13 @@ public class Metrics {
 					submitData();
 				}
 			}.runRepeating(initialDelay + secondDelay, 20 * 60 * 30);
+		}
 	}
 
 	public void shutdown() {
-		if (taskId == 0)
+		if (taskId == 0) {
 			return;
+		}
 		Scheduler.cancelTask(taskId);
 		taskId = 0;
 	}
@@ -154,8 +162,9 @@ public class Metrics {
 
 			String data = Json.writer().simpleWrite(getServerData());
 			// Compress the data to save bandwidth
-			if (logSentData)
+			if (logSentData) {
 				gatheringInfoManager.getInfoLogger().accept("Sent bStats metrics data: " + data);
+			}
 
 			String url = String.format(REPORT_URL, platform);
 			HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
@@ -178,15 +187,18 @@ public class Metrics {
 			StringBuilder builder = new StringBuilder();
 			try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
 				String line;
-				while ((line = bufferedReader.readLine()) != null)
+				while ((line = bufferedReader.readLine()) != null) {
 					builder.append(line);
+				}
 			}
 
-			if (logResponseStatusText)
+			if (logResponseStatusText) {
 				gatheringInfoManager.getInfoLogger().accept("Sent data to bStats and received response: " + builder);
+			}
 		} catch (Exception e) {
-			if (logErrors)
+			if (logErrors) {
 				gatheringInfoManager.getErrorLogger().accept("Could not submit bStats metrics data", e);
+			}
 		}
 	}
 
@@ -197,8 +209,9 @@ public class Metrics {
 	 * @return The gzipped string.
 	 */
 	private static byte[] compress(final String str) throws IOException {
-		if (str == null)
+		if (str == null) {
 			return null;
+		}
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (GZIPOutputStream gzip = new GZIPOutputStream(outputStream)) {
 			gzip.write(str.getBytes(StandardCharsets.UTF_8));

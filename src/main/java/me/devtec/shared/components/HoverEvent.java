@@ -37,7 +37,8 @@ public class HoverEvent {
 	}
 
 	public String toJson() {
-		return "{\"action\":\"" + action.name().toLowerCase() + "\",\"value\":\"" + Json.writer().simpleWrite(ComponentAPI.toJsonList(value)) + "\"}";
+		return "{\"action\":\"" + action.name().toLowerCase() + "\",\"value\":\""
+				+ Json.writer().simpleWrite(ComponentAPI.toJsonList(value)) + "\"}";
 	}
 
 	@Override
@@ -54,5 +55,5 @@ public class HoverEvent {
 
 	public enum Action {
 		SHOW_ENTITY, SHOW_ITEM, SHOW_TEXT
-    }
+	}
 }

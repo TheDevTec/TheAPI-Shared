@@ -21,11 +21,13 @@ public class ParseUtils {
 	 * @return boolean
 	 */
 	public static boolean isBoolean(CharSequence text) {
-		if (text == null || text.length() > 5 || text.length() < 4)
+		if (text == null || text.length() > 5 || text.length() < 4) {
 			return false;
-		if (text.length() == 5)
+		}
+		if (text.length() == 5) {
 			return toLowerCase(text.charAt(0)) == 'f' && toLowerCase(text.charAt(1)) == 'a' && toLowerCase(text.charAt(2)) == 'l' && toLowerCase(text.charAt(3)) == 's'
 					&& toLowerCase(text.charAt(4)) == SMALL_E;
+		}
 		// true
 		return toLowerCase(text.charAt(0)) == 't' && toLowerCase(text.charAt(1)) == 'r' && toLowerCase(text.charAt(2)) == 'u' && toLowerCase(text.charAt(3)) == SMALL_E;
 	}
@@ -39,8 +41,9 @@ public class ParseUtils {
 	 * @return double
 	 */
 	public static double getDouble(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return getDouble(text, 0, text.length());
 	}
 
@@ -53,18 +56,21 @@ public class ParseUtils {
 	 * @return double
 	 */
 	public static double getDouble(CharSequence text, int start, int end) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return parseDecimalNumber(false, (short)308, text, start, end).doubleValue();
 	}
 
 	private static double calculateResult(double result, int decimal, int exponent, boolean minusExponent, boolean minus, byte exponentSymbol) {
 		int range = (minusExponent ? -exponent : exponent) - decimal;
-		if (range != 0)
-			if (range > 0)
+		if (range != 0) {
+			if (range > 0) {
 				result *= Math.pow(10, range);
-			else
+			} else {
 				result /= Math.pow(10, range * -1);
+			}
+		}
 		return exponentSymbol == 0 ? minus ? -result : result : 0;
 	}
 
@@ -73,8 +79,9 @@ public class ParseUtils {
 	 * @return boolean
 	 */
 	public static boolean isDouble(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return false;
+		}
 		return isDouble(text, 0, text.length());
 	}
 
@@ -101,32 +108,38 @@ public class ParseUtils {
 			case SPACE:
 				continue;
 			case MINUS:
-				if (minus)
+				if (minus) {
 					break;
+				}
 				minus = true;
 				continue;
 			case SMALL_E:
 			case BIG_E:
-				if (hasExponent || totalWidth == 0 && !foundZero)
+				if (hasExponent || totalWidth == 0 && !foundZero) {
 					return false;
+				}
 				hasExponent = true;
 				exponentSymbol = 1;
 				continue;
 			case DOT:
 			case COMMA:
-				if (hasDecimal || hasExponent || totalWidth == 0 && !foundZero)
+				if (hasDecimal || hasExponent || totalWidth == 0 && !foundZero) {
 					return false;
+				}
 				hasDecimal = true;
 				continue;
 			}
 			if (c < 48 || c > 57) {
-				if (end - 1 == i && (c == 'd' || c == 'f' || c == 'D' || c == 'F'))
+				if (end - 1 == i && (c == 'd' || c == 'f' || c == 'D' || c == 'F')) {
 					continue;
-				if (!foundZero && totalWidth == 0 && c == 'N' && i + 3 <= end)
+				}
+				if (!foundZero && totalWidth == 0 && c == 'N' && i + 3 <= end) {
 					return text.charAt(++i) == 'a' && text.charAt(++i) == 'N';
-				if (!foundZero && totalWidth == 0 && c == 'I' && i + 8 <= end)
+				}
+				if (!foundZero && totalWidth == 0 && c == 'I' && i + 8 <= end) {
 					return text.charAt(++i) == 'n' && text.charAt(++i) == 'f' && text.charAt(++i) == 'i' && text.charAt(++i) == 'n' && text.charAt(++i) == 'i' && text.charAt(++i) == 't'
 							&& text.charAt(++i) == 'y';
+				}
 				return false;
 			}
 			if (!hasDecimal && totalWidth == 0 && c == 48) {
@@ -144,8 +157,9 @@ public class ParseUtils {
 	 * @return long
 	 */
 	public static long getLong(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return getLong(text, 0, text.length());
 	}
 
@@ -158,8 +172,9 @@ public class ParseUtils {
 	 * @return long
 	 */
 	public static long getLong(CharSequence text, int start, int end) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return parseNonDecimalNumber((byte)3, 19,text,start,end).longValue();
 	}
 
@@ -168,8 +183,9 @@ public class ParseUtils {
 	 * @return boolean
 	 */
 	public static boolean isLong(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return false;
+		}
 		return isLong(text, 0, text.length());
 	}
 
@@ -195,13 +211,15 @@ public class ParseUtils {
 			case SPACE:
 				continue;
 			case MINUS:
-				if (minus)
+				if (minus) {
 					break;
+				}
 				minus = true;
 				continue;
 			}
-			if (c < 48 || c > 57)
+			if (c < 48 || c > 57) {
 				return false;
+			}
 			if (totalWidth == 0) {
 				if (c == 48) {
 					foundZero = true;
@@ -213,13 +231,17 @@ public class ParseUtils {
 
 			if (onLimit) {
 				limit = overLongLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
+				if (digit != limit) {
+					if (digit > limit) {
 						overLimit = 1;
-					else onLimit = false;
+					} else {
+						onLimit = false;
+					}
+				}
 			}
-			if (++totalWidth > 19 || totalWidth == 19 && overLimit == 1)
+			if (++totalWidth > 19 || totalWidth == 19 && overLimit == 1) {
 				return false;
+			}
 		}
 		return totalWidth > 0 || foundZero;
 	}
@@ -265,8 +287,9 @@ public class ParseUtils {
 	 * @return int
 	 */
 	public static int getInt(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return getInt(text, 0, text.length());
 	}
 
@@ -280,8 +303,9 @@ public class ParseUtils {
 	 * @return int
 	 */
 	public static int getInt(CharSequence text, int start, int end) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return parseNonDecimalNumber((byte)2, 10,text,start,end).intValue();
 	}
 
@@ -290,8 +314,9 @@ public class ParseUtils {
 	 * @return boolean
 	 */
 	public static boolean isInt(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return false;
+		}
 		return isInt(text, 0, text.length());
 	}
 
@@ -317,13 +342,15 @@ public class ParseUtils {
 			case SPACE:
 				continue;
 			case MINUS:
-				if (minus)
+				if (minus) {
 					break;
+				}
 				minus = true;
 				continue;
 			}
-			if (c < 48 || c > 57)
+			if (c < 48 || c > 57) {
 				return false;
+			}
 			if (totalWidth == 0) {
 				if (c == 48) {
 					foundZero = true;
@@ -335,13 +362,17 @@ public class ParseUtils {
 
 			if (onLimit) {
 				limit = overIntLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
+				if (digit != limit) {
+					if (digit > limit) {
 						overLimit = 1;
-					else onLimit = false;
+					} else {
+						onLimit = false;
+					}
+				}
 			}
-			if (++totalWidth > 10 || totalWidth == 10 && overLimit == 1)
+			if (++totalWidth > 10 || totalWidth == 10 && overLimit == 1) {
 				return false;
+			}
 		}
 		return totalWidth > 0 || foundZero;
 	}
@@ -396,8 +427,9 @@ public class ParseUtils {
 	 * @return float
 	 */
 	public static float getFloat(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return getFloat(text, 0, text.length());
 	}
 
@@ -410,8 +442,9 @@ public class ParseUtils {
 	 * @return float
 	 */
 	public static float getFloat(CharSequence text, int start, int end) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return parseDecimalNumber(true, (short)39, text, start, end).floatValue();
 	}
 
@@ -420,8 +453,9 @@ public class ParseUtils {
 	 * @return boolean
 	 */
 	public static boolean isByte(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return false;
+		}
 		return isByte(text, 0, text.length());
 	}
 
@@ -447,13 +481,15 @@ public class ParseUtils {
 			case SPACE:
 				continue;
 			case MINUS:
-				if (minus)
+				if (minus) {
 					break;
+				}
 				minus = true;
 				continue;
 			}
-			if (c < 48 || c > 57)
+			if (c < 48 || c > 57) {
 				return false;
+			}
 			if (totalWidth == 0) {
 				if (c == 48) {
 					foundZero = true;
@@ -465,13 +501,17 @@ public class ParseUtils {
 
 			if (onLimit) {
 				limit = overByteLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
+				if (digit != limit) {
+					if (digit > limit) {
 						overLimit = 1;
-					else onLimit = false;
+					} else {
+						onLimit = false;
+					}
+				}
 			}
-			if (++totalWidth > 3 || totalWidth == 3 && overLimit == 1)
+			if (++totalWidth > 3 || totalWidth == 3 && overLimit == 1) {
 				return false;
+			}
 		}
 		return totalWidth > 0 || foundZero;
 	}
@@ -492,8 +532,9 @@ public class ParseUtils {
 	 * @return byte
 	 */
 	public static byte getByte(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return getByte(text, 0, text.length());
 	}
 
@@ -506,8 +547,9 @@ public class ParseUtils {
 	 * @return byte
 	 */
 	public static byte getByte(CharSequence text, int start, int end) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return parseNonDecimalNumber((byte)0, 3,text,start,end).byteValue();
 	}
 
@@ -516,8 +558,9 @@ public class ParseUtils {
 	 * @return boolean
 	 */
 	public static boolean isShort(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return false;
+		}
 		return isShort(text, 0, text.length());
 	}
 
@@ -543,13 +586,15 @@ public class ParseUtils {
 			case SPACE:
 				continue;
 			case MINUS:
-				if (minus)
+				if (minus) {
 					break;
+				}
 				minus = true;
 				continue;
 			}
-			if (c < 48 || c > 57)
+			if (c < 48 || c > 57) {
 				return false;
+			}
 			if (totalWidth == 0) {
 				if (c == 48) {
 					foundZero = true;
@@ -561,13 +606,17 @@ public class ParseUtils {
 
 			if (onLimit) {
 				limit = overShortLimit(minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
+				if (digit != limit) {
+					if (digit > limit) {
 						overLimit = 1;
-					else onLimit = false;
+					} else {
+						onLimit = false;
+					}
+				}
 			}
-			if (++totalWidth > 5 || totalWidth == 5 && overLimit == 1)
+			if (++totalWidth > 5 || totalWidth == 5 && overLimit == 1) {
 				return false;
+			}
 		}
 		return totalWidth > 0 || foundZero;
 	}
@@ -592,8 +641,9 @@ public class ParseUtils {
 	 * @return short
 	 */
 	public static short getShort(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return getShort(text, 0, text.length());
 	}
 
@@ -606,8 +656,9 @@ public class ParseUtils {
 	 * @return short
 	 */
 	public static short getShort(CharSequence text, int start, int end) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return parseNonDecimalNumber((byte)1, 5,text,start,end).shortValue();
 	}
 
@@ -636,8 +687,9 @@ public class ParseUtils {
 	 * @return Number
 	 */
 	public static Number getNumber(CharSequence text) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		return getNumber(text, 0, text.length());
 	}
 
@@ -650,8 +702,9 @@ public class ParseUtils {
 	 * @return Number
 	 */
 	public static Number getNumber(CharSequence text, int start, int end) {
-		if (text == null || text.length()==0)
+		if (text == null || text.length()==0) {
 			return null;
+		}
 		int dotAt = -1;
 		for(int i = start; i < text.length() && i < end; ++i){
 			char c = text.charAt(i);
@@ -661,13 +714,16 @@ public class ParseUtils {
 			}
 		}
 		if (dotAt == -1) {
-			if (isInt(text, start, end))
+			if (isInt(text, start, end)) {
 				return getInt(text, start, end);
-			if (isLong(text, start, end))
+			}
+			if (isLong(text, start, end)) {
 				return getLong(text, start, end);
+			}
 		}
-		if (isDouble(text, start, end))
+		if (isDouble(text, start, end)) {
 			return getDouble(text, start, end);
+		}
 		return null;
 	}
 
@@ -705,51 +761,61 @@ public class ParseUtils {
 					continue;
 				case SMALL_E:
 				case BIG_E:
-					if (hasExponent)
+					if (hasExponent) {
 						break charsLoop;
+					}
 					hasExponent = true;
 					exponentSymbol = 1;
 					continue;
 				case DOT:
 				case COMMA:
-					if (hasDecimal || hasExponent)
+					if (hasDecimal || hasExponent) {
 						break charsLoop;
+					}
 					hasDecimal = true;
 					continue;
 			}
 			if (c < 48 || c > 57) {
 				if (totalWidth == 0) {
-					if (c == 'N' && i + 3 <= end)
-						if (text.charAt(i + 1) == 'a' && text.charAt(i + 2) == 'N')
+					if (c == 'N' && i + 3 <= end) {
+						if (text.charAt(i + 1) == 'a' && text.charAt(i + 2) == 'N') {
 							return isFloat ? Float.NaN : Double.NaN;
-					if (c == 'I' && i + 8 <= end)
+						}
+					}
+					if (c == 'I' && i + 8 <= end) {
 						if (text.charAt(i + 1) == 'n' && text.charAt(i + 2) == 'f' && text.charAt(i + 3) == 'i' && text.charAt(i + 4) == 'n' && text.charAt(i + 5) == 'i' && text.charAt(i + 6) == 't'
-								&& text.charAt(i + 7) == 'y')
+								&& text.charAt(i + 7) == 'y') {
 							return isFloat ? (minus ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY) : minus ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
+						}
+					}
 				}
 				continue;
 			}
-			if (!hasDecimal && totalWidth == 0 && c == 48)
+			if (!hasDecimal && totalWidth == 0 && c == 48) {
 				continue;
+			}
 			int digit = c - 48;
-			if (++totalWidth > maxTotalWidth)
+			if (++totalWidth > maxTotalWidth) {
 				return isFloat ? (minus ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY) : minus ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
+			}
 
 			if (hasExponent) {
 				exponent = exponent * 10 + digit;
 				exponentSymbol = 0;
 			} else {
 				result = result * 10 + digit;
-				if (hasDecimal)
+				if (hasDecimal) {
 					++decimal;
+				}
 			}
 		}
 		return isFloat ? (float)calculateResult(result, decimal, exponent, minusExponent, minus, exponentSymbol) : calculateResult(result, decimal, exponent, minusExponent, minus, exponentSymbol);
 	}
 
 	private static Number parseNonDecimalNumber(byte type, int totalDigits, CharSequence text, int start, int end) {
-		if (text == null)
+		if (text == null) {
 			return 0;
+		}
 		Number result = 0;
 		boolean minus = false;
 		byte totalWidth = 0;
@@ -763,8 +829,9 @@ public class ParseUtils {
 				case SPACE:
 					continue;
 				case MINUS:
-					if (minus)
+					if (minus) {
 						break;
+					}
 					minus = true;
 					switch(type){
 						case 0: //Byte
@@ -782,24 +849,30 @@ public class ParseUtils {
 					}
 					continue;
 			}
-			if (c < 48 || c > 57)
+			if (c < 48 || c > 57) {
 				continue;
+			}
 			if (totalWidth == 0) {
-				if (c == 48)
+				if (c == 48) {
 					continue;
+				}
 				onLimit = isOnLimit(type, c);
 			}
 			int digit = c - 48;
 
 			if (onLimit) {
 				limit = checkOverLimit(type, minus, totalWidth);
-				if (digit != limit)
-					if (digit > limit)
+				if (digit != limit) {
+					if (digit > limit) {
 						overLimit = 1;
-					else onLimit = false;
+					} else {
+						onLimit = false;
+					}
+				}
 			}
-			if (++totalWidth > totalDigits || totalWidth == totalDigits && overLimit == 1)
+			if (++totalWidth > totalDigits || totalWidth == totalDigits && overLimit == 1) {
 				return getInfinityOf(type, minus);
+			}
 
 			result = multiplyTen(type, result, minus ? -digit : digit);
 		}

@@ -68,18 +68,20 @@ public class API {
 	private static volatile boolean enabled = true;
 
 	public static ExecutorService getExecutor() {
-		if (EXECUTOR == null)
+		if (EXECUTOR == null) {
 			EXECUTOR = Executors.newFixedThreadPool(API.THREAD_COUNT);
+		}
 		return EXECUTOR;
 	}
 
 	public static void initOfflineCache(boolean onlineMode, Config rawData) {
 		API.cache = new OfflineCache(onlineMode);
-		for (String uuid : rawData.getKeys())
+		for (String uuid : rawData.getKeys()) {
 			try {
 				API.cache.setLookup(UUID.fromString(uuid), rawData.getString(uuid));
 			} catch (Exception ignored) {
 			}
+		}
 	}
 
 	public static OfflineCache offlineCache() {
@@ -87,15 +89,17 @@ public class API {
 	}
 
 	public static Config getUser(String playerName) {
-		if (API.cache == null || playerName == null || playerName.isEmpty())
+		if (API.cache == null || playerName == null || playerName.isEmpty()) {
 			return null;
+		}
 		UUID id = API.cache.lookupId(playerName);
 		return getUser(id);
 	}
 
 	public static Config getUser(UUID id) {
-		if (API.cache == null || id == null)
+		if (API.cache == null || id == null) {
 			return null;
+		}
 
 		Config cached = API.users.get(id);
 		if (cached == null) {
@@ -116,26 +120,31 @@ public class API {
 	}
 
 	public static Config removeCache(UUID id) {
-		if (id == null)
+		if (id == null) {
 			return null;
+		}
 		Config file = API.users.remove(id);
-		if (file != null)
+		if (file != null) {
 			savingQueue.add(Pair.of(id, file));
+		}
 		return file;
 	}
 
 	public static void setEnabled(boolean status) {
 		API.enabled = status;
 		if (!status) {
-			if (EXECUTOR != null)
+			if (EXECUTOR != null) {
 				EXECUTOR.shutdown();
+			}
 			EXECUTOR = null;
-			if (savingScheduler != 0)
+			if (savingScheduler != 0) {
 				Scheduler.cancelTask(savingScheduler);
+			}
 			savingScheduler = 0;
 			// Save all players
-			for (Config config : API.users.values())
+			for (Config config : API.users.values()) {
 				config.save("yaml");
+			}
 			// Clear cache
 			API.users.clear();
 			// Saving queue
@@ -150,15 +159,18 @@ public class API {
 			PlaceholderAPI.unregisterAll();
 			Scheduler.cancelAll();
 		} else if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
+		 {
 			savingScheduler = new Tasker() {
 
 				@Override
 				public void run() {
 					// Save all players
-					for (Config config : API.users.values())
+					for (Config config : API.users.values()) {
 						config.save("yaml");
+					}
 				}
 			}.runRepeating(432000, 432000); // Every 6 hours
+		}
 	}
 
 	public static boolean isEnabled() {
@@ -182,8 +194,9 @@ public class API {
 			tags.setIfAbsent("gradient.firstHex.suffix", "");
 			tags.setIfAbsent("gradient.secondHex.prefix", "!");
 			tags.setIfAbsent("gradient.secondHex.suffix", "");
-			if (tags.getInt("version") == 0)
+			if (tags.getInt("version") == 0) {
 				tags.remove("tags");
+			}
 			if (!tags.exists("tags")) {
 				tags.setIfAbsent("tags.baby_blue", "#0fd2f6");
 				tags.setIfAbsent("tags.beige", "#ffc8a9");
@@ -222,7 +235,7 @@ public class API {
 				String secondSuffix = tags.getString("gradient.secondHex.suffix");
 				ColorUtils.gradientFinderConstructor = RegexFinder::new;
 				RegexFinder.init(firstPrefix, firstSuffix, secondPrefix, secondSuffix);
-			} else
+			} else {
 				switch (tags.getInt("gradient-mode")) {
 				case 1:
 					ColorUtils.gradientFinderConstructor = ExclamationFinder::new;
@@ -240,6 +253,7 @@ public class API {
 					ColorUtils.gradientFinderConstructor = ClassicArrowsFinder::new;
 					break;
 				}
+			}
 
 			switch (tags.getInt("hex-mode")) {
 			case 1:
@@ -247,14 +261,16 @@ public class API {
 					charLoop: for (int i = 0; i < text.length(); ++i) {
 						char c = text.charAt(i);
 						if (c == '&' && i + 7 < text.length() && text.charAt(i + 1) == '#') {
-							if (isHexColor(text, i))
+							if (isHexColor(text, i)) {
 								continue charLoop;
+							}
 							i = addHexColor(text, i);
 						} else if (c == '#' && i + 6 < text.length()) {
 							for (int ic = 1; ic < 7; ++ic) {
 								char cn = text.charAt(i + ic);
-								if ((cn < 64 || cn > 70) && (cn < 97 || cn > 102) && (cn < 48 || cn > 57))
+								if ((cn < 64 || cn > 70) && (cn < 97 || cn > 102) && (cn < 48 || cn > 57)) {
 									continue charLoop;
+								}
 							}
 							text.setCharAt(i, '§');
 							text.insert(++i, 'x');
@@ -272,8 +288,9 @@ public class API {
 					for (int i = 0; i < text.length(); ++i) {
 						char c = text.charAt(i);
 						if (c == '<' && i + 8 < text.length() && text.charAt(i + 1) == '#') {
-							if (isHexColor(text, i))
+							if (isHexColor(text, i)) {
 								continue;
+							}
 							if (text.charAt(i + 8) == '>') {
 								text.deleteCharAt(i + 8);
 								i = addHexColor(text, i);
@@ -284,8 +301,9 @@ public class API {
 				break;
 			}
 
-			for (String tag : tags.getKeys("tags"))
+			for (String tag : tags.getKeys("tags")) {
 				ColorUtils.registerColorTag(ColorUtils.tagPrefix + tag, tags.getString("tags." + tag));
+			}
 			Config config = new Config(path + "config.yml");
 			config.setIfAbsent("timeConvertor.settings.defaultlyDigits", false, Collections.singletonList("# If plugin isn't using own split, use defaulty digitals? 300 -> 5:00"));
 			config.setIfAbsent("timeConvertor.settings.defaultSplit", " ", Collections.singletonList("# If plugin isn't using own split, api'll use this split"));
@@ -302,35 +320,41 @@ public class API {
 			config.setIfAbsent("timeConvertor.minutes.convertor", Arrays.asList("<=1  minute", ">1  minutes"));
 			config.setIfAbsent("timeConvertor.seconds.matcher", "s|sec|seconds?");
 			config.setIfAbsent("timeConvertor.seconds.convertor", Arrays.asList("<=1  second", ">1  seconds"));
-			if (config.exists("timeConvertor.weeks"))
+			if (config.exists("timeConvertor.weeks")) {
 				config.remove("timeConvertor.weeks");
-			if (Ref.serverType().isBukkit())
+			}
+			if (Ref.serverType().isBukkit()) {
 				config.setIfAbsent("nmsProvider-use-directly-jar", false, Arrays.asList("", "# In some cases Java isn't able to compile .java file and we have to use .jar file instead"));
+			}
 			config.setIfAbsent("automatically-save-user-files", true, Arrays.asList("", "# Save all loaded user files (in memory) every 6 hours"));
 			config.setIfAbsent("default-json-handler", "TheAPI",
 					Arrays.asList("", "# Default Json reader & writer for reading & writing Config files", "# Guava - From Google (Default)", "# TheAPI - Our own project"));
 			AUTOMATICALLY_USER_SAVING_TASK = config.getBoolean("automatically-save-user-files");
-			if (Ref.serverType().isBukkit())
+			if (Ref.serverType().isBukkit()) {
 				config.setIfAbsent("fallback-scoreboard-support", false,
 						Arrays.asList("", "# Scoreboard lines will be split into 3 parts as it is on version 1.12.2 or lower,",
 								"# so that players with older client (1.12.2-) can see the scoreboard as well as players with client 1.13+ (text length is limited to 48 chars)",
 								"# This requires a bit more CPU usage and sends more packets as a result.",
 								"# Enable this only if you have installed ViaVersion/ProtocolSupport and allows connection for 1.12.2 and older clients"));
+			}
 			config.save(DataType.YAML);
 			if (AUTOMATICALLY_USER_SAVING_TASK && savingScheduler == 0)
+			 {
 				savingScheduler = new Tasker() {
 
 					@Override
 					public void run() {
 						// Save all players
-						for (Config config : API.users.values())
+						for (Config config : API.users.values()) {
 							config.save("yaml");
+						}
 					}
 				}.runRepeating(432000, 432000); // Every 6 hours
+			}
 
 			TimeUtils.timeSplit = config.getString("timeConvertor.settings.defaultSplit");
 
-			for (TimeFormat format : TimeFormat.values())
+			for (TimeFormat format : TimeFormat.values()) {
 				TimeUtils.timeConvertor.put(format, new TimeFormatter() {
 					final Pattern pattern = Pattern.compile("[+-]?[ ]*[0-9]+[ ]*(" + config.getString("timeConvertor." + format.name().toLowerCase() + ".matcher") + ")");
 
@@ -341,22 +365,27 @@ public class API {
 
 					@Override
 					public String toString(long value) {
-						for (String action : config.getStringList("timeConvertor." + format.name().toLowerCase() + ".convertor"))
+						for (String action : config.getStringList("timeConvertor." + format.name().toLowerCase() + ".convertor")) {
 							if (matchAction(action, value)) {
 								action = action.substring(action.indexOf(" "));
-								if (action.startsWith(" "))
+								if (action.startsWith(" ")) {
 									action = action.substring(1);
+								}
 								return value + action;
 							}
+						}
 						return value + format.getDefaultSuffix();
 					}
 				});
+			}
 			// Init libraries without waiting
 			if (library != null) {
 				File libraries = new File(path + "libraries");
-				if (libraries.exists())
-					for (File file : libraries.listFiles())
+				if (libraries.exists()) {
+					for (File file : libraries.listFiles()) {
 						library.load(file);
+					}
+				}
 			}
 		}
 
@@ -374,26 +403,33 @@ public class API {
 		private boolean isHexColor(StringContainer text, int i) {
 			for (int ic = 2; ic < 8; ++ic) {
 				char cn = text.charAt(i + ic);
-				if ((cn < 64 || cn > 70) && (cn < 97 || cn > 102) && (cn < 48 || cn > 57))
+				if ((cn < 64 || cn > 70) && (cn < 97 || cn > 102) && (cn < 48 || cn > 57)) {
 					return true;
+				}
 			}
 			return false;
 		}
 
 		private boolean matchAction(String action, long value) {
 			String[] split = action.split(" ");
-			if (action.startsWith("=="))
+			if (action.startsWith("==")) {
 				return value == ParseUtils.getLong(split[0]);
-			if (action.startsWith("!="))
+			}
+			if (action.startsWith("!=")) {
 				return value != ParseUtils.getLong(split[0]);
-			if (action.startsWith(">="))
+			}
+			if (action.startsWith(">=")) {
 				return value >= ParseUtils.getLong(split[0]);
-			if (action.startsWith("<="))
+			}
+			if (action.startsWith("<=")) {
 				return value <= ParseUtils.getLong(split[0]);
-			if (action.startsWith(">"))
+			}
+			if (action.startsWith(">")) {
 				return value > ParseUtils.getLong(split[0]);
-			if (action.startsWith("<"))
+			}
+			if (action.startsWith("<")) {
 				return value < ParseUtils.getLong(split[0]);
+			}
 			return false; // invalid
 		}
 
@@ -413,8 +449,9 @@ public class API {
 					case 'm':
 					case 'n':
 					case 'o':
-						if (formats.indexOf(c) == -1)
+						if (formats.indexOf(c) == -1) {
 							formats.append(c);
+						}
 						break;
 					case '0':
 					case '1':
@@ -448,8 +485,9 @@ public class API {
 									break;
 								}
 								cn = Character.toLowerCase(input.charAt(++i));
-								if (checkIfValidHexColor(cn, color))
+								if (checkIfValidHexColor(cn, color)) {
 									continue;
+								}
 								--i;
 								break;
 							}
@@ -467,14 +505,16 @@ public class API {
 					case '#':
 						color.clear();
 						formats.clear();
-						if (i + 6 < input.length())
+						if (i + 6 < input.length()) {
 							i = appendHexColor(input, color, i);
+						}
 						break;
 					default:
 						break;
 					}
-				} else if (c == '#' && i + 6 < input.length())
+				} else if (c == '#' && i + 6 < input.length()) {
 					i = appendHexColor(input, color, i);
+				}
 			}
 			return new String[] { color.isEmpty() ? null : color.toString(), formats.isEmpty() ? null : formats.toString() };
 		}
@@ -483,8 +523,9 @@ public class API {
 			color.append('#');
 			for (int count = 0; count < 6; ++count) {
 				char cn = input.charAt(++i);
-				if (checkIfValidHexColor(cn, color))
+				if (checkIfValidHexColor(cn, color)) {
 					continue;
+				}
 				--i;
 				break;
 			}
@@ -502,28 +543,32 @@ public class API {
 		}
 
 		public String rainbow(String text, String firstHex, String secondHex, List<String> protectedStrings) {
-			if (text == null)
+			if (text == null) {
 				return null;
+			}
 			return rainbow(text, 0, text.length(), firstHex, secondHex, protectedStrings);
 		}
 
 		public String rainbow(String text, int start, int end, String firstHex, String secondHex, List<String> protectedStrings) {
-			if (text == null)
+			if (text == null) {
 				return null;
+			}
 			StringContainer container = new StringContainer(text);
 			rawGradient(container, start, end, firstHex, secondHex, false, protectedStrings);
 			return container.toString();
 		}
 
 		public String gradient(String text, String firstHex, String secondHex, List<String> protectedStrings) {
-			if (text == null)
+			if (text == null) {
 				return null;
+			}
 			return gradient(text, 0, text.length(), firstHex, secondHex, protectedStrings);
 		}
 
 		public String gradient(String text, int start, int end, String firstHex, String secondHex, List<String> protectedStrings) {
-			if (text == null)
+			if (text == null) {
 				return null;
+			}
 			StringContainer container = new StringContainer(text);
 			rawGradient(container, start, end, firstHex, secondHex, true, protectedStrings);
 			return container.toString();
@@ -577,21 +622,24 @@ public class API {
 					int num = start;
 					while (true) {
 						int position = container.indexOf(protect, num);
-						if (position == -1 || position > end)
+						if (position == -1 || position > end) {
 							break;
+						}
 						num = position + size;
 						if (allocated == 0 || allocated >= skipRegions.length - 1) {
 							int[][] copy = new int[(allocated << 1) + 1][];
-							if (allocated > 0)
+							if (allocated > 0) {
 								System.arraycopy(skipRegions, 0, copy, 0, skipRegions.length);
+							}
 							skipRegions = copy;
 						}
 						totalSize -= size;
 						skipRegions[allocated++] = new int[] { position, size };
 					}
 				}
-				if (allocated > 0)
+				if (allocated > 0) {
 					currentSkipAt = skipRegions[0][0];
+				}
 			}
 
 			// FastMath
@@ -648,7 +696,7 @@ public class API {
 					continue;
 				}
 
-				if (inRainbow)
+				if (inRainbow) {
 					switch (c) {
 					case ' ':
 						if (formats.length == 2 && formats[1] == 'r') {
@@ -667,11 +715,11 @@ public class API {
 							if (isFormat(c)) {
 								container.delete(i - 1, i + 1);
 								i -= 2;
-								if (c == 'r')
+								if (c == 'r') {
 									formats = RESET_CHAR_ARRAY;
-								else if (formats.length == 0)
+								} else if (formats.length == 0) {
 									formats = new char[] { '§', c };
-								else {
+								} else {
 									char[] copy = new char[formats.length + 2];
 									System.arraycopy(formats, 0, copy, 0, formats.length);
 									formats = copy;
@@ -680,8 +728,9 @@ public class API {
 								}
 								break;
 							}
-							if (isColor(c) || c == 'x')
+							if (isColor(c) || c == 'x') {
 								inRainbow = false;
+							}
 							break;
 						}
 					default:
@@ -703,6 +752,7 @@ public class API {
 						}
 						break;
 					}
+				}
 			}
 		}
 
@@ -742,8 +792,9 @@ public class API {
 		}
 
 		private String toHex(String from) {
-			if (from.length() != 14)
+			if (from.length() != 14) {
 				return "#000000";
+			}
 			return "#" + from.charAt(3) + from.charAt(5) + from.charAt(7) + from.charAt(9) + from.charAt(11) + from.charAt(13);
 		}
 	}

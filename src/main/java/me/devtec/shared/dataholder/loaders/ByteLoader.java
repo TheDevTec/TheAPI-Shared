@@ -16,8 +16,9 @@ public class ByteLoader extends EmptyLoader {
 
 	@Override
 	public void load(String input) {
-		if (input == null)
+		if (input == null) {
 			return;
+		}
 		reset();
 		try {
 			byte[] decoded = replace(input);
@@ -27,8 +28,9 @@ public class ByteLoader extends EmptyLoader {
 			}
 			ByteArrayInputStream array = new ByteArrayInputStream(Base64.getDecoder().decode(decoded));
 			ByteLoader.readBytes(this, array);
-			if (!data.isEmpty())
+			if (!data.isEmpty()) {
 				loaded = true;
+			}
 		} catch (Exception er) {
 			loaded = false;
 		}
@@ -36,8 +38,9 @@ public class ByteLoader extends EmptyLoader {
 
 	private String write(Object s) {
 		try {
-			if (s == null)
+			if (s == null) {
 				return "null";
+			}
 			return s instanceof CharSequence || s instanceof Number || s instanceof Character ? s.toString() : Json.writer().toGson(Json.writer().writeWithoutParse(s));
 		} catch (Exception ignored) {
 		}
@@ -53,8 +56,9 @@ public class ByteLoader extends EmptyLoader {
 			for (Entry<String, DataValue> entry : config.getDataLoader().entrySet()) {
 				array.write(entry.getKey().length());
 				array.write(entry.getKey().getBytes());
-				if (markSaved)
+				if (markSaved) {
 					entry.getValue().modified = false;
+				}
 				if (entry.getValue().writtenValue != null) {
 					array.write(entry.getValue().writtenValue.length());
 					array.write(entry.getValue().writtenValue.getBytes());
@@ -99,37 +103,43 @@ public class ByteLoader extends EmptyLoader {
 		int lastCount = 0;
 		charLoop: for (int i = 0; i < container.length(); ++i) {
 			char c = container.charAt(i);
-			for (char replacing : oneOfReplacedChar)
+			for (char replacing : oneOfReplacedChar) {
 				if (c == replacing) {
 					container.deleteCharAt(i--);
 					continue charLoop;
 				}
-			if (lastCount == 0 && (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '+' || c == '/'))
+			}
+			if (lastCount == 0 && (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '+' || c == '/')) {
 				continue;
-			if (c == '=' && ++lastCount <= 2)
+			}
+			if (c == '=' && ++lastCount <= 2) {
 				continue;
+			}
 			return null;
 		}
 		return container.getBytes();
 	}
 
 	public void load(byte[] byteData) {
-		if (byteData == null)
+		if (byteData == null) {
 			return;
+		}
 		reset();
 		try {
 			ByteArrayInputStream array = new ByteArrayInputStream(byteData);
 			ByteLoader.readBytes(this, array);
-			if (!data.isEmpty())
+			if (!data.isEmpty()) {
 				loaded = true;
+			}
 		} catch (Exception er) {
 			loaded = false;
 		}
 	}
 
 	public static ByteLoader fromBytes(byte[] byteData) {
-		if (byteData == null)
+		if (byteData == null) {
 			return null;
+		}
 		ByteLoader loader = new ByteLoader();
 		try {
 			ByteArrayInputStream array = new ByteArrayInputStream(byteData);

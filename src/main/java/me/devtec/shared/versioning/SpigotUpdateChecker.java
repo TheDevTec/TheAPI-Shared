@@ -36,8 +36,9 @@ public class SpigotUpdateChecker {
 	// 1 == NEW VERSION
 	// 2 == BETA VERSION
 	public VersionUtils.Version checkForUpdates() {
-		if (checkURL == null)
+		if (checkURL == null) {
 			reconnect();
+		}
 		String reader;
 		try {
 			reader = StreamUtils.fromStream(checkURL.openStream(), 64);
@@ -45,8 +46,9 @@ public class SpigotUpdateChecker {
 			e.printStackTrace();
 			return VersionUtils.Version.UKNOWN;
 		}
-		if (reader == null)
+		if (reader == null) {
 			return VersionUtils.Version.UKNOWN;
+		}
 		return VersionUtils.getVersion(pluginVersion, reader);
 	}
 }

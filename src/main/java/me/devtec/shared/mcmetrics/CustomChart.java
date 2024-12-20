@@ -8,8 +8,9 @@ public abstract class CustomChart {
 	private final String chartId;
 
 	protected CustomChart(String chartId) {
-		if (chartId == null)
+		if (chartId == null) {
 			throw new IllegalArgumentException("chartId must not be null");
+		}
 		this.chartId = chartId;
 	}
 
@@ -18,9 +19,10 @@ public abstract class CustomChart {
 		builder.put("chartId", chartId);
 		try {
 			Map<String, Object> data = getChartData();
-			if (data == null)
+			if (data == null) {
 				// If the data is null we don't send the chart.
 				return null;
+			}
 			builder.put("data", data);
 		} catch (Throwable t) {
 			return null;

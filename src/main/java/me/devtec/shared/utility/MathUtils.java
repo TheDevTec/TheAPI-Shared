@@ -85,11 +85,13 @@ public class MathUtils {
 	 */
 	public static double randomDouble(double min, double max) {
 		double range = max - min;
-		if (range <= 0)
+		if (range <= 0) {
 			return min;
+		}
 		double randomValue = random.nextDouble() * range + min;
-		if (randomValue >= max)
+		if (randomValue >= max) {
 			return Math.nextDown(max);
+		}
 		return randomValue;
 	}
 
@@ -100,8 +102,9 @@ public class MathUtils {
 	 * @return int
 	 */
 	public static int randomInt(int min, int max) {
-		if (min == max)
+		if (min == max) {
 			return min;
+		}
 
 		boolean isNegative = max < 0;
 		if (isNegative) {
@@ -110,8 +113,9 @@ public class MathUtils {
 		}
 
 		int range = max - min;
-		if (range <= 0)
+		if (range <= 0) {
 			throw new IllegalArgumentException("Invalid range: min > max");
+		}
 		int randomValue = (int) (random.nextDouble() * range) + min;
 		return isNegative ? randomValue * -1 : randomValue;
 	}
@@ -171,21 +175,25 @@ public class MathUtils {
 		for (int i = startPos; i < endPos; ++i) {
 			char c = expression.charAt(i);
 			if (brackets == 0 && c >= '0' && c <= '9' || c == '.' || c == ',' || c == 'e' || c == 'E') {
-				if (start == -1)
+				if (start == -1) {
 					start = i;
-			} else
+				}
+			} else {
 				switch (c) {
 				case '-':
 				case '+':
 				case '*':
 				case '/':
-					if (brackets != 0)
+					if (brackets != 0) {
 						break;
-					if (start == -1)
-						if (prevOperation != '-' ? c == '-' : c == '+')
+					}
+					if (start == -1) {
+						if (prevOperation != '-' ? c == '-' : c == '+') {
 							minus = true;
-						else if (c == '-')
+						} else if (c == '-') {
 							minus = false;
+						}
+					}
 
 					if (start != -1) {
 						operation.add(Pair.of(c, minus ? -ParseUtils.getDouble(expression, start, i) : ParseUtils.getDouble(expression, start, i)));
@@ -196,8 +204,9 @@ public class MathUtils {
 					break;
 				case '(':
 					if (++brackets == 1) {
-						if (prevOperation == 0)
+						if (prevOperation == 0) {
 							prevOperation = '+';
+						}
 						if (start != -1) {
 							operation.add(Pair.of(prevOperation, minus ? -ParseUtils.getDouble(expression, start, i) : ParseUtils.getDouble(expression, start, i)));
 							prevOperation = '+';
@@ -217,9 +226,11 @@ public class MathUtils {
 				default:
 					break;
 				}
+			}
 		}
-		if (start != -1)
+		if (start != -1) {
 			operation.add(Pair.of(prevOperation, minus ? -ParseUtils.getDouble(expression, start, endPos) : ParseUtils.getDouble(expression, start, endPos)));
+		}
 		// *, /
 		Iterator<Pair> itr = operation.iterator();
 		while (itr.hasNext()) {
@@ -252,12 +263,13 @@ public class MathUtils {
 				case '+':
 					if(itr.hasNext()) {
 						Pair current = itr.next();
-						if ((char) current.getKey() == '/')
+						if ((char) current.getKey() == '/') {
 							current.setValue((double) pair.getValue() / (double) current.getValue());
-						else if ((char) current.getKey() == '*')
+						} else if ((char) current.getKey() == '*') {
 							current.setValue((double) pair.getValue() * (double) current.getValue());
-						else
+						} else {
 							current.setValue((double) current.getValue() + (double) pair.getValue());
+						}
 					}
 					break;
 			}
@@ -270,8 +282,9 @@ public class MathUtils {
 	}
 
 	public static int getLongLength(long num) {
-		if (num == 0)
+		if (num == 0) {
 			return 1;
+		}
 		return (int) (Math.log10(Math.abs(num)) + 1);
 	}
 }

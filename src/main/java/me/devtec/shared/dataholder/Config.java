@@ -140,10 +140,11 @@ public class Config {
 	public Config(@Nonnull String filePath, boolean load) {
 		Checkers.nonNull(filePath, "File Path");
 		file = new File(filePath.charAt(0) == '/' ? filePath.substring(1) : filePath);
-		if (load)
+		if (load) {
 			loader = DataLoader.findLoaderFor(file); // get & load
-		else
+		} else {
 			loader = new EmptyLoader();
+		}
 	}
 
 	public Config(@Nonnull File file) {
@@ -153,10 +154,11 @@ public class Config {
 	public Config(@Nonnull File file, boolean load) {
 		Checkers.nonNull(file, "File");
 		this.file = file;
-		if (load)
+		if (load) {
 			loader = DataLoader.findLoaderFor(file); // get & load
-		else
+		} else {
 			loader = new EmptyLoader();
+		}
 	}
 
 	// CLONE
@@ -188,8 +190,9 @@ public class Config {
 	}
 
 	public Config setFile(@Nullable File file) {
-		if (Objects.equals(file, this.file))
+		if (Objects.equals(file, this.file)) {
 			return this;
+		}
 		markModified();
 		this.file = file;
 		return this;
@@ -220,8 +223,9 @@ public class Config {
 	public Config set(@Nonnull String key, @Nullable Object value) {
 		Checkers.nonNull(key, "Key");
 		if (value == null) {
-			if (getDataLoader().remove(key))
+			if (getDataLoader().remove(key)) {
 				markModified();
+			}
 			return this;
 		}
 		DataValue val = getDataLoader().get(key);
@@ -240,8 +244,9 @@ public class Config {
 
 	public Config remove(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		if (getDataLoader().remove(key, true))
+		if (getDataLoader().remove(key, true)) {
 			markModified();
+		}
 		return this;
 	}
 
@@ -249,8 +254,9 @@ public class Config {
 	public List<String> getComments(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		DataValue val = getDataLoader().get(key);
-		if (val != null)
+		if (val != null) {
 			return val.comments;
+		}
 		return null;
 	}
 
@@ -278,8 +284,9 @@ public class Config {
 	public String getCommentAfterValue(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		DataValue val = getDataLoader().getOrCreate(key);
-		if (val != null)
+		if (val != null) {
 			return val.commentAfterValue;
+		}
 		return null;
 	}
 
@@ -287,8 +294,9 @@ public class Config {
 		Checkers.nonNull(key, "Key");
 		if (comment == null || comment.isEmpty()) {
 			DataValue val = getDataLoader().get(key);
-			if (val == null || val.commentAfterValue == null)
+			if (val == null || val.commentAfterValue == null) {
 				return this;
+			}
 			val.commentAfterValue = null;
 			val.modified = true;
 			markModified();
@@ -310,16 +318,18 @@ public class Config {
 
 	public Config setHeader(@Nullable Collection<String> lines) {
 		getDataLoader().getHeader().clear();
-		if (lines != null)
+		if (lines != null) {
 			getDataLoader().getHeader().addAll(lines);
+		}
 		markModified();
 		return this;
 	}
 
 	public Config setFooter(@Nullable Collection<String> lines) {
 		getDataLoader().getFooter().clear();
-		if (lines != null)
+		if (lines != null) {
 			getDataLoader().getFooter().addAll(lines);
+		}
 		markModified();
 		return this;
 	}
@@ -361,8 +371,9 @@ public class Config {
 	public Object get(@Nonnull String key, @Nullable Object defaultValue) {
 		Checkers.nonNull(key, "Key");
 		DataValue val = getDataLoader().get(key);
-		if (val == null || val.value == null)
+		if (val == null || val.value == null) {
 			return defaultValue;
+		}
 		return val.value;
 	}
 
@@ -376,8 +387,9 @@ public class Config {
 		Checkers.nonNull(key, "Key");
 		Checkers.nonNull(clazz, "Class");
 		try {
-			if (clazz == String.class || clazz == CharSequence.class)
+			if (clazz == String.class || clazz == CharSequence.class) {
 				return clazz.cast(getString(key));
+			}
 		} catch (Exception ignored) {
 		}
 		try {
@@ -396,17 +408,20 @@ public class Config {
 	public String getString(@Nonnull String key, @Nullable String defaultValue) {
 		Checkers.nonNull(key, "Key");
 		DataValue val = getDataLoader().get(key);
-		if (val == null || val.value == null)
+		if (val == null || val.value == null) {
 			return defaultValue;
-		if (val.writtenValue != null)
+		}
+		if (val.writtenValue != null) {
 			return val.writtenValue;
+		}
 		return val.value instanceof String ? (String) val.value : val.value + "";
 	}
 
 	public boolean isJson(@Nonnull String key) {
 		DataValue val = getDataLoader().get(key);
-		if (val == null || val.value == null)
+		if (val == null || val.value == null) {
 			return false;
+		}
 		if (val.writtenValue != null && val.writtenValue.length() > 1) {
 			char firstChar = val.writtenValue.charAt(0);
 			char lastChar = val.writtenValue.charAt(val.writtenValue.length() - 1);
@@ -422,10 +437,12 @@ public class Config {
 	public int getInt(@Nonnull String key, int defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (value == null)
+		if (value == null) {
 			return defaultValue;
-		if (value instanceof Number)
+		}
+		if (value instanceof Number) {
 			return ((Number) value).intValue();
+		}
 		return ParseUtils.getInt(getString(key));
 	}
 
@@ -436,10 +453,12 @@ public class Config {
 	public double getDouble(@Nonnull String key, double defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (value == null)
+		if (value == null) {
 			return defaultValue;
-		if (value instanceof Number)
+		}
+		if (value instanceof Number) {
 			return ((Number) value).doubleValue();
+		}
 		return ParseUtils.getDouble(getString(key));
 	}
 
@@ -450,10 +469,12 @@ public class Config {
 	public long getLong(@Nonnull String key, long defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (value == null)
+		if (value == null) {
 			return defaultValue;
-		if (value instanceof Number)
+		}
+		if (value instanceof Number) {
 			return ((Number) value).longValue();
+		}
 		return ParseUtils.getLong(getString(key));
 	}
 
@@ -464,10 +485,12 @@ public class Config {
 	public float getFloat(@Nonnull String key, float defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (value == null)
+		if (value == null) {
 			return defaultValue;
-		if (value instanceof Number)
+		}
+		if (value instanceof Number) {
 			return ((Number) value).floatValue();
+		}
 		return ParseUtils.getFloat(getString(key));
 	}
 
@@ -478,10 +501,12 @@ public class Config {
 	public byte getByte(@Nonnull String key, byte defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (value == null)
+		if (value == null) {
 			return defaultValue;
-		if (value instanceof Number)
+		}
+		if (value instanceof Number) {
 			return ((Number) value).byteValue();
+		}
 		return ParseUtils.getByte(getString(key));
 	}
 
@@ -492,10 +517,12 @@ public class Config {
 	public short getShort(@Nonnull String key, short defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (value == null)
+		if (value == null) {
 			return defaultValue;
-		if (value instanceof Number)
+		}
+		if (value instanceof Number) {
 			return ((Number) value).shortValue();
+		}
 		return ParseUtils.getShort(getString(key));
 	}
 
@@ -506,10 +533,12 @@ public class Config {
 	public boolean getBoolean(@Nonnull String key, boolean defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (value == null)
+		if (value == null) {
 			return defaultValue;
-		if (value instanceof Boolean)
+		}
+		if (value instanceof Boolean) {
 			return (Boolean) value;
+		}
 		return ParseUtils.getBoolean(getString(key));
 	}
 
@@ -522,8 +551,9 @@ public class Config {
 	public Collection<Object> getList(@Nonnull String key, @Nullable Collection<Object> defaultValue) {
 		Checkers.nonNull(key, "Key");
 		Object value = get(key);
-		if (!(value instanceof Collection))
+		if (!(value instanceof Collection)) {
 			return defaultValue;
+		}
 		return new ArrayList<>((Collection<?>) value);
 	}
 
@@ -532,14 +562,16 @@ public class Config {
 		Checkers.nonNull(key, "Key");
 		Checkers.nonNull(clazz, "Class");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<E> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
+		for (Object o : collection) {
 			try {
 				list.add(o == null ? null : clazz.cast(o));
 			} catch (Exception ignored) {
 			}
+		}
 		return list;
 	}
 
@@ -547,14 +579,17 @@ public class Config {
 	public List<String> getStringList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<String> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
-			if (o != null)
+		for (Object o : collection) {
+			if (o != null) {
 				list.add("" + o);
-			else
+			} else {
 				list.add(null);
+			}
+		}
 		return list;
 	}
 
@@ -562,11 +597,13 @@ public class Config {
 	public List<Boolean> getBooleanList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<Boolean> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
+		for (Object o : collection) {
 			list.add(o != null && (o instanceof Boolean ? (Boolean) o : ParseUtils.getBoolean(o.toString())));
+		}
 		return list;
 	}
 
@@ -574,11 +611,13 @@ public class Config {
 	public List<Integer> getIntegerList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<Integer> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
+		for (Object o : collection) {
 			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).intValue() : ParseUtils.getInt(o.toString()));
+		}
 		return list;
 	}
 
@@ -586,11 +625,13 @@ public class Config {
 	public List<Double> getDoubleList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<Double> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
+		for (Object o : collection) {
 			list.add(o == null ? 0.0 : o instanceof Number ? ((Number) o).doubleValue() : ParseUtils.getDouble(o.toString()));
+		}
 		return list;
 	}
 
@@ -598,11 +639,13 @@ public class Config {
 	public List<Short> getShortList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<Short> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
+		for (Object o : collection) {
 			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).shortValue() : ParseUtils.getShort(o.toString()));
+		}
 		return list;
 	}
 
@@ -610,11 +653,13 @@ public class Config {
 	public List<Byte> getByteList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<Byte> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
+		for (Object o : collection) {
 			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).byteValue() : ParseUtils.getByte(o.toString()));
+		}
 		return list;
 	}
 
@@ -622,11 +667,13 @@ public class Config {
 	public List<Float> getFloatList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<Float> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
+		for (Object o : collection) {
 			list.add(o == null ? 0 : o instanceof Number ? ((Number) o).floatValue() : ParseUtils.getFloat(o.toString()));
+		}
 		return list;
 	}
 
@@ -634,11 +681,13 @@ public class Config {
 	public List<Long> getLongList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<Long> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
+		for (Object o : collection) {
 			list.add(o == null ? 0 : ParseUtils.getLong(o.toString()));
+		}
 		return list;
 	}
 
@@ -647,18 +696,20 @@ public class Config {
 	public <K, V> List<Map<K, V>> getMapList(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
 		Collection<Object> collection = getList(key, Collections.emptyList());
-		if (collection.isEmpty())
+		if (collection.isEmpty()) {
 			return Collections.emptyList();
+		}
 		List<Map<K, V>> list = new ArrayList<>(collection.size());
-		for (Object o : collection)
-			if (o == null)
+		for (Object o : collection) {
+			if (o == null) {
 				list.add(null);
-			else if (o instanceof Map)
+			} else if (o instanceof Map) {
 				list.add((Map<K, V>) o);
-			else {
+			} else {
 				Object re = Json.reader().read(o.toString());
 				list.add(re instanceof Map ? (Map<K, V>) re : null);
 			}
+		}
 		return list;
 	}
 
@@ -673,13 +724,15 @@ public class Config {
 
 	public Config save(@Nonnull String dataTypeName) {
 		Checkers.nonNull(dataTypeName, "DataType Name");
-		if (file == null || isSaving() || !isModified())
+		if (file == null || isSaving() || !isModified()) {
 			return this;
+		}
 		isSaving = true;
 		if (!file.exists()) {
 			File folder = file.getParentFile();
-			if (folder != null)
+			if (folder != null) {
 				folder.mkdirs();
+			}
 			try {
 				file.createNewFile();
 			} catch (Exception e) {
@@ -689,11 +742,12 @@ public class Config {
 			}
 		}
 		DataLoader writer;
-		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
+		if (getDataLoader().name().equalsIgnoreCase(dataTypeName)) {
 			writer = getDataLoader();
-		else
+		} else {
 			writer = DataLoader.findLoaderByName(dataTypeName);
-		if (writer != null)
+		}
+		if (writer != null) {
 			if (writer.supportsIteratorMode()) {
 				Iterator<CharSequence> iterator = writer.saveAsIterator(this, true);
 				try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
@@ -705,22 +759,25 @@ public class Config {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-			} else
+			} else {
 				try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
 					channel.write(ByteBuffer.wrap(writer.save(this, true)));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+			}
+		}
 		markNonModified();
 		isSaving = false;
 		return this;
 	}
 
 	public void save() {
-		if ("empty".equals(getDataLoader().name()))
+		if ("empty".equals(getDataLoader().name())) {
 			this.save("yaml");
-		else
+		} else {
 			save(getDataLoader().name());
+		}
 	}
 
 	@Nonnull
@@ -745,10 +802,13 @@ public class Config {
 
 	public boolean isKey(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		for (String section : getDataLoader().getKeys())
-			if (section.startsWith(key))
-				if (section.length() == key.length() || section.charAt(key.length()) == '.')
+		for (String section : getDataLoader().getKeys()) {
+			if (section.startsWith(key)) {
+				if (section.length() == key.length() || section.charAt(key.length()) == '.') {
 					return true;
+				}
+			}
+		}
 		return false;
 	}
 
@@ -785,11 +845,13 @@ public class Config {
 	@Nonnull
 	public String toString(String dataTypeName, boolean markSaved) {
 		Checkers.nonNull(dataTypeName, "DataType Name");
-		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
+		if (getDataLoader().name().equalsIgnoreCase(dataTypeName)) {
 			return getDataLoader().saveAsString(this, markSaved);
+		}
 		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
-		if (loader != null)
+		if (loader != null) {
 			return getDataLoader().saveAsString(this, markSaved);
+		}
 		return null;
 	}
 
@@ -814,11 +876,13 @@ public class Config {
 	@Nonnull
 	public byte[] toByteArray(String dataTypeName, boolean markSaved) {
 		Checkers.nonNull(dataTypeName, "DataType Name");
-		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
+		if (getDataLoader().name().equalsIgnoreCase(dataTypeName)) {
 			return getDataLoader().save(this, markSaved);
+		}
 		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
-		if (loader != null)
+		if (loader != null) {
 			return loader.save(this, markSaved);
+		}
 		return null;
 	}
 
@@ -843,9 +907,11 @@ public class Config {
 	public boolean merge(Config merge, MergeSetting... settings) {
 		Checkers.nonNull(merge, "Config");
 		Checkers.nonNull(settings, "MergeSetting");
-		for (MergeSetting setting : settings)
-			if (setting.merge(this, merge))
+		for (MergeSetting setting : settings) {
+			if (setting.merge(this, merge)) {
 				markModified();
+			}
+		}
 		return isModified();
 	}
 
@@ -859,8 +925,9 @@ public class Config {
 	}
 
 	public Config setAutoUpdating(long checkEvery) {
-		if (file == null)
+		if (file == null) {
 			return this;
+		}
 		if (checkEvery <= 0) {
 			if (updaterTask != 0) {
 				Scheduler.cancelTask(updaterTask);
@@ -869,10 +936,11 @@ public class Config {
 				updaterTask = 0;
 				updaterWatcher = null;
 			}
-		} else
+		} else {
 			try {
-				if (!file.exists())
+				if (!file.exists()) {
 					return this;
+				}
 				WatchService watchService = FileSystems.getDefault().newWatchService();
 				Path path = file.getAbsoluteFile().toPath();
 
@@ -894,12 +962,13 @@ public class Config {
 							return;
 						}
 						while (wkey != null) {
-							for (WatchEvent<?> event : wkey.pollEvents())
+							for (WatchEvent<?> event : wkey.pollEvents()) {
 								if (((Path) event.context()).toAbsolutePath().equals(path)) {
 									processAutoUpdate();
 									wkey.reset();
 									return;
 								}
+							}
 							wkey.reset();
 							try {
 								wkey = watchService.poll();
@@ -912,6 +981,7 @@ public class Config {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
 		return this;
 	}
 
@@ -923,8 +993,9 @@ public class Config {
 		while (iterator.hasNext()) {
 			Entry<String, DataValue> key = iterator.next();
 			DataValue val = getDataLoader().getOrCreate(key.getKey());
-			if (val.modified)
+			if (val.modified) {
 				continue;
+			}
 			val.value = key.getValue().value;
 			val.writtenValue = key.getValue().writtenValue;
 			val.comments = key.getValue().comments;
@@ -939,17 +1010,21 @@ public class Config {
 
 		while (iterator.hasNext()) {
 			Entry<String, DataValue> key = iterator.next();
-			if (key.getValue().modified)
+			if (key.getValue().modified) {
 				continue;
+			}
 			if (read.get(key.getKey()) == null) {
-				if (sectionsToRemove == null)
+				if (sectionsToRemove == null) {
 					sectionsToRemove = new HashSet<>();
+				}
 				sectionsToRemove.add(key.getKey());
 			}
 		}
 
-		if (sectionsToRemove != null)
-			for (String section : sectionsToRemove)
+		if (sectionsToRemove != null) {
+			for (String section : sectionsToRemove) {
 				getDataLoader().remove(section);
+			}
+		}
 	}
 }

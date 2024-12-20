@@ -47,8 +47,9 @@ public class CommandStructure<S> {
 	}
 
 	public CooldownDetection<S> getCooldownDetection() {
-		if (detection == null && getParent() != null)
+		if (detection == null && getParent() != null) {
 			return getParent().getCooldownDetection();
+		}
 		return detection;
 	}
 
@@ -223,8 +224,9 @@ public class CommandStructure<S> {
 	 * @apiNote Returns permission
 	 */
 	public String getPermission() {
-		if (permission == null && getParent() != null)
+		if (permission == null && getParent() != null) {
 			return getParent().getPermission();
+		}
 		return permission;
 	}
 
@@ -274,8 +276,9 @@ public class CommandStructure<S> {
 	 *
 	 */
 	public CommandStructure<S> parent(int jumps) {
-		if (jumps <= 0 || getParent() == null)
+		if (jumps <= 0 || getParent() == null) {
 			return this;
+		}
 		return getParent().parent(--jumps);
 	}
 
@@ -317,7 +320,7 @@ public class CommandStructure<S> {
 
 		PermissionChecker<S> permsChecker = first().permissionChecker;
 
-		for (ArgumentCommandStructure<S> sub : this.arguments)
+		for (ArgumentCommandStructure<S> sub : this.arguments) {
 			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg)) {
 				String perm = sub.getPermission();
 				if (perm != null && !permsChecker.has(s, perm, tablist)) {
@@ -327,7 +330,8 @@ public class CommandStructure<S> {
                 List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
                 list.add(sub);
 			}
-		for (SelectorCommandStructure<S> sub : this.selectors.values())
+		}
+		for (SelectorCommandStructure<S> sub : this.selectors.values()) {
 			if (API.selectorUtils.check(s, sub.getSelector(), arg)) {
 				String perm = sub.getPermission();
 				if (perm != null && !permsChecker.has(s, perm, tablist)) {
@@ -337,36 +341,44 @@ public class CommandStructure<S> {
                 List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
                 list.add(sub);
 			}
+		}
 		List<CommandStructure<S>> list = new LinkedList<>();
-		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
+		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet()) {
 			list.addAll(entry.getValue());
+		}
 		return new Object[] { list, noPerms };
 	}
 
 	public final List<CommandStructure<S>> getNextStructures(S s) {
 		Map<Integer, List<CommandStructure<S>>> structures = new TreeMap<>();
-		for (ArgumentCommandStructure<S> sub : this.arguments)
+		for (ArgumentCommandStructure<S> sub : this.arguments) {
 			if (sub.getPermission() == null || sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
                 List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
                 list.add(sub);
 			}
-		for (SelectorCommandStructure<S> sub : this.selectors.values())
+		}
+		for (SelectorCommandStructure<S> sub : this.selectors.values()) {
 			if (sub.getPermission() == null || sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
                 List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
                 list.add(sub);
 			}
+		}
 		List<CommandStructure<S>> list = new LinkedList<>();
-		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
+		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet()) {
 			list.addAll(entry.getValue());
+		}
 		return list;
 	}
 
 	public static boolean contains(ArgumentCommandStructure<?> sub, Collection<String> list, String arg) {
-		if (!(sub instanceof CallableArgumentCommandStructure) && list.isEmpty())
+		if (!(sub instanceof CallableArgumentCommandStructure) && list.isEmpty()) {
 			return true;
-		for (String value : list)
-			if (value.equalsIgnoreCase(arg))
+		}
+		for (String value : list) {
+			if (value.equalsIgnoreCase(arg)) {
 				return true;
+			}
+		}
 		return false;
 	}
 }

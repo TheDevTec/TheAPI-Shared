@@ -10,8 +10,9 @@ public interface JWriter {
 
 	default String write(Object s) {
 		try {
-			if (s == null)
+			if (s == null) {
 				return "null";
+			}
 			if (s instanceof CharSequence) {
 				return CustomJsonWriter.parseToString(s.toString());
 			}
@@ -23,10 +24,12 @@ public interface JWriter {
 
 	// For lists or maps
 	default String simpleWrite(Object object) {
-		if (object == null)
+		if (object == null) {
 			return "null";
-		if (object instanceof CharSequence || object instanceof Boolean || object instanceof Number || object instanceof Character)
+		}
+		if (object instanceof CharSequence || object instanceof Boolean || object instanceof Number || object instanceof Character) {
 			return object.toString();
+		}
 		return toGson(object);
 	}
 

@@ -43,15 +43,17 @@ public class EmptyLoader extends DataLoader {
 
 	@Override
 	public Set<String> getKeys() {
-		if (keySet == null)
+		if (keySet == null) {
 			keySet = data.keySet();
+		}
 		return keySet;
 	}
 
 	@Override
 	public Set<Entry<String, DataValue>> entrySet() {
-		if (entrySet == null)
+		if (entrySet == null) {
 			entrySet = data.entrySet();
+		}
 		return entrySet;
 	}
 
@@ -65,8 +67,9 @@ public class EmptyLoader extends DataLoader {
 	public DataValue getOrCreate(String key) {
 		Checkers.nonNull(key, "Key");
 		DataValue v = get(key);
-		if (v == null)
+		if (v == null) {
 			set(key, v = DataValue.empty());
+		}
 		return v;
 	}
 
@@ -91,8 +94,9 @@ public class EmptyLoader extends DataLoader {
 			String primaryKey = pos == -1 ? key : key.substring(0, pos);
 			if (pos == -1) {
 				boolean modified = primaryKeys.remove(primaryKey);
-				if (data.remove(key) != null)
+				if (data.remove(key) != null) {
 					modified = true;
+				}
 				key += '.';
 				Iterator<Entry<String, DataValue>> itr = entrySet().iterator();
 				while (itr.hasNext()) {
@@ -117,11 +121,13 @@ public class EmptyLoader extends DataLoader {
 				if (section.getKey().startsWith(key)) {
 					itr.remove();
 					modified = true;
-				} else if (section.getKey().startsWith(primaryKey) && (section.getKey().length() == primaryKey.length() || section.getKey().charAt(primaryKey.length()) == '.'))
+				} else if (section.getKey().startsWith(primaryKey) && (section.getKey().length() == primaryKey.length() || section.getKey().charAt(primaryKey.length()) == '.')) {
 					onlyOne = false;
+				}
 			}
-			if (onlyOne && primaryKeys.remove(primaryKey))
+			if (onlyOne && primaryKeys.remove(primaryKey)) {
 				modified = true;
+			}
 			if (modified) {
 				keySet = null;
 				entrySet = null;
@@ -131,12 +137,13 @@ public class EmptyLoader extends DataLoader {
 		if (data.remove(key) != null) {
 			int pos = key.indexOf('.');
 			String primaryKey = pos == -1 ? key : key.substring(0, pos);
-			for (String section : getKeys())
+			for (String section : getKeys()) {
 				if (section.startsWith(primaryKey) && (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.')) {
 					keySet = null;
 					entrySet = null;
 					return true;
 				}
+			}
 			primaryKeys.remove(primaryKey);
 			keySet = null;
 			entrySet = null;
@@ -199,12 +206,13 @@ public class EmptyLoader extends DataLoader {
 		Checkers.nonNull(key, "Key");
 		Set<String> keys = new LinkedHashSet<>();
 		key = key + '.';
-		for (String section : getKeys())
+		for (String section : getKeys()) {
 			if (section.startsWith(key)) {
 				int pos;
 				section = section.substring(key.length());
 				keys.add(subkeys ? section : (pos = section.indexOf('.')) == -1 ? section : section.substring(0, pos));
 			}
+		}
 		return keys;
 	}
 
@@ -233,13 +241,14 @@ public class EmptyLoader extends DataLoader {
 
 			public Iterator<String> step() {
 				currentKey = null;
-				for (String section : getKeys())
+				for (String section : getKeys()) {
 					if (section.startsWith(finalKey)) {
 						int pos;
 						section = section.substring(finalKey.length());
 						currentKey = subkeys ? section : (pos = section.indexOf('.')) == -1 ? section : section.substring(0, pos);
 						break;
 					}
+				}
 				return this;
 			}
 		}.step();

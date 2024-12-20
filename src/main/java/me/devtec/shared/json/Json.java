@@ -22,23 +22,27 @@ public class Json {
 
 	public static Object processDataReaders(Map<String, Object> map) {
 		Object result;
-		for (DataReader reader : Json.readers)
+		for (DataReader reader : Json.readers) {
 			if (reader.isAllowed(map)) {
 				result = reader.read(map);
-				if (result != null)
+				if (result != null) {
 					return result;
+				}
 			}
+		}
 		return null;
 	}
 
 	public static Map<String, Object> processDataWriters(Object obj) {
 		Map<String, Object> result = null;
-		for (DataWriter reader : Json.writers)
+		for (DataWriter reader : Json.writers) {
 			if (reader.isAllowed(obj)) {
 				result = reader.write(obj);
-				if (result != null && !result.isEmpty())
+				if (result != null && !result.isEmpty()) {
 					return result;
+				}
 			}
+		}
 		return result;
 	}
 

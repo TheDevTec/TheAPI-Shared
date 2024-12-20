@@ -25,8 +25,9 @@ public class YamlSectionBuilderHelper {
 		private final StringContainer container = new StringContainer(BUFFER_SIZE);
 
 		public String add(CharSequence e) {
-			if (e == null)
+			if (e == null) {
 				return null;
+			}
 			container.append(e);
 			if (container.length() >= BUFFER_SIZE) {
 				String result = container.toString();
@@ -37,8 +38,9 @@ public class YamlSectionBuilderHelper {
 		}
 
 		public String complete() {
-			if (!container.isEmpty())
+			if (!container.isEmpty()) {
 				return container.toString();
+			}
 			return "";
 		}
 
@@ -73,9 +75,9 @@ public class YamlSectionBuilderHelper {
 		}
 
 		public synchronized void add(Section sec) {
-			if (sub == null)
+			if (sub == null) {
 				sub = new Section[] { sec };
-			else {
+			} else {
 				Section[] copy = Arrays.copyOf(sub, sub.length + 1);
 				copy[copy.length - 1] = sec;
 				sub = copy;
@@ -84,10 +86,13 @@ public class YamlSectionBuilderHelper {
 		}
 
 		public Section get(String name) {
-			if (sub != null)
-				for (Section section : sub)
-					if (section.keyName.equals(name))
+			if (sub != null) {
+				for (Section section : sub) {
+					if (section.keyName.equals(name)) {
 						return section;
+					}
+				}
+			}
 			return null;
 		}
 
@@ -95,8 +100,9 @@ public class YamlSectionBuilderHelper {
 			Section current = this;
 			int start = 0;
 			int end = name.indexOf('.');
-			if (end == -1)
+			if (end == -1) {
 				end = name.length();
+			}
 			while (end != -1) {
 				String key = name.substring(start, end);
 				Section sec = current.get(key);
@@ -107,12 +113,14 @@ public class YamlSectionBuilderHelper {
 				}
 				current = sec;
 
-				if (end >= name.length() || start >= name.length())
+				if (end >= name.length() || start >= name.length()) {
 					break;
+				}
 				start = end + 1;
 				end = name.indexOf('.', start);
-				if (end == -1)
+				if (end == -1) {
 					end = name.length();
+				}
 			}
 			current.id = id;
 			return current;
@@ -120,8 +128,9 @@ public class YamlSectionBuilderHelper {
 
 		public StringContainer fullName(StringContainer container) {
 			container.clear();
-			for (Section parent = this; parent != null; parent = parent.parent)
+			for (Section parent = this; parent != null; parent = parent.parent) {
 				container.insert(0, '.').insert(0, parent.keyName);
+			}
 			return container;
 		}
 
@@ -173,15 +182,17 @@ public class YamlSectionBuilderHelper {
 				main = prevParent;
 			} else {
 				int pos = container.indexOf('.');
-				if (pos == -1)
+				if (pos == -1) {
 					continue;
+				}
 				String primaryKey = container.substring(0, pos);
 				container.delete(0, primaryKey.length() + 1);
 				main = map.get(primaryKey);
 			}
 
-			if (main == null)
+			if (main == null) {
 				continue;
+			}
 
 			Section sec = main.create(privateId, container.toString());
 			sec.value = entry.getValue();
@@ -201,8 +212,9 @@ public class YamlSectionBuilderHelper {
 		StringContainer container = new StringContainer(64);
 		Map<String, Section> map = new LinkedHashMap<>();
 
-		for (String primaryKey : primaryKeys)
+		for (String primaryKey : primaryKeys) {
 			map.put(primaryKey, new Section(primaryKey, dataLoader.get(primaryKey)));
+		}
 
 		processEntries(map, dataLoader.entrySet());
 		StringArrayList values = new StringArrayList();
@@ -219,8 +231,9 @@ public class YamlSectionBuilderHelper {
 			public CharSequence next() {
 				while (currentItr != null && currentItr.hasNext()) {
 					CharSequence next = values.add(currentItr.next());
-					if (next != null)
+					if (next != null) {
 						return next;
+					}
 				}
 				if (!itr.hasNext()) {
 					String result = values.complete();
@@ -229,8 +242,9 @@ public class YamlSectionBuilderHelper {
 				}
 				Section section = itr.next();
 				currentItr = startIterator(container, section.keyName, section.value, section, markSaved);
-				if (hasNext())
+				if (hasNext()) {
 					return next();
+				}
 				String result = values.complete();
 				values.clear();
 				return result;
@@ -239,7 +253,7 @@ public class YamlSectionBuilderHelper {
 	}
 
 	public static Iterator<CharSequence> startIterator(StringContainer container, String section, DataValue dataVal, Section linked, boolean markSaved) {
-		if (dataVal == null)
+		if (dataVal == null) {
 			return new Iterator<CharSequence>() {
 				int pos = -1;
 				Iterator<CharSequence> currentItr;
@@ -257,27 +271,31 @@ public class YamlSectionBuilderHelper {
 					}
 					if (currentItr != null && currentItr.hasNext()) {
 						CharSequence result = currentItr.next();
-						if (result != null)
+						if (result != null) {
 							return result;
+						}
 						return hasNext() ? next() : null;
 					}
 					Section sub = linked.sub[pos++];
 					currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 					CharSequence result = currentItr.next();
-					if (result != null)
+					if (result != null) {
 						return result;
+					}
 					return hasNext() ? next() : null;
 				}
 
 			};
-		if (markSaved)
+		}
+		if (markSaved) {
 			dataVal.modified = false;
+		}
 		String commentAfterValue = dataVal.commentAfterValue;
 		Collection<String> comments = dataVal.comments;
 		Iterator<String> commentsItr = comments != null && !comments.isEmpty() ? comments.iterator() : null;
 		Object value = dataVal.value;
 
-		if (value == null)
+		if (value == null) {
 			return new Iterator<CharSequence>() {
 				byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 				int pos = 0;
@@ -303,8 +321,9 @@ public class YamlSectionBuilderHelper {
 						if (commentsItr != null && commentsItr.hasNext()) {
 							CharSequence result = getCharSequence(commentsItr, container, linked);
 							if (result != null) {
-								if (!commentsItr.hasNext())
+								if (!commentsItr.hasNext()) {
 									type = 1;
+								}
 								return result;
 							}
 						}
@@ -317,28 +336,33 @@ public class YamlSectionBuilderHelper {
 					case 2:
 						if (currentItr != null && currentItr.hasNext()) {
 							CharSequence result = currentItr.next();
-							if (result != null)
+							if (result != null) {
 								return result;
+							}
 							return hasNext() ? next() : null;
 						}
 						Section sub = linked.sub[pos++];
 						currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 						CharSequence result = currentItr.next();
-						if (result != null)
+						if (result != null) {
 							return result;
+						}
 						return hasNext() ? next() : null;
 					}
 					return null;
 				}
 
 			};
+		}
 		int size;
-		if (value instanceof Collection || value.getClass().isArray())
+		if (value instanceof Collection || value.getClass().isArray()) {
 			if (value instanceof Collection) {
-				if (((Collection<?>) value).isEmpty())
+				if (((Collection<?>) value).isEmpty()) {
 					return getCharSequenceIterator(container, section, linked, markSaved, commentAfterValue, commentsItr);
-				if (dataVal.writtenValue != null)
+				}
+				if (dataVal.writtenValue != null) {
 					return getCharSequenceIterator(container, section, dataVal, linked, markSaved, commentAfterValue, commentsItr);
+				}
 				Iterator<?> itr = ((Collection<?>) value).iterator();
 				return new Iterator<CharSequence>() {
 					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
@@ -367,8 +391,9 @@ public class YamlSectionBuilderHelper {
 							if (commentsItr != null && commentsItr.hasNext()) {
 								CharSequence result = getCharSequence(commentsItr, container, linked);
 								if (result != null) {
-									if (!commentsItr.hasNext())
+									if (!commentsItr.hasNext()) {
 										type = 1;
+									}
 									return result;
 								}
 							}
@@ -380,34 +405,38 @@ public class YamlSectionBuilderHelper {
 						}
 						case 2: {
 							CharSequence result = writeListValue(container, linked.space, itr.next());
-							if (!itr.hasNext())
+							if (!itr.hasNext()) {
 								type = 3;
-							if (result != null)
+							}
+							if (result != null) {
 								return result;
+							}
 							return hasNext() ? next() : null;
 						}
 						case 3:
 							if (currentItr != null && currentItr.hasNext()) {
 								CharSequence result = currentItr.next();
-								if (result != null)
+								if (result != null) {
 									return result;
+								}
 								return hasNext() ? next() : null;
 							}
 							Section sub = linked.sub[pos++];
 							currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 							CharSequence result = currentItr.next();
-							if (result != null)
+							if (result != null) {
 								return result;
+							}
 							return hasNext() ? next() : null;
 						}
 						return null;
 					}
 
 				};
-			} else if ((size = Array.getLength(value)) != 0)
-				if (dataVal.writtenValue != null)
+			} else if ((size = Array.getLength(value)) != 0) {
+				if (dataVal.writtenValue != null) {
 					return getCharSequenceIterator(container, section, dataVal, linked, markSaved, commentAfterValue, commentsItr);
-				else
+				} else {
 					return new Iterator<CharSequence>() {
 						byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 						int pos = 0;
@@ -435,8 +464,9 @@ public class YamlSectionBuilderHelper {
 								if (commentsItr != null && commentsItr.hasNext()) {
 									CharSequence result = getCharSequence(commentsItr, container, linked);
 									if (result != null) {
-										if (!commentsItr.hasNext())
+										if (!commentsItr.hasNext()) {
 											type = 1;
+										}
 										return result;
 									}
 								}
@@ -452,31 +482,37 @@ public class YamlSectionBuilderHelper {
 									type = 3;
 									pos = 0;
 								}
-								if (result != null)
+								if (result != null) {
 									return result;
+								}
 								return hasNext() ? next() : null;
 							}
 							case 3:
 								if (currentItr != null && currentItr.hasNext()) {
 									CharSequence result = currentItr.next();
-									if (result != null)
+									if (result != null) {
 										return result;
+									}
 									return hasNext() ? next() : null;
 								}
 								Section sub = linked.sub[pos++];
 								currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 								CharSequence result = currentItr.next();
-								if (result != null)
+								if (result != null) {
 									return result;
+								}
 								return hasNext() ? next() : null;
 							}
 							return null;
 						}
 
 					};
-			else
+				}
+			} else {
 				return getCharSequenceIterator(container, section, linked, markSaved, commentAfterValue, commentsItr);
-		if (dataVal.writtenValue != null)
+			}
+		}
+		if (dataVal.writtenValue != null) {
 			return new Iterator<CharSequence>() {
 				byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 				int pos = 0;
@@ -502,8 +538,9 @@ public class YamlSectionBuilderHelper {
 						if (commentsItr != null && commentsItr.hasNext()) {
 							CharSequence result = getCharSequence(commentsItr, container, linked);
 							if (result != null) {
-								if (!commentsItr.hasNext())
+								if (!commentsItr.hasNext()) {
 									type = 1;
+								}
 								return result;
 							}
 						}
@@ -517,22 +554,25 @@ public class YamlSectionBuilderHelper {
 					case 2:
 						if (currentItr != null && currentItr.hasNext()) {
 							CharSequence result = currentItr.next();
-							if (result != null)
+							if (result != null) {
 								return result;
+							}
 							return hasNext() ? next() : null;
 						}
 						Section sub = linked.sub[pos++];
 						currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 						CharSequence result = currentItr.next();
-						if (result != null)
+						if (result != null) {
 							return result;
+						}
 						return hasNext() ? next() : null;
 					}
 					return null;
 				}
 
 			};
-		if (value instanceof Number || value instanceof Character)
+		}
+		if (value instanceof Number || value instanceof Character) {
 			return new Iterator<CharSequence>() {
 				byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 				int pos = 0;
@@ -558,8 +598,9 @@ public class YamlSectionBuilderHelper {
 						if (commentsItr != null && commentsItr.hasNext()) {
 							CharSequence result = getCharSequence(commentsItr, container, linked);
 							if (result != null) {
-								if (!commentsItr.hasNext())
+								if (!commentsItr.hasNext()) {
 									type = 1;
+								}
 								return result;
 							}
 						}
@@ -572,22 +613,25 @@ public class YamlSectionBuilderHelper {
 					case 2:
 						if (currentItr != null && currentItr.hasNext()) {
 							CharSequence result = currentItr.next();
-							if (result != null)
+							if (result != null) {
 								return result;
+							}
 							return hasNext() ? next() : null;
 						}
 						Section sub = linked.sub[pos++];
 						currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 						CharSequence result = currentItr.next();
-						if (result != null)
+						if (result != null) {
 							return result;
+						}
 						return hasNext() ? next() : null;
 					}
 					return null;
 				}
 
 			};
-		if (value instanceof CharSequence)
+		}
+		if (value instanceof CharSequence) {
 			return new Iterator<CharSequence>() {
 				byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 				int pos = 0;
@@ -613,8 +657,9 @@ public class YamlSectionBuilderHelper {
 						if (commentsItr != null && commentsItr.hasNext()) {
 							CharSequence result = getCharSequence(commentsItr, container, linked);
 							if (result != null) {
-								if (!commentsItr.hasNext())
+								if (!commentsItr.hasNext()) {
 									type = 1;
+								}
 								return result;
 							}
 						}
@@ -627,21 +672,24 @@ public class YamlSectionBuilderHelper {
 					case 2:
 						if (currentItr != null && currentItr.hasNext()) {
 							CharSequence result = currentItr.next();
-							if (result != null)
+							if (result != null) {
 								return result;
+							}
 							return hasNext() ? next() : null;
 						}
 						Section sub = linked.sub[pos++];
 						currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 						CharSequence result = currentItr.next();
-						if (result != null)
+						if (result != null) {
 							return result;
+						}
 						return hasNext() ? next() : null;
 					}
 					return null;
 				}
 
 			};
+		}
 		return new Iterator<CharSequence>() {
 			byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 			int pos = 0;
@@ -667,8 +715,9 @@ public class YamlSectionBuilderHelper {
 					if (commentsItr != null && commentsItr.hasNext()) {
 						CharSequence result = getCharSequence(commentsItr, container, linked);
 						if (result != null) {
-							if (!commentsItr.hasNext())
+							if (!commentsItr.hasNext()) {
 								type = 1;
+							}
 							return result;
 						}
 					}
@@ -681,15 +730,17 @@ public class YamlSectionBuilderHelper {
 				case 2:
 					if (currentItr != null && currentItr.hasNext()) {
 						CharSequence result = currentItr.next();
-						if (result != null)
+						if (result != null) {
 							return result;
+						}
 						return hasNext() ? next() : null;
 					}
 					Section sub = linked.sub[pos++];
 					currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 					CharSequence result = currentItr.next();
-					if (result != null)
+					if (result != null) {
 						return result;
+					}
 					return hasNext() ? next() : null;
 				}
 				return null;
@@ -725,8 +776,9 @@ public class YamlSectionBuilderHelper {
 					if (commentsItr != null && commentsItr.hasNext()) {
 						CharSequence result = getCharSequence(commentsItr, container, linked);
 						if (result != null) {
-							if (!commentsItr.hasNext())
+							if (!commentsItr.hasNext()) {
 								type = 1;
+							}
 							return result;
 						}
 					}
@@ -739,15 +791,17 @@ public class YamlSectionBuilderHelper {
 				case 2:
 					if (currentItr != null && currentItr.hasNext()) {
 						CharSequence result = currentItr.next();
-						if (result != null)
+						if (result != null) {
 							return result;
+						}
 						return hasNext() ? next() : null;
 					}
 					Section sub = linked.sub[pos++];
 					currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 					CharSequence result = currentItr.next();
-					if (result != null)
+					if (result != null) {
 						return result;
+					}
 					return hasNext() ? next() : null;
 				}
 				return null;
@@ -783,8 +837,9 @@ public class YamlSectionBuilderHelper {
 					if (commentsItr != null && commentsItr.hasNext()) {
 						CharSequence result = getCharSequence(commentsItr, container, linked);
 						if (result != null) {
-							if (!commentsItr.hasNext())
+							if (!commentsItr.hasNext()) {
 								type = 1;
+							}
 							return result;
 						}
 					}
@@ -797,15 +852,17 @@ public class YamlSectionBuilderHelper {
 				case 2:
 					if (currentItr != null && currentItr.hasNext()) {
 						CharSequence result = currentItr.next();
-						if (result != null)
+						if (result != null) {
 							return result;
+						}
 						return hasNext() ? next() : null;
 					}
 					Section sub = linked.sub[pos++];
 					currentItr = startIterator(container, sub.keyName, sub.value, sub, markSaved);
 					CharSequence result = currentItr.next();
-					if (result != null)
+					if (result != null) {
 						return result;
+					}
 					return hasNext() ? next() : null;
 				}
 				return null;
@@ -817,9 +874,11 @@ public class YamlSectionBuilderHelper {
 	private static CharSequence getCharSequence(Iterator<String> commentsItr, StringContainer container, Section linked) {
 		String comment = commentsItr.next();
 		container.clear();
-		if (!comment.isEmpty())
-			for (int i = 0; i < linked.space; ++i)
+		if (!comment.isEmpty()) {
+			for (int i = 0; i < linked.space; ++i) {
 				container.append(' ').append(' ');
+			}
+		}
 		return container.append(comment).append(System.lineSeparator());
 	}
 
@@ -831,36 +890,42 @@ public class YamlSectionBuilderHelper {
 
 	private static void appendSectionName(StringContainer container, int space, String section) {
 		container.clear();
-		for (int i = 0; i < space; ++i)
+		for (int i = 0; i < space; ++i) {
 			container.append(' ').append(' ');
-		if (section.charAt(0) == ' ' || section.charAt(section.length() - 1) == ' ' || section.indexOf('#') != -1 || section.charAt(0) == '-')
+		}
+		if (section.charAt(0) == ' ' || section.charAt(section.length() - 1) == ' ' || section.indexOf('#') != -1 || section.charAt(0) == '-') {
 			container.append('\'').append(section).append('\'').append(':');
-		else
+		} else {
 			container.append(section).append(':');
+		}
 	}
 
 	private static CharSequence appendName(StringContainer container, int space, String section, String value, char queto, String comment) {
 		appendSectionName(container, space, section);
 		if (value != null) {
 			container.append(' ');
-			if (queto == 0)
+			if (queto == 0) {
 				container.append(value);
-			else
+			} else {
 				container.append(queto).append(replaceWithEscape(value, queto)).append(queto);
+			}
 		}
-		if (comment != null && !comment.trim().isEmpty())
-			if (comment.charAt(0) == ' ')
+		if (comment != null && !comment.trim().isEmpty()) {
+			if (comment.charAt(0) == ' ') {
 				container.append(comment);
-			else
+			} else {
 				container.append(' ').append(comment);
+			}
+		}
 		container.append(System.lineSeparator());
 		return container;
 	}
 
 	private static CharSequence writeListValue(StringContainer container, int space, Object value) {
 		container.clear();
-		for (int i = 0; i < space; ++i)
+		for (int i = 0; i < space; ++i) {
 			container.append(' ').append(' ');
+		}
 		container.append('-').append(' ');
 		container.append(Json.writer().write(value));
 		container.append(System.lineSeparator());
@@ -869,13 +934,15 @@ public class YamlSectionBuilderHelper {
 
 	public static CharSequence replaceWithEscape(String value, char add) {
 		int startAt = value.indexOf(add);
-		if (startAt == -1)
+		if (startAt == -1) {
 			return value;
+		}
 		StringContainer container = new StringContainer(value);
 		for (int i = startAt; i < container.length(); ++i) {
 			char c = container.charAt(i);
-			if (c == add)
+			if (c == add) {
 				container.insert(i++, '\\');
+			}
 		}
 		return container;
 

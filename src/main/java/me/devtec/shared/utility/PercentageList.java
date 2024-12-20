@@ -16,21 +16,25 @@ public class PercentageList<V> {
 	}
 
 	public boolean contains(V object) {
-		for (Entry<V, Double> entry : entries)
-			if (Objects.equals(entry.getKey(), object))
+		for (Entry<V, Double> entry : entries) {
+			if (Objects.equals(entry.getKey(), object)) {
 				return true;
+			}
+		}
 		return false;
 	}
 
 	public boolean add(V object, double chance) {
-		if (chance <= 0)
+		if (chance <= 0) {
 			throw new IllegalArgumentException("Chance must be greater than 0");
-		for (Entry<V, Double> entry : entries)
+		}
+		for (Entry<V, Double> entry : entries) {
 			if (Objects.equals(entry.getKey(), object)) {
 				totalChance -= entry.setValue(chance);
 				totalChance += chance;
 				return true;
 			}
+		}
 		entries.add(new Entry<V, Double>() {
 
 			double privateChance = chance;
@@ -73,9 +77,11 @@ public class PercentageList<V> {
 	}
 
 	public double getChance(V object) {
-		for (Entry<V, Double> entry : entries)
-			if (Objects.equals(entry.getKey(), object))
+		for (Entry<V, Double> entry : entries) {
+			if (Objects.equals(entry.getKey(), object)) {
 				return entry.getValue();
+			}
+		}
 		return 0;
 	}
 
@@ -86,15 +92,17 @@ public class PercentageList<V> {
 
 	public List<V> keySet() {
 		List<V> keys = new ArrayList<>(entries.size());
-		for (Entry<V, Double> entry : entries)
+		for (Entry<V, Double> entry : entries) {
 			keys.add(entry.getKey());
+		}
 		return keys;
 	}
 
 	public List<Double> values() {
 		List<Double> chances = new ArrayList<>(entries.size());
-		for (Entry<V, Double> entry : entries)
+		for (Entry<V, Double> entry : entries) {
 			chances.add(entry.getValue());
+		}
 		return chances;
 	}
 
@@ -103,17 +111,20 @@ public class PercentageList<V> {
 	}
 
 	public V getRandom() {
-		if (isEmpty())
+		if (isEmpty()) {
 			return null;
-		if (entries.size() == 1)
+		}
+		if (entries.size() == 1) {
 			return entries.get(0).getKey();
+		}
 
 		double random = MathUtils.randomDouble(totalChance);
 		double value = 0.0;
         for (Entry<V, Double> entry : entries) {
             double upperBound = value + entry.getValue();
-            if (random <= upperBound)
-                return entry.getKey();
+            if (random <= upperBound) {
+				return entry.getKey();
+			}
             value = upperBound;
         }
 		// If we get here, it means that random was greater than totalChance, so we

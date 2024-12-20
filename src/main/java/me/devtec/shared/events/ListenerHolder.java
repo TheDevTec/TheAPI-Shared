@@ -1,7 +1,11 @@
 package me.devtec.shared.events;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import me.devtec.shared.Ref;
 
@@ -50,8 +54,9 @@ public class ListenerHolder {
 	 * @return boolean Status
 	 */
 	public boolean register() {
-		if (isRegistered())
+		if (isRegistered()) {
 			return false;
+		}
 		listen(getEvents());
 		return isRegistered();
 	}
@@ -114,9 +119,11 @@ public class ListenerHolder {
 		int hash = 21;
 		hash = 21 * hash + listener.hashCode();
 		hash = 21 * hash + getPriority();
-		if (getEvents() != null)
-			for (Class<? extends Event> clazz : getEvents())
+		if (getEvents() != null) {
+			for (Class<? extends Event> clazz : getEvents()) {
 				hash = 21 * hash + clazz.hashCode();
+			}
+		}
 		return hash;
 	}
 

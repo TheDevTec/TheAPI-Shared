@@ -13,8 +13,9 @@ public class RjarURLStreamHandlerFactory implements URLStreamHandlerFactory {
 
 	@Override
 	public URLStreamHandler createURLStreamHandler(String protocol) {
-		if ("rjar".equals(protocol))
+		if ("rjar".equals(protocol)) {
 			return new RjarURLStreamHandler(classLoader);
+		}
 		return chainFac != null ? chainFac.createURLStreamHandler(protocol) : null;
 	}
 

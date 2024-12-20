@@ -62,8 +62,9 @@ public class SocketServer {
 					server.register(serverSelector, SelectionKey.OP_ACCEPT);
 					while (server.isOpen()) {
 						int serverReadyChannels = serverSelector.select();
-						if (serverReadyChannels == 0)
+						if (serverReadyChannels == 0) {
 							continue;
+						}
 						Set<SelectionKey> serverSelectedKeys = serverSelector.selectedKeys();
 						Iterator<SelectionKey> serverKeyIterator = serverSelectedKeys.iterator();
 						while (serverKeyIterator.hasNext()) {
@@ -71,11 +72,12 @@ public class SocketServer {
 							if (!serverKey.isValid()) { // Close connection
 								// Just closed connection
 								Iterator<SocketServerClient> itr = clients.values().iterator();
-								while (itr.hasNext())
+								while (itr.hasNext()) {
 									if (itr.next().channel.equals(serverKey.channel())) {
 										itr.remove();
 										break;
 									}
+								}
 								break;
 							}
 							if (serverKey.isAcceptable()) {
@@ -98,8 +100,9 @@ public class SocketServer {
 										try {
 											while (server.isOpen() && socketChannel.isConnected()) {
 												int readyChannels = reader.select();
-												if (readyChannels == 0)
+												if (readyChannels == 0) {
 													continue;
+												}
 												Set<SelectionKey> selectedKeys = reader.selectedKeys();
 												Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
 												while (keyIterator.hasNext()) {
@@ -114,8 +117,9 @@ public class SocketServer {
 															buffer.flip();
 															container.append(StreamUtils.decode(buffer));
 														}
-														if (container.isEmpty())
+														if (container.isEmpty()) {
 															continue;
+														}
 
 														@SuppressWarnings("unchecked")
 														Map<String, Object> data = (Map<String, Object>) Json.reader().read(container.toString());
@@ -167,8 +171,9 @@ public class SocketServer {
 	public void close() {
 		try {
 			server.close();
-			for (SocketServerClient element : clients.values())
+			for (SocketServerClient element : clients.values()) {
 				element.close();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -198,38 +203,43 @@ public class SocketServer {
 		}
 
 		public void write(@Nonnull Config config) {
-			if (config == null || config.getKeys().isEmpty())
+			if (config == null || config.getKeys().isEmpty()) {
 				return;
+			}
 			ByteBuffer buffer = ByteBuffer.wrap(config.toByteArray(DataType.JSON));
-			while (buffer.hasRemaining())
+			while (buffer.hasRemaining()) {
 				try {
 					channel.write(buffer);
 				} catch (IOException e) {
 					e.printStackTrace();
 					break;
 				}
+			}
 		}
 
 		public void write(@Nonnull Map<String, Object> json) {
-			if (json == null || json.isEmpty())
+			if (json == null || json.isEmpty()) {
 				return;
+			}
 			ByteBuffer buffer = ByteBuffer.wrap(StringContainer.getBytes(Json.writer().write(json)));
-			while (buffer.hasRemaining())
+			while (buffer.hasRemaining()) {
 				try {
 					channel.write(buffer);
 				} catch (IOException e) {
 					e.printStackTrace();
 					break;
 				}
+			}
 		}
 
 		public void awaitConnection() {
-			while (socketPhase == SocketPhase.LOGIN)
+			while (socketPhase == SocketPhase.LOGIN) {
 				try {
 					Thread.sleep(5);
 				} catch (InterruptedException e) {
 					break;
 				}
+			}
 		}
 
 		@Nonnull

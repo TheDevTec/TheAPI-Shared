@@ -39,8 +39,9 @@ public class ServerDataReceiveEvent extends Event {
 	}
 
 	public Config data() {
-		if (data == null)
+		if (data == null) {
 			data = new Config(JsonLoader.parseFromJson(json));
+		}
 		return data;
 	}
 

@@ -9,15 +9,17 @@ public class SortingAPI {
 
 	public static <K, V> Map<K, V> sortByKey(Map<K, V> map, boolean asc) {
 		Map<K, V> result = new LinkedHashMap<>(map.size());
-		for (ComparableObject<K, V> o : SortingAPI.sortByKeyArray(map, asc))
+		for (ComparableObject<K, V> o : SortingAPI.sortByKeyArray(map, asc)) {
 			result.put(o.getKey(), o.getValue());
+		}
 		return result;
 	}
 
 	public static <K, V> Map<K, V> sortByValue(Map<K, V> map, boolean asc) {
 		Map<K, V> result = new LinkedHashMap<>(map.size());
-		for (ComparableObject<K, V> o : SortingAPI.sortByValueArray(map, asc))
+		for (ComparableObject<K, V> o : SortingAPI.sortByValueArray(map, asc)) {
 			result.put(o.getKey(), o.getValue());
+		}
 		return result;
 	}
 
@@ -25,8 +27,9 @@ public class SortingAPI {
 	public static <K, V> ComparableObject<K, V>[] sortByKeyArray(Map<K, V> map, boolean asc) {
 		ComparableObject<K, V>[] sort = new ComparKey[map.size()];
 		int i = 0;
-		for (Entry<K, V> d : map.entrySet())
+		for (Entry<K, V> d : map.entrySet()) {
 			sort[i++] = new ComparKey<>(d.getKey(), d.getValue(), asc);
+		}
 		Arrays.sort(sort);
 		return sort;
 	}
@@ -35,8 +38,9 @@ public class SortingAPI {
 	public static <K, V> ComparableObject<K, V>[] sortByValueArray(Map<K, V> map, boolean asc) {
 		ComparableObject<K, V>[] sort = new ComparValue[map.size()];
 		int i = 0;
-		for (Entry<K, V> d : map.entrySet())
+		for (Entry<K, V> d : map.entrySet()) {
 			sort[i++] = new ComparValue<>(d.getKey(), d.getValue(), asc);
+		}
 		Arrays.sort(sort);
 		return sort;
 	}

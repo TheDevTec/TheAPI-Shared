@@ -35,8 +35,9 @@ public class TomlLoader extends EmptyLoader {
 			int[] trimmed = YamlLoader.trim(lines, line);
 			// Comments
 			if (trimmed[0] == trimmed[1] || lines.charAt(trimmed[0]) == '#') {
-				if (comments == null)
+				if (comments == null) {
 					comments = new ArrayList<>();
+				}
 				comments.add(trimmed[0] == trimmed[1] ? "" : lines.substring(trimmed[0], trimmed[1]));
 				continue;
 			}
@@ -48,15 +49,16 @@ public class TomlLoader extends EmptyLoader {
 			}
 
 			if (parts.length == 1) {
-				if (comments != null)
-					if (mode != 1)
+				if (comments != null) {
+					if (mode != 1) {
 						set(lines.substring(parts[0][0], parts[0][1]), DataValue.of(null, "", null, comments));
-					else {
+					} else {
 						CharSequence seq = lines.subSequence(parts[0][0], parts[0][1]);
 						mainPath.append('.').append(seq);
 						set(mainPath.toString(), DataValue.of(null, "", null, comments));
 						mainPath.delete(mainPath.length() - seq.length() - 1, mainPath.length());
 					}
+				}
 				continue;
 			}
 
@@ -65,13 +67,15 @@ public class TomlLoader extends EmptyLoader {
 				mode = parts[2][0];
 				String inString = mainPath.toString();
 				DataValue probablyCreated = get(inString);
-				if (mode != 2 && probablyCreated == null && comments != null)
+				if (mode != 2 && probablyCreated == null && comments != null) {
 					set(inString, DataValue.of(null, null, null, comments));
+				}
 
 				if (mode == 2) {
 					list = probablyCreated != null && probablyCreated.value != null ? (List<Map<Object, Object>>) probablyCreated.value : new ArrayList<>();
-					if (probablyCreated == null || probablyCreated.value == null)
+					if (probablyCreated == null || probablyCreated.value == null) {
 						set(inString, DataValue.of(null, list, null, comments));
+					}
 					map = new HashMap<>();
 					list.add(map);
 				}
@@ -84,11 +88,11 @@ public class TomlLoader extends EmptyLoader {
 			int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 			String comment = readerValue.length == 1 ? null : lines.substring(readerValue[1][0], readerValue[1][1]);
 
-			if (mode != 1)
+			if (mode != 1) {
 				set(lines.substring(parts[0][0], parts[0][1]),
 						DataValue.of(indexes == null ? lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(lines.subSequence(value[0], value[1]), indexes),
 								Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
-			else {
+			} else {
 				CharSequence seq = lines.subSequence(parts[0][0], parts[0][1]);
 				mainPath.append('.').append(seq);
 				set(mainPath.toString(), DataValue.of(indexes == null ? lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(lines.subSequence(value[0], value[1]), indexes),
@@ -100,22 +104,26 @@ public class TomlLoader extends EmptyLoader {
 		if (comments != null) {
 			if (comments.get(comments.size() - 1).isEmpty()) {
 				comments.remove(comments.size() - 1); // just empty line
-				if (comments.isEmpty())
+				if (comments.isEmpty()) {
 					comments = null;
+				}
 			}
-			if (comments != null)
-				if (data.isEmpty())
+			if (comments != null) {
+				if (data.isEmpty()) {
 					header = comments;
-				else
+				} else {
 					footer = comments;
+				}
+			}
 		}
 		loaded = comments != null || !data.isEmpty();
 	}
 
 	@Override
 	public void load(String input) {
-		if (input == null)
+		if (input == null) {
 			return;
+		}
 		StringContainer container = new StringContainer(input, 0, 0);
 		load(container, LoaderReadUtil.readLinesFromContainer(container));
 	}
@@ -139,31 +147,42 @@ public class TomlLoader extends EmptyLoader {
 			char c = input.charAt(i);
 			switch (c) {
 			case ':':
-				if (quoteCount != 0)
+				if (quoteCount != 0) {
 					break;
+				}
 				if (i + 1 < index[1] && input.charAt(i + 1) == ' ')
+				 {
 					return null; // Hey! This is YAML file.
+				}
 				break;
 			case '=':
-				if (quoteCount != 0)
+				if (quoteCount != 0) {
 					break;
+				}
 				if (i == index[0])
+				 {
 					return null; // Invalid TOML file.
+				}
 				int[][] result = new int[2][];
 				result[0] = YamlLoader.getFromQuotes(input, YamlLoader.trim(input, index[0], i));
 				result[1] = YamlLoader.trim(input, i + 1, index[1]);
 				return result;
 			case '[':
-				if (quoteCount != 0)
+				if (quoteCount != 0) {
 					break;
+				}
 				if (index[1] > i + 1 && input.charAt(i + 1) == '[') {
 					int mapEndIndex = input.lastIndexOf(']');
 					if (mapEndIndex != -1 && mapEndIndex - 1 > i && input.charAt(mapEndIndex - 1) == ']')
+					 {
 						return new int[][] { YamlLoader.getFromQuotes(input, index[0] + 2, index[1] - 2), null, new int[] { 2 } }; // maps
+					}
 				}
 				int mapEndIndex = input.lastIndexOf(']');
 				if (mapEndIndex != -1)
+				 {
 					return new int[][] { YamlLoader.getFromQuotes(input, index[0] + 1, index[1] - 1), null, new int[] { 1 } }; // sub keys
+				}
 				break;
 			case '\\':
 				++i;
@@ -173,8 +192,9 @@ public class TomlLoader extends EmptyLoader {
 				if (quoteCount == 0) {
 					++quoteCount;
 					currentQueto = c;
-				} else if (c == currentQueto)
+				} else if (c == currentQueto) {
 					--quoteCount;
+				}
 				break;
 			default:
 				break;

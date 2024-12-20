@@ -28,19 +28,23 @@ public class AdvancedPie extends CustomChart {
 		Map<String, Object> valuesBuilder = new HashMap<>();
 
 		Map<String, Integer> map = callable.call();
-		if (map == null || map.isEmpty())
+		if (map == null || map.isEmpty()) {
 			// Null = skip the chart
 			return null;
+		}
 		boolean allSkipped = true;
 		for (Map.Entry<String, Integer> entry : map.entrySet()) {
 			if (entry.getValue() == 0)
+			 {
 				continue; // Skip this invalid
+			}
 			allSkipped = false;
 			valuesBuilder.put(entry.getKey(), entry.getValue());
 		}
-		if (allSkipped)
+		if (allSkipped) {
 			// Null = skip the chart
 			return null;
+		}
 
 		Map<String, Object> obj = new HashMap<>();
 		obj.put("values", valuesBuilder);

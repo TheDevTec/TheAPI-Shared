@@ -21,8 +21,9 @@ public class ExclamationFinder implements GradientFinder {
 
 	@Override
 	public boolean find() {
-		if (container.length() <= i)
+		if (container.length() <= i) {
 			return false;
+		}
 		byte mode = 0;
 		byte count = 0;
 		for (; i < container.length(); ++i) {

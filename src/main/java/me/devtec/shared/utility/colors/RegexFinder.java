@@ -40,11 +40,13 @@ public class RegexFinder implements GradientFinder {
 		if (skipChars != 0) {
 			match = matcher.find(skipChars);
 			skipChars = 0;
-		} else
+		} else {
 			match = matcher.find();
+		}
 		if (match) {
-			if (matcher.groupCount() == 0 || matcher.group().isEmpty())
+			if (matcher.groupCount() == 0 || matcher.group().isEmpty()) {
 				return find();
+			}
 			firstHex = matcher.group(1);
 			firstHexLength = firstHex.length() + firstLength;
 			secondHex = matcher.group(4);

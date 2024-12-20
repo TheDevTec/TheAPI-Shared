@@ -24,24 +24,27 @@ public class LoaderReadUtil {
 			int start = i * CHUNK_SIZE;
 			int end = Math.min(start + CHUNK_SIZE, totalLength);
 
-			if (lastEnd > 0)
+			if (lastEnd > 0) {
 				start = lastEnd;
-			if (i + 1 >= chunkCount)
+			}
+			if (i + 1 >= chunkCount) {
 				end = totalLength;
-			else
+			} else {
 				end = Math.min(adjustEndPosition(lines, end), totalLength);
+			}
 			int fStart = start;
 			int fEnd = end;
 			futures.add(API.getExecutor().submit(() -> readLinesInRange(lines, fStart, fEnd, totalLength)));
 
 			lastEnd = end;
 		}
-		for (Future<List<int[]>> future : futures)
+		for (Future<List<int[]>> future : futures) {
 			try {
 				List<int[]> chunkLines = future.get();
 				allLinePositions.addAll(chunkLines);
 			} catch (InterruptedException | ExecutionException e) {
 			}
+		}
 		allLinePositions.sort((a, b) -> Integer.compare(a[0], b[0]));
 		int prev = 0;
 		ListIterator<int[]> itr = allLinePositions.listIterator();
@@ -58,9 +61,11 @@ public class LoaderReadUtil {
 	}
 
 	private static int adjustEndPosition(StringContainer lines, int end) {
-		for (int i = end - 1; i >= 0; i--)
-			if (isLineSeparator(lines, i))
+		for (int i = end - 1; i >= 0; i--) {
+			if (isLineSeparator(lines, i)) {
 				return i + getLineSeparatorLength(lines, i);
+			}
+		}
 		return end;
 	}
 
@@ -68,15 +73,19 @@ public class LoaderReadUtil {
 		List<int[]> resultLines = new ArrayList<>();
 		int currentStart = start;
 
-		for (int i = start; i < end; i++)
+		for (int i = start; i < end; i++) {
 			if (isLineSeparator(lines, i)) {
-				if (currentStart < i)
+				if (currentStart < i) {
 					resultLines.add(new int[] { currentStart, i });
+				}
 				currentStart = i + getLineSeparatorLength(lines, i);
 			}
-		if (currentStart < end)
-			if (currentStart < lines.length())
+		}
+		if (currentStart < end) {
+			if (currentStart < lines.length()) {
 				resultLines.add(new int[] { currentStart, Math.min(end, maxLength) });
+			}
+		}
 		return resultLines;
 	}
 
@@ -85,8 +94,9 @@ public class LoaderReadUtil {
 	}
 
 	private static int getLineSeparatorLength(StringContainer lines, int index) {
-		if (lines.charAt(index) == '\r' && index + 1 < lines.length() && lines.charAt(index + 1) == '\n')
+		if (lines.charAt(index) == '\r' && index + 1 < lines.length() && lines.charAt(index + 1) == '\n') {
 			return 2;
+		}
 		return 1;
 	}
 }

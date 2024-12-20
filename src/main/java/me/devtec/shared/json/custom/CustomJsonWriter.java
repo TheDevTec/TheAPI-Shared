@@ -16,11 +16,13 @@ public class CustomJsonWriter implements JWriter {
 	}
 
 	public static String toJson(Object obj) {
-		if (obj == null || obj instanceof Number || obj instanceof Boolean)
+		if (obj == null || obj instanceof Number || obj instanceof Boolean) {
 			return String.valueOf(obj);
+		}
 
-		if (obj instanceof CharSequence)
+		if (obj instanceof CharSequence) {
 			return writeString((CharSequence) obj);
+		}
 
 		if (obj instanceof Collection) {
 			StringContainer container = new StringContainer().append(CustomJsonReader.OPEN_BRACKET);
@@ -43,8 +45,9 @@ public class CustomJsonWriter implements JWriter {
 	private static void writeArray(Object obj, StringContainer container) {
 		int size = Array.getLength(obj);
 		for (int i = 0; i < size; ++i) {
-			if (i != 0)
+			if (i != 0) {
 				container.append(CustomJsonReader.COMMA);
+			}
 			toJson(container, Array.get(obj, i));
 		}
 		container.append(CustomJsonReader.CLOSED_BRACKET);
@@ -54,8 +57,9 @@ public class CustomJsonWriter implements JWriter {
 		Object[] itr = obj.entrySet().toArray();
 		int size = itr.length;
 		for (int i = 0; i < size; ++i) {
-			if (i != 0)
+			if (i != 0) {
 				container.append(CustomJsonReader.COMMA);
+			}
 			Entry<?, ?> entry = (Entry<?, ?>) itr[i];
 			toJson(container, entry.getKey());
 			container.append(CustomJsonReader.COLON);
@@ -68,16 +72,18 @@ public class CustomJsonWriter implements JWriter {
 		Object[] itr = obj.toArray();
 		int size = itr.length;
 		for (int i = 0; i < size; ++i) {
-			if (i != 0)
+			if (i != 0) {
 				container.append(CustomJsonReader.COMMA);
+			}
 			toJson(container, itr[i]);
 		}
 		container.append(CustomJsonReader.CLOSED_BRACKET);
 	}
 
 	private static String writeString(CharSequence s) {
-		if (s == null)
+		if (s == null) {
 			return "null";
+		}
 		return parseToString(s.toString());
 	}
 
@@ -86,8 +92,9 @@ public class CustomJsonWriter implements JWriter {
 		int i = container.length();
 		while (i != -1) {
 			char c = container.charAt(i);
-			if (c == '"')
+			if (c == '"') {
 				container.insert(i, '\\');
+			}
 			--i;
 		}
 		container.insert(0, '"');

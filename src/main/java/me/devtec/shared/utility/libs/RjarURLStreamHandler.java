@@ -18,16 +18,17 @@ public class RjarURLStreamHandler extends java.net.URLStreamHandler {
 	@Override
 	protected void parseURL(URL url, String spec, int start, int limit) {
 		String file;
-		if (spec.startsWith("rjar:"))
+		if (spec.startsWith("rjar:")) {
 			file = spec.substring(5);
-		else if (url.getFile().equals("./"))
+		} else if (url.getFile().equals("./")) {
 			file = spec;
-		else if (url.getFile().endsWith("/"))
+		} else if (url.getFile().endsWith("/")) {
 			file = url.getFile() + spec;
-		else if ("#runtime".equals(spec))
+		} else if ("#runtime".equals(spec)) {
 			file = url.getFile();
-		else
+		} else {
 			file = spec;
+		}
 
 		this.setURL(url, "rjar", "", -1, null, null, file, null, null);
 	}

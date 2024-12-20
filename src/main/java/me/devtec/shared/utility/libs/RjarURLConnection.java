@@ -23,8 +23,9 @@ public class RjarURLConnection extends URLConnection {
 	public InputStream getInputStream() throws IOException {
 		String file = URLDecoder.decode(url.getFile(), "UTF-8");
 		InputStream result = classLoader.getResourceAsStream(file);
-		if (result == null)
+		if (result == null) {
 			throw new MalformedURLException("Could not open InputStream for URL '" + url + "'");
+		}
 		return result;
 	}
 }

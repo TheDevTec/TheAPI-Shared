@@ -5,10 +5,12 @@ import java.lang.reflect.Array;
 @SuppressWarnings("unchecked")
 public class ArrayUtils {
 	public static <T> T[] sumArrays(T[] first, T... second) {
-		if (first == null || first.length == 0)
+		if (first == null || first.length == 0) {
 			return second;
-		if (second == null || second.length == 0)
+		}
+		if (second == null || second.length == 0) {
 			return first;
+		}
 
 		T[] result = newInstance(first.getClass().getComponentType(), first.length + second.length);
 
@@ -18,14 +20,17 @@ public class ArrayUtils {
 	}
 
 	public static <T> T[] sumArrays(T[]... arrays) {
-		if (arrays == null)
+		if (arrays == null) {
 			throw new NullPointerException("Array cannot be null");
-		if (arrays.length == 0)
+		}
+		if (arrays.length == 0) {
 			return newInstance(arrays.getClass().getComponentType().getComponentType(), 0);
+		}
 
 		int totalSize = 0;
-		for (T[] array2 : arrays)
+		for (T[] array2 : arrays) {
 			totalSize += array2.length;
+		}
 
 		T[] result = newInstance(arrays.getClass().getComponentType().getComponentType(), totalSize);
 
@@ -50,7 +55,9 @@ public class ArrayUtils {
 	 */
 	public static void move(Object array, int fromPos, int toPos) {
 		if (fromPos == toPos)
+		 {
 			return; // Why are you moving to the same pos?
+		}
 
 		Object val = Array.get(array, fromPos);
 
@@ -71,8 +78,9 @@ public class ArrayUtils {
 	 * Move array values between specified position to the "last" position
 	 */
 	public static void move(Object array, int from, int to, int length) {
-		if (from < 0 || from > to)
+		if (from < 0 || from > to) {
 			throw new IndexOutOfBoundsException("Array length is " + length + ", moving from position " + from + " to " + to);
+		}
 		System.arraycopy(array, from, array, to, length - from);
 	}
 
@@ -80,8 +88,9 @@ public class ArrayUtils {
 	 * Insert value on certain position
 	 */
 	public static void insert(Object array, int position, Object value, int length) {
-		if (position < 0 || position >= length)
+		if (position < 0 || position >= length) {
 			throw new IndexOutOfBoundsException("Array length is " + (length - 1) + ", insert position is " + position);
+		}
 		System.arraycopy(array, position, array, position + 1, length - position - 1);
 		Array.set(array, position, value);
 	}
@@ -91,8 +100,9 @@ public class ArrayUtils {
 	 */
 	public static Object insert(Object array, int position, Object value) {
 		int length = Array.getLength(array) + 1;
-		if (position < 0 || position >= length)
+		if (position < 0 || position >= length) {
 			throw new IndexOutOfBoundsException("Array length is " + (length - 1) + ", insert position is " + position);
+		}
         Object newInstance = array.getClass().getComponentType() == Object[].class ? new Object[length] : Array.newInstance(array.getClass().getComponentType(), length);
 		System.arraycopy(array, 0, newInstance, 0, position);
 		System.arraycopy(array, position, newInstance, position + 1, length - position - 1);

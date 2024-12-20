@@ -48,5 +48,5 @@ public class ClickEvent {
 
 	public enum Action {
 		CHANGE_PAGE, COPY_TO_CLIPBOARD, OPEN_FILE, OPEN_URL, RUN_COMMAND, SUGGEST_COMMAND
-    }
+	}
 }

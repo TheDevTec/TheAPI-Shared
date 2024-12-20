@@ -15,8 +15,9 @@ public class ArgumentCommandStructure<S> extends CommandStructure<S> {
 
 	protected ArgumentCommandStructure(CommandStructure<S> parent, String argument, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx, String[] aliases) {
 		super(parent, ex);
-		if (argument != null)
+		if (argument != null) {
 			this.args.add(argument);
+		}
 		Collections.addAll(this.args, aliases);
 		this.length = length;
 		this.tabEx = tabEx;

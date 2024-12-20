@@ -59,28 +59,33 @@ public class ComponentEntity extends Component {
 		Map<String, Object> map = new LinkedHashMap<>();
 		map.put("id", getId().toString());
 		map.put("type", getType());
-		if (getName() != null)
+		if (getName() != null) {
 			map.put("name", getName().toJsonMap());
+		}
 		return map;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static ComponentEntity fromJson(String json) {
 		Object read = Json.reader().simpleRead(json);
-		if (read instanceof Map)
+		if (read instanceof Map) {
 			return fromJson((Map<String, Object>) read);
+		}
 		return null;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static ComponentEntity fromJson(Map<String, Object> json) {
 		if (json.containsKey("id") && json.containsKey("type")) {
-			ComponentEntity comp = new ComponentEntity(json.get("type").toString(), UUID.fromString(json.get("id").toString()));
-			if (json.containsKey("name"))
-				if (json.get("name") instanceof Map)
+			ComponentEntity comp = new ComponentEntity(json.get("type").toString(),
+					UUID.fromString(json.get("id").toString()));
+			if (json.containsKey("name")) {
+				if (json.get("name") instanceof Map) {
 					comp.setName(ComponentAPI.fromJson((Map<String, Object>) json.get("name")));
-				else
+				} else {
 					comp.setText(json.get("name").toString());
+				}
+			}
 			return comp;
 		}
 		return null;

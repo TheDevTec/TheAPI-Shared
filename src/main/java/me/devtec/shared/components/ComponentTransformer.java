@@ -17,8 +17,13 @@ public interface ComponentTransformer<T> {
 	default Component toComponent(T[] value) {
 		Component comp = new Component("");
 		List<Component> extra = new ArrayList<>();
-		for (T t : value)
-			extra.add(this.toComponent(t));
+		for (T t : value) {
+			if (comp.getText().isEmpty()) {
+				comp = this.toComponent(t);
+			} else {
+				extra.add(this.toComponent(t));
+			}
+		}
 		comp.setExtra(extra);
 		return comp;
 	}

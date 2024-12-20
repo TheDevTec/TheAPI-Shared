@@ -24,8 +24,9 @@ public class PlaceholderAPI {
 
 	public static void register(PlaceholderExpansion ext) {
 		PlaceholderAPI.unregister(ext); // Unregister placeholders with same name
-		if (registerConsumer != null)
+		if (registerConsumer != null) {
 			registerConsumer.accept(ext);
+		}
 		PlaceholderAPI.extensions.add(ext);
 	}
 
@@ -36,8 +37,9 @@ public class PlaceholderAPI {
 		while (iterator.hasNext()) {
 			PlaceholderExpansion reg = iterator.next();
 			if (reg.getName().equalsIgnoreCase(ext.getName())) {
-				if (unregisterConsumer != null)
+				if (unregisterConsumer != null) {
 					unregisterConsumer.accept(ext);
+				}
 				iterator.remove();
 			}
 		}
@@ -51,14 +53,16 @@ public class PlaceholderAPI {
             for (PlaceholderExpansion ext : PlaceholderAPI.extensions) {
                 if (placeholder.startsWith(ext.getName().toLowerCase() + "_")) {
                     String value = ext.apply(placeholder, player);
-                    if (value != null && !value.equals(placeholder))
-                        text = text.replace(match.group(), value);
+                    if (value != null && !value.equals(placeholder)) {
+						text = text.replace(match.group(), value);
+					}
                 }
             }
 			if (PlaceholderAPI.PAPI_BRIDGE != null) {
 				String value = PlaceholderAPI.PAPI_BRIDGE.apply(placeholder, player);
-				if (value != null && !value.equals(placeholder))
+				if (value != null && !value.equals(placeholder)) {
 					text = text.replace(match.group(), value);
+				}
 			}
 		}
 		return text;
@@ -75,16 +79,18 @@ public class PlaceholderAPI {
 
 	public static PlaceholderExpansion getExpansion(String extensionName) {
         for (PlaceholderExpansion reg : PlaceholderAPI.extensions) {
-            if (reg.getName().equalsIgnoreCase(extensionName))
-                return reg;
+            if (reg.getName().equalsIgnoreCase(extensionName)) {
+				return reg;
+			}
         }
 		return null;
 	}
 
 	public static boolean isRegistered(String extensionName) {
         for (PlaceholderExpansion reg : PlaceholderAPI.extensions) {
-            if (reg.getName().equalsIgnoreCase(extensionName))
-                return true;
+            if (reg.getName().equalsIgnoreCase(extensionName)) {
+				return true;
+			}
         }
 		return false;
 	}
@@ -94,8 +100,10 @@ public class PlaceholderAPI {
 	}
 
 	public static void unregisterAll() {
-		if (!extensions.isEmpty())
-			for (PlaceholderExpansion exp : new ArrayList<>(getPlaceholders()))
+		if (!extensions.isEmpty()) {
+			for (PlaceholderExpansion exp : new ArrayList<>(getPlaceholders())) {
 				exp.unregister();
+			}
+		}
 	}
 }

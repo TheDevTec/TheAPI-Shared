@@ -58,24 +58,28 @@ public class ComponentItem extends Component {
 		Map<String, Object> map = new LinkedHashMap<>();
 		map.put("id", getId());
 		map.put("count", getCount());
-		if (getNbt() != null)
+		if (getNbt() != null) {
 			map.put("tag", getNbt());
+		}
 		return map;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static ComponentItem fromJson(String json) {
 		Object read = Json.reader().simpleRead(json);
-		if (read instanceof Map)
+		if (read instanceof Map) {
 			return fromJson((Map<String, Object>) read);
+		}
 		return null;
 	}
 
 	public static ComponentItem fromJson(Map<String, Object> json) {
 		if (json.containsKey("id")) {
-			ComponentItem comp = new ComponentItem(json.get("id").toString(), ((Number) json.getOrDefault("count", 1)).intValue());
-			if (json.containsKey("tag"))
+			ComponentItem comp = new ComponentItem(json.get("id").toString(),
+					((Number) json.getOrDefault("count", 1)).intValue());
+			if (json.containsKey("tag")) {
 				comp.setNbt(Json.writer().simpleWrite(json.get("tag")));
+			}
 			return comp;
 		}
 		return null;

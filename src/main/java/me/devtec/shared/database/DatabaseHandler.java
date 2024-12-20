@@ -376,8 +376,9 @@ public interface DatabaseHandler {
 		}
 
 		protected void nextResult(Result next) {
-			if (next != null)
+			if (next != null) {
 				this.next = next;
+			}
 		}
 
 		@Override

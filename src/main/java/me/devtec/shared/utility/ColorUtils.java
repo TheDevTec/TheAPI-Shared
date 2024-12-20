@@ -44,8 +44,9 @@ public class ColorUtils {
 			mainStream.sub = new Branch[] { current };
 			while (!left.isEmpty()) {
 				current.c = left.charAt(0);
-				if (left.length() < 2)
+				if (left.length() < 2) {
 					break;
+				}
 
 				Branch next = new Branch((char) 0, null);
 				current.sub = new Branch[] { next };
@@ -60,22 +61,24 @@ public class ColorUtils {
 			char t = left.charAt(0);
 			Branch previous = null;
 			// Find first branch stemming from first char
-			for (Branch branch : trunk)
+			for (Branch branch : trunk) {
 				if (branch.c == t) {
 					previous = branch;
 					left = left.substring(1);
 					t = left.charAt(0);
 					break;
 				}
+			}
 
 			// Branch found, follow it
-			if (previous != null)
+			if (previous != null) {
 				while (true) {
-					if (previous.sub == null)
+					if (previous.sub == null) {
 						break;
+					}
 
 					boolean found = false;
-					for (Branch branch : previous.sub)
+					for (Branch branch : previous.sub) {
 						if (branch.c == t) {
 							found = true;
 							previous = branch;
@@ -90,9 +93,12 @@ public class ColorUtils {
 							t = left.charAt(0);
 							break;
 						}
-					if (!found)
+					}
+					if (!found) {
 						break;
+					}
 				}
+			}
 
 			// Branched off right at the trunk
 			if (previous == null) {
@@ -107,9 +113,9 @@ public class ColorUtils {
 			}
 
 			Branch next = new Branch(t, null);
-			if (previous.sub == null)
+			if (previous.sub == null) {
 				previous.sub = new Branch[] { next };
-			else {
+			} else {
 				Branch[] augmented = new Branch[previous.sub.length + 1];
 				System.arraycopy(previous.sub, 0, augmented, 0, previous.sub.length);
 				augmented[previous.sub.length] = next;
@@ -131,9 +137,11 @@ public class ColorUtils {
 	}
 
 	private static Branch findBranchFor(char c) {
-		for (Branch main : base)
-			if (main.c == c)
+		for (Branch main : base) {
+			if (main.c == c) {
 				return main;
+			}
+		}
 		return null;
 	}
 
@@ -256,8 +264,9 @@ public class ColorUtils {
 	 * @return String
 	 */
 	public static String gradient(String text, List<String> protectedStrings) {
-		if (text == null || ColorUtils.gradientFinderConstructor == null)
+		if (text == null || ColorUtils.gradientFinderConstructor == null) {
 			return text;
+		}
 		return gradient(new StringContainer(text), protectedStrings).toString();
 	}
 
@@ -271,8 +280,9 @@ public class ColorUtils {
 	}
 
 	private static StringContainer internalGradient(StringContainer container, int startAt, List<String> protectedStrings) {
-		if (ColorUtils.gradientFinderConstructor == null)
+		if (ColorUtils.gradientFinderConstructor == null) {
 			return container;
+		}
 
 		if (startAt > -1) {
 			Branch[] current = null;
@@ -288,7 +298,7 @@ public class ColorUtils {
 						start = j;
 					}
 				} else {
-					for (Branch branch : current)
+					for (Branch branch : current) {
 						if (branch.c == c) {
 							current = branch.sub;
 							if (branch.value != null) {
@@ -303,6 +313,7 @@ public class ColorUtils {
 							}
 							continue charLoop;
 						}
+					}
 					current = null;
 					--j;
 					if (endBranch != null) {
@@ -384,8 +395,9 @@ public class ColorUtils {
 	 * @return String
 	 */
 	public static String strip(String text) {
-		if (text == null || text.isEmpty())
+		if (text == null || text.isEmpty()) {
 			return text;
+		}
 		return strip(new StringContainer(text)).toString();
 	}
 
@@ -395,8 +407,9 @@ public class ColorUtils {
 	 * @return String
 	 */
 	public static StringContainer strip(StringContainer container) {
-		if (container == null || container.isEmpty())
+		if (container == null || container.isEmpty()) {
 			return container;
+		}
 
 		for (int i = 0; i < container.length(); ++i) {
 			char c = container.charAt(i);
@@ -418,8 +431,9 @@ public class ColorUtils {
 	 * @return String
 	 */
 	public static String colorize(String text, List<String> protectedStrings) {
-		if (text == null || text.isEmpty())
+		if (text == null || text.isEmpty()) {
 			return text;
+		}
 		return colorize(new StringContainer(text, 0, 24), protectedStrings).toString();
 	}
 
@@ -430,8 +444,9 @@ public class ColorUtils {
 	 * @return String
 	 */
 	public static StringContainer colorize(StringContainer container, List<String> protectedStrings) {
-		if (container.isEmpty())
+		if (container.isEmpty()) {
 			return container;
+		}
 
 		boolean foundRainbowChar = false;
 		boolean foundHash = false;
@@ -439,8 +454,9 @@ public class ColorUtils {
 		char tagPrefixChar = tagPrefix.charAt(0);
 		for (int i = 0; i < container.length(); ++i) {
 			char c = container.charAt(i);
-			if (c == tagPrefixChar && foundTagPrefix == -2)
+			if (c == tagPrefixChar && foundTagPrefix == -2) {
 				foundTagPrefix = tagPrefix.length() == 1 ? i : container.indexOf(tagPrefix, i);
+			}
 			switch (c) {
 			case '#':
 				foundHash = true;
@@ -451,10 +467,11 @@ public class ColorUtils {
 					if (isColorChar(next)) {
 						container.setCharAt(i - 1, '§');
 						container.setCharAt(i, Character.toLowerCase(next));
-					} else if (next == 'u')
+					} else if (next == 'u') {
 						foundRainbowChar = true;
-					else if (next == '#')
+					} else if (next == '#') {
 						foundHash = true;
+					}
 				}
 			}
 		}
@@ -463,8 +480,9 @@ public class ColorUtils {
 				ColorUtils.internalGradient(container, foundTagPrefix, protectedStrings);
 				ColorUtils.color.replaceHex(container);
 			}
-			if (foundRainbowChar)
+			if (foundRainbowChar) {
 				ColorUtils.color.rainbow(container, 0, container.length(), null, null, protectedStrings);
+			}
 		}
 		return container;
 	}

@@ -22,9 +22,10 @@ public class SingleLineChart extends CustomChart {
 	@Override
 	protected Map<String, Object> getChartData() throws Exception {
 		int value = callable.call();
-		if (value == 0)
+		if (value == 0) {
 			// Null = skip the chart
 			return null;
+		}
 		Map<String, Object> obj = new HashMap<>();
 		obj.put("value", value);
 		return obj;

@@ -27,12 +27,13 @@ public class ThreadManager implements Executor {
 	}
 
 	private void monitorThreads() {
-		while (API.isEnabled())
+		while (API.isEnabled()) {
 			try {
 				Thread.sleep(50);
 			} catch (InterruptedException e) {
 				break;
 			}
+		}
 		shutdownAndAwaitTermination();
 	}
 
@@ -41,19 +42,22 @@ public class ThreadManager implements Executor {
 			// Ukončení nových úloh
 			executorService.shutdown();
 
-			if (!executorService.awaitTermination(5, TimeUnit.SECONDS))
+			if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
 				// Přerušení zbývajících běžících úloh
 				executorService.shutdownNow();
+			}
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
 		}
 	}
 
 	public void kill() {
-		for (int i : new ArrayList<>(taskMap.keySet()))
+		for (int i : new ArrayList<>(taskMap.keySet())) {
 			destroy(i);
-		for (Runnable runnable : onKill)
+		}
+		for (Runnable runnable : onKill) {
 			runnable.run();
+		}
 		onKill.clear();
 	}
 
@@ -78,8 +82,9 @@ public class ThreadManager implements Executor {
 
 	public void destroy(int id) {
 		Future<?> future = taskMap.remove(id);
-		if (future != null)
+		if (future != null) {
 			future.cancel(true);
+		}
 	}
 
 	public void kill(int id) {

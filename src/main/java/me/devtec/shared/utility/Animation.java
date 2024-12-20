@@ -18,16 +18,18 @@ public class Animation {
 	}
 
 	public String get() {
-		if (this.lines.isEmpty())
+		if (this.lines.isEmpty()) {
 			return null;
+		}
 		return this.lines.get(this.pos);
 	}
 
 	public void next() {
 		if (this.last - System.currentTimeMillis() / 50 + this.ticks <= 0) {
 			this.last = System.currentTimeMillis() / 50;
-			if (++this.pos >= this.lines.size())
+			if (++this.pos >= this.lines.size()) {
 				this.pos = 0;
+			}
 		}
 	}
 

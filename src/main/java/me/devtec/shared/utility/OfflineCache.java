@@ -53,9 +53,11 @@ public class OfflineCache {
 	}
 
 	public String lookupNameById(UUID id) {
-		for (Query i : values.values())
-			if (id.equals(i.uuid))
+		for (Query i : values.values()) {
+			if (id.equals(i.uuid)) {
 				return i.name;
+			}
+		}
 		return null;
 	}
 
@@ -64,9 +66,11 @@ public class OfflineCache {
 	}
 
 	public Query lookupQuery(UUID id) {
-		for (Query i : values.values())
-			if (id.equals(i.uuid))
+		for (Query i : values.values()) {
+			if (id.equals(i.uuid)) {
 				return i;
+			}
+		}
 		return null;
 	}
 
@@ -76,14 +80,16 @@ public class OfflineCache {
 		if (get == null) {
 			UUID uuid = onlineMode ? lookupIdFromMojang(name) : UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
 			values.put(result.toLowerCase(), new Query(result, uuid));
-		} else
+		} else {
 			result = get.name;
+		}
 		return result;
 	}
 
 	public void setLookup(UUID uuid, String name) {
-		if (uuid == null || name == null)
+		if (uuid == null || name == null) {
 			return;
+		}
 		Query get = values.get(name.toLowerCase());
 		if (get == null || get.uuid == null) {
 			values.put(name.toLowerCase(), new Query(name, uuid));
@@ -97,8 +103,9 @@ public class OfflineCache {
 
 	public Config saveToConfig() {
 		Config data = new Config();
-		for (Query i : values.values())
+		for (Query i : values.values()) {
 			data.set(i.uuid.toString(), i.name);
+		}
 		return data;
 	}
 

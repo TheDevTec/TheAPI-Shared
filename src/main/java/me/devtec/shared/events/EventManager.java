@@ -18,12 +18,15 @@ public class EventManager {
 	}
 
 	public static boolean unregister(ListenerHolder handler) {
-		if (!handler.isRegistered())
+		if (!handler.isRegistered()) {
 			return false;
+		}
 		for (Class<? extends Event> event : handler.getEvents()) {
 			List<ListenerHolder> listeners = getListeners(event);
 			if (listeners.isEmpty())
+			 {
 				continue; // empty
+			}
 			listeners.remove(handler);
 		}
 		handler.isRegistered = false;
@@ -33,7 +36,9 @@ public class EventManager {
 	public static void call(Event event) {
 		List<ListenerHolder> result = event.getHandlers();
 		if (result.isEmpty())
+		 {
 			return; // Prevent from creating unused Iterator
+		}
 		int size = result.size();
 		for (int i = 0; i < size; ++i) {
 			ListenerHolder holder = result.get(i);

@@ -24,9 +24,10 @@ public class DrilldownPie extends CustomChart {
 		Map<String, Object> valuesBuilder = new HashMap<>();
 
 		Map<String, Map<String, Integer>> map = callable.call();
-		if (map == null || map.isEmpty())
+		if (map == null || map.isEmpty()) {
 			// Null = skip the chart
 			return null;
+		}
 		boolean reallyAllSkipped = true;
 		for (Map.Entry<String, Map<String, Integer>> entryValues : map.entrySet()) {
 			Map<String, Object> valueBuilder = new HashMap<>();
@@ -40,9 +41,10 @@ public class DrilldownPie extends CustomChart {
 				valuesBuilder.put(entryValues.getKey(), valueBuilder);
 			}
 		}
-		if (reallyAllSkipped)
+		if (reallyAllSkipped) {
 			// Null = skip the chart
 			return null;
+		}
 
 		Map<String, Object> obj = new HashMap<>();
 		obj.put("values", valuesBuilder);

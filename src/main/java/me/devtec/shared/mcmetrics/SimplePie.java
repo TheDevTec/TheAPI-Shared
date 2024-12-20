@@ -22,9 +22,10 @@ public class SimplePie extends CustomChart {
 	@Override
 	protected Map<String, Object> getChartData() throws Exception {
 		String value = callable.call();
-		if (value == null || value.isEmpty())
+		if (value == null || value.isEmpty()) {
 			// Null = skip the chart
 			return null;
+		}
 		Map<String, Object> obj = new HashMap<>();
 		obj.put("value", value);
 		return obj;

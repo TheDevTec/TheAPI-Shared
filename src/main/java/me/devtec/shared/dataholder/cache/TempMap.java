@@ -89,7 +89,7 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 			}
 		};
 		queue.put(entry, System.currentTimeMillis() / 50L);
-		if (task == 0)
+		if (task == 0) {
 			task = new Tasker() {
 
 				@Override
@@ -105,8 +105,9 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 						if (entry.getValue() - System.currentTimeMillis() / 50L + cacheTime <= 0) {
 							iterator.remove();
 							RemoveCallback<Entry<K, V>> callback = getCallback();
-							if (callback != null)
+							if (callback != null) {
 								callback.call(entry.getKey());
+							}
 						}
 					}
 					if (queue.isEmpty() && inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
@@ -116,13 +117,15 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 
 				}
 			}.runRepeating(1, 1);
+		}
 		return null;
 	}
 
 	public long getTimeOf(K key) {
         for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
-            if (value.getKey().getKey().equals(key))
-                return value.getValue();
+            if (value.getKey().getKey().equals(key)) {
+				return value.getValue();
+			}
         }
 		return 0;
 	}
@@ -193,14 +196,13 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 	@Override
 	public String toString() {
 		StringContainer container = new StringContainer(size() * 8).append('{');
-		Iterator<Entry<K, V>> iterator = queue.keySet().iterator();
 		boolean first = true;
-		while (iterator.hasNext()) {
-			if (first)
+		for (Entry<K, V> entry : queue.keySet()) {
+			if (first) {
 				first = false;
-			else
+			} else {
 				container.append(',').append(' ');
-			Entry<K, V> entry = iterator.next();
+			}
 			container.append(entry.getKey() + "=" + entry.getValue());
 		}
 		return container.append('}').toString();

@@ -73,8 +73,9 @@ public class TimeUtils {
 	public static String timeToString(long period, String split, TimeFormat... disabled) {
 		boolean digit = split.length() == 1 && split.charAt(0) == ':';
 
-		if (period == 0L)
+		if (period == 0L) {
 			return digit ? "0" : timeConvertor.get(TimeFormat.SECONDS).toString(0);
+		}
 
 		boolean skipYear = false;
 		boolean skipMonth = false;
@@ -83,8 +84,8 @@ public class TimeUtils {
 		boolean skipMinute = false;
 		boolean skipSecond = false;
 
-		if (disabled != null)
-			for (TimeFormat format : disabled)
+		if (disabled != null) {
+			for (TimeFormat format : disabled) {
 				switch (format) {
 				case DAYS:
 					skipDay = true;
@@ -105,9 +106,12 @@ public class TimeUtils {
 					skipYear = true;
 					break;
 				}
+			}
+		}
 
-		if (skipYear && skipMonth && skipDay && skipHour && skipMinute && skipSecond)
+		if (skipYear && skipMonth && skipDay && skipHour && skipMinute && skipSecond) {
 			return digit ? String.valueOf(period) : timeConvertor.get(TimeFormat.SECONDS).toString(period);
+		}
 
 		long years = 0;
 		if (!skipYear) {
@@ -155,13 +159,15 @@ public class TimeUtils {
 	 * @return long
 	 */
 	public static long timeFromString(String original) {
-		if (original == null || original.isEmpty())
+		if (original == null || original.isEmpty()) {
 			return 0;
+		}
 
 		String period = original;
 
-		if (ParseUtils.isLong(period))
+		if (ParseUtils.isLong(period)) {
 			return ParseUtils.getLong(period);
+		}
 
 		long time = 0;
 
@@ -204,8 +210,9 @@ public class TimeUtils {
 
 		for (TimeFormat format : TimeFormat.values()) {
 			Matcher matcher = timeConvertor.get(format).matcher(period);
-			while (matcher.find())
+			while (matcher.find()) {
 				time += ParseUtils.getLong(matcher.group()) * format.seconds();
+			}
 			period = matcher.replaceAll("");
 		}
 		return time;
@@ -214,18 +221,22 @@ public class TimeUtils {
 	private static void addFormat(StringContainer builder, String split, TimeFormat format, boolean digit, long time) {
 		if (time > 0) {
 			boolean notFirst = !builder.isEmpty();
-			if (notFirst)
+			if (notFirst) {
 				builder.append(split);
+			}
 			if (digit) {
-				if (time < 10 && notFirst)
+				if (time < 10 && notFirst) {
 					builder.append('0');
+				}
 				builder.append(time);
-			} else
+			} else {
 				builder.append(timeConvertor.get(format).toString(time));
+			}
 		} else if (digit) {
 			boolean notFirst = !builder.isEmpty();
-			if (notFirst)
+			if (notFirst) {
 				builder.append(split).append('0').append('0');
+			}
 		}
 	}
 }

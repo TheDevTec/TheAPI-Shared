@@ -28,11 +28,13 @@ public interface LibraryLoader {
 
 	default void downloadFileFromUrl(URL url, File file) {
 		try {
-			if (file.exists() && !file.delete())
+			if (file.exists() && !file.delete()) {
 				return;
+			}
 			if (!file.exists()) {
-				if (file.getParentFile() != null)
+				if (file.getParentFile() != null) {
 					file.getParentFile().mkdirs();
+				}
 				file.createNewFile();
 				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 				conn.setRequestProperty("User-Agent", "DevTec-JavaClient");
@@ -40,8 +42,9 @@ public interface LibraryLoader {
 					byte[] buf = new byte[4096];
 					int r;
 					try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(file.toPath()))) {
-						while ((r = in.read(buf)) != -1)
+						while ((r = in.read(buf)) != -1) {
 							out.write(buf, 0, r);
+						}
 					} catch (Exception e) {
 						e.printStackTrace();
 					}

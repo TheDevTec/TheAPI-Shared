@@ -18,11 +18,12 @@ public class Compressors {
 		byte[] result = in;
 		for (int isf = 0; isf < 2; ++isf) {
 			decompressor.setInput(result);
-			while (!decompressor.finished())
+			while (!decompressor.finished()) {
 				try {
 					bos.write(Compressors.buf, 0, decompressor.inflate(Compressors.buf));
 				} catch (Exception ignored) {
 				}
+			}
 			decompressor.reset();
 			result = bos.toByteArray();
 			bos.reset();
@@ -37,8 +38,9 @@ public class Compressors {
 		for (int i = 0; i < 2; ++i) {
 			compressor.setInput(result);
 			compressor.finish();
-			while (!compressor.finished())
+			while (!compressor.finished()) {
 				byteStream.write(Compressors.buf, 0, compressor.deflate(Compressors.buf));
+			}
 			result = byteStream.toByteArray();
 			compressor.reset();
 			byteStream.reset();

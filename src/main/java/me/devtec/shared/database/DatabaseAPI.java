@@ -25,7 +25,8 @@ public class DatabaseAPI {
 		private String attributes;
 		private final String sqlType;
 
-		public SqlDatabaseSettings(DatabaseType sqlType, String ip, int port, String database, String username, String password) {
+		public SqlDatabaseSettings(DatabaseType sqlType, String ip, int port, String database, String username,
+				String password) {
 			this.ip = ip;
 			this.port = port;
 			this.sqlType = sqlType.getName();
@@ -52,10 +53,13 @@ public class DatabaseAPI {
 
 		@Override
 		public String getConnectionString() {
-			if (sqlType.equals("sqlserver"))
-				return "jdbc:sqlserver://" + ip + ":" + port + ";user=" + username + ";password=" + password + ";databaseName=" + database + ";integratedSecurity=true;"
+			if (sqlType.equals("sqlserver")) {
+				return "jdbc:sqlserver://" + ip + ":" + port + ";user=" + username + ";password=" + password
+						+ ";databaseName=" + database + ";integratedSecurity=true;"
 						+ (attributes == null ? "" : attributes);
-			return "jdbc:" + sqlType + "://" + ip + ":" + port + "/" + database + (attributes == null ? "" : attributes);
+			}
+			return "jdbc:" + sqlType + "://" + ip + ":" + port + "/" + database
+					+ (attributes == null ? "" : attributes);
 		}
 	}
 
@@ -96,7 +100,8 @@ public class DatabaseAPI {
 	}
 
 	public enum DatabaseType {
-		MYSQL("mysql", false), MARIADB("mariadb", false), SQLSERVER("sqlserver", false), SQLITE("sqlite", true), H2("h2", true);
+		MYSQL("mysql", false), MARIADB("mariadb", false), SQLSERVER("sqlserver", false), SQLITE("sqlite", true),
+		H2("h2", true);
 
 		private final String name;
 		private final boolean fileBased;
@@ -165,15 +170,18 @@ public class DatabaseAPI {
 		default:
 			break;
 		}
-		if (!type.isFileBased() && !(settings instanceof SqliteDatabaseSettings) || type.isFileBased() && settings instanceof SqliteDatabaseSettings)
+		if (!type.isFileBased() && !(settings instanceof SqliteDatabaseSettings)
+				|| type.isFileBased() && settings instanceof SqliteDatabaseSettings) {
 			return new SqlHandler(settings.getConnectionString(), settings);
+		}
 		throw new SQLException("Connection DatabaseSettings are not based on specified DatabaseType.");
 	}
 
 	private static void checkOrDownloadIfNeeded(String string) {
 		File file = new File("plugins/TheAPI/libraries/" + string + ".jar");
-		if (!file.exists())
+		if (!file.exists()) {
 			API.library.downloadFileFromUrl("https://github.com/TheDevTec/TheAPI/raw/main/" + string + ".jar", file);
+		}
 		API.library.load(file);
 	}
 }

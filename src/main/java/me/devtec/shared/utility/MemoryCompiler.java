@@ -31,11 +31,13 @@ public class MemoryCompiler {
 	private final ClassLoader original;
 
 	public MemoryCompiler(ClassLoader loader, String fullName, File pathToJavaFile) {
-		if (!pathToJavaFile.exists())
+		if (!pathToJavaFile.exists()) {
 			throw new RuntimeException("File doesn't exist.");
+		}
 
-		if (ToolProvider.getSystemJavaCompiler() == null)
+		if (ToolProvider.getSystemJavaCompiler() == null) {
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
+		}
 
 		original = loader == null ? Thread.currentThread().getContextClassLoader() : loader;
 		this.fullName = fullName;
@@ -44,8 +46,9 @@ public class MemoryCompiler {
 	}
 
 	public MemoryCompiler(ClassLoader loader, String fullName, String srcCode) {
-		if (ToolProvider.getSystemJavaCompiler() == null)
+		if (ToolProvider.getSystemJavaCompiler() == null) {
 			throw new UnsupportedOperationException("MemoryCompiler class cannot be initialized. You need an installed version of the Java JDK to run this class.");
+		}
 
 		original = loader == null ? Thread.currentThread().getContextClassLoader() : loader;
 		this.fullName = fullName;
@@ -54,8 +57,9 @@ public class MemoryCompiler {
 	}
 
 	public JavaFileManager initFileManager() {
-		if (fileManager != null)
+		if (fileManager != null) {
 			return fileManager;
+		}
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		fileManager = new ClassFileManager(compiler.getStandardFileManager(null, null, null));
 		return fileManager;
@@ -110,8 +114,9 @@ public class MemoryCompiler {
 				@Override
 				protected Class<?> findClass(String name) {
 					JavaClassObject javaClassObject = loaded.get(name);
-					if (javaClassObject == null)
+					if (javaClassObject == null) {
 						return Ref.getClass(name);
+					}
 
 					byte[] b = javaClassObject.getBytes();
 					return super.defineClass(name, javaClassObject.getBytes(), 0, b.length);

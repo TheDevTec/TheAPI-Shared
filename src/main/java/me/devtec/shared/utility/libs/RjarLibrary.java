@@ -22,10 +22,11 @@ public class RjarLibrary {
 
 		for (int i = 0; i < libsToLoad.length; ++i) {
 			String rjarPath = libsToLoad[i];
-			if (rjarPath.endsWith("/"))
+			if (rjarPath.endsWith("/")) {
 				rjarUrls[i] = new URL("rjar:" + rjarPath);
-			else
+			} else {
 				rjarUrls[i] = new URL("jar:rjar:" + rjarPath + "!/");
+			}
 		}
 
 		ClassLoader classLoader = new URLClassLoader(rjarUrls, getPlatformClassLoader());

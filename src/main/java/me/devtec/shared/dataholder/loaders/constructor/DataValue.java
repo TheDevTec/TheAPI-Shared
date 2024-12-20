@@ -51,12 +51,15 @@ public class DataValue {
 	public String toString() {
 		Map<String, Object> values = new HashMap<>();
 		values.put("value", value);
-		if (writtenValue != null)
+		if (writtenValue != null) {
 			values.put("writtenValue", writtenValue);
-		if (commentAfterValue != null)
+		}
+		if (commentAfterValue != null) {
 			values.put("commentAfterValue", commentAfterValue);
-		if (comments != null)
+		}
+		if (comments != null) {
 			values.put("comments", comments);
+		}
 		return Json.writer().simpleWrite(values);
 	}
 }

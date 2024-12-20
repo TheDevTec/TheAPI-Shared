@@ -21,8 +21,9 @@ public class ExclamationArrowsFinder implements GradientFinder {
 
 	@Override
 	public boolean find() {
-		if (container.length() <= i)
+		if (container.length() <= i) {
 			return false;
+		}
 		byte mode = 0;
 		byte count = 0;
 		for (; i < container.length(); ++i) {
@@ -46,8 +47,9 @@ public class ExclamationArrowsFinder implements GradientFinder {
                                     mode = 1; // looking for second
                                     firstHex = container.substring(startAt - 8, startAt - 1);
                                     firstHexLength = 10;
-                                } else
-                                    count = 0;
+                                } else {
+									count = 0;
+								}
                                 break;
                             }
                         }

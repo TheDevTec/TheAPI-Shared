@@ -18,8 +18,9 @@ public class StreamUtils {
 	 * @return String
 	 */
 	public static String fromStream(File file) {
-		if (file == null || !file.exists())
+		if (file == null || !file.exists()) {
 			return null;
+		}
 		try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
 			ByteBuffer buffer = ByteBuffer.allocateDirect((int) channel.size());
 			channel.read(buffer);
@@ -38,10 +39,10 @@ public class StreamUtils {
 		while (buffer.hasRemaining()) {
 			int firstByte = buffer.get() & 0xFF;
 
-			if (firstByte <= 0x7F)
+			if (firstByte <= 0x7F) {
 				// 1-byte (ASCII)
 				charBuffer[charPos++] = (char) firstByte;
-			else if (firstByte >> 5 == 0x6) {
+			} else if (firstByte >> 5 == 0x6) {
 				// 2-byte
 				int secondByte = buffer.get() & 0xFF;
 				charBuffer[charPos++] = (char) ((firstByte & 0x1F) << 6 | secondByte & 0x3F);
@@ -59,8 +60,9 @@ public class StreamUtils {
 				codePoint -= 0x10000;
 				charBuffer[charPos++] = (char) ((codePoint >> 10) + 0xD800);
 				charBuffer[charPos++] = (char) ((codePoint & 0x3FF) + 0xDC00);
-			} else
+			} else {
 				throw new IllegalArgumentException("Invalid UTF-8 encoding detected.");
+			}
 		}
 		return new String(charBuffer, 0, charPos);
 	}
@@ -72,10 +74,10 @@ public class StreamUtils {
 		for (int i = 0; i < bytes.length; ++i) {
 			int firstByte = bytes[i] & 0xFF;
 
-			if (firstByte <= 0x7F)
+			if (firstByte <= 0x7F) {
 				// 1-byte (ASCII)
 				charBuffer[charPos++] = (char) firstByte;
-			else if (firstByte >> 5 == 0x6) {
+			} else if (firstByte >> 5 == 0x6) {
 				// 2-byte
 				int secondByte = bytes[++i] & 0xFF;
 				charBuffer[charPos++] = (char) ((firstByte & 0x1F) << 6 | secondByte & 0x3F);
@@ -93,8 +95,9 @@ public class StreamUtils {
 				codePoint -= 0x10000;
 				charBuffer[charPos++] = (char) ((codePoint >> 10) + 0xD800);
 				charBuffer[charPos++] = (char) ((codePoint & 0x3FF) + 0xDC00);
-			} else
+			} else {
 				throw new IllegalArgumentException("Invalid UTF-8 encoding detected.");
+			}
 		}
 		return new String(charBuffer, 0, charPos);
 	}

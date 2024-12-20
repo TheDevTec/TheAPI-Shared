@@ -107,8 +107,9 @@ public class CustomJsonReader implements JReader {
 							break;
 						case SKIP_CHAR:
 							if (pos + 1 < to) {
-								if (readSkip(text, pos, lookingFor, container))
+								if (readSkip(text, pos, lookingFor, container)) {
 									++pos;
+								}
 								continue;
 							}
 							break;
@@ -260,13 +261,15 @@ public class CustomJsonReader implements JReader {
 				case TAB:
 					continue;
 				}
-				if (container.isEmpty())
+				if (container.isEmpty()) {
 					return Pair.of(listResult, pos);
+				}
 				return Pair.of(null, pos);
 			}
 		}
-		if (container.isEmpty())
+		if (container.isEmpty()) {
 			return Pair.of(listResult, pos);
+		}
 		return Pair.of(null, pos);
 	}
 
@@ -321,8 +324,9 @@ public class CustomJsonReader implements JReader {
 							break;
 						case SKIP_CHAR:
 							if (pos + 1 < to) {
-								if (readSkip(text, pos, lookingFor, container))
+								if (readSkip(text, pos, lookingFor, container)) {
 									++pos;
+								}
 								continue;
 							}
 							break;
@@ -550,8 +554,9 @@ public class CustomJsonReader implements JReader {
 				case CLOSED_BRACE:
 				case CLOSED_BRACKET:
                     case COMMA:
-                        if (key != null)
+                        if (key != null) {
 							return Pair.of(null, pos);
+						}
 					return Pair.of(mapResult, pos);
                     case SKIP_N:
 				case SKIP_R:
@@ -559,13 +564,15 @@ public class CustomJsonReader implements JReader {
 				case TAB:
 					continue;
 				}
-				if (key == null && container.isEmpty())
+				if (key == null && container.isEmpty()) {
 					return Pair.of(mapResult, pos);
+				}
 				return Pair.of(null, pos);
 			}
 		}
-		if (key == null && container.isEmpty())
+		if (key == null && container.isEmpty()) {
 			return Pair.of(mapResult, pos);
+		}
 		return Pair.of(null, pos);
 	}
 
@@ -655,16 +662,19 @@ public class CustomJsonReader implements JReader {
 			}
 			return text.toString();
 		case T:
-			if (text.length() == 4 && text.charAt(1) == 'r' && text.charAt(2) == 'u' && text.charAt(3) == 'e')
+			if (text.length() == 4 && text.charAt(1) == 'r' && text.charAt(2) == 'u' && text.charAt(3) == 'e') {
 				return true;
+			}
 			break;
 		case F:
-			if (text.length() == 5 && text.charAt(1) == 'a' && text.charAt(2) == 'l' && text.charAt(3) == 's' && text.charAt(4) == 'e')
+			if (text.length() == 5 && text.charAt(1) == 'a' && text.charAt(2) == 'l' && text.charAt(3) == 's' && text.charAt(4) == 'e') {
 				return false;
+			}
 			break;
 		case N:
-			if (text.length() == 4 && text.charAt(1) == 'u' && text.charAt(2) == 'l' && text.charAt(3) == 'l')
+			if (text.length() == 4 && text.charAt(1) == 'u' && text.charAt(2) == 'l' && text.charAt(3) == 'l') {
 				return null;
+			}
 			break;
 		case ZERO:
 		case ONE:
@@ -682,8 +692,9 @@ public class CustomJsonReader implements JReader {
 		case MINUS:
 		case PLUS:
 			Number number = ParseUtils.getNumber(text, 0, text.length());
-			if (number == null)
+			if (number == null) {
 				return text.toString();
+			}
 			return number;
 		}
 		return text.toString();

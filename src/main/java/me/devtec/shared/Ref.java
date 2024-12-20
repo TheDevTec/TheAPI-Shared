@@ -36,10 +36,10 @@ public class Ref {
 		}
 	}
 
-	static String ver;
+	static String ver = "UKNOWN";
 	static int intVer;
 	static int intRelease;
-	static ServerType type;
+	static ServerType type = ServerType.CUSTOM;
 
 	public static void init(ServerType type, String serverVersion) {
 		Ref.ver = serverVersion;
@@ -48,7 +48,9 @@ public class Ref {
 			if (serverVersion.indexOf('.') != -1) {
 				Ref.intVer = ParseUtils.getInt(Ref.ver.split("\\.")[1]);
 				if (Ref.ver.split("\\.").length > 2)
+				 {
 					Ref.intRelease = ParseUtils.getInt(Ref.ver.split("\\.")[2]); // !!! This is not true
+				}
 				return;
 			}
 			Ref.intVer = ParseUtils.getInt(Ref.ver.split("_")[1]);
@@ -99,7 +101,7 @@ public class Ref {
 		} catch (Exception e) {
 			if (Modifier.isFinal(f.getModifiers())) {
 				setFinal(main, f, o);
-            }
+			}
 		}
 	}
 
@@ -164,11 +166,12 @@ public class Ref {
 
 	public static boolean existsMethod(Class<?> c, String name) {
 		boolean a = false;
-		for (Method d : Ref.getMethods(c))
+		for (Method d : Ref.getMethods(c)) {
 			if (d.getName().equals(name)) {
 				a = true;
 				break;
 			}
+		}
 		return a;
 	}
 
@@ -279,11 +282,12 @@ public class Ref {
 	public static Field field(Class<?> main, Class<?> returnValue) {
 		Class<?> mainClass = main;
 		while (mainClass != null) {
-			for (Field field : Ref.getDeclaredFields(mainClass))
+			for (Field field : Ref.getDeclaredFields(mainClass)) {
 				if (field.getType() == returnValue) {
 					field.setAccessible(true);
 					return field;
 				}
+			}
 			mainClass = mainClass.getSuperclass();
 		}
 		return null;
@@ -397,11 +401,12 @@ public class Ref {
 	public static Method findMethodByName(Class<?> clazz, String name) {
 		Class<?> startClass = clazz;
 		while (startClass != null) {
-			for (Method m : Ref.getDeclaredMethods(clazz))
+			for (Method m : Ref.getDeclaredMethods(clazz)) {
 				if (m.getName().equals(name)) {
 					m.setAccessible(true);
 					return m;
 				}
+			}
 			startClass = startClass.getSuperclass();
 		}
 		return null;
@@ -411,22 +416,25 @@ public class Ref {
 		if (bricks.length == 0) {
 			Class<?> startClass = clazz;
 			while (startClass != null) {
-				for (Method m : Ref.getDeclaredMethods(clazz))
+				for (Method m : Ref.getDeclaredMethods(clazz)) {
 					if (m.getName().equals(name) && m.getParameterTypes().length == 0) {
 						m.setAccessible(true);
 						return m;
 					}
+				}
 				startClass = startClass.getSuperclass();
 			}
 		} else {
 			Class<?> startClass = clazz;
 			Class<?>[] params = buildParams(bricks);
 			while (startClass != null) {
-				for (Method m : Ref.getDeclaredMethods(clazz))
-					if (m.getName().equals(name) && m.getParameterTypes().length == params.length && areSame(params, m.getParameterTypes())) {
+				for (Method m : Ref.getDeclaredMethods(clazz)) {
+					if (m.getName().equals(name) && m.getParameterTypes().length == params.length
+							&& areSame(params, m.getParameterTypes())) {
 						m.setAccessible(true);
 						return m;
 					}
+				}
 				startClass = startClass.getSuperclass();
 			}
 		}
@@ -446,22 +454,24 @@ public class Ref {
 		if (bricks.length == 0) {
 			Class<?> startClass = clazz;
 			while (startClass != null) {
-				for (Constructor<?> m : Ref.getDeclaredConstructors(clazz))
+				for (Constructor<?> m : Ref.getDeclaredConstructors(clazz)) {
 					if (m.getParameterTypes().length == 0) {
 						m.setAccessible(true);
 						return m;
 					}
+				}
 				startClass = startClass.getSuperclass();
 			}
 		} else {
 			Class<?> startClass = clazz;
 			Class<?>[] params = buildParams(bricks);
 			while (startClass != null) {
-				for (Constructor<?> m : Ref.getDeclaredConstructors(clazz))
+				for (Constructor<?> m : Ref.getDeclaredConstructors(clazz)) {
 					if (m.getParameterTypes().length == params.length && areSame(params, m.getParameterTypes())) {
 						m.setAccessible(true);
 						return m;
 					}
+				}
 				startClass = startClass.getSuperclass();
 			}
 		}
@@ -469,9 +479,11 @@ public class Ref {
 	}
 
 	private static boolean areSame(Class<?>[] a, Class<?>[] b) {
-		for (int i = 0; i < a.length; ++i)
-			if (a[i] != null && !a[i].isAssignableFrom(b[i]))
+		for (int i = 0; i < a.length; ++i) {
+			if (a[i] != null && !a[i].isAssignableFrom(b[i])) {
 				return false;
+			}
+		}
 		return true;
 	}
 
@@ -494,8 +506,10 @@ public class Ref {
 
 	public static Class<?> nms(String modernPackageName, String name) {
 		try {
-			if (Ref.isNewerThan(16))
-				return modernPackageName.isEmpty() ? Class.forName("net.minecraft." + name) : Class.forName("net.minecraft." + modernPackageName + "." + name);
+			if (Ref.isNewerThan(16)) {
+				return modernPackageName.isEmpty() ? Class.forName("net.minecraft." + name)
+						: Class.forName("net.minecraft." + modernPackageName + "." + name);
+			}
 			return Class.forName("net.minecraft.server." + Ref.serverVersion() + "." + name);
 		} catch (Exception e) {
 			return null;
@@ -504,8 +518,10 @@ public class Ref {
 
 	public static Class<?> craft(String name) {
 		try {
-			if (Ref.serverType() == ServerType.PAPER && (Ref.isNewerThan(20) || Ref.isNewerThan(19) && Ref.serverVersionRelease() >= 5))
+			if (Ref.serverType() == ServerType.PAPER
+					&& (Ref.isNewerThan(20) || Ref.isNewerThan(19) && Ref.serverVersionRelease() >= 5)) {
 				return Class.forName("org.bukkit.craftbukkit." + name);
+			}
 			return Class.forName("org.bukkit.craftbukkit." + Ref.serverVersion() + "." + name);
 		} catch (Exception e) {
 			return null;

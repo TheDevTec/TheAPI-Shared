@@ -26,11 +26,13 @@ public class CommandHolder<S> {
 	private final String[] EMPTY_ARRAY = { "" };
 
 	public Collection<String> tablist(Object obj, String[] args) {
-		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
+		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass())) {
 			return Collections.emptyList();
+		}
 		S s = (S) obj;
-		if (args.length == 0)
+		if (args.length == 0) {
 			args = EMPTY_ARRAY;
+		}
 		return StringUtils.copyPartialMatches(args[args.length - 1], lookupTab(this.structure, s, args, args[0], 0));
 	}
 
@@ -39,25 +41,29 @@ public class CommandHolder<S> {
 		if (args.length >= argPos) {
 			List<CommandStructure<S>> nextStructures = structure.getNextStructures(s);
 			if (nextStructures.isEmpty()) {
-				if (structure instanceof ArgumentCommandStructure && (((ArgumentCommandStructure<?>) structure).length() == -1 || ((ArgumentCommandStructure<?>) structure).length() >= args.length))
+				if (structure instanceof ArgumentCommandStructure && (((ArgumentCommandStructure<?>) structure).length() == -1 || ((ArgumentCommandStructure<?>) structure).length() >= args.length)) {
 					return structure.tabList(s, structure, args);
+				}
 				return result;
 			}
 			if (args.length - 1 == argPos) {
-				for (CommandStructure<S> nextStructure : nextStructures)
+				for (CommandStructure<S> nextStructure : nextStructures) {
 					result.addAll(nextStructure.tabList(s, nextStructure, args));
+				}
 				return result;
 			}
 		}
 		++argPos;
-		for (CommandStructure<S> sub : (List<CommandStructure<S>>) structure.findStructure(s, arg, args, true)[0])
+		for (CommandStructure<S> sub : (List<CommandStructure<S>>) structure.findStructure(s, arg, args, true)[0]) {
 			result.addAll(lookupTab(sub, s, args, args.length - 1 <= argPos ? args[args.length - 1] : args[argPos], argPos));
+		}
 		return result;
 	}
 
 	public void execute(Object obj, String[] args) {
-		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
+		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass())) {
 			return;
+		}
 		S s = (S) obj;
 		CommandStructure<S> cmd = this.structure;
 		int pos = 0;
@@ -66,21 +72,26 @@ public class CommandHolder<S> {
 			Object[] finder = cmd.findStructure(s, arg, args, false);
 			List<CommandStructure<S>> nextStructures = (List<CommandStructure<S>>) finder[0];
 			if ((boolean) finder[1]) {
-				if (cmd.getFallback() != null)
+				if (cmd.getFallback() != null) {
 					cmd.getFallback().execute(s, cmd, args);
+				}
 				return;
 			}
-			if (nextStructures.isEmpty())
+			if (nextStructures.isEmpty()) {
 				break;
+			}
 			for (CommandStructure<S> next : nextStructures) {
-				if (next == null && this.maybeArgs(s, cmd, args, args.length - pos))
+				if (next == null && this.maybeArgs(s, cmd, args, args.length - pos)) {
 					break argsLoop;
-				if (next != null)
+				}
+				if (next != null) {
 					cmd = next;
+				}
 			}
 		}
-		if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args))
+		if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args)) {
 			return;
+		}
 		cmd.getExecutor().execute(s, cmd, args);
 	}
 
@@ -116,11 +127,13 @@ public class CommandHolder<S> {
 	}
 
 	private boolean maybeArgs(S sender, CommandStructure<S> cmd, String[] args, int i) {
-		if (cmd instanceof CallableArgumentCommandStructure)
+		if (cmd instanceof CallableArgumentCommandStructure) {
 			return !((CallableArgumentCommandStructure<S>) cmd).getArgs(sender, cmd, args).isEmpty() && i == 0;
-		if (cmd instanceof ArgumentCommandStructure)
+		}
+		if (cmd instanceof ArgumentCommandStructure) {
 			return ((ArgumentCommandStructure<S>) cmd).getArgs(sender, cmd, args).isEmpty()
 					&& (((ArgumentCommandStructure<S>) cmd).length() == -1 || ((ArgumentCommandStructure<S>) cmd).length() >= i);
+		}
 		return false;
 	}
 }

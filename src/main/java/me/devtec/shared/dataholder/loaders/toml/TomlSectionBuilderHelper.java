@@ -44,9 +44,9 @@ public class TomlSectionBuilderHelper {
 		}
 
 		public synchronized void add(Section sec) {
-			if (sub == null)
+			if (sub == null) {
 				sub = new Section[] { sec };
-			else {
+			} else {
 				Section[] copy = Arrays.copyOf(sub, sub.length + 1);
 				copy[copy.length - 1] = sec;
 				sub = copy;
@@ -55,10 +55,13 @@ public class TomlSectionBuilderHelper {
 		}
 
 		public Section get(String name) {
-			if (sub != null)
-				for (Section section : sub)
-					if (section.keyName.equals(name))
+			if (sub != null) {
+				for (Section section : sub) {
+					if (section.keyName.equals(name)) {
 						return section;
+					}
+				}
+			}
 			return null;
 		}
 
@@ -66,8 +69,9 @@ public class TomlSectionBuilderHelper {
 			Section current = this;
 			int start = 0;
 			int end = name.indexOf('.');
-			if (end == -1)
+			if (end == -1) {
 				end = name.length();
+			}
 			while (end != -1) {
 				String key = name.substring(start, end);
 				Section sec = current.get(key);
@@ -78,12 +82,14 @@ public class TomlSectionBuilderHelper {
 				}
 				current = sec;
 
-				if (end >= name.length() || start >= name.length())
+				if (end >= name.length() || start >= name.length()) {
 					break;
+				}
 				start = end + 1;
 				end = name.indexOf('.', start);
-				if (end == -1)
+				if (end == -1) {
 					end = name.length();
+				}
 			}
 			current.id = id;
 			return current;
@@ -91,10 +97,12 @@ public class TomlSectionBuilderHelper {
 
 		public StringContainer fullName(StringContainer container, boolean correct) {
 			container.clear();
-			for (Section parent = this; parent != null; parent = parent.parent)
+			for (Section parent = this; parent != null; parent = parent.parent) {
 				container.insert(0, '.').insert(0, parent.keyName);
-			if (correct && container.charAt(container.length() - 1) == '.')
+			}
+			if (correct && container.charAt(container.length() - 1) == '.') {
 				container.deleteCharAt(container.length() - 1);
+			}
 			return container;
 		}
 
@@ -147,15 +155,17 @@ public class TomlSectionBuilderHelper {
 				main = prevParent;
 			} else {
 				int pos = container.indexOf('.');
-				if (pos == -1)
+				if (pos == -1) {
 					continue;
+				}
 				String primaryKey = container.substring(0, pos);
 				container.delete(0, primaryKey.length() + 1);
 				main = map.get(primaryKey);
 				if (main == null) {
 					main = keysWithoutSub.remove(primaryKey);
-					if (main == null)
+					if (main == null) {
 						continue;
+					}
 					map.put(primaryKey, main);
 				}
 			}
@@ -173,8 +183,9 @@ public class TomlSectionBuilderHelper {
 		Section currentSection = map.get(primaryKey);
 		if (currentSection == null) {
 			currentSection = keysWithoutSub.remove(primaryKey);
-			if (currentSection == null)
+			if (currentSection == null) {
 				return;
+			}
 			map.put(primaryKey, currentSection);
 		}
 		currentSection = currentSection.create(privateId, key.substring(pos + 1));
@@ -185,8 +196,9 @@ public class TomlSectionBuilderHelper {
 		StringContainer container = new StringContainer(64);
 		Map<String, Section> map = new LinkedHashMap<>();
 		Map<String, Section> keysWithoutSub = new LinkedHashMap<>();
-		for (String primaryKey : primaryKeys)
+		for (String primaryKey : primaryKeys) {
 			keysWithoutSub.put(primaryKey, new Section(primaryKey, dataLoader.get(primaryKey)));
+		}
 
 		processEntries(keysWithoutSub, map, dataLoader.entrySet());
 		StringArrayList values = new StringArrayList();
@@ -212,8 +224,9 @@ public class TomlSectionBuilderHelper {
 			public CharSequence next() {
 				while (currentItr != null && currentItr.hasNext()) {
 					CharSequence next = values.add(currentItr.next());
-					if (next != null)
+					if (next != null) {
 						return next;
+					}
 				}
 				switch (modeStep) {
 				case 0: {
@@ -223,8 +236,9 @@ public class TomlSectionBuilderHelper {
 					}
 					Section section = itr.next();
 					currentItr = startIterator(container, section.value, section, markSaved);
-					if (hasNext())
+					if (hasNext()) {
 						return next();
+					}
 					String result = values.complete();
 					values.clear();
 					return result;
@@ -237,8 +251,9 @@ public class TomlSectionBuilderHelper {
 					}
 					Section section = itrSecond.next();
 					currentItr = startIterator(container, section.value, section, markSaved);
-					if (hasNext())
+					if (hasNext()) {
 						return next();
+					}
 					String result = values.complete();
 					values.clear();
 					return result;
@@ -249,19 +264,22 @@ public class TomlSectionBuilderHelper {
 	}
 
 	public static Iterator<CharSequence> startIterator(StringContainer container, DataValue dataVal, Section linked, boolean markSaved) {
-		if (dataVal == null)
+		if (dataVal == null) {
 			return startMultipleIterate(container, linked.sub, markSaved);
-		if (markSaved)
+		}
+		if (markSaved) {
 			dataVal.modified = false;
+		}
 
-		if (dataVal.value == null)
+		if (dataVal.value == null) {
 			return startMultipleIterate(container, linked.sub, markSaved);
+		}
 		String commentAfterValue = dataVal.commentAfterValue;
 		Collection<String> comments = dataVal.comments;
 		Iterator<String> commentsItr = comments != null && !comments.isEmpty() ? comments.iterator() : null;
 		Object value = dataVal.value;
-		if (value != null)
-			if (dataVal.writtenValue != null)
+		if (value != null) {
+			if (dataVal.writtenValue != null) {
 				return new Iterator<CharSequence>() {
 					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 					final Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, linked.sub, markSaved);
@@ -296,15 +314,16 @@ public class TomlSectionBuilderHelper {
 						case 2:
 							if (currentItr != null && currentItr.hasNext()) {
 								CharSequence result = currentItr.next();
-								if (result != null)
+								if (result != null) {
 									return result;
+								}
 							}
 						}
 						return null;
 					}
 
 				};
-			else if (value instanceof CharSequence)
+			} else if (value instanceof CharSequence) {
 				return new Iterator<CharSequence>() {
 					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 					final Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, linked.sub, markSaved);
@@ -339,15 +358,16 @@ public class TomlSectionBuilderHelper {
 						case 2:
 							if (currentItr != null && currentItr.hasNext()) {
 								CharSequence result = currentItr.next();
-								if (result != null)
+								if (result != null) {
 									return result;
+								}
 							}
 						}
 						return null;
 					}
 
 				};
-			else
+			} else {
 				return new Iterator<CharSequence>() {
 					byte type = commentsItr != null ? (byte) 0 : (byte) 1;
 					final Iterator<CharSequence> currentItr = linked.sub == null ? null : startMultipleIterate(container, linked.sub, markSaved);
@@ -382,14 +402,17 @@ public class TomlSectionBuilderHelper {
 						case 2:
 							if (currentItr != null && currentItr.hasNext()) {
 								CharSequence result = currentItr.next();
-								if (result != null)
+								if (result != null) {
 									return result;
+								}
 							}
 						}
 						return null;
 					}
 
 				};
+			}
+		}
 		return startMultipleIterate(container, linked.sub, markSaved);
 	}
 
@@ -436,8 +459,9 @@ public class TomlSectionBuilderHelper {
 						section = keys[pos++];
 						commentsItr = section.value != null && section.value.comments != null ? section.value.comments.iterator() : null;
 						foundAnySub |= section.sub != null;
-						if (hasNext())
+						if (hasNext()) {
 							return;
+						}
 					}
 					pos = 0;
 					mode = 4;
@@ -458,21 +482,24 @@ public class TomlSectionBuilderHelper {
 						return container.append(commentsItr.next()).append(System.lineSeparator());
 					}
 					mode = 2;
-					if (!hasNext())
+					if (!hasNext()) {
 						mode = 3;
+					}
 					return hasNext() ? next() : null;
 				}
 				case 2: {
 					StringContainer result;
-					if (section.value.writtenValue != null)
+					if (section.value.writtenValue != null) {
 						result = appendName(container, section, section.value.writtenValue, section.value.value instanceof String ? '"' : (char) 0, section.value.commentAfterValue);
-					else if (section.value.value instanceof CharSequence)
+					} else if (section.value.value instanceof CharSequence) {
 						result = appendName(container, section, section.value.value instanceof String ? (String) section.value.value : section.value.value.toString(), '"',
 								section.value.commentAfterValue);
-					else
+					} else {
 						result = appendName(container, section, Json.writer().write(section.value.value), (char) 0, section.value.commentAfterValue);
-					if (markSaved)
+					}
+					if (markSaved) {
 						section.value.modified = false;
+					}
 					mode = 3;
 					return result;
 				}
@@ -495,8 +522,9 @@ public class TomlSectionBuilderHelper {
 				case 4:
 					if (currentItr != null && currentItr.hasNext()) {
 						CharSequence next = currentItr.next();
-						if (next != null)
+						if (next != null) {
 							return next;
+						}
 					}
 					while (pos < keys.length) {
 						Section sub = keys[pos++];
@@ -504,8 +532,9 @@ public class TomlSectionBuilderHelper {
 							currentItr = startMultipleIterate(container, sub.sub, markSaved);
 							if (currentItr.hasNext()) {
 								CharSequence next = currentItr.next();
-								if (next != null)
+								if (next != null) {
 									return next;
+								}
 							}
 						}
 					}
@@ -521,30 +550,35 @@ public class TomlSectionBuilderHelper {
 		container.clear();
 		container.append('[');
 		StringContainer fullName = section.fullName(new StringContainer(), true);
-		if (fullName.indexOf(':') != -1 || fullName.indexOf('=') != -1 || fullName.indexOf('"') != -1)
+		if (fullName.indexOf(':') != -1 || fullName.indexOf('=') != -1 || fullName.indexOf('"') != -1) {
 			container.append('\'').append(YamlSectionBuilderHelper.replaceWithEscape(fullName.toString(), '"')).append('\'');
-		else
+		} else {
 			container.append(section.fullName(new StringContainer(), true));
+		}
 		container.append(']');
 		return container.append(System.lineSeparator());
 	}
 
 	private static StringContainer appendName(StringContainer container, Section section, String value, char queto, String comment) {
 		container.clear();
-		if (section.keyName.indexOf('#') != -1 || section.keyName.indexOf(':') != -1)
+		if (section.keyName.indexOf('#') != -1 || section.keyName.indexOf(':') != -1) {
 			container.append('\'').append(section.keyName).append('\'');
-		else
+		} else {
 			container.append(section.keyName);
+		}
 		container.append('=');
-		if (queto == 0)
+		if (queto == 0) {
 			container.append(value);
-		else
+		} else {
 			container.append(queto).append(YamlSectionBuilderHelper.replaceWithEscape(value, queto)).append(queto);
-		if (comment != null && !comment.trim().isEmpty())
-			if (comment.charAt(0) == ' ')
+		}
+		if (comment != null && !comment.trim().isEmpty()) {
+			if (comment.charAt(0) == ' ') {
 				container.append(comment);
-			else
+			} else {
 				container.append(' ').append(comment);
+			}
+		}
 		return container.append(System.lineSeparator());
 	}
 }
