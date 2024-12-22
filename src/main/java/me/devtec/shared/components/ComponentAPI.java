@@ -815,15 +815,9 @@ public class ComponentAPI {
 	@SuppressWarnings("unchecked")
 	public static Component fromJson(Collection<?> collection) {
 		Component component = new Component("");
-		for (Object val : collection) {
-			if (val instanceof Map) {
-				if (component.getText() == null || component.getText().isEmpty()) {
-					component = fromJson((Map<String, Object>) val);
-				} else {
-					component.append(fromJson((Map<String, Object>) val));
-				}
-			}
-		}
+		for (Object val : collection)
+			if (val instanceof Map)
+				component.append(fromJson((Map<String, Object>) val));
 		return component;
 	}
 
@@ -860,14 +854,27 @@ public class ComponentAPI {
 		if (map.containsKey("hoverEvent")) {
 			Map<String, String> value = (Map<String, String>) map.get("hoverEvent");
 			Object val = value.getOrDefault("value", value.getOrDefault("content", value.get("contents")));
-			component.setHoverEvent(new HoverEvent(HoverEvent.Action.valueOf(value.get("action").toUpperCase()),
+			HoverEvent hover = new HoverEvent(HoverEvent.Action.valueOf(value.get("action").toUpperCase()),
 					val instanceof Collection ? fromJson((Collection<?>) val)
-							: val instanceof Map ? fromJson(map) : fromString(val + "")));
+							: val instanceof Map ? fromJson(map) : fromString(val + ""));
+			if (component.getExtra() != null)
+				for (Component extra : component.getExtra())
+					if (extra.getHoverEvent() == null)
+						extra.setHoverEvent(hover);
+			if (component.getHoverEvent() == null)
+				component.setHoverEvent(hover);
 		}
 		if (map.containsKey("clickEvent")) {
 			Map<String, String> value = (Map<String, String>) map.get("clickEvent");
-			component.setClickEvent(
-					new ClickEvent(ClickEvent.Action.valueOf(value.get("action").toUpperCase()), value.get("value")));
+			ClickEvent click = new ClickEvent(ClickEvent.Action.valueOf(value.get("action").toUpperCase()),
+					value.get("value"));
+			component.setClickEvent(click);
+			if (component.getExtra() != null)
+				for (Component extra : component.getExtra())
+					if (extra.getClickEvent() == null)
+						extra.setClickEvent(click);
+			if (component.getClickEvent() == null)
+				component.setClickEvent(click);
 		}
 		if (map.containsKey("insertion")) {
 			component.setInsertion(map.get("insertion") + "");
