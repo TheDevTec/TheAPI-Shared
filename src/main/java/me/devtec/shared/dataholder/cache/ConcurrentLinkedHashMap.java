@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import me.devtec.shared.annotations.Nonnull;
@@ -17,7 +18,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
 	private transient volatile Entry<K, V>[] entries;
-	private final AtomicInteger size = new AtomicInteger();
+	private transient volatile AtomicInteger size = new AtomicInteger();
 	private transient final ReentrantLock lock;
 	private transient WeakEntry head;
 	private transient WeakEntry tail;
@@ -90,7 +91,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 				index = (index + 1) % entries.length;
 			}
 			entries[index] = entry;
-		    size.incrementAndGet();
+			size.incrementAndGet();
 		} finally {
 			lock.unlock();
 		}
@@ -128,7 +129,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 			while (entries[index] != null) {
 				if (entries[index].getKey().equals(key)) {
 					V value = entries[index].getValue();
-				    	size.decrementAndGet();
+					size.decrementAndGet();
 					removeFromLinkedList((WeakEntry) entries[index]);
 					entries[index] = null;
 					rehash();
