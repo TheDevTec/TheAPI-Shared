@@ -17,7 +17,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
 	private transient volatile Entry<K, V>[] entries;
-	private transient volatile int size;
+	private final AtomicInteger size = new AtomicInteger();
 	private transient final ReentrantLock lock;
 	private transient WeakEntry head;
 	private transient WeakEntry tail;
@@ -44,7 +44,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	public V put(@Nonnull K key, V value) {
 		lock.lock();
 		try {
-			if (size >= entries.length * loadFactor) {
+			if (size.get() >= entries.length * loadFactor) {
 				resize();
 			}
 			int index = hash(key);
@@ -68,7 +68,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 			}
 			tail = newEntry;
 			entries[index] = newEntry;
-			size++;
+			size.incrementAndGet();
 			return null;
 		} finally {
 			lock.unlock();
@@ -78,7 +78,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	private void putInternal(Entry<K, V> entry) {
 		lock.lock();
 		try {
-			if (size >= entries.length * loadFactor) {
+			if (size.get() >= entries.length * loadFactor) {
 				resize();
 			}
 			int index = hash(entry.getKey());
@@ -90,7 +90,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 				index = (index + 1) % entries.length;
 			}
 			entries[index] = entry;
-			size++;
+		    size.incrementAndGet();
 		} finally {
 			lock.unlock();
 		}
@@ -100,7 +100,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	private void resize() {
 		Entry<K, V>[] oldEntries = entries;
 		entries = new Entry[(int) (oldEntries.length * 1.75)];
-		size = 0;
+		size.set(0);
 		for (Entry<K, V> entry : oldEntries) {
 			if (entry != null) {
 				putInternal(entry);
@@ -128,7 +128,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 			while (entries[index] != null) {
 				if (entries[index].getKey().equals(key)) {
 					V value = entries[index].getValue();
-					size--;
+				    	size.decrementAndGet();
 					removeFromLinkedList((WeakEntry) entries[index]);
 					entries[index] = null;
 					rehash();
@@ -162,7 +162,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	private void rehash() {
 		Entry<K, V>[] oldEntries = entries;
 		entries = new Entry[oldEntries.length];
-		size = 0;
+		size.set(0);
 		for (Entry<K, V> entry : oldEntries) {
 			if (entry != null) {
 				putInternal(entry);
@@ -175,7 +175,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 		lock.lock();
 		try {
 			Arrays.fill(entries, null);
-			size = 0;
+			size.set(0);
 		} finally {
 			lock.unlock();
 		}
@@ -183,12 +183,12 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 
 	@Override
 	public int size() {
-		return size;
+		return size.get();
 	}
 
 	@Override
 	public boolean isEmpty() {
-		return size == 0;
+		return size.get() == 0;
 	}
 
 	@Override
@@ -251,7 +251,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 
 			@Override
 			public int size() {
-				return size;
+				return size.get();
 			}
 		};
 	}
@@ -288,7 +288,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 
 			@Override
 			public int size() {
-				return size;
+				return size.get();
 			}
 		};
 	}
@@ -325,7 +325,7 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 
 			@Override
 			public int size() {
-				return size;
+				return size.get();
 			}
 		};
 	}
