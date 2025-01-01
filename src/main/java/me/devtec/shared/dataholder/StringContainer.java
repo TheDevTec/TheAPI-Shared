@@ -11,15 +11,19 @@ public class StringContainer implements CharSequence {
 	private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
 	// long utils
-	final static char[] DigitTens = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3',
-			'3', '3', '3', '3', '3', '3', '3', '3', '4', '4', '4', '4', '4', '4', '4', '4', '4', '4', '5', '5', '5', '5', '5', '5', '5', '5', '5', '5', '6', '6', '6', '6', '6', '6', '6', '6', '6',
-			'6', '7', '7', '7', '7', '7', '7', '7', '7', '7', '7', '8', '8', '8', '8', '8', '8', '8', '8', '8', '8', '9', '9', '9', '9', '9', '9', '9', '9', '9', '9', };
+	final static char[] DigitTens = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '1', '1', '1', '1',
+			'1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3', '3', '3', '3', '3', '3',
+			'3', '3', '3', '4', '4', '4', '4', '4', '4', '4', '4', '4', '4', '5', '5', '5', '5', '5', '5', '5', '5',
+			'5', '5', '6', '6', '6', '6', '6', '6', '6', '6', '6', '6', '7', '7', '7', '7', '7', '7', '7', '7', '7',
+			'7', '8', '8', '8', '8', '8', '8', '8', '8', '8', '8', '9', '9', '9', '9', '9', '9', '9', '9', '9', '9', };
 
-	final static char[] DigitOnes = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1',
-			'2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8',
-			'9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', };
-	final static char[] digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
-			'x', 'y', 'z' };
+	final static char[] DigitOnes = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5',
+			'6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6',
+			'7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7',
+			'8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8',
+			'9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', };
+	final static char[] digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+			'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
 
 	private transient char[] value;
 
@@ -257,7 +261,8 @@ public class StringContainer implements CharSequence {
 				} else {
 					if (Character.isSurrogate(input.charAt(i))) {
 						// 4-byte
-						if (i + 1 >= input.length() || !Character.isSurrogatePair(input.charAt(i), input.charAt(i + 1))) {
+						if (i + 1 >= input.length()
+								|| !Character.isSurrogatePair(input.charAt(i), input.charAt(i + 1))) {
 							throw new IllegalArgumentException("Invalid surrogate pair.");
 						}
 						int high = input.charAt(i);
@@ -553,10 +558,10 @@ public class StringContainer implements CharSequence {
 			if (value[i] == firstChar) {
 				++i;
 				int foundPos = 1;
-				for (; i < count; ++i) {
-					if (value[i] == lookingFor.charAt(foundPos)) {
+				for (int d = i; d < count; ++d) {
+					if (value[d] == lookingFor.charAt(foundPos)) {
 						if (++foundPos == size) {
-							return i - (size - 1);
+							return i - 1;
 						}
 					} else {
 						break;
@@ -613,10 +618,10 @@ public class StringContainer implements CharSequence {
 			if (Character.toUpperCase(value[i]) == Character.toUpperCase(firstChar)) {
 				++i;
 				int foundPos = 1;
-				for (; i < count; ++i) {
-					if (Character.toUpperCase(value[i]) == Character.toUpperCase(lookingFor.charAt(foundPos))) {
+				for (int d = i; d < count; ++d) {
+					if (Character.toUpperCase(value[d]) == Character.toUpperCase(lookingFor.charAt(foundPos))) {
 						if (++foundPos == size) {
-							return i - (size - 1);
+							return i - 1;
 						}
 					} else {
 						break;
@@ -651,10 +656,10 @@ public class StringContainer implements CharSequence {
 			if (value[i] == firstChar) {
 				++i;
 				int foundPos = 1;
-				for (; i >= 0; i--) {
-					if (value[i] == lookingFor.charAt(foundPos)) {
+				for (int d = i; d < count; ++d) {
+					if (value[d] == lookingFor.charAt(foundPos)) {
 						if (++foundPos == size) {
-							return i - (size - 1);
+							return i - 1;
 						}
 					} else {
 						break;
@@ -686,10 +691,10 @@ public class StringContainer implements CharSequence {
 			if (Character.toUpperCase(value[i]) == Character.toUpperCase(firstChar)) {
 				++i;
 				int foundPos = 1;
-				for (; i >= 0; i--) {
-					if (Character.toUpperCase(value[i]) == Character.toUpperCase(lookingFor.charAt(foundPos))) {
+				for (int d = i; d < count; ++d) {
+					if (Character.toUpperCase(value[d]) == Character.toUpperCase(lookingFor.charAt(foundPos))) {
 						if (++foundPos == size) {
-							return i - (size - 1);
+							return i - 1;
 						}
 					} else {
 						break;
