@@ -11,6 +11,8 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import me.devtec.shared.API;
+import me.devtec.shared.annotations.Checkers;
+import me.devtec.shared.annotations.Nonnull;
 import me.devtec.shared.commands.holder.CommandExecutor;
 import me.devtec.shared.commands.holder.CommandHolder;
 import me.devtec.shared.commands.holder.CommandTabExecutor;
@@ -47,9 +49,8 @@ public class CommandStructure<S> {
 	}
 
 	public CooldownDetection<S> getCooldownDetection() {
-		if (detection == null && getParent() != null) {
+		if (detection == null && getParent() != null)
 			return getParent().getCooldownDetection();
-		}
 		return detection;
 	}
 
@@ -57,11 +58,19 @@ public class CommandStructure<S> {
 	 * @apiNote Creates new {@link CommandStructure}
 	 *
 	 */
-	public static <T> CommandStructure<T> create(Class<T> executorClass, PermissionChecker<T> perm, CommandExecutor<T> executor) {
+	public static <T> CommandStructure<T> create(@Nonnull Class<T> executorClass, @Nonnull PermissionChecker<T> perm,
+			@Nonnull CommandExecutor<T> executor) {
+		Checkers.nonNull(executorClass, "Executor class");
+		Checkers.nonNull(perm, "Permission Checker");
+		Checkers.nonNull(executor, "Command Executor");
 		CommandStructure<T> structure = new CommandStructure<>(null, executor);
 		structure.permissionChecker = perm;
 		structure.senderClass = executorClass;
 		return structure;
+	}
+
+	public PermissionChecker<S> getPermissionChecker() {
+		return permissionChecker == null ? first().permissionChecker : permissionChecker;
 	}
 
 	/**
@@ -90,7 +99,8 @@ public class CommandStructure<S> {
 	 *          structure fail
 	 *
 	 */
-	public CommandStructure<S> fallback(CommandExecutor<S> ex) { // Everything failed? Don't worry! This will be executed
+	public CommandStructure<S> fallback(CommandExecutor<S> ex) { // Everything failed? Don't worry! This will be
+																	// executed
 		this.fallback = ex;
 		return this;
 	}
@@ -144,7 +154,8 @@ public class CommandStructure<S> {
 	 *          {@link CommandStructure}
 	 *
 	 */
-	public ArgumentCommandStructure<S> argument(String argument, CommandExecutor<S> ex, CommandTabExecutor<S> tab, String... aliases) {
+	public ArgumentCommandStructure<S> argument(String argument, CommandExecutor<S> ex, CommandTabExecutor<S> tab,
+			String... aliases) {
 		return this.argument(argument, 0, ex, tab, aliases);
 	}
 
@@ -153,7 +164,8 @@ public class CommandStructure<S> {
 	 *          {@link CommandStructure}
 	 *
 	 */
-	public ArgumentCommandStructure<S> argument(String argument, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tab, String... aliases) {
+	public ArgumentCommandStructure<S> argument(String argument, int length, CommandExecutor<S> ex,
+			CommandTabExecutor<S> tab, String... aliases) {
 		ArgumentCommandStructure<S> sub = new ArgumentCommandStructure<>(this, argument, length, ex, tab, aliases);
 		this.arguments.add(sub);
 		return sub;
@@ -171,8 +183,10 @@ public class CommandStructure<S> {
 	 * @apiNote Add string/s argument to current {@link CommandStructure}
 	 *
 	 */
-	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length, CommandExecutor<S> ex) {
-		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, null, future);
+	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length,
+			CommandExecutor<S> ex) {
+		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, null,
+				future);
 		this.arguments.add(sub);
 		return sub;
 	}
@@ -182,7 +196,8 @@ public class CommandStructure<S> {
 	 *          {@link CommandStructure}
 	 *
 	 */
-	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
+	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, CommandExecutor<S> ex,
+			CommandTabExecutor<S> tabEx) {
 		return this.callableArgument(future, 0, ex, tabEx);
 	}
 
@@ -191,8 +206,10 @@ public class CommandStructure<S> {
 	 *          {@link CommandStructure}
 	 *
 	 */
-	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
-		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, tabEx, future);
+	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length,
+			CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
+		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, tabEx,
+				future);
 		this.arguments.add(sub);
 		return sub;
 	}
@@ -224,9 +241,8 @@ public class CommandStructure<S> {
 	 * @apiNote Returns permission
 	 */
 	public String getPermission() {
-		if (permission == null && getParent() != null) {
+		if (permission == null && getParent() != null)
 			return getParent().getPermission();
-		}
 		return permission;
 	}
 
@@ -276,9 +292,8 @@ public class CommandStructure<S> {
 	 *
 	 */
 	public CommandStructure<S> parent(int jumps) {
-		if (jumps <= 0 || getParent() == null) {
+		if (jumps <= 0 || getParent() == null)
 			return this;
-		}
 		return getParent().parent(--jumps);
 	}
 
@@ -320,65 +335,56 @@ public class CommandStructure<S> {
 
 		PermissionChecker<S> permsChecker = first().permissionChecker;
 
-		for (ArgumentCommandStructure<S> sub : this.arguments) {
+		for (ArgumentCommandStructure<S> sub : this.arguments)
 			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg)) {
 				String perm = sub.getPermission();
 				if (perm != null && !permsChecker.has(s, perm, tablist)) {
 					noPerms = true;
 					continue;
 				}
-                List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
-                list.add(sub);
+				List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
+				list.add(sub);
 			}
-		}
-		for (SelectorCommandStructure<S> sub : this.selectors.values()) {
+		for (SelectorCommandStructure<S> sub : this.selectors.values())
 			if (API.selectorUtils.check(s, sub.getSelector(), arg)) {
 				String perm = sub.getPermission();
 				if (perm != null && !permsChecker.has(s, perm, tablist)) {
 					noPerms = true;
 					continue;
 				}
-                List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
-                list.add(sub);
+				List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
+				list.add(sub);
 			}
-		}
 		List<CommandStructure<S>> list = new LinkedList<>();
-		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet()) {
+		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
 			list.addAll(entry.getValue());
-		}
 		return new Object[] { list, noPerms };
 	}
 
 	public final List<CommandStructure<S>> getNextStructures(S s) {
 		Map<Integer, List<CommandStructure<S>>> structures = new TreeMap<>();
-		for (ArgumentCommandStructure<S> sub : this.arguments) {
+		for (ArgumentCommandStructure<S> sub : this.arguments)
 			if (sub.getPermission() == null || sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
-                List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
-                list.add(sub);
+				List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
+				list.add(sub);
 			}
-		}
-		for (SelectorCommandStructure<S> sub : this.selectors.values()) {
+		for (SelectorCommandStructure<S> sub : this.selectors.values())
 			if (sub.getPermission() == null || sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
-                List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
-                list.add(sub);
+				List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
+				list.add(sub);
 			}
-		}
 		List<CommandStructure<S>> list = new LinkedList<>();
-		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet()) {
+		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
 			list.addAll(entry.getValue());
-		}
 		return list;
 	}
 
 	public static boolean contains(ArgumentCommandStructure<?> sub, Collection<String> list, String arg) {
-		if (!(sub instanceof CallableArgumentCommandStructure) && list.isEmpty()) {
+		if (!(sub instanceof CallableArgumentCommandStructure) && list.isEmpty())
 			return true;
-		}
-		for (String value : list) {
-			if (value.equalsIgnoreCase(arg)) {
+		for (String value : list)
+			if (value.equalsIgnoreCase(arg))
 				return true;
-			}
-		}
 		return false;
 	}
 }
