@@ -275,7 +275,6 @@ public class YamlLoader extends EmptyLoader {
 	 */
 
 	private Pair readMapList(int pos, List<int[]> input, int[] trimmed, int[][] parts, int[] value, int[] indexes) {
-
 		int listDepth = 0;
 		int sectionDepth = 0;
 		List<Object> list = new ArrayList<>();
@@ -300,15 +299,15 @@ public class YamlLoader extends EmptyLoader {
 			if (currentDepth < listDepth)
 				break;
 
-			if (readerMode == READ_MAP_LIST && currentDepth == listDepth && lines.charAt(trimmed[0]) == '-'
-					&& lines.charAt(trimmed[0] + 1) == ' ') {
-				readerMode = READ_LIST;
-				map = null;
-				stack = null;
-				originMap = null;
-				key = null;
-				// System.out.println(lines.substring(trimmed[0], trimmed[1]));
-			}
+			if (readerMode == READ_MAP_LIST && currentDepth == listDepth)
+				if (lines.charAt(trimmed[0]) == '-' && lines.charAt(trimmed[0] + 1) == ' ') {
+					readerMode = READ_LIST;
+					map = null;
+					stack = null;
+					originMap = null;
+					key = null;
+				} else
+					break;
 
 			switch (readerMode) {
 			case READ_LIST: {
@@ -385,8 +384,7 @@ public class YamlLoader extends EmptyLoader {
 					}
 					if (stack == null) {
 						stack = new Stack<>();
-						if (originMap == null)
-							originMap = map;
+						originMap = map;
 					} else if (currentDepth == sectionDepth) {
 						map = originMap;
 						stack.clear();
@@ -457,13 +455,12 @@ public class YamlLoader extends EmptyLoader {
 					}
 					if (stack == null) {
 						stack = new Stack<>();
-						if (originMap == null)
-							originMap = map;
+						originMap = map;
 					} else if (currentDepth == sectionDepth) {
 						map = originMap;
 						stack.clear();
 					} else
-						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
+						for (int i = 0; i < currentDepth - sectionDepth; ++i)
 							map = stack.pop();
 					map.put(key, map = new HashMap<>());
 					stack.add(map);
@@ -475,7 +472,7 @@ public class YamlLoader extends EmptyLoader {
 						map = originMap;
 						stack.clear();
 					} else
-						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
+						for (int i = 0; i < currentDepth - sectionDepth; ++i)
 							map = stack.pop();
 
 				// Value
@@ -521,26 +518,31 @@ public class YamlLoader extends EmptyLoader {
 					}
 					if (stack == null) {
 						stack = new Stack<>();
-						if (originMap == null)
-							originMap = map;
-					} else if (currentDepth == sectionDepth) {
-						map = originMap;
+						originMap = map;
+					} else if (sectionDepth == currentDepth) {
 						stack.clear();
-					} else
-						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
-							map = stack.pop();
+						map = originMap;
+					} else {
+						int minusCount = currentDepth - sectionDepth - stack.size();
+						if (minusCount != 0)
+							for (int i = 0; i < minusCount * -1; ++i)
+								map = stack.pop();
+					}
 					map.put(key, map = new HashMap<>());
 					stack.add(map);
 					break;
 				}
 
 				if (stack != null)
-					if (currentDepth == sectionDepth) {
-						map = originMap;
+					if (sectionDepth == currentDepth) {
 						stack.clear();
-					} else
-						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
-							map = stack.pop();
+						map = originMap;
+					} else {
+						int minusCount = currentDepth - sectionDepth - stack.size();
+						if (minusCount != 0)
+							for (int i = 0; i < minusCount * -1; ++i)
+								map = stack.pop();
+					}
 
 				// Value
 				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
