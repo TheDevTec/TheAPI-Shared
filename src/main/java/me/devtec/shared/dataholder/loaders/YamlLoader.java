@@ -92,7 +92,7 @@ public class YamlLoader extends EmptyLoader {
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
 						readerMode = READ_SIMPLE_STRING;
-						set(key.toString(), DataValue.of(null, "|", comment, comments));
+						set(key.toString(), DataValue.of(null, null, comment, comments));
 						stringContainer = new StringContainer(64);
 						comments = null;
 						continue;
@@ -116,7 +116,7 @@ public class YamlLoader extends EmptyLoader {
 			case READ_LIST: {
 				if (isList(trimmed, trimmed, false)) {
 					Pair pair = readMapList(pos, input, trimmed, parts, value, indexes);
-					pos = (int) pair.getKey();
+					pos = (int) pair.getKey() - 1;
 					List<Object> list = (List<Object>) pair.getValue();
 					DataValue val = getOrCreate(key.toString());
 					val.value = list;
@@ -151,7 +151,7 @@ public class YamlLoader extends EmptyLoader {
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
 						readerMode = READ_SIMPLE_STRING;
-						set(key.toString(), DataValue.of(null, "|", comment, comments));
+						set(key.toString(), DataValue.of(null, null, comment, comments));
 						stringContainer = new StringContainer(64);
 						comments = null;
 						continue;
@@ -217,7 +217,7 @@ public class YamlLoader extends EmptyLoader {
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
 						readerMode = READ_SIMPLE_STRING;
-						set(key.toString(), DataValue.of(null, "|", comment, comments));
+						set(key.toString(), DataValue.of(null, null, comment, comments));
 						stringContainer = new StringContainer(64);
 						comments = null;
 						continue;
@@ -263,17 +263,6 @@ public class YamlLoader extends EmptyLoader {
 		loaded = comments != null || !data.isEmpty();
 	}
 
-	/**
-	 *
-	 * bez hodnoty -> možná list/map pokud v listu je yaml sekce a není v ", tak
-	 * load mapy -> odeberu první -, return bude list s mapy, mapa bude mít konec na
-	 * začátku jiné / main sekce mapy / celého filu
-	 *
-	 * pokud mezera bude jiná -> break pokud hodnota v listu nebude mapa -> udělat z
-	 * toho Object list?
-	 *
-	 */
-
 	private Pair readMapList(int pos, List<int[]> input, int[] trimmed, int[][] parts, int[] value, int[] indexes) {
 		int listDepth = 0;
 		int sectionDepth = 0;
@@ -299,15 +288,17 @@ public class YamlLoader extends EmptyLoader {
 			if (currentDepth < listDepth)
 				break;
 
-			if (readerMode == READ_MAP_LIST && currentDepth == listDepth)
-				if (lines.charAt(trimmed[0]) == '-' && lines.charAt(trimmed[0] + 1) == ' ') {
-					readerMode = READ_LIST;
-					map = null;
-					stack = null;
-					originMap = null;
-					key = null;
-				} else
+			if (readerMode == READ_MAP_LIST && currentDepth == listDepth) {
+				if (stringContainer != null && key != null)
+					map.put(key, stringContainer.toString());
+				if (lines.charAt(trimmed[0]) != '-' || lines.charAt(trimmed[0] + 1) != ' ')
 					break;
+				readerMode = READ_LIST;
+				map = null;
+				stack = null;
+				originMap = null;
+				key = null;
+			}
 
 			switch (readerMode) {
 			case READ_LIST: {
@@ -337,16 +328,22 @@ public class YamlLoader extends EmptyLoader {
 						value = readerValue[0];
 						indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey()
 								: null;
-						if (value[1] - value[0] > 0)
-							map.put(valueString.substring(parts[0][0], parts[0][1]),
-									Json.reader().read(valueString.substring(value[0], value[1])));
-						else
-							map.put(valueString.substring(parts[0][0], parts[0][1]),
-									parts[1][1] - parts[1][0] >= 1 && valueString.charAt(parts[1][0]) != '"'
-											&& valueString.charAt(parts[1][0]) != '\'' ? null : "");
-						list.add(map);
-						readerMode = READ_MAP_LIST;
 						sectionDepth = currentDepth + 1;
+						readerMode = READ_MAP_LIST;
+						originMap = map;
+						list.add(map);
+						key = valueString.substring(parts[0][0], parts[0][1]);
+						if (value[1] - value[0] > 0) {
+							if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1
+									&& valueString.charAt(value[0]) == '|') {
+								readerMode = READ_SIMPLE_STRING;
+								stringContainer = new StringContainer(64);
+								break;
+							}
+							map.put(key, Json.reader().read(valueString.substring(value[0], value[1])));
+						} else
+							map.put(key, parts[1][1] - parts[1][0] >= 1 && valueString.charAt(parts[1][0]) != '"'
+									&& valueString.charAt(parts[1][0]) != '\'' ? null : "");
 					} else
 						list.add(Json.reader().read(valueString.toString()));
 					break;
@@ -363,14 +360,8 @@ public class YamlLoader extends EmptyLoader {
 					break;
 				}
 
-				readerMode = READ_LIST;
-
 				if (map == null)
 					map = new HashMap<>();
-				if (list != null && key != null) {
-					map.put(key, list);
-					list = null;
-				}
 
 				key = lines.substring(parts[0][0], parts[0][1]);
 				if (parts.length == 1) {
@@ -382,10 +373,9 @@ public class YamlLoader extends EmptyLoader {
 						map.put(key, listVal);
 						continue;
 					}
-					if (stack == null) {
+					if (stack == null)
 						stack = new Stack<>();
-						originMap = map;
-					} else if (currentDepth == sectionDepth) {
+					else if (currentDepth == sectionDepth) {
 						map = originMap;
 						stack.clear();
 					} else
@@ -413,7 +403,6 @@ public class YamlLoader extends EmptyLoader {
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
 						readerMode = READ_SIMPLE_STRING;
-						map.put(key, null);
 						stringContainer = new StringContainer(64);
 						break;
 					}
@@ -436,12 +425,14 @@ public class YamlLoader extends EmptyLoader {
 					break;
 				}
 
-				readerMode = READ_LIST;
+				readerMode = READ_MAP_LIST;
 
 				if (map == null)
 					map = new HashMap<>();
-				if (stringContainer != null && key != null)
+				if (stringContainer != null && key != null) {
 					map.put(key, stringContainer.toString());
+					stringContainer = null;
+				}
 
 				key = lines.substring(parts[0][0], parts[0][1]);
 				if (parts.length == 1) {
@@ -453,10 +444,9 @@ public class YamlLoader extends EmptyLoader {
 						map.put(key, listVal);
 						continue;
 					}
-					if (stack == null) {
+					if (stack == null)
 						stack = new Stack<>();
-						originMap = map;
-					} else if (currentDepth == sectionDepth) {
+					else if (currentDepth == sectionDepth) {
 						map = originMap;
 						stack.clear();
 					} else
@@ -490,7 +480,7 @@ public class YamlLoader extends EmptyLoader {
 					}
 					map.put(key, Json.reader().read(lines.substring(value[0], value[1])));
 				} else
-					map.put(key.toString(), parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
+					map.put(key, parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
 							&& lines.charAt(parts[1][0]) != '\'' ? null : "");
 			}
 				break;
@@ -516,10 +506,9 @@ public class YamlLoader extends EmptyLoader {
 						map.put(key, listVal);
 						break;
 					}
-					if (stack == null) {
+					if (stack == null)
 						stack = new Stack<>();
-						originMap = map;
-					} else if (sectionDepth == currentDepth) {
+					else if (sectionDepth == currentDepth) {
 						stack.clear();
 						map = originMap;
 					} else {
@@ -550,9 +539,14 @@ public class YamlLoader extends EmptyLoader {
 						? (int[][]) ((Pair) readerValueParsed).getValue()
 						: (int[][]) readerValueParsed;
 				value = readerValue[0];
-				if (value[1] - value[0] > 0)
+				if (value[1] - value[0] > 0) {
+					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
+						readerMode = READ_SIMPLE_STRING;
+						stringContainer = new StringContainer(64);
+						break;
+					}
 					map.put(key, Json.reader().read(lines.substring(value[0], value[1])));
-				else
+				} else
 					map.put(key, parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
 							&& lines.charAt(parts[1][0]) != '\'' ? null : "");
 			}
