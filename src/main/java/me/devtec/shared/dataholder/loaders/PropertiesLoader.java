@@ -23,6 +23,8 @@ public class PropertiesLoader extends EmptyLoader {
 
 		List<String> comments = null;
 
+		int[] trimmed = new int[2];
+
 		for (int[] line : input) {
 			if (lines.charAt(line[0]) == ' ') { // S-s-space?! Maybe.. this is YAML file.
 				data.clear();
@@ -30,12 +32,11 @@ public class PropertiesLoader extends EmptyLoader {
 				break;
 			}
 
-			int[] trimmed = YamlLoader.trim(lines, line);
+			trim(line, trimmed);
 			// Comments
 			if (trimmed[0] == trimmed[1] || lines.charAt(trimmed[0]) == '#') {
-				if (comments == null) {
+				if (comments == null)
 					comments = new ArrayList<>();
-				}
 				comments.add(trimmed[0] == trimmed[1] ? "" : lines.substring(trimmed[0], trimmed[1]));
 				continue;
 			}
@@ -58,38 +59,38 @@ public class PropertiesLoader extends EmptyLoader {
 			}
 
 			Object readerValueParsed = YamlLoader.splitFromComment(lines, 0, parts[1]);
-			int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue() : (int[][]) readerValueParsed;
+			int[][] readerValue = readerValueParsed instanceof Pair ? (int[][]) ((Pair) readerValueParsed).getValue()
+					: (int[][]) readerValueParsed;
 			int[] value = readerValue[0];
 			int[] indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 			String comment = readerValue.length == 1 ? null : lines.substring(readerValue[1][0], readerValue[1][1]);
 			set(lines.substring(parts[0][0], parts[0][1]),
-					DataValue.of(indexes == null ? lines.substring(value[0], value[1]) : YamlLoader.removeCharsAt(lines.subSequence(value[0], value[1]), indexes),
+					DataValue.of(
+							indexes == null ? lines.substring(value[0], value[1])
+									: YamlLoader.removeCharsAt(lines.subSequence(value[0], value[1]), indexes)
+											.toString(),
 							Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
 			comments = null;
 		}
 		if (comments != null) {
 			if (comments.get(comments.size() - 1).isEmpty()) {
 				comments.remove(comments.size() - 1); // just empty line
-				if (comments.isEmpty()) {
+				if (comments.isEmpty())
 					comments = null;
-				}
 			}
-			if (comments != null) {
-				if (data.isEmpty()) {
+			if (comments != null)
+				if (data.isEmpty())
 					header = comments;
-				} else {
+				else
 					footer = comments;
-				}
-			}
 		}
 		loaded = comments != null || !data.isEmpty();
 	}
 
 	@Override
 	public void load(String input) {
-		if (input == null) {
+		if (input == null)
 			return;
-		}
 		StringContainer container = new StringContainer(input, 0, 0);
 		load(container, LoaderReadUtil.readLinesFromContainer(container));
 	}
@@ -100,42 +101,47 @@ public class PropertiesLoader extends EmptyLoader {
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
 		try {
-			for (String h : config.getDataLoader().getHeader()) {
+			for (String h : config.getDataLoader().getHeader())
 				builder.append(h).append(System.lineSeparator());
-			}
 		} catch (Exception er) {
 			er.printStackTrace();
 		}
 		boolean first = true;
 		for (Entry<String, DataValue> key : config.getDataLoader().entrySet()) {
-			if (first) {
+			if (first)
 				first = false;
-			} else {
+			else
 				builder.append(System.lineSeparator());
-			}
-			if (markSaved) {
+			if (markSaved)
 				key.getValue().modified = false;
-			}
 			if (key.getValue().value == null) {
 				builder.append(key.getKey()).append('=');
-				if (key.getValue().commentAfterValue != null) {
+				if (key.getValue().commentAfterValue != null)
 					builder.append(' ').append(key.getValue().commentAfterValue);
-				}
 				continue;
 			}
 			builder.append(key.getKey()).append('=').append(Json.writer().write(key.getValue().value));
-			if (key.getValue().commentAfterValue != null) {
+			if (key.getValue().commentAfterValue != null)
 				builder.append(' ').append(key.getValue().commentAfterValue);
-			}
 		}
 		try {
-			for (String h : config.getDataLoader().getFooter()) {
+			for (String h : config.getDataLoader().getFooter())
 				builder.append(h).append(System.lineSeparator());
-			}
 		} catch (Exception er) {
 			er.printStackTrace();
 		}
 		return builder;
+	}
+
+	private void trim(int[] line, int[] trimmed) {
+		int len = line[1] - line[0];
+		int st = 0;
+		while (st < len && lines.charAt(line[0] + st) <= ' ')
+			st++;
+		while (st < len && lines.charAt(line[0] + len - 1) <= ' ')
+			len--;
+		trimmed[0] = line[0] + st;
+		trimmed[1] = line[0] + len;
 	}
 
 	protected static int[][] readConfigLine(StringContainer input, int[] index) {
@@ -148,9 +154,7 @@ public class PropertiesLoader extends EmptyLoader {
 				break;
 			case '=':
 				if (i == index[0])
-				 {
 					return null; // Invalid PROPERTIES file.
-				}
 				int[][] result = new int[2][];
 				result[0] = YamlLoader.getFromQuotes(input, YamlLoader.trim(input, index[0], i));
 				result[1] = YamlLoader.trim(input, i + 1, index[1]);
@@ -160,9 +164,7 @@ public class PropertiesLoader extends EmptyLoader {
 			}
 		}
 		if (foundYamlIndexChar)
-		 {
 			return null; // Hey! This is YAML file.
-		}
 		int[][] result = new int[1][];
 		result[0] = YamlLoader.getFromQuotes(input, YamlLoader.trim(input, index[0], index[1]));
 		return result;
