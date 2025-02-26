@@ -21,10 +21,9 @@ public class ComponentAPI {
 	}
 
 	public static ComponentTransformer<?> registerTransformer(String name, ComponentTransformer<?> transformer) {
-		if (ComponentAPI.transformers.put(name.toUpperCase(), transformer) != null) {
+		if (ComponentAPI.transformers.put(name.toUpperCase(), transformer) != null)
 			Logger.getGlobal()
 					.warning("[TheAPI/ComponentAPI] Overriding " + name.toUpperCase() + " component transformer.");
-		}
 		return transformer;
 	}
 
@@ -41,16 +40,14 @@ public class ComponentAPI {
 	}
 
 	public static String toString(Component input) {
-		if (input == null) {
+		if (input == null)
 			return null;
-		}
 		return input.toString(); // Are you lazy or stupid?
 	}
 
 	public static Component fromString(String input) {
-		if (input == null) {
+		if (input == null)
 			return null;
-		}
 		return ComponentAPI.fromString(input,
 				/* Depends on version & software */ hexModeEnabled == null
 						? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15))
@@ -59,9 +56,8 @@ public class ComponentAPI {
 	}
 
 	public static Component fromString(String input, boolean hexMode) {
-		if (input == null) {
+		if (input == null)
 			return null;
-		}
 		return ComponentAPI.fromString(input,
 				hexMode ? hexModeEnabled == null
 						? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15))
@@ -70,9 +66,8 @@ public class ComponentAPI {
 	}
 
 	public static Component fromString(String input, boolean hexMode, boolean urlMode) {
-		if (input == null || input.isEmpty()) {
+		if (input == null || input.isEmpty())
 			return Component.EMPTY_COMPONENT;
-		}
 
 		Component main = new Component("");
 		Component component = new Component();
@@ -94,13 +89,12 @@ public class ComponentAPI {
 			char c = input.charAt(i);
 			if (c == '§' && i + 1 < input.length()) {
 				char afterSymbol = input.charAt(++i);
-				if (hexMode && afterSymbol == 'x' && i + 12 < input.length()) {
+				if (hexMode && afterSymbol == 'x' && i + 12 < input.length())
 					for (int ic = 1; ic < 13; ++ic) {
 						afterSymbol = input.charAt(i + ic);
 						if (ic % 2 == 1) {
-							if (afterSymbol == '§') {
+							if (afterSymbol == '§')
 								continue;
-							}
 							container.append('§').append('x');
 							continue charLoop;
 						}
@@ -125,10 +119,9 @@ public class ComponentAPI {
 							continue charLoop;
 						}
 					}
-				} else if (isColorChar(afterSymbol)) {
-					if (component.colorToChar() == afterSymbol) {
+				else if (isColorChar(afterSymbol)) {
+					if (component.colorToChar() == afterSymbol)
 						continue;
-					}
 					if (!container.isEmpty()) {
 						privatePos = 0;
 						spaceFinder = 0;
@@ -141,9 +134,8 @@ public class ComponentAPI {
 					component.setColorFromChar(afterSymbol);
 					continue;
 				} else if (isFormat(afterSymbol)) {
-					if (hasFormat(component, afterSymbol)) {
+					if (hasFormat(component, afterSymbol))
 						continue;
-					}
 					if (!container.isEmpty()) {
 						privatePos = 0;
 						spaceFinder = 0;
@@ -160,7 +152,7 @@ public class ComponentAPI {
 				continue;
 			}
 			container.append(c);
-			if (urlMode) {
+			if (urlMode)
 				switchCase: switch (lookingMode) {
 				case 0:
 					initAt = i;
@@ -223,11 +215,10 @@ public class ComponentAPI {
 						++count;
 						break;
 					}
-					if (c == ' ') {
+					if (c == ' ')
 						spaceFinder = privatePos + 1;
-					} else {
+					else
 						spaceFinder = 0;
-					}
 					lookingMode = 0;
 					break;
 				case 2: // xxx.(lookingForPossibleEnding/xxx)
@@ -238,7 +229,7 @@ public class ComponentAPI {
 						break;
 					}
 					if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
-						if (++count == 1 && prevCount >= 4) {
+						if (++count == 1 && prevCount >= 4)
 							switch (c) {
 							case 'a':
 								if (i + 2 < input.length() && (input.charAt(i + 1) == 'p' && input.charAt(i + 2) == 'p'
@@ -264,9 +255,8 @@ public class ComponentAPI {
 										&& input.charAt(i + 2) == 'n' && input.charAt(i + 3) == 's'
 										&& input.charAt(i + 4) == 't' && input.charAt(i + 5) == 'e'
 										&& input.charAt(i + 6) == 'r') {
-									for (int ic = 1; ic < 7; ++ic) {
+									for (int ic = 1; ic < 7; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 6;
 									lookingMode = 4; // Read until space
 								}
@@ -284,9 +274,8 @@ public class ComponentAPI {
 								} else if (i + 4 < input.length() && input.charAt(i + 1) == 'l'
 										&& input.charAt(i + 2) == 'o' && input.charAt(i + 3) == 'u'
 										&& input.charAt(i + 4) == 'd') {
-									for (int ic = 1; ic < 5; ++ic) {
+									for (int ic = 1; ic < 5; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 4;
 									lookingMode = 4; // Read until space
 								}
@@ -308,9 +297,8 @@ public class ComponentAPI {
 								} else if (i + 5 < input.length() && input.charAt(i + 1) == 'n'
 										&& input.charAt(i + 2) == 'l' && input.charAt(i + 3) == 'i'
 										&& input.charAt(i + 4) == 'n' && input.charAt(i + 5) == 'e') {
-									for (int ic = 1; ic < 6; ++ic) {
+									for (int ic = 1; ic < 6; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 5;
 									lookingMode = 4; // Read until space
 								}
@@ -322,9 +310,8 @@ public class ComponentAPI {
 									lookingMode = 4; // Read until space
 								} else if (i + 3 < input.length() && input.charAt(i + 1) == 'n'
 										&& input.charAt(i + 2) == 'f' && input.charAt(i + 3) == 'o') {
-									for (int ic = 1; ic < 4; ++ic) {
+									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 3;
 									lookingMode = 4; // Read until space
 								}
@@ -347,9 +334,8 @@ public class ComponentAPI {
 							case 'b':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'l' && input.charAt(i + 2) == 'o'
 										&& input.charAt(i + 3) == 'g') {
-									for (int ic = 1; ic < 4; ++ic) {
+									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 3;
 									lookingMode = 4; // Read until space
 								}
@@ -357,9 +343,8 @@ public class ComponentAPI {
 							case 't':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'e' && input.charAt(i + 2) == 'c'
 										&& input.charAt(i + 3) == 'h') {
-									for (int ic = 1; ic < 4; ++ic) {
+									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 3;
 									lookingMode = 4; // Read until space
 								}
@@ -379,9 +364,8 @@ public class ComponentAPI {
 												&& input.charAt(i + 3) == 'c' && input.charAt(i + 4) == 'e'
 												|| input.charAt(i + 1) == 't' && input.charAt(i + 2) == 'o'
 														&& input.charAt(i + 3) == 'r' && input.charAt(i + 4) == 'e')) {
-									for (int ic = 1; ic < 5; ++ic) {
+									for (int ic = 1; ic < 5; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 4;
 									lookingMode = 4; // Read until space
 								}
@@ -433,15 +417,13 @@ public class ComponentAPI {
 										&& input.charAt(i + 2) == 'b' && input.charAt(i + 3) == 's'
 										&& input.charAt(i + 4) == 'i' && input.charAt(i + 5) == 't'
 										&& input.charAt(i + 6) == 'e') {
-									for (int ic = 1; ic < 7; ++ic) {
+									for (int ic = 1; ic < 7; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 6;
 									lookingMode = 4; // Read until space
 								}
 								break switchCase;
 							}
-						}
 						break;
 					}
 					if (c == '.') { // xxx.
@@ -459,7 +441,7 @@ public class ComponentAPI {
 					break;
 				case 3:
 					if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
-						if (++count == 1) {
+						if (++count == 1)
 							switch (c) {
 							case 'a':
 								if (i + 2 < input.length() && (input.charAt(i + 1) == 'p' && input.charAt(i + 2) == 'p'
@@ -485,9 +467,8 @@ public class ComponentAPI {
 										&& input.charAt(i + 2) == 'n' && input.charAt(i + 3) == 's'
 										&& input.charAt(i + 4) == 't' && input.charAt(i + 5) == 'e'
 										&& input.charAt(i + 6) == 'r') {
-									for (int ic = 1; ic < 7; ++ic) {
+									for (int ic = 1; ic < 7; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 6;
 									lookingMode = 4; // Read until space
 								}
@@ -505,9 +486,8 @@ public class ComponentAPI {
 								} else if (i + 4 < input.length() && input.charAt(i + 1) == 'l'
 										&& input.charAt(i + 2) == 'o' && input.charAt(i + 3) == 'u'
 										&& input.charAt(i + 4) == 'd') {
-									for (int ic = 1; ic < 5; ++ic) {
+									for (int ic = 1; ic < 5; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 4;
 									lookingMode = 4; // Read until space
 								}
@@ -529,9 +509,8 @@ public class ComponentAPI {
 								} else if (i + 5 < input.length() && input.charAt(i + 1) == 'n'
 										&& input.charAt(i + 2) == 'l' && input.charAt(i + 3) == 'i'
 										&& input.charAt(i + 4) == 'n' && input.charAt(i + 5) == 'e') {
-									for (int ic = 1; ic < 6; ++ic) {
+									for (int ic = 1; ic < 6; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 5;
 									lookingMode = 4; // Read until space
 								}
@@ -543,9 +522,8 @@ public class ComponentAPI {
 									lookingMode = 4; // Read until space
 								} else if (i + 3 < input.length() && input.charAt(i + 1) == 'n'
 										&& input.charAt(i + 2) == 'f' && input.charAt(i + 3) == 'o') {
-									for (int ic = 1; ic < 4; ++ic) {
+									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 3;
 									lookingMode = 4; // Read until space
 								}
@@ -568,9 +546,8 @@ public class ComponentAPI {
 							case 'b':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'l' && input.charAt(i + 2) == 'o'
 										&& input.charAt(i + 3) == 'g') {
-									for (int ic = 1; ic < 4; ++ic) {
+									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 3;
 									lookingMode = 4; // Read until space
 								}
@@ -578,9 +555,8 @@ public class ComponentAPI {
 							case 't':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'e' && input.charAt(i + 2) == 'c'
 										&& input.charAt(i + 3) == 'h') {
-									for (int ic = 1; ic < 4; ++ic) {
+									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 3;
 									lookingMode = 4; // Read until space
 								}
@@ -600,9 +576,8 @@ public class ComponentAPI {
 												&& input.charAt(i + 3) == 'c' && input.charAt(i + 4) == 'e'
 												|| input.charAt(i + 1) == 't' && input.charAt(i + 2) == 'o'
 														&& input.charAt(i + 3) == 'r' && input.charAt(i + 4) == 'e')) {
-									for (int ic = 1; ic < 5; ++ic) {
+									for (int ic = 1; ic < 5; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 4;
 									lookingMode = 4; // Read until space
 								}
@@ -654,15 +629,13 @@ public class ComponentAPI {
 										&& input.charAt(i + 2) == 'b' && input.charAt(i + 3) == 's'
 										&& input.charAt(i + 4) == 'i' && input.charAt(i + 5) == 't'
 										&& input.charAt(i + 6) == 'e') {
-									for (int ic = 1; ic < 7; ++ic) {
+									for (int ic = 1; ic < 7; ++ic)
 										container.append(input.charAt(i + ic));
-									}
 									i += 6;
 									lookingMode = 4; // Read until space
 								}
 								break switchCase;
 							}
-						}
 						break;
 					}
 					if (c == '/') {
@@ -676,11 +649,10 @@ public class ComponentAPI {
 					if (c == ' ') {
 						ClickEvent event = new ClickEvent(ClickEvent.Action.OPEN_URL,
 								input.substring(initAt, i).replace('§', '&'));
-						if (event.getValue().startsWith("http://")) {
+						if (event.getValue().startsWith("http://"))
 							event.setValue("https" + event.getValue().substring(4));
-						} else if (!event.getValue().startsWith("https://")) {
+						else if (!event.getValue().startsWith("https://"))
 							event.setValue("https://" + event.getValue());
-						}
 						Component start = componentStartAt == componentPos ? component
 								: main.getExtra().get(componentStartAt);
 						if (componentStartAt == componentPos) { // Start & end are same
@@ -699,9 +671,8 @@ public class ComponentAPI {
 							container.append(' ');
 							component = new Component().copyOf(start);
 						} else {
-							for (int middle = componentStartAt + 1; middle < componentPos; ++middle) {
+							for (int middle = componentStartAt + 1; middle < componentPos; ++middle)
 								main.getExtra().get(middle).setClickEvent(event);
-							}
 
 							// start
 							Component withUrl = new Component(start.getText().substring(spaceFinder)).copyOf(start);
@@ -730,16 +701,14 @@ public class ComponentAPI {
 					}
 					break;
 				}
-			}
 			++privatePos;
 		}
 		if (lookingMode == 4) {
 			ClickEvent event = new ClickEvent(ClickEvent.Action.OPEN_URL, input.substring(initAt).replace('§', '&'));
-			if (event.getValue().startsWith("http://")) {
+			if (event.getValue().startsWith("http://"))
 				event.setValue("https" + event.getValue().substring(4));
-			} else if (!event.getValue().startsWith("https://")) {
+			else if (!event.getValue().startsWith("https://"))
 				event.setValue("https://" + event.getValue());
-			}
 			Component start = componentStartAt == componentPos ? component : main.getExtra().get(componentStartAt);
 			if (componentStartAt == componentPos) { // Start & end are same
 				if (spaceFinder == 0) {
@@ -752,9 +721,8 @@ public class ComponentAPI {
 					start.setText(container.substring(0, spaceFinder));
 				}
 			} else {
-				for (int middle = componentStartAt + 1; middle < componentPos; ++middle) {
+				for (int middle = componentStartAt + 1; middle < componentPos; ++middle)
 					main.getExtra().get(middle).setClickEvent(event);
-				}
 
 				// start
 				Component withUrl = new Component(start.getText().substring(spaceFinder)).copyOf(start);
@@ -768,11 +736,10 @@ public class ComponentAPI {
 				end.setText(container.toString());
 				end.setClickEvent(event);
 			}
-		} else if (!container.isEmpty()) {
+		} else if (!container.isEmpty())
 			component.setText(container.toString());
-		} else if (container.isEmpty()) {
+		else if (container.isEmpty())
 			main.getExtra().remove(main.getExtra().size() - 1);
-		}
 		return main;
 	}
 
@@ -789,26 +756,22 @@ public class ComponentAPI {
 	@SuppressWarnings("unchecked")
 	public static String listToString(List<?> list) {
 		StringContainer builder = new StringContainer(list.size() * 20);
-		for (Object text : list) {
-			if (text instanceof Map) {
+		for (Object text : list)
+			if (text instanceof Map)
 				builder.append(ComponentAPI.getColor(((Map<String, Object>) text).get("color")))
 						.append(String.valueOf(((Map<String, Object>) text).get("text")));
-			} else {
+			else
 				builder.append(ColorUtils.colorize(text + ""));
-			}
-		}
 		return builder.toString();
 	}
 
 	@SuppressWarnings("unchecked")
 	public static Component fromJson(String json) {
 		Object obj = Json.reader().simpleRead(json);
-		if (obj instanceof Map) {
+		if (obj instanceof Map)
 			return fromJson((Map<String, Object>) obj);
-		}
-		if (!(obj instanceof Collection)) {
+		if (!(obj instanceof Collection))
 			return fromString(json);
-		}
 		return fromJson((Collection<?>) obj);
 	}
 
@@ -823,33 +786,66 @@ public class ComponentAPI {
 
 	@SuppressWarnings("unchecked")
 	public static Component fromJson(Map<String, Object> map) {
-		if (map.containsKey("id") && map.containsKey("type")) {
+		if (map.containsKey("id") && map.containsKey("type"))
 			return ComponentEntity.fromJson(map);
-		}
-		if (map.containsKey("id")) {
+		if (map.containsKey("id"))
 			return ComponentItem.fromJson(map);
-		}
 		Component component = Component.fromString(map.get("text") + "");
 		if (map.containsKey("color")) {
-			component.setColor(map.get("color") + "");
+			String color = map.get("color") + "";
+			component.setColor(color);
+			if (component.getExtra() != null)
+				for (Component comp : component.getExtra())
+					if (comp.getColor() == null)
+						comp.setColor(color);
 		}
 		if (map.containsKey("font")) {
-			component.setFont(map.get("font") + "");
+			String font = map.get("font") + "";
+			component.setFont(font);
+			if (component.getExtra() != null)
+				for (Component comp : component.getExtra())
+					if (comp.getColor() == null)
+						comp.setFont(font);
 		}
 		if (map.containsKey("bold")) {
-			component.setBold((boolean) map.get("bold"));
+			boolean bold = (boolean) map.get("bold");
+			component.setBold(bold);
+			if (component.getExtra() != null)
+				for (Component comp : component.getExtra())
+					if (comp.getColor() == null)
+						comp.setBold(bold);
 		}
 		if (map.containsKey("italic")) {
-			component.setItalic((boolean) map.get("italic"));
+			boolean italic = (boolean) map.get("italic");
+			component.setItalic(italic);
+			if (component.getExtra() != null)
+				for (Component comp : component.getExtra())
+					if (comp.getColor() == null)
+						comp.setItalic(italic);
 		}
 		if (map.containsKey("obfuscated")) {
-			component.setObfuscated((boolean) map.get("obfuscated"));
+			boolean obfuscated = (boolean) map.get("obfuscated");
+			component.setObfuscated(obfuscated);
+			if (component.getExtra() != null)
+				for (Component comp : component.getExtra())
+					if (comp.getColor() == null)
+						comp.setObfuscated(obfuscated);
 		}
 		if (map.containsKey("underlined")) {
-			component.setUnderlined((boolean) map.get("underlined"));
+			boolean underlined = (boolean) map.get("underlined");
+			component.setUnderlined(underlined);
+			if (component.getExtra() != null)
+				for (Component comp : component.getExtra())
+					if (comp.getColor() == null)
+						comp.setUnderlined(underlined);
 		}
 		if (map.containsKey("strikethrough")) {
-			component.setStrikethrough((boolean) map.get("strikethrough"));
+			boolean strikethrough = (boolean) map.get("strikethrough");
+			component.setStrikethrough(strikethrough);
+			if (component.getExtra() != null)
+				for (Component comp : component.getExtra())
+					if (comp.getColor() == null)
+						comp.setStrikethrough(strikethrough);
 		}
 		if (map.containsKey("hoverEvent")) {
 			Map<String, String> value = (Map<String, String>) map.get("hoverEvent");
@@ -876,20 +872,16 @@ public class ComponentAPI {
 			if (component.getClickEvent() == null)
 				component.setClickEvent(click);
 		}
-		if (map.containsKey("insertion")) {
+		if (map.containsKey("insertion"))
 			component.setInsertion(map.get("insertion") + "");
-		}
 		if (map.containsKey("extra")) {
 			Object extra = map.get("extra");
-			if (extra instanceof Map) {
+			if (extra instanceof Map)
 				component.append(fromJson((Map<String, Object>) extra));
-			} else if (extra instanceof Collection) {
-				for (Object val : (Collection<?>) extra) {
-					if (val instanceof Map) {
+			else if (extra instanceof Collection)
+				for (Object val : (Collection<?>) extra)
+					if (val instanceof Map)
 						component.append(fromJson((Map<String, Object>) val));
-					}
-				}
-			}
 		}
 		return component;
 	}
@@ -929,12 +921,10 @@ public class ComponentAPI {
 	}
 
 	private static String getColor(Object color) {
-		if (color == null) {
+		if (color == null)
 			return "";
-		}
-		if (color.toString().startsWith("#")) {
+		if (color.toString().startsWith("#"))
 			return ColorUtils.color.replaceHex(color.toString());
-		}
 		return "§" + Component.colorToChar(color.toString());
 	}
 }
