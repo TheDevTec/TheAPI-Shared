@@ -288,7 +288,7 @@ public class YamlLoader extends EmptyLoader {
 			if (currentDepth < listDepth)
 				break;
 
-			if (readerMode == READ_MAP_LIST && currentDepth == listDepth) {
+			if ((readerMode == READ_MAP_LIST||readerMode == READ_LIST) && currentDepth == listDepth) {
 				if (stringContainer != null && key != null)
 					map.put(key, stringContainer.toString());
 				if (lines.charAt(trimmed[0]) != '-' || lines.charAt(trimmed[0] + 1) != ' ')
@@ -450,7 +450,7 @@ public class YamlLoader extends EmptyLoader {
 						map = originMap;
 						stack.clear();
 					} else
-						for (int i = 0; i < currentDepth - sectionDepth; ++i)
+						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
 							map = stack.pop();
 					map.put(key, map = new HashMap<>());
 					stack.add(map);
@@ -462,7 +462,7 @@ public class YamlLoader extends EmptyLoader {
 						map = originMap;
 						stack.clear();
 					} else
-						for (int i = 0; i < currentDepth - sectionDepth; ++i)
+						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
 							map = stack.pop();
 
 				// Value
