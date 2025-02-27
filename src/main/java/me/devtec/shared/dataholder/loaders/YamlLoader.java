@@ -288,7 +288,7 @@ public class YamlLoader extends EmptyLoader {
 			if (currentDepth < listDepth)
 				break;
 
-			if ((readerMode == READ_MAP_LIST||readerMode == READ_LIST) && currentDepth == listDepth) {
+			if ((readerMode == READ_MAP_LIST || readerMode == READ_LIST) && currentDepth == listDepth) {
 				if (stringContainer != null && key != null)
 					map.put(key, stringContainer.toString());
 				if (lines.charAt(trimmed[0]) != '-' || lines.charAt(trimmed[0] + 1) != ' ')
@@ -317,7 +317,9 @@ public class YamlLoader extends EmptyLoader {
 							? (StringContainer) lines.subSequence(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes);
 					parts = notInQueto ? readConfigLine(valueString, null) : null;
-					if (parts != null && parts.length > 1) {
+					if ((valueString.charAt(0) != '[' || valueString.charAt(valueString.length() - 1) != ']')
+							&& (valueString.charAt(0) != '{' || valueString.charAt(valueString.length() - 1) != '}')
+							&& parts != null && parts.length > 1) {
 						if (map == null)
 							map = new HashMap<>();
 						// Value
