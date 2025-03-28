@@ -19,28 +19,22 @@ public class JsonLoader extends EmptyLoader {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void load(String input) {
-		if (input == null) {
+		if (input == null)
 			return;
-		}
 		char startChar = input.isEmpty() ? 0 : lookupForStart(input);
 		char endChar = input.isEmpty() ? 0 : lookupForEnd(input);
-		if ((startChar != '{' || endChar != '}') && (startChar != '[' || endChar != ']')) {
+		if ((startChar != '{' || endChar != '}') && (startChar != '[' || endChar != ']'))
 			return;
-		}
 		reset();
 		try {
 			Object read = Json.reader().read(replace(input));
-			if (read instanceof Map) {
-				for (Entry<Object, Object> keyed : ((Map<Object, Object>) read).entrySet()) {
-					set(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
-				}
-			} else {
-				for (Object o : (Collection<Object>) read) {
-					for (Entry<Object, Object> keyed : ((Map<Object, Object>) o).entrySet()) {
-						set(keyed.getKey() + "", DataValue.of(null, Json.reader().read(keyed.getValue() + ""), null));
-					}
-				}
-			}
+			if (read instanceof Map)
+				for (Entry<Object, Object> keyed : ((Map<Object, Object>) read).entrySet())
+					set(keyed.getKey() + "", DataValue.of(null, keyed.getValue(), null));
+			else
+				for (Object o : (Collection<Object>) read)
+					for (Entry<Object, Object> keyed : ((Map<Object, Object>) o).entrySet())
+						set(keyed.getKey() + "", DataValue.of(null, keyed.getValue(), null));
 			loaded = true;
 		} catch (Exception er) {
 			loaded = false;
@@ -50,9 +44,8 @@ public class JsonLoader extends EmptyLoader {
 	private char lookupForStart(String input) {
 		for (int i = 0; i < input.length(); ++i) {
 			char c = input.charAt(i);
-			if (c <= ' ') {
+			if (c <= ' ')
 				continue;
-			}
 			return c;
 		}
 		return 0;
@@ -61,9 +54,8 @@ public class JsonLoader extends EmptyLoader {
 	private char lookupForEnd(String input) {
 		for (int i = input.length() - 1; i > 0; --i) {
 			char c = input.charAt(i);
-			if (c <= ' ') {
+			if (c <= ' ')
 				continue;
-			}
 			return c;
 		}
 		return 0;
@@ -77,9 +69,8 @@ public class JsonLoader extends EmptyLoader {
 	public String saveAsString(Config config, boolean markSaved) {
 		Checkers.nonNull(config, "Config");
 		List<Map<String, Object>> list = new ArrayList<>();
-		for (String key : config.getDataLoader().getPrimaryKeys()) {
+		for (String key : config.getDataLoader().getPrimaryKeys())
 			addKeys(config, list, key, markSaved);
-		}
 		return Json.writer().simpleWrite(list);
 	}
 
@@ -92,16 +83,14 @@ public class JsonLoader extends EmptyLoader {
 	protected void addKeys(Config config, List<Map<String, Object>> list, String key, boolean markSaved) {
 		DataValue data = config.getDataLoader().get(key);
 		if (data != null) {
-			if (markSaved) {
+			if (markSaved)
 				data.modified = false;
-			}
 			Map<String, Object> a = new HashMap<>();
 			a.put(key, isApplicable(data.value) ? Json.writer().writeWithoutParse(data.value) : data.value);
 			list.add(a);
 		}
-		for (String keyer : config.getDataLoader().keySet(key, false)) {
+		for (String keyer : config.getDataLoader().keySet(key, false))
 			addKeys(config, list, key + '.' + keyer, markSaved);
-		}
 	}
 
 	private boolean isApplicable(Object value) {
@@ -115,20 +104,17 @@ public class JsonLoader extends EmptyLoader {
 
 	public static Map<String, Object> parseToJson(Config data) {
 		Map<String, Object> config = new LinkedHashMap<>();
-		for (Entry<String, DataValue> entry : data.getDataLoader().entrySet()) {
-			if (entry.getValue() != null) {
+		for (Entry<String, DataValue> entry : data.getDataLoader().entrySet())
+			if (entry.getValue() != null)
 				config.put(entry.getKey(), entry.getValue().value);
-			}
-		}
 		return config;
 	}
 
 	public static JsonLoader parseFromJson(Map<String, Object> json) {
 		JsonLoader loader = new JsonLoader();
 		loader.loaded = true;
-		for (Entry<String, Object> entry : json.entrySet()) {
+		for (Entry<String, Object> entry : json.entrySet())
 			loader.set(entry.getKey(), DataValue.of(entry.getValue()));
-		}
 		return loader;
 	}
 }
