@@ -1,8 +1,8 @@
 package me.devtec.shared.utility;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Random;
 
 import me.devtec.shared.Pair;
@@ -85,13 +85,11 @@ public class MathUtils {
 	 */
 	public static double randomDouble(double min, double max) {
 		double range = max - min;
-		if (range <= 0) {
+		if (range <= 0)
 			return min;
-		}
 		double randomValue = random.nextDouble() * range + min;
-		if (randomValue >= max) {
+		if (randomValue >= max)
 			return Math.nextDown(max);
-		}
 		return randomValue;
 	}
 
@@ -102,9 +100,8 @@ public class MathUtils {
 	 * @return int
 	 */
 	public static int randomInt(int min, int max) {
-		if (min == max) {
+		if (min == max)
 			return min;
-		}
 
 		boolean isNegative = max < 0;
 		if (isNegative) {
@@ -113,9 +110,8 @@ public class MathUtils {
 		}
 
 		int range = max - min;
-		if (range <= 0) {
+		if (range <= 0)
 			throw new IllegalArgumentException("Invalid range: min > max");
-		}
 		int randomValue = (int) (random.nextDouble() * range) + min;
 		return isNegative ? randomValue * -1 : randomValue;
 	}
@@ -130,7 +126,7 @@ public class MathUtils {
 
 	/**
 	 * @apiNote Generates a random chance and compares it to the specified chance
-	 * @param percent       Inserted chance
+	 * @param percent     Inserted chance
 	 * @param basedChance Based chance
 	 */
 	public static boolean checkProbability(double percent, double basedChance) {
@@ -171,120 +167,118 @@ public class MathUtils {
 		int brackets = 0;
 
 		char prevOperation = 0;
-		boolean minus = false;
 		for (int i = startPos; i < endPos; ++i) {
 			char c = expression.charAt(i);
 			if (brackets == 0 && c >= '0' && c <= '9' || c == '.' || c == ',' || c == 'e' || c == 'E') {
-				if (start == -1) {
+				if (start == -1)
 					start = i;
-				}
-			} else {
+			} else
 				switch (c) {
 				case '-':
 				case '+':
 				case '*':
 				case '/':
-					if (brackets != 0) {
+					if (brackets != 0)
 						break;
-					}
-					if (start == -1) {
-						if (prevOperation != '-' ? c == '-' : c == '+') {
-							minus = true;
-						} else if (c == '-') {
-							minus = false;
-						}
-					}
-
 					if (start != -1) {
-						operation.add(Pair.of(c, minus ? -ParseUtils.getDouble(expression, start, i) : ParseUtils.getDouble(expression, start, i)));
-						minus = c == '-';
+						char d = swap(prevOperation);
+						operation.add(Pair.of(d, d == '-' ? -ParseUtils.getDouble(expression, start, i)
+								: ParseUtils.getDouble(expression, start, i)));
 						start = -1;
 					}
 					prevOperation = c;
 					break;
 				case '(':
 					if (++brackets == 1) {
-						if (prevOperation == 0) {
+						if (prevOperation == 0)
 							prevOperation = '+';
-						}
 						if (start != -1) {
-							operation.add(Pair.of(prevOperation, minus ? -ParseUtils.getDouble(expression, start, i) : ParseUtils.getDouble(expression, start, i)));
+							operation.add(Pair.of(prevOperation,
+									prevOperation == '-' ? -ParseUtils.getDouble(expression, start, i)
+											: ParseUtils.getDouble(expression, start, i)));
 							prevOperation = '+';
-							minus = false;
 						}
 						start = i + 1;
 					}
 					break;
 				case ')':
 					if (--brackets <= 0) {
-						operation.add(Pair.of(prevOperation, minus ? -calculate(expression, start, i) : calculate(expression, start, i)));
+						operation.add(Pair.of(prevOperation, prevOperation == '-' ? -calculate(expression, start, i)
+								: calculate(expression, start, i)));
 						start = -1;
 						prevOperation = '+';
-						minus = false;
 					}
 					break;
 				default:
 					break;
 				}
-			}
 		}
-		if (start != -1) {
-			operation.add(Pair.of(prevOperation, minus ? -ParseUtils.getDouble(expression, start, endPos) : ParseUtils.getDouble(expression, start, endPos)));
-		}
+		if (start != -1)
+			operation.add(Pair.of(prevOperation, prevOperation == '-' ? -ParseUtils.getDouble(expression, start, endPos)
+					: ParseUtils.getDouble(expression, start, endPos)));
 		// *, /
-		Iterator<Pair> itr = operation.iterator();
+		ListIterator<Pair> itr = operation.listIterator();
 		while (itr.hasNext()) {
-			Pair pair = itr.next();
-			switch ((char) pair.getKey()) {
+			Pair current = itr.next();
+			if (itr.hasNext()) {
+				Pair pair = itr.next();
+				itr.previous();
+				switch ((char) pair.getKey()) {
 				case '*': {
 					itr.remove();
-					if(itr.hasNext()) {
-						Pair current = itr.next();
-						current.setValue((double) pair.getValue() * (double) current.getValue());
-					}
+					itr.previous();
+					current.setValue((double) current.getValue() * (double) pair.getValue());
 					break;
 				}
 				case '/': {
 					itr.remove();
-					if(itr.hasNext()) {
-						Pair current = itr.next();
-						current.setValue((double) pair.getValue() / (double) current.getValue());
-					}
+					itr.previous();
+					current.setValue((double) current.getValue() / (double) pair.getValue());
 					break;
+				}
 				}
 			}
 		}
 		// -, +
-		itr = operation.iterator();
+		itr = operation.listIterator();
 		while (itr.hasNext()) {
-			Pair pair = itr.next();
-			switch ((char) pair.getKey()) {
+			Pair current = itr.next();
+			if (itr.hasNext()) {
+				Pair pair = itr.next();
+				itr.previous();
+				switch ((char) pair.getKey()) {
 				case '-':
-				case '+':
-					if(itr.hasNext()) {
-						Pair current = itr.next();
-						if ((char) current.getKey() == '/') {
-							current.setValue((double) pair.getValue() / (double) current.getValue());
-						} else if ((char) current.getKey() == '*') {
-							current.setValue((double) pair.getValue() * (double) current.getValue());
-						} else {
-							current.setValue((double) current.getValue() + (double) pair.getValue());
-						}
-					}
+				case '+': {
+					itr.remove();
+					itr.previous();
+					current.setValue((double) current.getValue() + (double) pair.getValue());
 					break;
+				}
+				}
 			}
 		}
 		double result = 0;
-        for (Pair pair : operation) {
-            result += (double) pair.getValue();
-        }
+		for (Pair pair : operation)
+			result += (double) pair.getValue();
 		return result;
 	}
 
-	public static int getLongLength(long num) {
-		if (num == 0) {
-			return 1;
+	private static char swap(char prevOperation) {
+		switch (prevOperation) {
+		case '-':
+		case '+':
+		case '*':
+		case '/':
+			return prevOperation;
+		default:
+			break;
 		}
+		return '+';
+	}
+
+	public static int getLongLength(long num) {
+		if (num == 0)
+			return 1;
 		return (int) (Math.log10(Math.abs(num)) + 1);
 	}
 }
