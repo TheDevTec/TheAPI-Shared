@@ -165,8 +165,8 @@ public class MathUtils {
 		List<Pair> operation = new ArrayList<>();
 		int start = -1;
 		int brackets = 0;
-
 		char prevOperation = 0;
+		boolean minus = false;
 		for (int i = startPos; i < endPos; ++i) {
 			char c = expression.charAt(i);
 			if (brackets == 0 && c >= '0' && c <= '9' || c == '.' || c == ',' || c == 'e' || c == 'E') {
@@ -187,6 +187,47 @@ public class MathUtils {
 						start = -1;
 					}
 					prevOperation = c;
+					minus = false;
+					break;
+				case '√':
+					if (brackets != 0)
+						break;
+					if (start != -1) {
+						char d = swap(prevOperation);
+						operation.add(Pair.of(d, d == '-' ? -Math.sqrt(ParseUtils.getDouble(expression, start, i))
+								: Math.sqrt(ParseUtils.getDouble(expression, start, i))));
+						start = -1;
+					}
+					minus = prevOperation == '-';
+					prevOperation = c;
+					break;
+				case '^':
+					if (brackets != 0)
+						break;
+					if (start != -1) {
+						char d = swap(prevOperation);
+						operation.add(Pair.of(c, d == '-' ? -ParseUtils.getDouble(expression, start, i)
+								: ParseUtils.getDouble(expression, start, i)));
+						start = -1;
+					}
+					prevOperation = c;
+					minus = false;
+					break;
+				case '!':
+					if (brackets != 0)
+						break;
+					if (start != -1) {
+						char d = swap(prevOperation);
+						operation.add(Pair.of(d, d == '-' ? -factorial(ParseUtils.getDouble(expression, start, i))
+								: factorial(ParseUtils.getDouble(expression, start, i))));
+						start = -1;
+					} else {
+						Pair last = operation.get(operation.size() - 1);
+						double result = (double) last.getValue();
+						last.setValue(result < 0 ? -factorial(-result) : factorial(result));
+					}
+					++i;
+					minus = false;
 					break;
 				case '(':
 					if (++brackets == 1) {
@@ -203,10 +244,19 @@ public class MathUtils {
 					break;
 				case ')':
 					if (--brackets <= 0) {
-						operation.add(Pair.of(prevOperation, prevOperation == '-' ? -calculate(expression, start, i)
-								: calculate(expression, start, i)));
+						switch (prevOperation) {
+						case '√':
+							operation.add(Pair.of(minus ? '-' : '+', minus ? -Math.sqrt(calculate(expression, start, i))
+									: Math.sqrt(calculate(expression, start, i))));
+							break;
+						default:
+							operation.add(Pair.of(prevOperation, prevOperation == '-' ? -calculate(expression, start, i)
+									: calculate(expression, start, i)));
+							break;
+						}
 						start = -1;
 						prevOperation = '+';
+						minus = false;
 					}
 					break;
 				default:
@@ -216,8 +266,39 @@ public class MathUtils {
 		if (start != -1)
 			operation.add(Pair.of(prevOperation, prevOperation == '-' ? -ParseUtils.getDouble(expression, start, endPos)
 					: ParseUtils.getDouble(expression, start, endPos)));
-		// *, /
+		// √
 		ListIterator<Pair> itr = operation.listIterator();
+		while (itr.hasNext()) {
+			Pair current = itr.next();
+			switch ((char) current.getKey()) {
+			case '√': {
+				current.setValue(Math.sqrt((double) current.getValue()));
+				break;
+			}
+			}
+		}
+		// ^
+		itr = operation.listIterator();
+		while (itr.hasNext()) {
+			Pair current = itr.next();
+			if (itr.hasNext()) {
+				Pair pair = itr.next();
+				itr.previous();
+				switch ((char) current.getKey()) {
+				case '^': {
+					itr.remove();
+					itr.previous();
+					minus = (double) current.getValue() < 0;
+					double result = Math.pow(minus ? -(double) current.getValue() : (double) current.getValue(),
+							(double) pair.getValue());
+					current.setValue(minus ? -result : result);
+					break;
+				}
+				}
+			}
+		}
+		// *, /
+		itr = operation.listIterator();
 		while (itr.hasNext()) {
 			Pair current = itr.next();
 			if (itr.hasNext()) {
@@ -263,12 +344,36 @@ public class MathUtils {
 		return result;
 	}
 
+	private static double factorial(double n) {
+		if (n < 0 && Math.floor(n) == n)
+			return n;
+		++n;
+		int g = 7;
+		double[] p = { 0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+				-176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
+				1.5056327351493116e-7 };
+
+		if (n < 0.5)
+			return Math.PI / (Math.sin(Math.PI * n) * factorial(1 - n));
+
+		n -= 1;
+		double x = p[0];
+		for (int i = 1; i < p.length; i++)
+			x += p[i] / (n + i);
+
+		double t = n + g + 0.5;
+		return Math.sqrt(2 * Math.PI) * Math.pow(t, n + 0.5) * Math.exp(-t) * x;
+	}
+
 	private static char swap(char prevOperation) {
 		switch (prevOperation) {
 		case '-':
 		case '+':
 		case '*':
 		case '/':
+		case '^':
+		case '√':
+		case '!':
 			return prevOperation;
 		default:
 			break;
