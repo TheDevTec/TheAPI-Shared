@@ -10,24 +10,25 @@ import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.StringContainer;
 
 public class Component {
-	public static final Component EMPTY_COMPONENT = new Component("");
+	public static final Component EMPTY_COMPONENT = new ProtectedComponent("");
+	public static final Component NEW_LINE = new ProtectedComponent("\n");
 
-	private String text;
-	private List<Component> extra;
+	protected String text;
+	protected List<Component> extra;
 
 	// COLOR & FORMATS
-	private String color; // #RRGGBB (1.16+) or COLOR_NAME
-	private boolean bold; // l
-	private boolean italic; // o
-	private boolean obfuscated; // k
-	private boolean underlined; // n
-	private boolean strikethrough; // m
+	protected String color; // #RRGGBB (1.16+) or COLOR_NAME
+	protected boolean bold; // l
+	protected boolean italic; // o
+	protected boolean obfuscated; // k
+	protected boolean underlined; // n
+	protected boolean strikethrough; // m
 
 	// ADDITIONAL
-	private HoverEvent hoverEvent;
-	private ClickEvent clickEvent;
-	private String font;
-	private String insertion;
+	protected HoverEvent hoverEvent;
+	protected ClickEvent clickEvent;
+	protected String font;
+	protected String insertion;
 
 	public Component() {
 
@@ -148,30 +149,28 @@ public class Component {
 	}
 
 	public Component append(Component comp) {
-		if (extra == null) {
+		if (extra == null)
 			extra = new ArrayList<>();
-		}
 		extra.add(comp);
 		return this;
 	}
 
+	public boolean isEmpty() {
+		return (text == null || text.isEmpty()) && (extra == null || extra.isEmpty());
+	}
+
 	public String getFormats() {
 		StringContainer builder = new StringContainer(10);
-		if (isBold()) {
+		if (isBold())
 			builder.append('§').append('l');
-		}
-		if (isItalic()) {
+		if (isItalic())
 			builder.append('§').append('o');
-		}
-		if (isObfuscated()) {
+		if (isObfuscated())
 			builder.append('§').append('k');
-		}
-		if (isUnderlined()) {
+		if (isUnderlined())
 			builder.append('§').append('n');
-		}
-		if (isStrikethrough()) {
+		if (isStrikethrough())
 			builder.append('§').append('m');
-		}
 		return builder.toString();
 	}
 
@@ -183,11 +182,10 @@ public class Component {
 
 		// COLOR
 		if (getColor() != null) {
-			if (getColor().charAt(0) == '#') {
+			if (getColor().charAt(0) == '#')
 				colorBefore = getColor();
-			} else {
+			else
 				colorBefore = "§" + colorToChar();
-			}
 			builder.append(colorBefore);
 		}
 
@@ -197,20 +195,17 @@ public class Component {
 
 		builder.append(getText());
 
-		if (getExtra() != null) {
+		if (getExtra() != null)
 			for (Component c : getExtra()) {
 				builder.append(c.toString(colorBefore, formatsBefore));
-				if (c.getColor() != null) {
-					if (c.getColor().charAt(0) == '#') {
+				if (c.getColor() != null)
+					if (c.getColor().charAt(0) == '#')
 						colorBefore = c.getColor();
-					} else {
+					else
 						colorBefore = "§" + c.colorToChar();
-					}
-				}
 				String formats = c.getFormats();
 				formatsBefore = formats;
 			}
-		}
 		return builder.toString();
 	}
 
@@ -224,28 +219,23 @@ public class Component {
 		String formatsBefore = getFormats();
 		// COLOR
 		if (getColor() != null) {
-			if (getColor().charAt(0) == '#') {
+			if (getColor().charAt(0) == '#')
 				colorBefore = getColor();
-			} else {
+			else
 				colorBefore = "§" + colorToChar();
-			}
-			if (!colorBefore.equals(parentColorBefore) || !formatsBefore.equals(parentFormatsBefore)) {
+			if (!colorBefore.equals(parentColorBefore) || !formatsBefore.equals(parentFormatsBefore))
 				builder.append(colorBefore);
-			}
 		}
 
 		// FORMATS
-		if (!formatsBefore.equals(parentFormatsBefore)) {
+		if (!formatsBefore.equals(parentFormatsBefore))
 			builder.append(formatsBefore);
-		}
 
 		builder.append(getText());
 
-		if (getExtra() != null) {
-			for (Component c : getExtra()) {
+		if (getExtra() != null)
+			for (Component c : getExtra())
 				builder.append(c.toString(colorBefore, formatsBefore));
-			}
-		}
 		return builder;
 	}
 
@@ -263,7 +253,7 @@ public class Component {
 	}
 
 	protected static char colorToChar(String color) {
-		if (color != null) {
+		if (color != null)
 			switch (color) {
 			// a - f
 			case "green":
@@ -302,7 +292,6 @@ public class Component {
 			default:
 				break;
 			}
-		}
 		return 0;
 	}
 
@@ -433,36 +422,26 @@ public class Component {
 	public Map<String, Object> toJsonMap() {
 		Map<String, Object> map = new LinkedHashMap<>();
 		map.put("text", getText());
-		if (getColor() != null) {
+		if (getColor() != null)
 			map.put("color", getColor());
-		}
-		if (getClickEvent() != null) {
+		if (getClickEvent() != null)
 			map.put("clickEvent", getClickEvent().toJsonMap());
-		}
-		if (getHoverEvent() != null) {
+		if (getHoverEvent() != null)
 			map.put("hoverEvent", getHoverEvent().toJsonMap());
-		}
-		if (getFont() != null) {
+		if (getFont() != null)
 			map.put("font", getFont());
-		}
-		if (getInsertion() != null) {
+		if (getInsertion() != null)
 			map.put("insertion", getInsertion());
-		}
-		if (isBold()) {
+		if (isBold())
 			map.put("bold", true);
-		}
-		if (isItalic()) {
+		if (isItalic())
 			map.put("italic", true);
-		}
-		if (isStrikethrough()) {
+		if (isStrikethrough())
 			map.put("strikethrough", true);
-		}
-		if (isObfuscated()) {
+		if (isObfuscated())
 			map.put("obfuscated", true);
-		}
-		if (isUnderlined()) {
+		if (isUnderlined())
 			map.put("underlined", true);
-		}
 		return map;
 	}
 
@@ -472,30 +451,25 @@ public class Component {
 	@Nonnull
 	public Map<String, Object> toJsonMapWithExtras() {
 		Map<String, Object> map = toJsonMap();
-		if (extra != null && !extra.isEmpty()) {
+		if (extra != null && !extra.isEmpty())
 			if (extra.size() == 1) {
-				if (getText() == null || getText().isEmpty()) {
+				if (getText() == null || getText().isEmpty())
 					return extra.get(0).toJsonMapWithExtras();
-				}
 				map.put("extra", extra.get(0).toJsonMapWithExtras());
 			} else {
 				boolean start = true;
 				List<Map<String, Object>> list = new ArrayList<>();
-				for (Component children : extra) {
+				for (Component children : extra)
 					if (!equals(children)) {
-						if ((getText() == null || getText().isEmpty()) && start) {
+						if ((getText() == null || getText().isEmpty()) && start)
 							map = children.toJsonMapWithExtras();
-						} else {
+						else
 							list.add(children.toJsonMapWithExtras());
-						}
 						start = false;
 					}
-				}
-				if (!list.isEmpty()) {
+				if (!list.isEmpty())
 					map.put("extra", list);
-				}
 			}
-		}
 		return map;
 	}
 }

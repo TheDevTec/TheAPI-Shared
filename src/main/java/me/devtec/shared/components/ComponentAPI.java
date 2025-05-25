@@ -5,11 +5,17 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 import me.devtec.shared.Ref;
+import me.devtec.shared.annotations.Checkers;
+import me.devtec.shared.annotations.Nonnull;
+import me.devtec.shared.annotations.Nullable;
+import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.json.Json;
+import me.devtec.shared.placeholders.TextPlaceholders;
 import me.devtec.shared.utility.ColorUtils;
 
 public class ComponentAPI {
@@ -63,6 +69,69 @@ public class ComponentAPI {
 						? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15))
 						: hexModeEnabled : false,
 				true);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Component fromConfig(@Nonnull Config config, @Nonnull String path,
+			@Nullable TextPlaceholders placeholders, UUID player) {
+		Checkers.nonNull(config, "Config");
+		Checkers.nonNull(path, "Path");
+		if (!config.existsKey(path))
+			return Component.EMPTY_COMPONENT;
+		if (placeholders == null)
+			placeholders = TextPlaceholders.empty();
+		Object value = config.get(path);
+		if (config.isJson(path) && (value instanceof Collection || value instanceof Map)) {
+			if (value instanceof Collection && ((Collection<?>) value).isEmpty()
+					|| value instanceof Map && ((Map<?, ?>) value).isEmpty())
+				return Component.EMPTY_COMPONENT;
+			Object obj = placeholders.replaceAsJson(value, player);
+			return obj instanceof Collection ? fromJson((Collection<?>) obj)
+					: obj instanceof Map ? fromJson((Map<String, Object>) obj) : fromString(obj + "");
+		}
+		if (value instanceof Collection)
+			return fromJsonList((Collection<?>) value, placeholders, player);
+
+		String result = config.getString(path);
+		if (result == null || result.isEmpty())
+			return Component.EMPTY_COMPONENT;
+		return fromString(placeholders.replace(result, player));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Component fromJsonList(@Nonnull Collection<?> list, @Nullable TextPlaceholders placeholders,
+			UUID player) {
+		Checkers.nonNull(list, "Collection");
+		if (list.isEmpty())
+			return Component.EMPTY_COMPONENT;
+		if (placeholders == null)
+			placeholders = TextPlaceholders.empty();
+		Component finalComponent = new Component();
+		for (Object value : list) {
+			if (!finalComponent.isEmpty())
+				finalComponent.append(Component.NEW_LINE);
+			if (value instanceof Collection)
+				finalComponent.append(fromJson((Collection<?>) placeholders.replaceAsJson(value, player)));
+			else if (value instanceof Map)
+				finalComponent.append(fromJson((Map<String, Object>) placeholders.replaceAsJson(value, player)));
+			else
+				finalComponent.append(fromString(placeholders.replace(value.toString(), player)));
+		}
+		if (finalComponent.isEmpty())
+			return Component.EMPTY_COMPONENT;
+		return finalComponent;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Component fromJsonMap(@Nonnull Map<String, Object> map, @Nullable TextPlaceholders placeholders,
+			UUID player) {
+		Checkers.nonNull(map, "Map");
+		if (map.isEmpty())
+			return Component.EMPTY_COMPONENT;
+		if (placeholders == null)
+			placeholders = TextPlaceholders.empty();
+		Object obj = placeholders.replaceAsJson(map, player);
+		return fromJson((Map<String, Object>) obj);
 	}
 
 	public static Component fromString(String input, boolean hexMode, boolean urlMode) {
