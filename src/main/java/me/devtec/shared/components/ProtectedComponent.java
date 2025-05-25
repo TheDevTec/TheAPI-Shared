@@ -1,27 +1,21 @@
 package me.devtec.shared.components;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-
-import me.devtec.shared.annotations.Nonnull;
-import me.devtec.shared.annotations.Nullable;
-import me.devtec.shared.dataholder.StringContainer;
 
 public final class ProtectedComponent extends Component {
 
 	public ProtectedComponent(Component component) {
 		super(component.getText());
 		copyOf(component);
-		hoverEvent=component.getHoverEvent();
-		clickEvent=component.getClickEvent();
-		insertion=component.getInsertion();
-		if(component.getExtra()!=null && !component.getExtra().isEmpty()) {
+		hoverEvent = component.getHoverEvent();
+		clickEvent = component.getClickEvent();
+		insertion = component.getInsertion();
+		if (component.getExtra() != null && !component.getExtra().isEmpty()) {
 			List<Component> protectedExtras = new ArrayList<>();
-			for(Component extra : component.getExtra())
+			for (Component extra : component.getExtra())
 				protectedExtras.add(new ProtectedComponent(extra));
-			extra=protectedExtras;
+			extra = protectedExtras;
 		}
 	}
 
@@ -98,5 +92,4 @@ public final class ProtectedComponent extends Component {
 	public Component setUnderlined(boolean status) {
 		return this;
 	}
-}
 }
