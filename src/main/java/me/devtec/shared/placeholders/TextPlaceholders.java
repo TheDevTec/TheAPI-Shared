@@ -56,6 +56,38 @@ public class TextPlaceholders {
 		}
 	};
 
+	private static final TextPlaceholders EMPTY_COLORIZED = new TextPlaceholders() {
+		@Override
+		public TextPlaceholders add(String placeholder, Replacement replacement) {
+			return this;
+		}
+
+		@Override
+		public Replacement remove(String placeholder) {
+			return null;
+		}
+
+		@Override
+		public String replace(String text, UUID player) {
+			return ColorUtils.colorize(text, null);
+		}
+
+		@Override
+		public StringContainer replace(StringContainer text, UUID player) {
+			return ColorUtils.colorize(text, null);
+		}
+
+		@Override
+		public void setColorizeText(boolean colorizeText) {
+
+		}
+
+		@Override
+		public boolean shouldColorizeText() {
+			return true;
+		}
+	};
+
 	private Map<String, Replacement> placeholders = new HashMap<>();
 	private boolean colorizeText;
 
@@ -65,6 +97,10 @@ public class TextPlaceholders {
 
 	public static TextPlaceholders empty() {
 		return EMPTY;
+	}
+
+	public static TextPlaceholders emptyColorized() {
+		return EMPTY_COLORIZED;
 	}
 
 	public boolean shouldColorizeText() {
