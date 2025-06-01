@@ -99,8 +99,8 @@ public class ComponentAPI {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Component fromJsonList(@Nonnull Collection<?> list, @Nullable TextPlaceholders placeholders,
-			UUID player) {
+	public static <V> Component fromJsonList(@Nonnull Collection<? extends V> list,
+			@Nullable TextPlaceholders placeholders, UUID player) {
 		Checkers.nonNull(list, "Collection");
 		if (list.isEmpty())
 			return Component.EMPTY_COMPONENT;
@@ -115,7 +115,7 @@ public class ComponentAPI {
 			else if (value instanceof Map)
 				finalComponent.append(fromJson((Map<String, Object>) placeholders.replaceAsJson(value, player)));
 			else
-				finalComponent.append(fromString(placeholders.replace(value.toString(), player)));
+				finalComponent.append(fromString(placeholders.replace(value + "", player)));
 		}
 		if (finalComponent.isEmpty())
 			return Component.EMPTY_COMPONENT;

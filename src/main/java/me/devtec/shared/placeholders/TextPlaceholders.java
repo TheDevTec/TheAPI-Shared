@@ -3,16 +3,21 @@ package me.devtec.shared.placeholders;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
+import me.devtec.shared.annotations.Checkers;
+import me.devtec.shared.annotations.Nonnull;
 import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.components.ComponentAPI;
 import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.utility.ColorUtils;
+import me.devtec.shared.utility.StringUtils;
+import me.devtec.shared.utility.StringUtils.FormatType;
 
 public class TextPlaceholders {
 	public interface Replacement {
@@ -26,8 +31,18 @@ public class TextPlaceholders {
 		}
 
 		@Override
-		public Replacement remove(String placeholder) {
-			return null;
+		public TextPlaceholders add(String placeholder, String replacement) {
+			return this;
+		}
+
+		@Override
+		public TextPlaceholders add(String placeholder, Number replacement) {
+			return this;
+		}
+
+		@Override
+		public boolean remove(String placeholder) {
+			return false;
 		}
 
 		@Override
@@ -63,8 +78,18 @@ public class TextPlaceholders {
 		}
 
 		@Override
-		public Replacement remove(String placeholder) {
-			return null;
+		public TextPlaceholders add(String placeholder, String replacement) {
+			return this;
+		}
+
+		@Override
+		public TextPlaceholders add(String placeholder, Number replacement) {
+			return this;
+		}
+
+		@Override
+		public boolean remove(String placeholder) {
+			return false;
 		}
 
 		@Override
@@ -89,6 +114,7 @@ public class TextPlaceholders {
 	};
 
 	private Map<String, Replacement> placeholders = new HashMap<>();
+	private Map<String, String> staticPlaceholders = new HashMap<>();
 	private boolean colorizeText;
 
 	public static TextPlaceholders create() {
@@ -111,17 +137,41 @@ public class TextPlaceholders {
 		this.colorizeText = colorizeText;
 	}
 
-	public TextPlaceholders add(String placeholder, Replacement replacement) {
-		placeholders.put(placeholder, replacement);
+	public TextPlaceholders add(@Nonnull String placeholder, @Nonnull Replacement replacement) {
+		Checkers.nonNull(placeholder, "placeholder");
+		Checkers.nonNull(replacement, "replacement");
+		staticPlaceholders.remove('{' + placeholder + '}');
+		placeholders.put('{' + placeholder + '}', replacement);
 		return this;
 	}
 
-	public Replacement remove(String placeholder) {
-		return placeholders.remove(placeholder);
+	public TextPlaceholders add(@Nonnull String placeholder, @Nonnull String replacement) {
+		Checkers.nonNull(placeholder, "placeholder");
+		Checkers.nonNull(replacement, "replacement");
+		placeholders.remove('{' + placeholder + '}');
+		staticPlaceholders.put('{' + placeholder + '}', replacement);
+		return this;
+	}
+
+	public TextPlaceholders add(@Nonnull String placeholder, @Nonnull Number replacement) {
+		Checkers.nonNull(placeholder, "placeholder");
+		Checkers.nonNull(replacement, "replacement");
+		placeholders.remove('{' + placeholder + '}');
+		staticPlaceholders.put('{' + placeholder + '}',
+				StringUtils.formatDouble(FormatType.NORMAL, replacement.doubleValue()));
+		return this;
+	}
+
+	public boolean remove(@Nonnull String placeholder) {
+		Checkers.nonNull(placeholder, "placeholder");
+		boolean removed = staticPlaceholders.remove('{' + placeholder + '}') != null;
+		return placeholders.remove('{' + placeholder + '}') != null || removed;
 	}
 
 	public Set<String> getPlaceholders() {
-		return placeholders.keySet();
+		Set<String> set = new HashSet<>(staticPlaceholders.keySet());
+		set.addAll(placeholders.keySet());
+		return set;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -196,6 +246,15 @@ public class TextPlaceholders {
 						e.printStackTrace();
 						break;
 					}
+				start = index + replacement.length();
+				text.replace(index, index + entry.getKey().length(), replacement);
+			}
+		}
+		for (Entry<String, String> entry : staticPlaceholders.entrySet()) {
+			int index;
+			int start = 0;
+			String replacement = entry.getValue();
+			while (start < text.length() && (index = text.indexOf(entry.getKey(), start)) != -1) {
 				start = index + replacement.length();
 				text.replace(index, index + entry.getKey().length(), replacement);
 			}
