@@ -1,6 +1,7 @@
 package me.devtec.shared.components;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class ProtectedComponent extends Component {
@@ -15,7 +16,7 @@ public final class ProtectedComponent extends Component {
 			List<Component> protectedExtras = new ArrayList<>();
 			for (Component extra : component.getExtra())
 				protectedExtras.add(new ProtectedComponent(extra));
-			extra = protectedExtras;
+			extra = Collections.unmodifiableList(protectedExtras);
 		}
 	}
 
