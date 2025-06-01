@@ -38,6 +38,20 @@ public class Component {
 		this.text = text;
 	}
 
+	public Component(Component component) {
+		this(component.getText());
+		copyOf(component);
+		hoverEvent = component.getHoverEvent();
+		clickEvent = component.getClickEvent();
+		insertion = component.getInsertion();
+		if (component.getExtra() != null && !component.getExtra().isEmpty()) {
+			List<Component> protectedExtras = new ArrayList<>();
+			for (Component extra : component.getExtra())
+				protectedExtras.add(new Component(extra));
+			extra = protectedExtras;
+		}
+	}
+
 	public static Component fromString(String input) {
 		return ComponentAPI.fromString(input);
 	}
