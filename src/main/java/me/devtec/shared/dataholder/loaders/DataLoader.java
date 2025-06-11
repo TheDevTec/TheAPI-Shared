@@ -30,9 +30,8 @@ public abstract class DataLoader implements Cloneable {
 	private static boolean anyLoaderWhichAllowFiles;
 
 	static {
-		for (LoaderPriority priority : LoaderPriority.values()) {
+		for (LoaderPriority priority : LoaderPriority.values())
 			DataLoader.dataLoaders.put(priority, new ArrayList<>());
-		}
 
 		// BUILT-IN LOADERS
 		DataLoader.dataLoaders.get(LoaderPriority.LOW).add(new DataLoaderConstructor() {
@@ -114,19 +113,16 @@ public abstract class DataLoader implements Cloneable {
 		Checkers.nonNull(priority, "LoaderPriority");
 		Checkers.nonNull(constructor, "DataLoaderConstructor");
 		DataLoader.dataLoaders.get(priority).add(constructor);
-		if (constructor.construct().loadingFromFile()) {
+		if (constructor.construct().loadingFromFile())
 			anyLoaderWhichAllowFiles = true;
-		}
 	}
 
 	@Comment(comment = "Unregisters DataLoaderConstructor.")
 	public void unregister(@Nonnull DataLoaderConstructor constructor) {
 		Checkers.nonNull(constructor, "DataLoaderConstructor");
-		for (List<DataLoaderConstructor> entry : DataLoader.dataLoaders.values()) {
-			if (entry.remove(constructor)) {
+		for (List<DataLoaderConstructor> entry : DataLoader.dataLoaders.values())
+			if (entry.remove(constructor))
 				break;
-			}
-		}
 	}
 
 	@Comment(comment = "Checks if it can read the contents of the file directly from File. If not, StreamUtils will be used to read the contents.")
@@ -211,9 +207,8 @@ public abstract class DataLoader implements Cloneable {
 		int size = config.getDataLoader().get().size();
 		StringContainer builder = new StringContainer(size * 20);
 		Iterator<CharSequence> itr = saveAsIterator(config, markSaved);
-		while (itr != null && itr.hasNext()) {
+		while (itr != null && itr.hasNext())
 			builder.append(itr.next());
-		}
 		return builder;
 	}
 
@@ -254,13 +249,10 @@ public abstract class DataLoader implements Cloneable {
 	@Nonnull
 	public static DataLoader findLoaderByName(@Nonnull String type) {
 		Checkers.nonNull(type, "DataLoader Type Name");
-		for (LoaderPriority priority : LoaderPriority.values()) {
-			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
-				if (constructor.isConstructorOf(type)) {
+		for (LoaderPriority priority : LoaderPriority.values())
+			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority))
+				if (constructor.isConstructorOf(type))
 					return constructor.construct();
-				}
-			}
-		}
 		return new EmptyLoader();
 	}
 
@@ -268,24 +260,22 @@ public abstract class DataLoader implements Cloneable {
 	@Nonnull
 	public static DataLoader findLoaderFor(@Nonnull File input) {
 		Checkers.nonNull(input, "Input File");
-		if (!anyLoaderWhichAllowFiles) {
+		if (!anyLoaderWhichAllowFiles)
 			return findLoaderFor(StreamUtils.fromStream(input));
-		}
 		if (input.length() > 0L) {
 			String inputString = null;
 			List<int[]> inputLines = null;
 			StringContainer container = null;
-			loadersLoop: for (LoaderPriority priority : LoaderPriority.values()) {
+			loadersLoop: for (LoaderPriority priority : LoaderPriority.values())
 				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
 					DataLoader loader = constructor.construct();
-					if (inputString == null && loader.loadingFromFile()) {
+					if (inputString == null && loader.loadingFromFile())
 						loader.load(input);
-					} else {
+					else {
 						if (inputString == null) {
 							inputString = StreamUtils.fromStream(input);
-							if (inputString == null) {
+							if (inputString == null)
 								break loadersLoop;
-							}
 						}
 						if (loader.supportsReadingLines()) {
 							if (container == null) {
@@ -293,15 +283,12 @@ public abstract class DataLoader implements Cloneable {
 								inputLines = LoaderReadUtil.readLinesFromContainer(container);
 							}
 							loader.load(container, inputLines);
-						} else {
+						} else
 							loader.load(inputString);
-						}
 					}
-					if (loader.isLoaded()) {
+					if (loader.isLoaded())
 						return loader;
-					}
 				}
-			}
 		}
 		EmptyLoader empty = new EmptyLoader();
 		empty.load(input);
@@ -311,23 +298,19 @@ public abstract class DataLoader implements Cloneable {
 	@Comment(comment = "It finds the correct DataLoader according to the contents and reads it.")
 	@Nonnull
 	public static DataLoader findLoaderFor(@Nullable String inputString) {
-		if (inputString != null && !inputString.isEmpty()) {
-			for (LoaderPriority priority : LoaderPriority.values()) {
+		if (inputString != null && !inputString.isEmpty())
+			for (LoaderPriority priority : LoaderPriority.values())
 				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
 					DataLoader loader = constructor.construct();
 					if (loader.supportsReadingLines()) {
 						StringContainer container = new StringContainer(inputString, 0, 0);
 						List<int[]> inputLines = LoaderReadUtil.readLinesFromContainer(container);
 						loader.load(container, inputLines);
-					} else {
+					} else
 						loader.load(inputString);
-					}
-					if (loader.isLoaded()) {
+					if (loader.isLoaded())
 						return loader;
-					}
 				}
-			}
-		}
 		EmptyLoader empty = new EmptyLoader();
 		empty.load(inputString);
 		return empty;
