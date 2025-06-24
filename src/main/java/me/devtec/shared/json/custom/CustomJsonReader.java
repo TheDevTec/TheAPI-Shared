@@ -63,7 +63,8 @@ public class CustomJsonReader implements JReader {
 		// 3=regular text or ,
 		// 4=none
 		int awaitingAction = 0;
-
+		int startPosNumberMode = 0;
+		boolean foundNumber = false;
 		for (; pos < to; ++pos) {
 			char character = text.charAt(pos);
 			switch (awaitingAction) {
@@ -155,6 +156,8 @@ public class CustomJsonReader implements JReader {
 				case PLUS:
 					container.append(character);
 					awaitingAction = 2;
+					startPosNumberMode = pos;
+					foundNumber = false;
 					continue;
 				case T:
 					if (readTrue(text, pos, to, false)) {
@@ -227,6 +230,16 @@ public class CustomJsonReader implements JReader {
 					// RESET
 					awaitingAction = 0;
 					continue;
+				case MINUS:
+				case PLUS:
+					if (foundNumber) {
+						awaitingAction = 3;
+						container.clear();
+						container.increaseCount(pos - startPosNumberMode);
+						text.getChars(startPosNumberMode, pos, container.getValueWithoutTrim(), 0);
+					}
+					container.append(character);
+					continue;
 				case ZERO:
 				case ONE:
 				case TWO:
@@ -240,13 +253,15 @@ public class CustomJsonReader implements JReader {
 				case DOT:
 				case SMALL_E:
 				case BIG_E:
-				case MINUS:
-				case PLUS:
+					foundNumber = true;
 					container.append(character);
 					continue;
 				}
-				container.append(character);
 				awaitingAction = 3;
+				container.clear();
+				container.increaseCount(pos - startPosNumberMode);
+				text.getChars(startPosNumberMode, pos, container.getValueWithoutTrim(), 0);
+				container.append(character);
 				break;
 			case 3:
 				switch (character) {
@@ -302,10 +317,12 @@ public class CustomJsonReader implements JReader {
 		// 3=regular text, , or :
 		// 4=none
 		int awaitingAction = 0;
+		boolean foundNumber = false;
 
 		// MAP KEY
 		Object key = null;
 		boolean anyKey = false;
+		int startPosNumberMode = 0;
 
 		for (; pos < to; ++pos) {
 			char character = text.charAt(pos);
@@ -420,6 +437,8 @@ public class CustomJsonReader implements JReader {
 				case PLUS:
 					container.append(character);
 					awaitingAction = 2;
+					startPosNumberMode = pos;
+					foundNumber = false;
 					continue;
 				case T:
 					if (readTrue(text, pos, to, true)) {
@@ -505,6 +524,8 @@ public class CustomJsonReader implements JReader {
 				break;
 			case 2: // numbers mode
 				switch (character) {
+				case SPACE:
+					continue;
 				case CLOSED_BRACE:
 					if (anyKey && !container.isEmpty()) {
 						Object result = ParseUtils.getNumber(container);
@@ -533,6 +554,16 @@ public class CustomJsonReader implements JReader {
 					key = null;
 					anyKey = false;
 					continue;
+				case MINUS:
+				case PLUS:
+					if (foundNumber) {
+						awaitingAction = 3;
+						container.clear();
+						container.increaseCount(pos - startPosNumberMode);
+						text.getChars(startPosNumberMode, pos, container.getValueWithoutTrim(), 0);
+					}
+					container.append(character);
+					continue;
 				case ZERO:
 				case ONE:
 				case TWO:
@@ -546,19 +577,22 @@ public class CustomJsonReader implements JReader {
 				case DOT:
 				case SMALL_E:
 				case BIG_E:
-				case MINUS:
-				case PLUS:
+					foundNumber = true;
 					container.append(character);
 					continue;
 				}
-				container.append(character);
 				awaitingAction = 3;
+				container.clear();
+				container.increaseCount(pos - startPosNumberMode);
+				text.getChars(startPosNumberMode, pos, container.getValueWithoutTrim(), 0);
+				container.append(character);
 				break;
 			case 3: // text mode
 				switch (character) {
 				case CLOSED_BRACE:
 					if (anyKey && !container.isEmpty()) {
 						Object result = container.trim().toString();
+						container.clear();
 						mapResult.put(key, result);
 						key = null;
 					}

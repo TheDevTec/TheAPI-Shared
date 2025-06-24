@@ -49,6 +49,7 @@ public interface JReader {
 			Number number = ParseUtils.getNumber(json);
 			if (number != null)
 				return number;
+			return "" + number;
 		}
 		if (first == '{' && last == '}' || first == '[' && last == ']') {
 			Object read = null;
