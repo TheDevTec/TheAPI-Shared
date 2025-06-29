@@ -110,12 +110,17 @@ public class ComponentAPI {
 		for (Object value : list) {
 			if (!finalComponent.isEmpty())
 				finalComponent.append(Component.NEW_LINE);
+			Component sub;
 			if (value instanceof Collection)
-				finalComponent.append(fromJson((Collection<?>) placeholders.replaceAsJson(value, player)));
+				sub = fromJson((Collection<?>) placeholders.replaceAsJson(value, player));
 			else if (value instanceof Map)
-				finalComponent.append(fromJson((Map<String, Object>) placeholders.replaceAsJson(value, player)));
+				sub = fromJson((Map<String, Object>) placeholders.replaceAsJson(value, player));
 			else
-				finalComponent.append(fromString(placeholders.replace(value + "", player)));
+				sub = fromString(placeholders.replace(value + "", player));
+			if (finalComponent.isEmpty())
+				finalComponent = sub;
+			else
+				finalComponent.append(sub);
 		}
 		if (finalComponent.isEmpty())
 			return Component.EMPTY_COMPONENT;

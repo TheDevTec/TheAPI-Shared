@@ -170,7 +170,7 @@ public class Component {
 	}
 
 	public boolean isEmpty() {
-		return (text == null || text.isEmpty()) && (extra == null || extra.isEmpty());
+		return (getText() == null || getText().isEmpty()) && (extra == null || extra.isEmpty());
 	}
 
 	public String getFormats() {
@@ -190,7 +190,8 @@ public class Component {
 
 	@Override
 	public String toString() {
-		StringContainer builder = new StringContainer(getText().length() + 8);
+		String text = getText() == null ? "" : getText();
+		StringContainer builder = new StringContainer(text.length() + 8);
 
 		String colorBefore = null;
 
@@ -207,7 +208,7 @@ public class Component {
 		String formatsBefore = getFormats();
 		builder.append(formatsBefore);
 
-		builder.append(getText());
+		builder.append(text);
 
 		if (getExtra() != null)
 			for (Component c : getExtra()) {
@@ -225,7 +226,8 @@ public class Component {
 
 	// Deeper toString with "anti" copying of colors & formats
 	protected StringContainer toString(String parentColorBefore, String parentFormatsBefore) {
-		StringContainer builder = new StringContainer(getText().length() + 8);
+		String text = getText() == null ? "" : getText();
+		StringContainer builder = new StringContainer(text.length() + 8);
 
 		String colorBefore = parentColorBefore;
 
@@ -245,7 +247,7 @@ public class Component {
 		if (!formatsBefore.equals(parentFormatsBefore))
 			builder.append(formatsBefore);
 
-		builder.append(getText());
+		builder.append(text);
 
 		if (getExtra() != null)
 			for (Component c : getExtra())
