@@ -45,14 +45,12 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	public V put(@Nonnull K key, V value) {
 		lock.lock();
 		try {
-			if (size.get() >= entries.length * loadFactor) {
+			if (size.get() >= entries.length * loadFactor)
 				resize();
-			}
 			int index = hash(key);
 			while (entries[index] != null) {
-				if (entries[index].getKey().equals(key)) {
+				if (entries[index].getKey().equals(key))
 					return entries[index].setValue(value);
-				}
 				index = (index + 1) % entries.length;
 			}
 			WeakEntry newEntry = new WeakEntry(value) {
@@ -61,9 +59,9 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 					return key;
 				}
 			};
-			if (head == null) {
+			if (head == null)
 				head = newEntry;
-			} else {
+			else {
 				tail.next = newEntry;
 				newEntry.prev = tail;
 			}
@@ -79,9 +77,8 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	private void putInternal(Entry<K, V> entry) {
 		lock.lock();
 		try {
-			if (size.get() >= entries.length * loadFactor) {
+			if (size.get() >= entries.length * loadFactor)
 				resize();
-			}
 			int index = hash(entry.getKey());
 			while (entries[index] != null) {
 				if (entries[index].getKey().equals(entry.getKey())) {
@@ -102,20 +99,17 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 		Entry<K, V>[] oldEntries = entries;
 		entries = new Entry[(int) (oldEntries.length * 1.75)];
 		size.set(0);
-		for (Entry<K, V> entry : oldEntries) {
-			if (entry != null) {
+		for (Entry<K, V> entry : oldEntries)
+			if (entry != null)
 				putInternal(entry);
-			}
-		}
 	}
 
 	@Override
 	public V get(@Nonnull Object key) {
 		int index = hash(key);
 		while (entries[index] != null) {
-			if (entries[index].getKey().equals(key)) {
+			if (entries[index].getKey().equals(key))
 				return entries[index].getValue();
-			}
 			index = (index + 1) % entries.length;
 		}
 		return null;
@@ -144,19 +138,16 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	}
 
 	private void removeFromLinkedList(WeakEntry entry) {
-		if (entry == null) {
+		if (entry == null)
 			return;
-		}
-		if (entry.prev != null) {
+		if (entry.prev != null)
 			entry.prev.next = entry.next;
-		} else {
+		else
 			head = entry.next;
-		}
-		if (entry.next != null) {
+		if (entry.next != null)
 			entry.next.prev = entry.prev;
-		} else {
+		else
 			tail = entry.prev;
-		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -164,11 +155,9 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 		Entry<K, V>[] oldEntries = entries;
 		entries = new Entry[oldEntries.length];
 		size.set(0);
-		for (Entry<K, V> entry : oldEntries) {
-			if (entry != null) {
+		for (Entry<K, V> entry : oldEntries)
+			if (entry != null)
 				putInternal(entry);
-			}
-		}
 	}
 
 	@Override
@@ -177,6 +166,8 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 		try {
 			Arrays.fill(entries, null);
 			size.set(0);
+			head = null;
+			tail = null;
 		} finally {
 			lock.unlock();
 		}
@@ -200,13 +191,10 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	@Override
 	public boolean containsValue(Object value) {
 		try {
-			if (head != null) {
-				for (WeakEntry entry = head; entry != null; entry = entry.next) {
-					if (Objects.equals(entry.getValue(), value)) {
+			if (head != null)
+				for (WeakEntry entry = head; entry != null; entry = entry.next)
+					if (Objects.equals(entry.getValue(), value))
 						return true;
-					}
-				}
-			}
 			return false;
 		} finally {
 			lock.unlock();
@@ -215,9 +203,8 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 
 	@Override
 	public void putAll(Map<? extends K, ? extends V> m) {
-		for (Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
+		for (Map.Entry<? extends K, ? extends V> entry : m.entrySet())
 			put(entry.getKey(), entry.getValue());
-		}
 	}
 
 	@Override
@@ -338,9 +325,8 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 			StringContainer container = new StringContainer("{", 0, 32);
 			boolean first = true;
 			for (WeakEntry entry = head; entry != null; entry = entry.next) {
-				if (!first) {
+				if (!first)
 					container.append(',').append(' ');
-				}
 				container.append(entry.toString());
 				first = false;
 			}
