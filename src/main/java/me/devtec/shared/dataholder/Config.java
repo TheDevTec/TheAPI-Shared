@@ -840,11 +840,7 @@ public class Config {
 	}
 
 	public Config clear() {
-		getDataLoader().getPrimaryKeys().clear();
-		getDataLoader().get().clear();
-		getDataLoader().getHeader().clear();
-		getDataLoader().getFooter().clear();
-		return this;
+		return reset();
 	}
 
 	public Config reset() {
