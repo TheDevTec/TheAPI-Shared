@@ -191,6 +191,13 @@ public class Config {
 			return this;
 		markModified();
 		this.file = file;
+		if (updaterTask != 0) {
+			Scheduler.cancelTask(updaterTask);
+			Scheduler.getManager().unregister(updaterWatcher);
+			updaterWatcher.run();
+			updaterTask = 0;
+			updaterWatcher = null;
+		}
 		return this;
 	}
 
@@ -840,11 +847,24 @@ public class Config {
 	}
 
 	public Config clear() {
-		return reset();
+		boolean shouldSave = !getDataLoader().get().isEmpty() || !getDataLoader().getHeader().isEmpty()
+				|| !getDataLoader().getFooter().isEmpty();
+		getDataLoader().reset();
+		requireSave = shouldSave;
+		return this;
 	}
 
 	public Config reset() {
+		file = null;
+		requireSave = false;
 		getDataLoader().reset();
+		if (updaterTask != 0) {
+			Scheduler.cancelTask(updaterTask);
+			Scheduler.getManager().unregister(updaterWatcher);
+			updaterWatcher.run();
+			updaterTask = 0;
+			updaterWatcher = null;
+		}
 		return this;
 	}
 
