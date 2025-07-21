@@ -38,6 +38,7 @@ public class Config {
 	// Config updater
 	protected int updaterTask;
 	protected Runnable updaterWatcher;
+	protected List<Runnable> runnablesOnReload;
 
 	public static Config loadFromInput(@Nonnull InputStream input) {
 		Checkers.nonNull(input, "InputStream");
@@ -355,6 +356,11 @@ public class Config {
 		clear();
 		loader = DataLoader.findLoaderFor(file);
 		markNonModified();
+		if (runnablesOnReload != null)
+			synchronized (runnablesOnReload) {
+				for (Runnable runnable : runnablesOnReload)
+					runnable.run();
+			}
 		return this;
 	}
 
@@ -865,6 +871,7 @@ public class Config {
 			updaterTask = 0;
 			updaterWatcher = null;
 		}
+		runnablesOnReload = null;
 		return this;
 	}
 
@@ -889,6 +896,23 @@ public class Config {
 
 	public boolean isAutoUpdating() {
 		return updaterTask != 0;
+	}
+
+	public Config addRunnableOnReload(Runnable runnable) {
+		synchronized (runnablesOnReload) {
+			if (runnablesOnReload == null)
+				runnablesOnReload = new ArrayList<>();
+			runnablesOnReload.add(runnable);
+		}
+		return this;
+	}
+
+	public Config removeRunnableOnReload(Runnable runnable) {
+		synchronized (runnablesOnReload) {
+			if (runnablesOnReload != null)
+				runnablesOnReload.remove(runnable);
+		}
+		return this;
 	}
 
 	public Config setAutoUpdating(long checkEvery) {
@@ -989,5 +1013,10 @@ public class Config {
 		if (sectionsToRemove != null)
 			for (String section : sectionsToRemove)
 				getDataLoader().remove(section);
+		if (runnablesOnReload != null)
+			synchronized (runnablesOnReload) {
+				for (Runnable runnable : runnablesOnReload)
+					runnable.run();
+			}
 	}
 }
