@@ -898,6 +898,8 @@ public class Config {
 
 				path.getParent().register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
 				updaterTask = new Tasker() {
+					long lastUpdateAt;
+
 					@Override
 					public void run() {
 						WatchKey wkey;
@@ -909,7 +911,10 @@ public class Config {
 						while (wkey != null) {
 							for (WatchEvent<?> event : wkey.pollEvents())
 								if (((Path) event.context()).toAbsolutePath().equals(path)) {
-									processAutoUpdate();
+									if (lastUpdateAt - System.currentTimeMillis() / 1000 <= 0) {
+										lastUpdateAt = System.currentTimeMillis() / 1000 + 1;
+										processAutoUpdate();
+									}
 									wkey.reset();
 									return;
 								}
