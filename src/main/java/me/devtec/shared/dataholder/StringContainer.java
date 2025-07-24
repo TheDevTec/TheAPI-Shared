@@ -62,16 +62,14 @@ public class StringContainer implements CharSequence {
 	}
 
 	public void ensureCapacity(int minimumCapacity) {
-		if (minimumCapacity > 0) {
+		if (minimumCapacity > 0)
 			ensureCapacityInternal(minimumCapacity);
-		}
 	}
 
 	private void ensureCapacityInternal(int minimumCapacity) {
 		// overflow-conscious code
-		if (minimumCapacity - value.length > 0) {
+		if (minimumCapacity - value.length > 0)
 			value = Arrays.copyOf(value, newCapacity(minimumCapacity));
-		}
 	}
 
 	@Override
@@ -82,16 +80,14 @@ public class StringContainer implements CharSequence {
 	private int newCapacity(int minCapacity) {
 		// overflow-conscious code
 		int newCapacity = (value.length << 1) + 2;
-		if (newCapacity - minCapacity < 0) {
+		if (newCapacity - minCapacity < 0)
 			newCapacity = minCapacity;
-		}
 		return newCapacity <= 0 || MAX_ARRAY_SIZE - newCapacity < 0 ? hugeCapacity(minCapacity) : newCapacity;
 	}
 
 	private int hugeCapacity(int minCapacity) {
-		if (Integer.MAX_VALUE - minCapacity < 0) {
+		if (Integer.MAX_VALUE - minCapacity < 0)
 			throw new OutOfMemoryError();
-		}
 		return Math.max(minCapacity, MAX_ARRAY_SIZE);
 	}
 
@@ -106,9 +102,8 @@ public class StringContainer implements CharSequence {
 	}
 
 	public StringContainer append(StringContainer asb) {
-		if (asb == null) {
+		if (asb == null)
 			return appendNull();
-		}
 		int len = asb.length();
 		ensureCapacityInternal(count + len);
 		asb.getChars(0, len, value, count);
@@ -117,15 +112,12 @@ public class StringContainer implements CharSequence {
 	}
 
 	public StringContainer append(CharSequence asb) {
-		if (asb == null) {
+		if (asb == null)
 			return appendNull();
-		}
-		if (asb instanceof StringContainer) {
+		if (asb instanceof StringContainer)
 			return append((StringContainer) asb);
-		}
-		if (asb instanceof String) {
+		if (asb instanceof String)
 			return append((String) asb);
-		}
 		int len = asb.length();
 		ensureCapacityInternal(count + len);
 		asb.toString().getChars(0, len, value, count);
@@ -151,9 +143,8 @@ public class StringContainer implements CharSequence {
 	}
 
 	public StringContainer append(String str) {
-		if (str == null) {
+		if (str == null)
 			return appendNull();
-		}
 		int len = str.length();
 		ensureCapacityInternal(count + len);
 		str.getChars(0, len, value, count);
@@ -197,20 +188,17 @@ public class StringContainer implements CharSequence {
 		int len = characters.length;
 		ensureCapacityInternal(count + len);
 		System.arraycopy(value, offset, value, offset + len, count - offset);
-		for (char c : characters) {
+		for (char c : characters)
 			value[offset++] = c;
-		}
 		count += len;
 		return this;
 	}
 
 	public StringContainer insert(int offset, String str) {
-		if (offset < 0 || offset > length()) {
+		if (offset < 0 || offset > length())
 			throw new StringIndexOutOfBoundsException(offset);
-		}
-		if (str == null) {
+		if (str == null)
 			str = "null";
-		}
 		int len = str.length();
 		ensureCapacityInternal(count + len);
 		System.arraycopy(value, offset, value, offset + len, count - offset);
@@ -229,9 +217,8 @@ public class StringContainer implements CharSequence {
 	}
 
 	public char[] getValue() {
-		if (count < value.length) {
+		if (count < value.length)
 			value = Arrays.copyOf(value, count);
-		}
 		return value;
 	}
 
@@ -240,9 +227,8 @@ public class StringContainer implements CharSequence {
 	}
 
 	public static byte[] getBytes(CharSequence input) {
-		if (input.length() == 0) {
+		if (input.length() == 0)
 			return new byte[0];
-		}
 
 		int estimatedSize = input.length() * 4;
 		byte[] byteBuffer = new byte[estimatedSize];
@@ -251,30 +237,27 @@ public class StringContainer implements CharSequence {
 		for (int i = 0; i < input.length(); i++) {
 			int codePoint = input.charAt(i);
 
-			if (codePoint <= 0x7F) {
+			if (codePoint <= 0x7F)
 				// 1-byte (ASCII)
 				byteBuffer[bytePos++] = (byte) codePoint;
-			} else {
-				if (codePoint <= 0x7FF) {
+			else {
+				if (codePoint <= 0x7FF)
 					// 2-byte
 					byteBuffer[bytePos++] = (byte) (0xC0 | codePoint >> 6);
-				} else {
+				else {
 					if (Character.isSurrogate(input.charAt(i))) {
 						// 4-byte
-						if (i + 1 >= input.length()
-								|| !Character.isSurrogatePair(input.charAt(i), input.charAt(i + 1))) {
+						if (i + 1 >= input.length() || !Character.isSurrogatePair(input.charAt(i), input.charAt(i + 1)))
 							throw new IllegalArgumentException("Invalid surrogate pair.");
-						}
 						int high = input.charAt(i);
 						int low = input.charAt(i + 1);
 						codePoint = Character.toCodePoint((char) high, (char) low);
 						i++;
 						byteBuffer[bytePos++] = (byte) (0xF0 | codePoint >> 18);
 						byteBuffer[bytePos++] = (byte) (0x80 | codePoint >> 12 & 0x3F);
-					} else {
+					} else
 						// 3-byte
 						byteBuffer[bytePos++] = (byte) (0xE0 | codePoint >> 12);
-					}
 					byteBuffer[bytePos++] = (byte) (0x80 | codePoint >> 6 & 0x3F);
 				}
 				byteBuffer[bytePos++] = (byte) (0x80 | codePoint & 0x3F);
@@ -296,9 +279,8 @@ public class StringContainer implements CharSequence {
 	}
 
 	public void clear() {
-		if (count == 0) {
+		if (count == 0)
 			return;
-		}
 		delete(0, count);
 	}
 
@@ -330,24 +312,22 @@ public class StringContainer implements CharSequence {
 	}
 
 	public StringContainer replace(int start, int end, CharSequence str) {
-		if (end > count) {
+		if (end > count)
 			end = count;
-		}
 
 		int len = str.length();
 		int newCount = count + len - (end - start);
 		ensureCapacityInternal(newCount);
 
 		System.arraycopy(value, end, value, start + len, count - end);
-		if (str instanceof String) {
+		if (str instanceof String)
 			((String) str).getChars(0, len, value, start);
-		} else if (str instanceof StringBuilder) {
+		else if (str instanceof StringBuilder)
 			((StringBuilder) str).getChars(0, len, value, start);
-		} else if (str instanceof StringContainer) {
+		else if (str instanceof StringContainer)
 			((StringContainer) str).getChars(0, len, value, start);
-		} else {
+		else
 			str.toString().getChars(0, len, value, start);
-		}
 		count = newCount;
 		return this;
 	}
@@ -395,26 +375,23 @@ public class StringContainer implements CharSequence {
 			buf[--charPos] = digits[r];
 			i2 = q2;
 		} while (i2 != 0);
-		if (sign != 0) {
+		if (sign != 0)
 			buf[--charPos] = sign;
-		}
 	}
 
 	int stringSize(long x) {
 		long p = 10;
 		for (int i = 1; i < 19; i++) {
-			if (x < p) {
+			if (x < p)
 				return i;
-			}
 			p = 10 * p;
 		}
 		return 19;
 	}
 
 	public StringContainer replace(String value, String replacement) {
-		if (value == null || replacement == null) {
+		if (value == null || replacement == null)
 			return this;
-		}
 		int index;
 		int start = 0;
 		while (start < count && (index = indexOf(start, value)) != -1) {
@@ -425,65 +402,54 @@ public class StringContainer implements CharSequence {
 	}
 
 	public StringContainer replaceFirst(String value, String replacement) {
-		if (value == null || replacement == null) {
+		if (value == null || replacement == null)
 			return this;
-		}
 		int start = indexOf(value);
-		if (start != -1) {
+		if (start != -1)
 			replace(start, start + value.length(), replacement);
-		}
 		return this;
 	}
 
 	public StringContainer replaceLast(String value, String replacement) {
-		if (value == null || replacement == null) {
+		if (value == null || replacement == null)
 			return this;
-		}
 		int start = lastIndexOf(value);
-		if (start != -1) {
+		if (start != -1)
 			replace(start, start + value.length(), replacement);
-		}
 		return this;
 	}
 
 	public StringContainer removeAllChars(char... value) {
 		for (int i = 0; i < count; ++i) {
 			char c = charAt(i);
-			for (char replacing : value) {
+			for (char replacing : value)
 				if (c == replacing) {
 					deleteCharAt(i);
 					--i;
 					break;
 				}
-			}
 		}
 		return this;
 	}
 
 	public StringContainer replace(char value, char replacement) {
-		for (int i = 0; i < count; ++i) {
-			if (charAt(i) == value) {
+		for (int i = 0; i < count; ++i)
+			if (charAt(i) == value)
 				setCharAt(i, replacement);
-			}
-		}
 		return this;
 	}
 
 	public StringContainer replaceFirst(char value, char replacement) {
-		for (int i = 0; i < count; ++i) {
-			if (charAt(i) == value) {
+		for (int i = 0; i < count; ++i)
+			if (charAt(i) == value)
 				return setCharAt(i, replacement);
-			}
-		}
 		return this;
 	}
 
 	public StringContainer replaceLast(char value, char replacement) {
-		for (int i = count; i >= 0; --i) {
-			if (charAt(i) == value) {
+		for (int i = count; i >= 0; --i)
+			if (charAt(i) == value)
 				return setCharAt(i, replacement);
-			}
-		}
 		return this;
 	}
 
@@ -504,11 +470,9 @@ public class StringContainer implements CharSequence {
 	}
 
 	public int indexOf(char c, int start) {
-		for (int i = Math.min(start, count); i < count; ++i) {
-			if (value[i] == c) {
+		for (int i = Math.min(start, count); i < count; ++i)
+			if (value[i] == c)
 				return i;
-			}
-		}
 		return -1;
 	}
 
@@ -517,20 +481,16 @@ public class StringContainer implements CharSequence {
 	}
 
 	public int lastIndexOf(char val, int start) {
-		for (int i = Math.min(start, count - 1); i >= 0; i--) {
-			if (value[i] == val) {
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
+			if (value[i] == val)
 				return i;
-			}
-		}
 		return -1;
 	}
 
 	public int lastIndexOf(char val, int start, int limit) {
-		for (int i = Math.min(start, count - 1); i >= 0; i--) {
-			if (value[i] == val && --limit <= 0) {
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
+			if (value[i] == val && --limit <= 0)
 				return i;
-			}
-		}
 		return -1;
 	}
 
@@ -543,32 +503,26 @@ public class StringContainer implements CharSequence {
 	}
 
 	protected int indexOf(int start, String lookingFor) {
-		if (lookingFor.length() == 1) {
+		if (lookingFor.length() == 1)
 			return indexOf(lookingFor.charAt(0), start);
-		}
 		int min = Math.min(start, count);
 		int size = lookingFor.length();
 
-		if (min + size > count) {
+		if (min + size > count)
 			return -1;
-		}
 
 		char firstChar = lookingFor.charAt(0);
-		for (int i = min; i < count; ++i) {
+		for (int i = min; i < count; ++i)
 			if (value[i] == firstChar) {
 				++i;
 				int foundPos = 1;
-				for (int d = i; d < count; ++d) {
+				for (int d = i; d < count; ++d)
 					if (value[d] == lookingFor.charAt(foundPos)) {
-						if (++foundPos == size) {
+						if (++foundPos == size)
 							return i - 1;
-						}
-					} else {
+					} else
 						break;
-					}
-				}
 			}
-		}
 		return -1;
 	}
 
@@ -577,20 +531,16 @@ public class StringContainer implements CharSequence {
 	}
 
 	public int indexOfIgnoreCase(char val, int start) {
-		for (int i = Math.min(start, count - 1); i >= 0; i--) {
-			if (Character.toUpperCase(value[i]) == Character.toUpperCase(val)) {
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
+			if (Character.toUpperCase(value[i]) == Character.toUpperCase(val))
 				return i;
-			}
-		}
 		return -1;
 	}
 
 	public int indexOfIgnoreCase(char val, int start, int limit) {
-		for (int i = Math.min(start, count - 1); i >= 0; i--) {
-			if (Character.toUpperCase(value[i]) == Character.toUpperCase(val) && --limit <= 0) {
+		for (int i = Math.min(start, count - 1); i >= 0; i--)
+			if (Character.toUpperCase(value[i]) == Character.toUpperCase(val) && --limit <= 0)
 				return i;
-			}
-		}
 		return -1;
 	}
 
@@ -603,32 +553,26 @@ public class StringContainer implements CharSequence {
 	}
 
 	protected int indexOfIgnoreCase(int start, String lookingFor) {
-		if (lookingFor.length() == 1) {
+		if (lookingFor.length() == 1)
 			return indexOfIgnoreCase(lookingFor.charAt(0), start);
-		}
 		int min = Math.min(start, count);
 		int size = lookingFor.length();
 
-		if (min + size > count) {
+		if (min + size > count)
 			return -1;
-		}
 
 		char firstChar = lookingFor.charAt(0);
-		for (int i = min; i < count; ++i) {
+		for (int i = min; i < count; ++i)
 			if (Character.toUpperCase(value[i]) == Character.toUpperCase(firstChar)) {
 				++i;
 				int foundPos = 1;
-				for (int d = i; d < count; ++d) {
+				for (int d = i; d < count; ++d)
 					if (Character.toUpperCase(value[d]) == Character.toUpperCase(lookingFor.charAt(foundPos))) {
-						if (++foundPos == size) {
+						if (++foundPos == size)
 							return i - 1;
-						}
-					} else {
+					} else
 						break;
-					}
-				}
 			}
-		}
 		return -1;
 	}
 
@@ -641,32 +585,26 @@ public class StringContainer implements CharSequence {
 	}
 
 	protected int lastIndexOf(int start, String lookingFor) {
-		if (lookingFor.length() == 1) {
+		if (lookingFor.length() == 1)
 			return lastIndexOf(lookingFor.charAt(0), start);
-		}
 		int min = Math.min(start, count - 1);
 		int size = lookingFor.length();
 
-		if (min - size < 0) {
+		if (min - size < 0)
 			return -1;
-		}
 
 		char firstChar = lookingFor.charAt(0);
-		for (int i = min; i >= 0; i--) {
+		for (int i = min; i >= 0; i--)
 			if (value[i] == firstChar) {
 				++i;
 				int foundPos = 1;
-				for (int d = i; d < count; ++d) {
+				for (int d = i; d < count; ++d)
 					if (value[d] == lookingFor.charAt(foundPos)) {
-						if (++foundPos == size) {
+						if (++foundPos == size)
 							return i - 1;
-						}
-					} else {
+					} else
 						break;
-					}
-				}
 			}
-		}
 		return -1;
 	}
 
@@ -682,26 +620,21 @@ public class StringContainer implements CharSequence {
 		int min = Math.min(start, count - 1);
 		int size = lookingFor.length();
 
-		if (min - size < 0) {
+		if (min - size < 0)
 			return -1;
-		}
 
 		char firstChar = lookingFor.charAt(0);
-		for (int i = min; i >= 0; i--) {
+		for (int i = min; i >= 0; i--)
 			if (Character.toUpperCase(value[i]) == Character.toUpperCase(firstChar)) {
 				++i;
 				int foundPos = 1;
-				for (int d = i; d < count; ++d) {
+				for (int d = i; d < count; ++d)
 					if (Character.toUpperCase(value[d]) == Character.toUpperCase(lookingFor.charAt(foundPos))) {
-						if (++foundPos == size) {
+						if (++foundPos == size)
 							return i - 1;
-						}
-					} else {
+					} else
 						break;
-					}
-				}
 			}
-		}
 		return -1;
 	}
 
@@ -712,20 +645,16 @@ public class StringContainer implements CharSequence {
 	public StringContainer trim() {
 		int i = 0;
 		char c;
-		while (i < count && ((c = charAt(i)) == ' ' || c == '\t')) {
+		while (i < count && ((c = charAt(i)) == ' ' || c == '\t'))
 			i++;
-		}
-		if (i > 0) {
+		if (i > 0)
 			delete(0, i);
-		}
 
 		i = count - 1;
-		while (i >= 0 && ((c = charAt(i)) == ' ' || c == '\t')) {
+		while (i >= 0 && ((c = charAt(i)) == ' ' || c == '\t'))
 			i--;
-		}
-		if (i < count - 1) {
+		if (i < count - 1)
 			delete(i + 1, count);
-		}
 
 		return this;
 	}
@@ -740,14 +669,11 @@ public class StringContainer implements CharSequence {
 		int po = 0;
 		int pc = prefix.length();
 		// Note: toffset might be near -1>>>1.
-		if (toffset < 0 || toffset > length() - pc) {
+		if (toffset < 0 || toffset > length() - pc)
 			return false;
-		}
-		while (--pc >= 0) {
-			if (ta[to++] != prefix.charAt(po++)) {
+		while (--pc >= 0)
+			if (ta[to++] != prefix.charAt(po++))
 				return false;
-			}
-		}
 		return true;
 	}
 
