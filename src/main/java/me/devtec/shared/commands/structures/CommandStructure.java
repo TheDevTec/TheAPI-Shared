@@ -3,10 +3,8 @@ package me.devtec.shared.commands.structures;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -329,54 +327,83 @@ public class CommandStructure<S> {
 	// Special utils to make this structure working!
 
 	@SuppressWarnings("unchecked")
-	public final Object[] findStructure(S s, String arg, String[] args, boolean tablist) {
-		Map<Integer, List<CommandStructure<S>>> structures = new TreeMap<>();
+	public final Object[] findStructure(S sender, String arg, String[] args, int currentDepth, boolean tablist) {
+		Map<Integer, List<CommandStructure<S>>> prioritized = new TreeMap<>();
 		boolean noPerms = false;
 
 		PermissionChecker<S> permsChecker = first().permissionChecker;
 
-		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (CommandStructure.contains(sub, sub.getArgs(s, sub, args), arg)) {
-				String perm = sub.getPermission();
-				if (perm != null && !permsChecker.has(s, perm, tablist)) {
-					noPerms = true;
-					continue;
-				}
-				List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
-				list.add(sub);
+		for (ArgumentCommandStructure<S> sub : arguments) {
+			int length = sub.length();
+			int remainingArgs = args.length - currentDepth;
+			if (remainingArgs <= 0)
+				break;
+
+			String perm = sub.getPermission();
+			if (perm != null && !permsChecker.has(sender, perm, tablist)) {
+				noPerms = true;
+				continue;
 			}
-		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (API.selectorUtils.check(s, sub.getSelector(), arg)) {
-				String perm = sub.getPermission();
-				if (perm != null && !permsChecker.has(s, perm, tablist)) {
-					noPerms = true;
-					continue;
-				}
-				List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
-				list.add(sub);
+
+			// Pokud je délka definovaná a aktuální počet argumentů je menší,
+			// tak tuto strukturu přesto zařaď – jako částečný match
+			if (length != -1 && args.length < length) {
+				prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
+				continue;
 			}
-		List<CommandStructure<S>> list = new LinkedList<>();
-		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
-			list.addAll(entry.getValue());
-		return new Object[] { list, noPerms };
+
+			Collection<String> values = sub.getArgs(sender, sub, args);
+			if (!contains(sub, values, arg))
+				continue;
+
+			prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
+		}
+
+		for (SelectorCommandStructure<S> sub : selectors.values()) {
+			if (!API.selectorUtils.check(sender, sub.getSelector(), arg))
+				continue;
+
+			String perm = sub.getPermission();
+			if (perm != null && !permsChecker.has(sender, perm, tablist)) {
+				noPerms = true;
+				continue;
+			}
+
+			prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
+		}
+
+		List<CommandStructure<S>> result = new ArrayList<>();
+		for (List<CommandStructure<S>> group : prioritized.values())
+			result.addAll(group);
+
+		return new Object[] { result, noPerms };
 	}
 
-	public final List<CommandStructure<S>> getNextStructures(S s) {
-		Map<Integer, List<CommandStructure<S>>> structures = new TreeMap<>();
-		for (ArgumentCommandStructure<S> sub : this.arguments)
-			if (sub.getPermission() == null || sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
-				List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
-				list.add(sub);
-			}
-		for (SelectorCommandStructure<S> sub : this.selectors.values())
-			if (sub.getPermission() == null || sub.first().permissionChecker.has(s, sub.getPermission(), true)) {
-				List<CommandStructure<S>> list = structures.computeIfAbsent(sub.getPriority(), k -> new LinkedList<>());
-				list.add(sub);
-			}
-		List<CommandStructure<S>> list = new LinkedList<>();
-		for (Entry<Integer, List<CommandStructure<S>>> entry : structures.entrySet())
-			list.addAll(entry.getValue());
-		return list;
+	public final boolean hasChildStructures() {
+		return !arguments.isEmpty() || !selectors.isEmpty();
+	}
+
+	public final List<CommandStructure<S>> getNextStructures(S sender) {
+		PermissionChecker<S> checker = first().permissionChecker;
+		Map<Integer, List<CommandStructure<S>>> prioritized = new TreeMap<>();
+
+		for (ArgumentCommandStructure<S> sub : arguments) {
+			String perm = sub.getPermission();
+			if (perm == null || checker.has(sender, perm, true))
+				prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
+		}
+
+		for (SelectorCommandStructure<S> sub : selectors.values()) {
+			String perm = sub.getPermission();
+			if (perm == null || checker.has(sender, perm, true))
+				prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
+		}
+
+		List<CommandStructure<S>> result = new ArrayList<>();
+		for (List<CommandStructure<S>> group : prioritized.values())
+			result.addAll(group);
+
+		return result;
 	}
 
 	public static boolean contains(ArgumentCommandStructure<?> sub, Collection<String> list, String arg) {

@@ -1,13 +1,12 @@
 package me.devtec.shared.commands.holder;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import me.devtec.shared.API;
 import me.devtec.shared.commands.structures.ArgumentCommandStructure;
-import me.devtec.shared.commands.structures.CallableArgumentCommandStructure;
 import me.devtec.shared.commands.structures.CommandStructure;
 import me.devtec.shared.utility.StringUtils;
 
@@ -34,57 +33,128 @@ public class CommandHolder<S> {
 		return StringUtils.copyPartialMatches(args[args.length - 1], lookupTab(this.structure, s, args, args[0], 0));
 	}
 
-	private Collection<String> lookupTab(CommandStructure<S> structure, S s, String[] args, String arg, int argPos) {
-		List<String> result = new LinkedList<>();
-		if (args.length >= argPos) {
-			List<CommandStructure<S>> nextStructures = structure.getNextStructures(s);
-			if (nextStructures.isEmpty()) {
-				if (structure instanceof ArgumentCommandStructure
-						&& (((ArgumentCommandStructure<?>) structure).length() == -1
-								|| ((ArgumentCommandStructure<?>) structure).length() >= args.length))
-					return structure.tabList(s, structure, args);
-				return result;
+	private Collection<String> lookupTab(CommandStructure<S> structure, S sender, String[] args, String arg,
+			int argPos) {
+		List<String> result = new ArrayList<>();
+
+		if (args.length < argPos)
+			return result;
+
+		List<CommandStructure<S>> next = structure.getNextStructures(sender);
+
+		if (next.isEmpty()) {
+			if (structure instanceof ArgumentCommandStructure) {
+				ArgumentCommandStructure<S> argumentStructure = (ArgumentCommandStructure<S>) structure;
+				int len = argumentStructure.length();
+				if (len == -1 || len >= args.length)
+					return argumentStructure.tabList(sender, structure, args);
 			}
-			if (args.length - 1 == argPos) {
-				for (CommandStructure<S> nextStructure : nextStructures)
-					result.addAll(nextStructure.tabList(s, nextStructure, args));
-				return result;
-			}
+			return result;
 		}
-		++argPos;
-		for (CommandStructure<S> sub : (List<CommandStructure<S>>) structure.findStructure(s, arg, args, true)[0])
-			result.addAll(
-					lookupTab(sub, s, args, args.length - 1 <= argPos ? args[args.length - 1] : args[argPos], argPos));
+
+		if (args.length - 1 == argPos) {
+			for (CommandStructure<S> nextStructure : next)
+				result.addAll(nextStructure.tabList(sender, nextStructure, args));
+			return result;
+		}
+
+		argPos++;
+		String nextArg = args.length <= argPos ? args[args.length - 1] : args[argPos];
+
+		Object[] resolved = structure.findStructure(sender, arg, args, argPos, true);
+		if (resolved == null || resolved.length == 0)
+			return result;
+
+		List<CommandStructure<S>> subs = (List<CommandStructure<S>>) resolved[0];
+		for (CommandStructure<S> sub : subs)
+			result.addAll(lookupTab(sub, sender, args, nextArg, argPos));
 		return result;
 	}
 
 	public void execute(Object obj, String[] args) {
-		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
+		if (!structure.getSenderClass().isAssignableFrom(obj.getClass()))
 			return;
-		S s = (S) obj;
-		CommandStructure<S> cmd = this.structure;
-		int pos = 0;
-		argsLoop: for (String arg : args) {
-			++pos;
-			Object[] finder = cmd.findStructure(s, arg, args, false);
-			List<CommandStructure<S>> nextStructures = (List<CommandStructure<S>>) finder[0];
-			if ((boolean) finder[1]) {
-				if (cmd.getFallback() != null)
-					cmd.getFallback().execute(s, cmd, args);
+
+		S sender = (S) obj;
+		CommandStructure<S> current = structure;
+		CommandStructure<S> lastFallback = current.getFallback() != null ? current : null;
+		int validDepth = 0;
+
+		if (args.length == 0) {
+			if (current.getCooldownDetection() != null && current.getCooldownDetection().waiting(sender, current, args))
+				return;
+
+			if (current.getExecutor() != null)
+				current.getExecutor().execute(sender, current, args);
+			else if (current.getFallback() != null)
+				current.getFallback().execute(sender, current, args);
+			return;
+		}
+
+		boolean hasValidChildren = false;
+		int i = 0;
+		while (i < args.length) {
+			String arg = args[i];
+			Object[] result = current.findStructure(sender, arg, args, i, false);
+			List<CommandStructure<S>> nextList = (List<CommandStructure<S>>) result[0];
+			boolean noPerms = (boolean) result[1];
+			hasValidChildren = !nextList.isEmpty();
+
+			if (current.getFallback() != null)
+				lastFallback = current;
+
+			if (noPerms) {
+				if (current.getFallback() != null)
+					current.getFallback().execute(sender, current, args);
 				return;
 			}
-			if (nextStructures.isEmpty())
+
+			if (nextList.isEmpty())
 				break;
-			for (CommandStructure<S> next : nextStructures) {
-				if (next == null && this.maybeArgs(s, cmd, args, args.length - pos))
-					break argsLoop;
-				if (next != null)
-					cmd = next;
+
+			CommandStructure<S> next = null;
+			for (CommandStructure<S> n : nextList)
+				if (n != null) {
+					next = n;
+					break;
+				}
+
+			if (next == null)
+				break;
+
+			int lengthConsumed = 1;
+
+			if (next instanceof ArgumentCommandStructure) {
+				int len = ((ArgumentCommandStructure<S>) next).length();
+				if (len > 0) {
+					if (i + len > args.length)
+						len = args.length - i;
+					lengthConsumed = len;
+				}
 			}
+
+			current = next;
+			validDepth = i + lengthConsumed;
+			i += lengthConsumed;
 		}
-		if (cmd.getCooldownDetection() != null && cmd.getCooldownDetection().waiting(s, cmd, args))
+
+		if (args.length > validDepth && !current.hasChildStructures() && lastFallback != null) {
+			current.getExecutor().execute(sender, current, args);
 			return;
-		cmd.getExecutor().execute(s, cmd, args);
+		}
+
+		if (args.length > validDepth && !hasValidChildren && lastFallback != null) {
+			lastFallback.getFallback().execute(sender, lastFallback, args);
+			return;
+		}
+
+		if (current.getCooldownDetection() != null && current.getCooldownDetection().waiting(sender, current, args))
+			return;
+
+		if (current.getExecutor() != null)
+			current.getExecutor().execute(sender, current, args);
+		else if (current.getFallback() != null)
+			current.getFallback().execute(sender, current, args);
 	}
 
 	public CommandHolder<S> register(String command, String... aliases) {
@@ -116,15 +186,5 @@ public class CommandHolder<S> {
 		this.registeredCommandObject = registeredCommandObject;
 		this.cmd = cmd;
 		this.aliases = aliases;
-	}
-
-	private boolean maybeArgs(S sender, CommandStructure<S> cmd, String[] args, int i) {
-		if (cmd instanceof CallableArgumentCommandStructure)
-			return !((CallableArgumentCommandStructure<S>) cmd).getArgs(sender, cmd, args).isEmpty() && i == 0;
-		if (cmd instanceof ArgumentCommandStructure)
-			return ((ArgumentCommandStructure<S>) cmd).getArgs(sender, cmd, args).isEmpty()
-					&& (((ArgumentCommandStructure<S>) cmd).length() == -1
-							|| ((ArgumentCommandStructure<S>) cmd).length() >= i);
-		return false;
 	}
 }
