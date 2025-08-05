@@ -194,8 +194,6 @@ public class ComponentAPI {
 						}
 					}
 				else if (isColorChar(afterSymbol)) {
-					if (component.colorToChar() == afterSymbol)
-						continue;
 					if (!container.isEmpty()) {
 						privatePos = 0;
 						spaceFinder = 0;
