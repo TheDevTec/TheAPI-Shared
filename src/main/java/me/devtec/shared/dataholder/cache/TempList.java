@@ -36,7 +36,7 @@ public class TempList<V> extends AbstractList<V> {
 	 */
 	public TempList(long cacheTime, Collection<V> collection) {
 		this(cacheTime);
-        this.addAll(collection);
+		this.addAll(collection);
 	}
 
 	public RemoveCallback<V> getCallback() {
@@ -79,44 +79,40 @@ public class TempList<V> extends AbstractList<V> {
 					return time;
 				}
 			});
-			if (task == 0) {
+			if (task == 0)
 				task = new Tasker() {
 
-					@Override
-					public void run() {
-						synchronized (queue) {
-							Iterator<Entry<V, Long>> iterator = queue.iterator();
-							while (iterator.hasNext()) {
-								Entry<V, Long> entry = iterator.next();
-								if (entry.getValue() - System.currentTimeMillis() / 50 + cacheTime <= 0) {
-									iterator.remove();
-									RemoveCallback<V> callback = getCallback();
-									if (callback != null) {
-										callback.call(entry.getKey());
-									}
-								}
-							}
-							if (queue.isEmpty()) {
-								if (inactiveTask == 0) {
-									inactiveTask = System.currentTimeMillis() / 1000 + DEFAULT_WAIT_TIME;
-								} else if (inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
-									task = 0;
-									cancel();
-								}
+				@Override
+				public void run() {
+					synchronized (queue) {
+						Iterator<Entry<V, Long>> iterator = queue.iterator();
+						while (iterator.hasNext()) {
+							Entry<V, Long> entry = iterator.next();
+							if (entry.getValue() - System.currentTimeMillis() / 50 + cacheTime <= 0) {
+								iterator.remove();
+								RemoveCallback<V> callback = getCallback();
+								if (callback != null)
+									callback.call(entry.getKey());
 							}
 						}
-
+						if (queue.isEmpty())
+							if (inactiveTask == 0)
+								inactiveTask = System.currentTimeMillis() / 1000 + DEFAULT_WAIT_TIME;
+							else if (inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
+								task = 0;
+								cancel();
+							}
 					}
-				}.runRepeating(1, 1);
-			}
+
+				}
+			}.runRepeating(1, 1);
 		}
 	}
 
 	@Override
 	public V get(int index) {
-		if (index < 0 || index >= size()) {
+		if (index < 0 || index >= size())
 			return null;
-		}
 		Entry<V, Long> value = queue.get(index);
 		value.setValue(System.currentTimeMillis() / 50);
 		return value.getKey();
@@ -126,29 +122,24 @@ public class TempList<V> extends AbstractList<V> {
 		Iterator<V> it = iterator();
 		int pos = 0;
 		if (value == null) {
-			while (it.hasNext()) {
-				if (it.next() == null) {
+			while (it.hasNext())
+				if (it.next() == null)
 					return pos;
-				} else {
+				else
 					++pos;
-				}
-			}
-		} else {
-			while (it.hasNext()) {
-				if (value.equals(it.next())) {
+		} else
+			while (it.hasNext())
+				if (value.equals(it.next()))
 					return pos;
-				} else {
+				else
 					++pos;
-				}
-			}
-		}
 		return -1;
 	}
 
 	public boolean update(V value) {
 		synchronized (queue) {
 			Iterator<Entry<V, Long>> it = queue.iterator();
-			if (value == null) {
+			if (value == null)
 				while (it.hasNext()) {
 					Entry<V, Long> entry = it.next();
 					if (entry.getKey() == null) {
@@ -156,7 +147,7 @@ public class TempList<V> extends AbstractList<V> {
 						return true;
 					}
 				}
-			} else {
+			else
 				while (it.hasNext()) {
 					Entry<V, Long> entry = it.next();
 					if (value.equals(entry.getKey())) {
@@ -164,7 +155,6 @@ public class TempList<V> extends AbstractList<V> {
 						return true;
 					}
 				}
-			}
 			return false;
 		}
 	}
@@ -173,10 +163,9 @@ public class TempList<V> extends AbstractList<V> {
 	 * @apiNote Get Entry with value from index without updating time
 	 */
 	public Entry<V, Long> getRaw(int index) {
-		if (index < 0 || index >= size()) {
-			return null;
-		}
 		synchronized (queue) {
+			if (index < 0 || index >= size())
+				return null;
 			return queue.get(index);
 		}
 	}
@@ -185,9 +174,8 @@ public class TempList<V> extends AbstractList<V> {
 	 * @apiNote Get expire time of item on specified index
 	 */
 	public long getTimeOf(int index) {
-		if (index < 0 || index >= size()) {
+		if (index < 0 || index >= size())
 			return 0;
-		}
 		synchronized (queue) {
 			return queue.get(index).getValue();
 		}
@@ -198,20 +186,17 @@ public class TempList<V> extends AbstractList<V> {
 	 */
 	public long getTimeOf(V value) {
 		synchronized (queue) {
-			for (Entry<V, Long> next : queue) {
-				if (value == null ? next.getKey() == null : value.equals(next.getKey())) {
+			for (Entry<V, Long> next : queue)
+				if (value == null ? next.getKey() == null : value.equals(next.getKey()))
 					return next.getValue();
-				}
-			}
 		}
 		return 0;
 	}
 
 	@Override
 	public V remove(int index) {
-		if (index < 0 || index >= size()) {
+		if (index < 0 || index >= size())
 			return null;
-		}
 		synchronized (queue) {
 			Entry<V, Long> removed = queue.remove(index);
 			return removed == null ? null : removed.getKey();
@@ -230,11 +215,10 @@ public class TempList<V> extends AbstractList<V> {
 			Iterator<Entry<V, Long>> iterator = queue.iterator();
 			boolean first = true;
 			while (iterator.hasNext()) {
-				if (first) {
+				if (first)
 					first = false;
-				} else {
+				else
 					container.append(',').append(' ');
-				}
 				container.append(iterator.next().getKey() + "");
 			}
 		}
@@ -248,9 +232,8 @@ public class TempList<V> extends AbstractList<V> {
 
 	@Override
 	public ListIterator<V> listIterator(int index) {
-		if (index < 0 || index > size()) {
+		if (index < 0 || index > size())
 			throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size());
-		}
 		return new ListItr(index);
 	}
 
@@ -280,42 +263,43 @@ public class TempList<V> extends AbstractList<V> {
 
 		@Override
 		public V next() {
-			checkForComodification();
-			try {
-				int i = cursor;
-				Entry<V, Long> next = getRaw(i);
-				lastRet = i;
-				cursor = i + 1;
-				return next.getKey();
-			} catch (IndexOutOfBoundsException e) {
+			synchronized (queue) {
 				checkForComodification();
-				throw new NoSuchElementException();
+				try {
+					int i = cursor;
+					Entry<V, Long> next = getRaw(i);
+					lastRet = i;
+					cursor = i + 1;
+					return next.getKey();
+				} catch (IndexOutOfBoundsException e) {
+					checkForComodification();
+					throw new NoSuchElementException();
+				}
 			}
 		}
 
 		@Override
 		public void remove() {
-			if (lastRet < 0) {
-				throw new IllegalStateException();
-			}
-			checkForComodification();
+			synchronized (queue) {
+				if (lastRet < 0)
+					throw new IllegalStateException();
+				checkForComodification();
 
-			try {
-				TempList.this.remove(lastRet);
-				if (lastRet < cursor) {
-					cursor--;
+				try {
+					TempList.this.remove(lastRet);
+					if (lastRet < cursor)
+						cursor--;
+					lastRet = -1;
+					expectedModCount = modCount;
+				} catch (IndexOutOfBoundsException e) {
+					throw new ConcurrentModificationException();
 				}
-				lastRet = -1;
-				expectedModCount = modCount;
-			} catch (IndexOutOfBoundsException e) {
-				throw new ConcurrentModificationException();
 			}
 		}
 
 		final void checkForComodification() {
-			if (modCount != expectedModCount) {
+			if (modCount != expectedModCount)
 				throw new ConcurrentModificationException();
-			}
 		}
 	}
 
@@ -331,15 +315,17 @@ public class TempList<V> extends AbstractList<V> {
 
 		@Override
 		public V previous() {
-			checkForComodification();
-			try {
-				int i = cursor - 1;
-				V previous = get(i);
-				lastRet = cursor = i;
-				return previous;
-			} catch (IndexOutOfBoundsException e) {
+			synchronized (queue) {
 				checkForComodification();
-				throw new NoSuchElementException();
+				try {
+					int i = cursor - 1;
+					V previous = get(i);
+					lastRet = cursor = i;
+					return previous;
+				} catch (IndexOutOfBoundsException e) {
+					checkForComodification();
+					throw new NoSuchElementException();
+				}
 			}
 		}
 
@@ -355,31 +341,34 @@ public class TempList<V> extends AbstractList<V> {
 
 		@Override
 		public void set(V e) {
-			if (lastRet < 0) {
-				throw new IllegalStateException();
-			}
-			checkForComodification();
+			synchronized (queue) {
+				if (lastRet < 0)
+					throw new IllegalStateException();
+				checkForComodification();
 
-			try {
-				TempList.this.set(lastRet, e);
-				expectedModCount = modCount;
-			} catch (IndexOutOfBoundsException ex) {
-				throw new ConcurrentModificationException();
+				try {
+					TempList.this.set(lastRet, e);
+					expectedModCount = modCount;
+				} catch (IndexOutOfBoundsException ex) {
+					throw new ConcurrentModificationException();
+				}
 			}
 		}
 
 		@Override
 		public void add(V e) {
-			checkForComodification();
+			synchronized (queue) {
+				checkForComodification();
 
-			try {
-				int i = cursor;
-				TempList.this.add(i, e);
-				lastRet = -1;
-				cursor = i + 1;
-				expectedModCount = modCount;
-			} catch (IndexOutOfBoundsException ex) {
-				throw new ConcurrentModificationException();
+				try {
+					int i = cursor;
+					TempList.this.add(i, e);
+					lastRet = -1;
+					cursor = i + 1;
+					expectedModCount = modCount;
+				} catch (IndexOutOfBoundsException ex) {
+					throw new ConcurrentModificationException();
+				}
 			}
 		}
 	}
