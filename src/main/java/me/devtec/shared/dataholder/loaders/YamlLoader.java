@@ -84,7 +84,7 @@ public class YamlLoader extends EmptyLoader {
 				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair
 						? (int[][]) ((Pair) readerValueParsed).getValue()
-						: (int[][]) readerValueParsed;
+								: (int[][]) readerValueParsed;
 				value = readerValue[0];
 				indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 				String comment = readerValue.length == 1 || readerValue[1] == null ? null
@@ -101,18 +101,18 @@ public class YamlLoader extends EmptyLoader {
 							DataValue.of(
 									indexes == null ? lines.substring(value[0], value[1])
 											: removeCharsAt(lines.subSequence(value[0], value[1]), indexes).toString(),
-									Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
+											Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
 				} else
 					set(key.toString(),
 							DataValue.of(
 									parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
+									&& lines.charAt(parts[1][0]) != '\'' ? null : "",
+											parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
 											&& lines.charAt(parts[1][0]) != '\'' ? null : "",
-									parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
-											&& lines.charAt(parts[1][0]) != '\'' ? null : "",
-									comment, comments));
+													comment, comments));
 				comments = null;
 			}
-				break;
+			break;
 			case READ_LIST: {
 				if (isList(trimmed, trimmed, false)) {
 					Pair pair = readMapList(pos, input, trimmed, parts, value, indexes);
@@ -143,7 +143,7 @@ public class YamlLoader extends EmptyLoader {
 				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair
 						? (int[][]) ((Pair) readerValueParsed).getValue()
-						: (int[][]) readerValueParsed;
+								: (int[][]) readerValueParsed;
 				value = readerValue[0];
 				indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 				String comment = readerValue.length == 1 || readerValue[1] == null ? null
@@ -160,25 +160,25 @@ public class YamlLoader extends EmptyLoader {
 							DataValue.of(
 									indexes == null ? lines.substring(value[0], value[1])
 											: removeCharsAt(lines.subSequence(value[0], value[1]), indexes).toString(),
-									Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
+											Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
 				} else
 					set(key.toString(),
 							DataValue.of(
 									parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
+									&& lines.charAt(parts[1][0]) != '\'' ? null : "",
+											parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
 											&& lines.charAt(parts[1][0]) != '\'' ? null : "",
-									parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
-											&& lines.charAt(parts[1][0]) != '\'' ? null : "",
-									comment, comments));
+													comment, comments));
 				comments = null;
 			}
-				break;
+			break;
 			case READ_SIMPLE_STRING: {
 				parts = readConfigLine(lines, trimmed);
 				if (parts == null) {
 					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
-							: (int[][]) readerValueParsed;
+									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
@@ -209,7 +209,7 @@ public class YamlLoader extends EmptyLoader {
 				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair
 						? (int[][]) ((Pair) readerValueParsed).getValue()
-						: (int[][]) readerValueParsed;
+								: (int[][]) readerValueParsed;
 				value = readerValue[0];
 				indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 				String comment = readerValue.length == 1 || readerValue[1] == null ? null
@@ -226,18 +226,18 @@ public class YamlLoader extends EmptyLoader {
 							DataValue.of(
 									indexes == null ? lines.substring(value[0], value[1])
 											: removeCharsAt(lines.subSequence(value[0], value[1]), indexes).toString(),
-									Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
+											Json.reader().read(lines.substring(value[0], value[1])), comment, comments));
 				} else
 					set(key.toString(),
 							DataValue.of(
 									parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
+									&& lines.charAt(parts[1][0]) != '\'' ? null : "",
+											parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
 											&& lines.charAt(parts[1][0]) != '\'' ? null : "",
-									parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
-											&& lines.charAt(parts[1][0]) != '\'' ? null : "",
-									comment, comments));
+													comment, comments));
 				comments = null;
 			}
-				break;
+			break;
 			}
 		}
 		switch (readerMode) {
@@ -311,11 +311,11 @@ public class YamlLoader extends EmptyLoader {
 					Object readerValueParsed = splitFromComment(lines, 2, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
-							: (int[][]) readerValueParsed;
+									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 					StringContainer valueString = indexes == null
 							? (StringContainer) lines.subSequence(readerValue[0][0], readerValue[0][1])
-							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes);
+									: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes);
 					parts = notInQueto ? readConfigLine(valueString, null) : null;
 					if ((valueString.charAt(0) != '[' || valueString.charAt(valueString.length() - 1) != ']')
 							&& (valueString.charAt(0) != '{' || valueString.charAt(valueString.length() - 1) != '}')
@@ -326,7 +326,7 @@ public class YamlLoader extends EmptyLoader {
 						readerValueParsed = splitFromComment(valueString, 0, parts[1]);
 						readerValue = readerValueParsed instanceof Pair
 								? (int[][]) ((Pair) readerValueParsed).getValue()
-								: (int[][]) readerValueParsed;
+										: (int[][]) readerValueParsed;
 						value = readerValue[0];
 						indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey()
 								: null;
@@ -345,9 +345,10 @@ public class YamlLoader extends EmptyLoader {
 							map.put(key, Json.reader().read(valueString.substring(value[0], value[1])));
 						} else
 							map.put(key, parts[1][1] - parts[1][0] >= 1 && valueString.charAt(parts[1][0]) != '"'
-									&& valueString.charAt(parts[1][0]) != '\'' ? null : "");
-					} else
-						list.add(Json.reader().read(valueString.toString()));
+							&& valueString.charAt(parts[1][0]) != '\'' ? null : "");
+					} else {
+						list.add(notInQueto ? Json.reader().read(valueString.toString()) : valueString.toString());
+					}
 					break;
 				}
 				parts = readConfigLine(lines, trimmed);
@@ -355,7 +356,7 @@ public class YamlLoader extends EmptyLoader {
 					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
-							: (int[][]) readerValueParsed;
+									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
@@ -400,7 +401,7 @@ public class YamlLoader extends EmptyLoader {
 				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair
 						? (int[][]) ((Pair) readerValueParsed).getValue()
-						: (int[][]) readerValueParsed;
+								: (int[][]) readerValueParsed;
 				value = readerValue[0];
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
@@ -411,16 +412,16 @@ public class YamlLoader extends EmptyLoader {
 					map.put(key, Json.reader().read(lines.substring(value[0], value[1])));
 				} else
 					map.put(key, parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
-							&& lines.charAt(parts[1][0]) != '\'' ? null : "");
+					&& lines.charAt(parts[1][0]) != '\'' ? null : "");
 			}
-				break;
+			break;
 			case READ_SIMPLE_STRING: {
 				parts = readConfigLine(lines, trimmed);
 				if (parts == null) {
 					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
-							: (int[][]) readerValueParsed;
+									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
@@ -471,7 +472,7 @@ public class YamlLoader extends EmptyLoader {
 				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair
 						? (int[][]) ((Pair) readerValueParsed).getValue()
-						: (int[][]) readerValueParsed;
+								: (int[][]) readerValueParsed;
 				value = readerValue[0];
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
@@ -483,16 +484,16 @@ public class YamlLoader extends EmptyLoader {
 					map.put(key, Json.reader().read(lines.substring(value[0], value[1])));
 				} else
 					map.put(key, parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
-							&& lines.charAt(parts[1][0]) != '\'' ? null : "");
+					&& lines.charAt(parts[1][0]) != '\'' ? null : "");
 			}
-				break;
+			break;
 			case READ_MAP_LIST: {
 				parts = readConfigLine(lines, trimmed);
 				if (parts == null) {
 					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
-							: (int[][]) readerValueParsed;
+									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
 					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
@@ -539,7 +540,7 @@ public class YamlLoader extends EmptyLoader {
 				Object readerValueParsed = splitFromComment(lines, 0, parts[1]);
 				int[][] readerValue = readerValueParsed instanceof Pair
 						? (int[][]) ((Pair) readerValueParsed).getValue()
-						: (int[][]) readerValueParsed;
+								: (int[][]) readerValueParsed;
 				value = readerValue[0];
 				if (value[1] - value[0] > 0) {
 					if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1 && lines.charAt(value[0]) == '|') {
@@ -550,9 +551,9 @@ public class YamlLoader extends EmptyLoader {
 					map.put(key, Json.reader().read(lines.substring(value[0], value[1])));
 				} else
 					map.put(key, parts[1][1] - parts[1][0] >= 1 && lines.charAt(parts[1][0]) != '"'
-							&& lines.charAt(parts[1][0]) != '\'' ? null : "");
+					&& lines.charAt(parts[1][0]) != '\'' ? null : "");
 			}
-				break;
+			break;
 			}
 		}
 		return Pair.of(pos, list);
@@ -600,16 +601,16 @@ public class YamlLoader extends EmptyLoader {
 					return config.getDataLoader().getHeader() instanceof List
 							? ((List<String>) config.getDataLoader().getHeader()).get(posInPhase++)
 									+ System.lineSeparator()
-							: config.getDataLoader().getHeader().toArray(new String[0])[posInPhase++]
-									+ System.lineSeparator();
+									: config.getDataLoader().getHeader().toArray(new String[0])[posInPhase++]
+											+ System.lineSeparator();
 				case 1:
 					return list.next();
 				case 2:
 					return config.getDataLoader().getFooter() instanceof List
 							? ((List<String>) config.getDataLoader().getFooter()).get(posInPhase++)
 									+ System.lineSeparator()
-							: config.getDataLoader().getFooter().toArray(new String[0])[posInPhase++]
-									+ System.lineSeparator();
+									: config.getDataLoader().getFooter().toArray(new String[0])[posInPhase++]
+											+ System.lineSeparator();
 				}
 				return null;
 			}
@@ -687,8 +688,8 @@ public class YamlLoader extends EmptyLoader {
 			lastIndexOfDot = key.length();
 		} else if (currentDepth < depth) { // Down
 			key.delete(key.lastIndexOf('.', lastIndexOfDot, depth - currentDepth + 1) + 1, key.length()); // Don't
-																											// remove
-																											// dot
+			// remove
+			// dot
 			lastIndexOfDot = key.length();
 		} else
 			key.delete(lastIndexOfDot, key.length()); // Don't remove dot
@@ -749,53 +750,53 @@ public class YamlLoader extends EmptyLoader {
 		if (container[1] - container[0] <= 1)
 			return new int[][] { container };
 
-		char firstChar = lines.charAt(container[0] + posFromStart);
-		if (firstChar == '[' || firstChar == '{')
-			return splitFromCommentJson(lines, posFromStart, container);
+			char firstChar = lines.charAt(container[0] + posFromStart);
+			if (firstChar == '[' || firstChar == '{')
+				return splitFromCommentJson(lines, posFromStart, container);
 
-		boolean inQuotes = firstChar == '"' || firstChar == '\'';
-		int endOfString = -1;
-		int splitIndexStart = 0;
-		boolean foundHash = false;
+			boolean inQuotes = firstChar == '"' || firstChar == '\'';
+			int endOfString = -1;
+			int splitIndexStart = 0;
+			boolean foundHash = false;
 
-		posFromStart += inQuotes ? 1 : 0;
-		container[0] += posFromStart;
-		int length = 0;
-		int[] indexes = null;
-		for (int i = container[0]; i < container[1]; i++) {
-			char c = lines.charAt(i);
-			if (inQuotes) {
-				if (c == firstChar) {
-					inQuotes = false;
-					endOfString = i;
-				} else if (c == '\\' && i + 1 < container[1] && lines.charAt(i + 1) == firstChar) {
-					if (indexes == null) {
-						length = container[1] - container[0];
-						indexes = new int[] { length - (container[1] - i) };
-					} else {
-						int[] copy = new int[indexes.length + 1];
-						System.arraycopy(indexes, 0, copy, 0, indexes.length);
-						copy[indexes.length] = length - (container[1] - i);
-						indexes = copy;
+			posFromStart += inQuotes ? 1 : 0;
+			container[0] += posFromStart;
+			int length = 0;
+			int[] indexes = null;
+			for (int i = container[0]; i < container[1]; i++) {
+				char c = lines.charAt(i);
+				if (inQuotes) {
+					if (c == firstChar) {
+						inQuotes = false;
+						endOfString = i;
+					} else if (c == '\\' && i + 1 < container[1] && lines.charAt(i + 1) == firstChar) {
+						if (indexes == null) {
+							length = container[1] - container[0];
+							indexes = new int[] { length - (container[1] - i) };
+						} else {
+							int[] copy = new int[indexes.length + 1];
+							System.arraycopy(indexes, 0, copy, 0, indexes.length);
+							copy[indexes.length] = length - (container[1] - i);
+							indexes = copy;
+						}
+						++i;
 					}
-					++i;
+				} else if (c == '#' && !foundHash) {
+					splitIndexStart = i;
+					foundHash = true;
 				}
-			} else if (c == '#' && !foundHash) {
-				splitIndexStart = i;
-				foundHash = true;
 			}
-		}
-		int[][] result;
-		if (!foundHash)
-			result = endOfString == -1 ? new int[][] { container }
-					: new int[][] { new int[] { container[0], endOfString } };
-		else
-			result = new int[][] {
-					endOfString == -1 && splitIndexStart == 0 ? container
-							: endOfString == -1 ? new int[] { container[0], splitIndexStart }
-									: new int[] { container[0], endOfString },
-					new int[] { splitIndexStart, container[1] } };
-		return indexes != null ? Pair.of(indexes, result) : result;
+			int[][] result;
+			if (!foundHash)
+				result = endOfString == -1 ? new int[][] { container }
+			: new int[][] { new int[] { container[0], endOfString } };
+			else
+				result = new int[][] {
+				endOfString == -1 && splitIndexStart == 0 ? container
+						: endOfString == -1 ? new int[] { container[0], splitIndexStart }
+				: new int[] { container[0], endOfString },
+				new int[] { splitIndexStart, container[1] } };
+				return indexes != null ? Pair.of(indexes, result) : result;
 	}
 
 	private static int[][] splitFromCommentJson(StringContainer lines, int posFromStart, int[] input) {
