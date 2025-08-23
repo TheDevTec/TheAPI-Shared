@@ -1,7 +1,9 @@
 package me.devtec.shared.dataholder.cache;
 
+import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
 
-public class TempList<V> implements Iterable<V> {
+public class TempList<V> extends AbstractList<V> {
 	private static final long DEFAULT_WAIT_TIME = 5 * 60; // 5 minut v sekundách
 
 	private final ConcurrentLinkedQueue<Node<V>> queue = new ConcurrentLinkedQueue<>();
@@ -33,7 +35,7 @@ public class TempList<V> implements Iterable<V> {
 		return callback;
 	}
 
-	public TempList<V> setCallback(RemoveCallback<V> callback) {
+	public List<V> setCallback(RemoveCallback<V> callback) {
 		this.callback = callback;
 		return this;
 	}
@@ -46,7 +48,7 @@ public class TempList<V> implements Iterable<V> {
 		this.cacheTime = cacheTime;
 	}
 
-	public void add(V value) {
+	public boolean add(V value) {
 		queue.add(new Node<>(value, now()));
 
 		// spustíme cleanup jen pokud neběží
@@ -59,9 +61,10 @@ public class TempList<V> implements Iterable<V> {
 			}.runRepeating(1, 1);
 			task.set(id);
 		}
+		return true;
 	}
 
-	public boolean addAll(Collection<V> values) {
+	public boolean addAll(Collection<? extends V> values) {
 		boolean changed = false;
 		for (V v : values) {
 			add(v);
@@ -72,12 +75,11 @@ public class TempList<V> implements Iterable<V> {
 
 	public V get(int index) {
 		int i = 0;
-		for (Node<V> n : queue) {
+		for (Node<V> n : queue)
 			if (i++ == index) {
 				n.timestamp = now(); // refresh
 				return n.value;
 			}
-		}
 		return null;
 	}
 
@@ -91,10 +93,9 @@ public class TempList<V> implements Iterable<V> {
 
 	public long getTimeOf(int index) {
 		int i = 0;
-		for (Node<V> n : queue) {
+		for (Node<V> n : queue)
 			if (i++ == index)
 				return n.timestamp;
-		}
 		return 0;
 	}
 
@@ -130,7 +131,7 @@ public class TempList<V> implements Iterable<V> {
 	@Override
 	public Iterator<V> iterator() {
 		Iterator<Node<V>> base = queue.iterator();
-		return new Iterator<>() {
+		return new Iterator<V>() {
 			@Override
 			public boolean hasNext() {
 				return base.hasNext();

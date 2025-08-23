@@ -64,7 +64,7 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 				return previous;
 			}
 
-		Entry<K, V> entry = new Entry<>() {
+		Entry<K, V> entry = new Entry<K, V>() {
 			V value = val;
 
 			@Override
@@ -145,7 +145,7 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 		for (Entry<Entry<K, V>, Long> value : queue.entrySet())
 			if (value.getKey().getKey().equals(key)) {
 				value.setValue(System.currentTimeMillis() / 50L);
-				return new Entry<>() {
+				return new Entry<V, Long>() {
 
 					@Override
 					public V getKey() {
