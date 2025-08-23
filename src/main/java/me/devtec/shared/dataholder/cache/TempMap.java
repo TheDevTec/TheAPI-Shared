@@ -18,7 +18,7 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 	private RemoveCallback<Entry<K, V>> callback;
 
 	// internal
-	private int task;
+	private volatile Tasker task; // reference na běžící Tasker
 	private long inactiveTask;
 
 	/**
@@ -56,14 +56,15 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 	@Override
 	public V put(K key, V val) {
 		inactiveTask = System.currentTimeMillis() / 1000L + DEFAULT_WAIT_TIME;
-        for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
-            if (Objects.equals(value.getKey().getKey(), key)) {
-                V previous = value.getKey().setValue(val);
-                value.setValue(System.currentTimeMillis() / 50L);
-                return previous;
-            }
-        }
-		Entry<K, V> entry = new Entry<K, V>() {
+
+		for (Entry<Entry<K, V>, Long> value : queue.entrySet())
+			if (Objects.equals(value.getKey().getKey(), key)) {
+				V previous = value.getKey().setValue(val);
+				value.setValue(System.currentTimeMillis() / 50L);
+				return previous;
+			}
+
+		Entry<K, V> entry = new Entry<>() {
 			V value = val;
 
 			@Override
@@ -89,55 +90,51 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 			}
 		};
 		queue.put(entry, System.currentTimeMillis() / 50L);
-		if (task == 0) {
-			task = new Tasker() {
-
-				@Override
-				public void run() {
-					if (getId() != task) {
-						cancel();
-						return;
-					}
-
-					Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
-					while (iterator.hasNext()) {
-						Entry<Entry<K, V>, Long> entry = iterator.next();
-						if (entry.getValue() - System.currentTimeMillis() / 50L + cacheTime <= 0) {
-							iterator.remove();
-							RemoveCallback<Entry<K, V>> callback = getCallback();
-							if (callback != null) {
-								callback.call(entry.getKey());
-							}
-						}
-					}
-					if (queue.isEmpty() && inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
-						task = 0;
-						cancel();
-					}
-
-				}
-			}.runRepeating(1, 1);
-		}
+		startTaskIfNeeded();
 		return null;
 	}
 
-	public long getTimeOf(K key) {
-        for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
-            if (value.getKey().getKey().equals(key)) {
-				return value.getValue();
+	private void startTaskIfNeeded() {
+		if (task != null && !task.isCancelled()) return;
+
+		task = new Tasker() {
+			@Override
+			public void run() {
+				long now = System.currentTimeMillis() / 50L;
+				Iterator<Entry<Entry<K, V>, Long>> iterator = queue.entrySet().iterator();
+
+				while (iterator.hasNext()) {
+					Entry<Entry<K, V>, Long> e = iterator.next();
+					if (e.getValue() - now + cacheTime <= 0) {
+						iterator.remove();
+						if (callback != null)
+							callback.call(e.getKey());
+					}
+				}
+
+				if (queue.isEmpty() && inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
+					task = null;
+					cancel();
+				}
 			}
-        }
+		};
+		task.runRepeating(1, 1);
+	}
+
+	public long getTimeOf(K key) {
+		for (Entry<Entry<K, V>, Long> value : queue.entrySet())
+			if (value.getKey().getKey().equals(key))
+				return value.getValue();
 		return 0;
 	}
 
 	@Override
 	public V get(Object key) {
-        for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
-            if (value.getKey().getKey().equals(key)) {
-                value.setValue(System.currentTimeMillis() / 50L);
-                return value.getKey().getValue();
-            }
-        }
+		for (Entry<Entry<K, V>, Long> value : queue.entrySet())
+			if (value.getKey().getKey().equals(key)) {
+				value.setValue(System.currentTimeMillis() / 50L);
+				return value.getKey().getValue();
+			}
 		return null;
 	}
 
@@ -145,33 +142,32 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 	 * @apiNote Get Entry with value from key without updating time
 	 */
 	public Entry<V, Long> getRaw(Object key) {
-        for (Entry<Entry<K, V>, Long> value : queue.entrySet()) {
-            if (value.getKey().getKey().equals(key)) {
-                value.setValue(System.currentTimeMillis() / 50L);
-                return new Entry<V, Long>() {
+		for (Entry<Entry<K, V>, Long> value : queue.entrySet())
+			if (value.getKey().getKey().equals(key)) {
+				value.setValue(System.currentTimeMillis() / 50L);
+				return new Entry<>() {
 
-                    @Override
-                    public V getKey() {
-                        return value.getKey().getValue();
-                    }
+					@Override
+					public V getKey() {
+						return value.getKey().getValue();
+					}
 
-                    @Override
-                    public Long getValue() {
-                        return value.getValue();
-                    }
+					@Override
+					public Long getValue() {
+						return value.getValue();
+					}
 
-                    @Override
-                    public Long setValue(Long value) {
-                        throw new UnsupportedOperationException("You can't modify value inside Entry of TempMap");
-                    }
+					@Override
+					public Long setValue(Long value) {
+						throw new UnsupportedOperationException("You can't modify value inside Entry of TempMap");
+					}
 
-                    @Override
-                    public String toString() {
-                        return getKey() + "=" + getValue();
-                    }
-                };
-            }
-        }
+					@Override
+					public String toString() {
+						return getKey() + "=" + getValue();
+					}
+				};
+			}
 		return null;
 	}
 
@@ -198,11 +194,10 @@ public class TempMap<K, V> extends AbstractMap<K, V> {
 		StringContainer container = new StringContainer(size() * 8).append('{');
 		boolean first = true;
 		for (Entry<K, V> entry : queue.keySet()) {
-			if (first) {
+			if (first)
 				first = false;
-			} else {
+			else
 				container.append(',').append(' ');
-			}
 			container.append(entry.getKey() + "=" + entry.getValue());
 		}
 		return container.append('}').toString();

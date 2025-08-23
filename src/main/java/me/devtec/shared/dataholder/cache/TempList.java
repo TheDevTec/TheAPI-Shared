@@ -1,42 +1,32 @@
 package me.devtec.shared.dataholder.cache;
 
-import java.util.AbstractList;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
 
-public class TempList<V> extends AbstractList<V> {
-	private static final long DEFAULT_WAIT_TIME = 5 * 60 * 1000; // 5min
+public class TempList<V> implements Iterable<V> {
+	private static final long DEFAULT_WAIT_TIME = 5 * 60; // 5 minut v sekundách
 
-	private final List<Entry<V, Long>> queue = new ArrayList<>();
-	private long cacheTime;
-	private RemoveCallback<V> callback;
+	private final ConcurrentLinkedQueue<Node<V>> queue = new ConcurrentLinkedQueue<>();
+	private final AtomicInteger task = new AtomicInteger(0);
+	private final AtomicLong inactiveUntil = new AtomicLong(0);
 
-	// internal
-	private int task;
-	private long inactiveTask;
+	private volatile long cacheTime; // v tickách (1 = 50ms)
+	private volatile RemoveCallback<V> callback;
 
-	/**
-	 * @param cacheTime Should be in Minecraft ticks time (1 = 50 milis)
-	 */
 	public TempList(long cacheTime) {
 		this.cacheTime = cacheTime;
 	}
 
-	/**
-	 * @param cacheTime Should be in Minecraft ticks time (1 = 50 milis)
-	 */
 	public TempList(long cacheTime, Collection<V> collection) {
 		this(cacheTime);
-		this.addAll(collection);
+		addAll(collection);
 	}
 
 	public RemoveCallback<V> getCallback() {
@@ -56,320 +46,167 @@ public class TempList<V> extends AbstractList<V> {
 		this.cacheTime = cacheTime;
 	}
 
-	@Override
-	public void add(int pos, V val) {
-		inactiveTask = 0;
-		synchronized (queue) {
-			queue.add(new Entry<V, Long>() {
-				long time = System.currentTimeMillis() / 50;
+	public void add(V value) {
+		queue.add(new Node<>(value, now()));
 
-				@Override
-				public V getKey() {
-					return val;
-				}
-
-				@Override
-				public Long getValue() {
-					return time;
-				}
-
-				@Override
-				public Long setValue(Long value) {
-					time = value;
-					return time;
-				}
-			});
-			if (task == 0)
-				task = new Tasker() {
-
+		// spustíme cleanup jen pokud neběží
+		if (task.get() == 0) {
+			int id = new Tasker() {
 				@Override
 				public void run() {
-					synchronized (queue) {
-						Iterator<Entry<V, Long>> iterator = queue.iterator();
-						while (iterator.hasNext()) {
-							Entry<V, Long> entry = iterator.next();
-							if (entry.getValue() - System.currentTimeMillis() / 50 + cacheTime <= 0) {
-								iterator.remove();
-								RemoveCallback<V> callback = getCallback();
-								if (callback != null)
-									callback.call(entry.getKey());
-							}
-						}
-						if (queue.isEmpty())
-							if (inactiveTask == 0)
-								inactiveTask = System.currentTimeMillis() / 1000 + DEFAULT_WAIT_TIME;
-							else if (inactiveTask - System.currentTimeMillis() / 1000 <= 0) {
-								task = 0;
-								cancel();
-							}
-					}
-
+					cleanup();
 				}
 			}.runRepeating(1, 1);
+			task.set(id);
 		}
 	}
 
-	@Override
+	public boolean addAll(Collection<V> values) {
+		boolean changed = false;
+		for (V v : values) {
+			add(v);
+			changed = true;
+		}
+		return changed;
+	}
+
 	public V get(int index) {
-		if (index < 0 || index >= size())
-			return null;
-		Entry<V, Long> value = queue.get(index);
-		value.setValue(System.currentTimeMillis() / 50);
-		return value.getKey();
-	}
-
-	public int getPosition(V value) {
-		Iterator<V> it = iterator();
-		int pos = 0;
-		if (value == null) {
-			while (it.hasNext())
-				if (it.next() == null)
-					return pos;
-				else
-					++pos;
-		} else
-			while (it.hasNext())
-				if (value.equals(it.next()))
-					return pos;
-				else
-					++pos;
-		return -1;
-	}
-
-	public boolean update(V value) {
-		synchronized (queue) {
-			Iterator<Entry<V, Long>> it = queue.iterator();
-			if (value == null)
-				while (it.hasNext()) {
-					Entry<V, Long> entry = it.next();
-					if (entry.getKey() == null) {
-						entry.setValue(System.currentTimeMillis() / 50);
-						return true;
-					}
-				}
-			else
-				while (it.hasNext()) {
-					Entry<V, Long> entry = it.next();
-					if (value.equals(entry.getKey())) {
-						entry.setValue(System.currentTimeMillis() / 50);
-						return true;
-					}
-				}
-			return false;
+		int i = 0;
+		for (Node<V> n : queue) {
+			if (i++ == index) {
+				n.timestamp = now(); // refresh
+				return n.value;
+			}
 		}
+		return null;
 	}
 
-	/**
-	 * @apiNote Get Entry with value from index without updating time
-	 */
-	public Entry<V, Long> getRaw(int index) {
-		synchronized (queue) {
-			if (index < 0 || index >= size())
-				return null;
-			return queue.get(index);
-		}
-	}
-
-	/**
-	 * @apiNote Get expire time of item on specified index
-	 */
-	public long getTimeOf(int index) {
-		if (index < 0 || index >= size())
-			return 0;
-		synchronized (queue) {
-			return queue.get(index).getValue();
-		}
-	}
-
-	/**
-	 * @apiNote Get expire time of specified item
-	 */
-	public long getTimeOf(V value) {
-		synchronized (queue) {
-			for (Entry<V, Long> next : queue)
-				if (value == null ? next.getKey() == null : value.equals(next.getKey()))
-					return next.getValue();
-		}
-		return 0;
-	}
-
-	@Override
-	public V remove(int index) {
-		if (index < 0 || index >= size())
-			return null;
-		synchronized (queue) {
-			Entry<V, Long> removed = queue.remove(index);
-			return removed == null ? null : removed.getKey();
-		}
-	}
-
-	@Override
 	public int size() {
 		return queue.size();
 	}
 
-	@Override
-	public String toString() {
-		StringContainer container = new StringContainer(size() * 8).append('[');
-		synchronized (queue) {
-			Iterator<Entry<V, Long>> iterator = queue.iterator();
-			boolean first = true;
-			while (iterator.hasNext()) {
-				if (first)
-					first = false;
-				else
-					container.append(',').append(' ');
-				container.append(iterator.next().getKey() + "");
+	public boolean isEmpty() {
+		return queue.isEmpty();
+	}
+
+	public long getTimeOf(int index) {
+		int i = 0;
+		for (Node<V> n : queue) {
+			if (i++ == index)
+				return n.timestamp;
+		}
+		return 0;
+	}
+
+	public long getTimeOf(V value) {
+		for (Node<V> n : queue)
+			if (value == null ? n.value == null : value.equals(n.value))
+				return n.timestamp;
+		return 0;
+	}
+
+	public boolean update(V value) {
+		for (Node<V> n : queue)
+			if (value == null ? n.value == null : value.equals(n.value)) {
+				n.timestamp = now();
+				return true;
+			}
+		return false;
+	}
+
+	public V remove(int index) {
+		Iterator<Node<V>> it = queue.iterator();
+		int i = 0;
+		while (it.hasNext()) {
+			Node<V> n = it.next();
+			if (i++ == index) {
+				it.remove();
+				return n.value;
 			}
 		}
-		return container.append(']').toString();
+		return null;
 	}
 
 	@Override
 	public Iterator<V> iterator() {
-		return new Itr();
+		Iterator<Node<V>> base = queue.iterator();
+		return new Iterator<>() {
+			@Override
+			public boolean hasNext() {
+				return base.hasNext();
+			}
+
+			@Override
+			public V next() {
+				return base.next().value;
+			}
+
+			@Override
+			public void remove() {
+				base.remove();
+			}
+		};
 	}
 
-	@Override
-	public ListIterator<V> listIterator(int index) {
-		if (index < 0 || index > size())
-			throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size());
-		return new ListItr(index);
+	private void cleanup() {
+		long now = now();
+		long expiry = now - cacheTime;
+
+		Iterator<Node<V>> it = queue.iterator();
+		while (it.hasNext()) {
+			Node<V> n = it.next();
+			if (n.timestamp <= expiry) {
+				it.remove();
+				RemoveCallback<V> cb = callback;
+				if (cb != null)
+					cb.call(n.value);
+			}
+		}
+
+		if (queue.isEmpty()) {
+			long until = inactiveUntil.get();
+			if (until == 0)
+				inactiveUntil.set(nowSeconds() + DEFAULT_WAIT_TIME);
+			else if (nowSeconds() >= until) {
+				Scheduler.cancelTask(task.getAndSet(0)); // ukončení tasku
+				inactiveUntil.set(0);
+			}
+		} else
+			inactiveUntil.set(0);
 	}
 
-	private class Itr implements Iterator<V> {
-		/**
-		 * Index of element to be returned by subsequent call to next.
-		 */
-		int cursor = 0;
-
-		/**
-		 * Index of element returned by most recent call to next or previous. Reset to
-		 * -1 if this element is deleted by a call to remove.
-		 */
-		int lastRet = -1;
-
-		/**
-		 * The modCount value that the iterator believes that the backing List should
-		 * have. If this expectation is violated, the iterator has detected concurrent
-		 * modification.
-		 */
-		int expectedModCount = modCount;
-
-		@Override
-		public boolean hasNext() {
-			return cursor != size();
-		}
-
-		@Override
-		public V next() {
-			synchronized (queue) {
-				checkForComodification();
-				try {
-					int i = cursor;
-					Entry<V, Long> next = getRaw(i);
-					lastRet = i;
-					cursor = i + 1;
-					return next.getKey();
-				} catch (IndexOutOfBoundsException e) {
-					checkForComodification();
-					throw new NoSuchElementException();
-				}
-			}
-		}
-
-		@Override
-		public void remove() {
-			synchronized (queue) {
-				if (lastRet < 0)
-					throw new IllegalStateException();
-				checkForComodification();
-
-				try {
-					TempList.this.remove(lastRet);
-					if (lastRet < cursor)
-						cursor--;
-					lastRet = -1;
-					expectedModCount = modCount;
-				} catch (IndexOutOfBoundsException e) {
-					throw new ConcurrentModificationException();
-				}
-			}
-		}
-
-		final void checkForComodification() {
-			if (modCount != expectedModCount)
-				throw new ConcurrentModificationException();
-		}
+	private static long now() {
+		return System.currentTimeMillis() / 50;
 	}
 
-	private class ListItr extends Itr implements ListIterator<V> {
-		ListItr(int index) {
-			cursor = index;
+	private static long nowSeconds() {
+		return System.currentTimeMillis() / 1000;
+	}
+
+	private static final class Node<V> implements Entry<V, Long> {
+		final V value;
+		volatile long timestamp;
+
+		Node(V value, long timestamp) {
+			this.value = value;
+			this.timestamp = timestamp;
 		}
 
 		@Override
-		public boolean hasPrevious() {
-			return cursor != 0;
+		public V getKey() {
+			return value;
 		}
 
 		@Override
-		public V previous() {
-			synchronized (queue) {
-				checkForComodification();
-				try {
-					int i = cursor - 1;
-					V previous = get(i);
-					lastRet = cursor = i;
-					return previous;
-				} catch (IndexOutOfBoundsException e) {
-					checkForComodification();
-					throw new NoSuchElementException();
-				}
-			}
+		public Long getValue() {
+			return timestamp;
 		}
 
 		@Override
-		public int nextIndex() {
-			return cursor;
-		}
-
-		@Override
-		public int previousIndex() {
-			return cursor - 1;
-		}
-
-		@Override
-		public void set(V e) {
-			synchronized (queue) {
-				if (lastRet < 0)
-					throw new IllegalStateException();
-				checkForComodification();
-
-				try {
-					TempList.this.set(lastRet, e);
-					expectedModCount = modCount;
-				} catch (IndexOutOfBoundsException ex) {
-					throw new ConcurrentModificationException();
-				}
-			}
-		}
-
-		@Override
-		public void add(V e) {
-			synchronized (queue) {
-				checkForComodification();
-
-				try {
-					int i = cursor;
-					TempList.this.add(i, e);
-					lastRet = -1;
-					cursor = i + 1;
-					expectedModCount = modCount;
-				} catch (IndexOutOfBoundsException ex) {
-					throw new ConcurrentModificationException();
-				}
-			}
+		public Long setValue(Long value) {
+			long old = timestamp;
+			timestamp = value;
+			return old;
 		}
 	}
 }
