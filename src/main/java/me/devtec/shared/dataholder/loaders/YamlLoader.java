@@ -1,11 +1,13 @@
 package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import java.util.logging.Logger;
 
 import me.devtec.shared.Pair;
 import me.devtec.shared.annotations.Checkers;
@@ -37,7 +39,6 @@ public class YamlLoader extends EmptyLoader {
 		List<String> comments = null;
 		StringContainer stringContainer = null;
 		StringContainer key = new StringContainer(48);
-		int depth = 0;
 		int lastIndexOfDot = 0;
 
 		byte readerMode = READ_SECTION;
@@ -47,6 +48,9 @@ public class YamlLoader extends EmptyLoader {
 		int[][] parts = new int[2][];
 		int[] value = new int[2];
 		int[] indexes = null;
+
+		Integer[] depth = new Integer[5];
+		int depthIndex = -1;
 
 		for (int pos = 0; pos < input.size(); ++pos) {
 			int[] line = input.get(pos);
@@ -67,8 +71,18 @@ public class YamlLoader extends EmptyLoader {
 					continue;
 
 				// Key
-				lastIndexOfDot = buildKey(lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
-				depth = currentDepth;
+				int[] keyResult = setupKey(currentDepth, depthIndex, depth, lastIndexOfDot, key, parts);
+				if(keyResult==null) {
+					Logger.getLogger("YamlLoader").warning("An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
+					continue;
+				}
+				lastIndexOfDot=keyResult[0];
+				depthIndex=keyResult[1];
+				if(depth.length<=depthIndex+1) {
+					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					System.arraycopy(depth, 0, copy, 0, depth.length);
+					depth=copy;
+				}
 
 				if (parts.length == 1) {
 					readerMode = READ_LIST;
@@ -128,8 +142,19 @@ public class YamlLoader extends EmptyLoader {
 
 				readerMode = READ_SECTION;
 
-				lastIndexOfDot = buildKey(lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
-				depth = currentDepth;
+				int[] keyResult = setupKey(currentDepth, depthIndex, depth, lastIndexOfDot, key, parts);
+				if(keyResult==null) {
+					Logger.getLogger("YamlLoader").warning("An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
+					continue;
+				}
+				lastIndexOfDot=keyResult[0];
+				depthIndex=keyResult[1];
+				if(depth.length<=depthIndex+1) {
+					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					System.arraycopy(depth, 0, copy, 0, depth.length);
+					depth=copy;
+				}
+
 				if (parts.length == 1) {
 					readerMode = READ_LIST;
 					if (comments != null) {
@@ -194,8 +219,19 @@ public class YamlLoader extends EmptyLoader {
 					val.writtenValue = writtenValue;
 				}
 
-				lastIndexOfDot = buildKey(lines, key, parts[0], depth, currentDepth, lastIndexOfDot);
-				depth = currentDepth;
+				int[] keyResult = setupKey(currentDepth, depthIndex, depth, lastIndexOfDot, key, parts);
+				if(keyResult==null) {
+					Logger.getLogger("YamlLoader").warning("An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
+					continue;
+				}
+				lastIndexOfDot=keyResult[0];
+				depthIndex=keyResult[1];
+				if(depth.length<=depthIndex+1) {
+					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					System.arraycopy(depth, 0, copy, 0, depth.length);
+					depth=copy;
+				}
+
 				if (parts.length == 1) {
 					readerMode = READ_LIST; // List or Section to break
 					if (comments != null) {
@@ -263,9 +299,45 @@ public class YamlLoader extends EmptyLoader {
 		loaded = comments != null || !data.isEmpty();
 	}
 
+	private int[] setupKey(int spaces, int depthIndex, Integer[] depth, int lastIndexOfDot, StringContainer key, int[][] parts) {
+		int realDepth = findDepth(depth, spaces);
+		if(realDepth==-1)return null;
+		if(depthIndex==-1) {
+			lastIndexOfDot = buildKey(lines, key, parts[0], depth, 0, 0, lastIndexOfDot);
+			return new int[] {lastIndexOfDot,realDepth};
+		}
+		if(spaces==0) {
+			Arrays.fill(depth,1,depth.length, null);
+			lastIndexOfDot = buildKey(lines, key, parts[0], depth, 0, depthIndex, lastIndexOfDot);
+			depthIndex=-1;
+		}else {
+			if(realDepth+1<depth.length)
+				Arrays.fill(depth, realDepth+1, depth.length, null);
+			lastIndexOfDot = buildKey(lines, key, parts[0], depth, realDepth, depthIndex, lastIndexOfDot);
+		}
+		return new int[] {lastIndexOfDot,realDepth};
+	}
+
+	private int findDepth(Integer[] depth, int rnSpaces) {
+		for(int index = 0; index < depth.length; ++index) {
+			Integer spaces = depth[index];
+
+			if(spaces == null) {
+				depth[index]=rnSpaces;
+				return index;
+			}
+			if(spaces>rnSpaces)
+				return -1; //Error!
+			if(spaces==rnSpaces)
+				return index;
+		}
+		return 0;
+	}
+
 	private Pair readMapList(int pos, List<int[]> input, int[] trimmed, int[][] parts, int[] value, int[] indexes) {
 		int listDepth = 0;
-		int sectionDepth = 0;
+		Integer[] depth = new Integer[5];
+		int depthIndex = -1;
 		List<Object> list = new ArrayList<>();
 
 		// Temp values
@@ -319,36 +391,45 @@ public class YamlLoader extends EmptyLoader {
 					parts = notInQueto ? readConfigLine(valueString, null) : null;
 					if ((valueString.charAt(0) != '[' || valueString.charAt(valueString.length() - 1) != ']')
 							&& (valueString.charAt(0) != '{' || valueString.charAt(valueString.length() - 1) != '}')
-							&& parts != null && parts.length > 1) {
+							&& parts != null) {
 						if (map == null)
 							map = new HashMap<>();
-						// Value
-						readerValueParsed = splitFromComment(valueString, 0, parts[1]);
-						readerValue = readerValueParsed instanceof Pair
-								? (int[][]) ((Pair) readerValueParsed).getValue()
-										: (int[][]) readerValueParsed;
-						value = readerValue[0];
-						indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey()
-								: null;
-						sectionDepth = currentDepth + 1;
+						value=null;
+						indexes=null;
+						depthIndex = findDepth(depth, currentDepth);
+						if(depthIndex==-1) {
+							Logger.getLogger("YamlLoader").warning("[List] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
+							continue;
+						}
 						readerMode = READ_MAP_LIST;
 						originMap = map;
 						list.add(map);
 						key = valueString.substring(parts[0][0], parts[0][1]);
-						if (value[1] - value[0] > 0) {
-							if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1
-									&& valueString.charAt(value[0]) == '|') {
-								readerMode = READ_SIMPLE_STRING;
-								stringContainer = new StringContainer(64);
-								break;
-							}
-							map.put(key, Json.reader().read(valueString.substring(value[0], value[1])));
+						if(parts.length > 1) {
+							// Value
+							readerValueParsed = splitFromComment(valueString, 0, parts[1]);
+							readerValue = readerValueParsed instanceof Pair
+									? (int[][]) ((Pair) readerValueParsed).getValue()
+											: (int[][]) readerValueParsed;
+							value = readerValue[0];
+							indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey()
+									: null;
 						} else
-							map.put(key, parts[1][1] - parts[1][0] >= 1 && valueString.charAt(parts[1][0]) != '"'
-							&& valueString.charAt(parts[1][0]) != '\'' ? null : "");
-					} else {
+							map.put(key, map = new HashMap<>());
+						if(value!=null)
+							if (value[1] - value[0] > 0) {
+								if (value[1] - value[0] == 1 && parts[1][1] - parts[1][0] == 1
+										&& valueString.charAt(value[0]) == '|') {
+									readerMode = READ_SIMPLE_STRING;
+									stringContainer = new StringContainer(64);
+									break;
+								}
+								map.put(key, Json.reader().read(valueString.substring(value[0], value[1])));
+							} else
+								map.put(key, parts[1][1] - parts[1][0] >= 1 && valueString.charAt(parts[1][0]) != '"'
+								&& valueString.charAt(parts[1][0]) != '\'' ? null : "");
+					} else
 						list.add(notInQueto ? Json.reader().read(valueString.toString()) : valueString.toString());
-					}
 					break;
 				}
 				parts = readConfigLine(lines, trimmed);
@@ -367,6 +448,11 @@ public class YamlLoader extends EmptyLoader {
 					map = new HashMap<>();
 
 				key = lines.substring(parts[0][0], parts[0][1]);
+				int rnDepth = findDepth(depth, currentDepth);
+				if(rnDepth==-1) {
+					Logger.getLogger("YamlLoader").warning("[List] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
+					continue;
+				}
 				if (parts.length == 1) {
 					if (isList(input.get(pos + 1), trimmed, true)) {
 						Pair pair = readMapList(pos + 1, input, trimmed, parts, value, indexes);
@@ -378,11 +464,11 @@ public class YamlLoader extends EmptyLoader {
 					}
 					if (stack == null)
 						stack = new Stack<>();
-					else if (currentDepth == sectionDepth) {
+					else if (rnDepth == depthIndex) {
 						map = originMap;
 						stack.clear();
 					} else
-						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
+						for (int i = 0; i < rnDepth - depthIndex - 1; ++i)
 							map = stack.pop();
 					map.put(key, map = new HashMap<>());
 					stack.add(map);
@@ -390,11 +476,11 @@ public class YamlLoader extends EmptyLoader {
 				}
 
 				if (stack != null)
-					if (currentDepth == sectionDepth) {
+					if (rnDepth == depthIndex) {
 						map = originMap;
 						stack.clear();
 					} else
-						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
+						for (int i = 0; i < rnDepth - depthIndex - 1; ++i)
 							map = stack.pop();
 
 				// Value
@@ -438,6 +524,11 @@ public class YamlLoader extends EmptyLoader {
 				}
 
 				key = lines.substring(parts[0][0], parts[0][1]);
+				int rnDepth = findDepth(depth, currentDepth);
+				if(rnDepth==-1) {
+					Logger.getLogger("YamlLoader").warning("[List] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
+					continue;
+				}
 				if (parts.length == 1) {
 					if (isList(input.get(pos + 1), trimmed, true)) {
 						Pair pair = readMapList(pos + 1, input, trimmed, parts, value, indexes);
@@ -449,11 +540,11 @@ public class YamlLoader extends EmptyLoader {
 					}
 					if (stack == null)
 						stack = new Stack<>();
-					else if (currentDepth == sectionDepth) {
+					else if (rnDepth == depthIndex) {
 						map = originMap;
 						stack.clear();
 					} else
-						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
+						for (int i = 0; i < rnDepth - depthIndex - 1; ++i)
 							map = stack.pop();
 					map.put(key, map = new HashMap<>());
 					stack.add(map);
@@ -461,11 +552,11 @@ public class YamlLoader extends EmptyLoader {
 				}
 
 				if (stack != null)
-					if (currentDepth == sectionDepth) {
+					if (rnDepth == depthIndex) {
 						map = originMap;
 						stack.clear();
 					} else
-						for (int i = 0; i < currentDepth - sectionDepth - 1; ++i)
+						for (int i = 0; i < rnDepth - depthIndex - 1; ++i)
 							map = stack.pop();
 
 				// Value
@@ -500,6 +591,11 @@ public class YamlLoader extends EmptyLoader {
 					break;
 				}
 				key = lines.substring(parts[0][0], parts[0][1]);
+				int rnDepth = findDepth(depth, currentDepth);
+				if(rnDepth==-1) {
+					Logger.getLogger("YamlLoader").warning("[List] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
+					continue;
+				}
 				if (parts.length == 1) {
 					if (isList(input.get(pos + 1), trimmed, true)) {
 						Pair pair = readMapList(pos + 1, input, trimmed, parts, value, indexes);
@@ -511,11 +607,11 @@ public class YamlLoader extends EmptyLoader {
 					}
 					if (stack == null)
 						stack = new Stack<>();
-					else if (sectionDepth == currentDepth) {
+					else if (depthIndex == rnDepth) {
 						stack.clear();
 						map = originMap;
 					} else {
-						int minusCount = currentDepth - sectionDepth - stack.size();
+						int minusCount = rnDepth - depthIndex - stack.size();
 						if (minusCount != 0)
 							for (int i = 0; i < minusCount * -1; ++i)
 								map = stack.pop();
@@ -526,11 +622,11 @@ public class YamlLoader extends EmptyLoader {
 				}
 
 				if (stack != null)
-					if (sectionDepth == currentDepth) {
+					if (depthIndex == rnDepth) {
 						stack.clear();
 						map = originMap;
 					} else {
-						int minusCount = currentDepth - sectionDepth - stack.size();
+						int minusCount = rnDepth - depthIndex - stack.size();
 						if (minusCount != 0)
 							for (int i = 0; i < minusCount * -1; ++i)
 								map = stack.pop();
@@ -586,7 +682,7 @@ public class YamlLoader extends EmptyLoader {
 
 	protected static Iterator<CharSequence> saveAsIteratorAs(@Nonnull Config config, boolean markSaved,
 			boolean asYaml) {
-		return new Iterator<CharSequence>() {
+		return new Iterator<>() {
 			// 0=header
 			// 1=lines
 			// 2=footer
@@ -679,19 +775,22 @@ public class YamlLoader extends EmptyLoader {
 		return trimmed;
 	}
 
-	private int buildKey(StringContainer lines, StringContainer key, int[] currentKey, int depth, int currentDepth,
+	private int buildKey(StringContainer lines, StringContainer key, int[] currentKey, Integer[] depth, int currentDepth, int previousDepth,
 			int lastIndexOfDot) {
-		if (currentDepth == 0)
+		if (currentDepth <= 0)
 			key.clear();
-		else if (currentDepth > depth) { // Up
+		else if (currentDepth > previousDepth) { // Up
 			key.append('.');
 			lastIndexOfDot = key.length();
-		} else if (currentDepth < depth) { // Down
-			key.delete(key.lastIndexOf('.', lastIndexOfDot, depth - currentDepth + 1) + 1, key.length()); // Don't
-			// remove
-			// dot
+		} else if (currentDepth < previousDepth) {
+			for(int i = currentDepth; i < previousDepth+1; ++i) {
+				key.delete(key.lastIndexOf('.', lastIndexOfDot), key.length()); // Don't
+				lastIndexOfDot = key.length();
+			}
+			key.append('.');
 			lastIndexOfDot = key.length();
-		} else
+		}
+		else
 			key.delete(lastIndexOfDot, key.length()); // Don't remove dot
 		key.append(lines.subSequence(currentKey[0], currentKey[1]));
 		return lastIndexOfDot;
@@ -858,7 +957,7 @@ public class YamlLoader extends EmptyLoader {
 		for (int i = line[0]; i < line[1] && lines.charAt(i) <= ' '; i++)
 			if (lines.charAt(i) == ' ' || lines.charAt(i) == '\t')
 				depth++;
-		return depth / 2;
+		return depth;
 	}
 
 	@Override
