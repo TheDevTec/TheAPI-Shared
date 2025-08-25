@@ -67,8 +67,27 @@ public class YamlLoader extends EmptyLoader {
 			switch (readerMode) {
 			case READ_SECTION: {
 				parts = readConfigLine(lines, trimmed);
-				if (parts == null)
+				if (parts == null) {
+					if(!key.isEmpty() && key!=null) {
+						readerMode = READ_SIMPLE_STRING;
+						stringContainer = new StringContainer(64);
+						DataValue data = get(key.toString());
+						if(data!=null && data.writtenValue!=null)
+							stringContainer.append(data.writtenValue);
+						if(!stringContainer.isEmpty())stringContainer.append(' ');
+						if(data==null)
+							set(key.toString(), DataValue.of(null, null, null, comments));
+						comments = null;
+						Object readerValueParsed = splitFromComment(lines, 0, trimmed);
+						int[][] readerValue = readerValueParsed instanceof Pair
+								? (int[][]) ((Pair) readerValueParsed).getValue()
+										: (int[][]) readerValueParsed;
+						indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
+						stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
+								: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
+					}
 					continue;
+				}
 
 				// Key
 				int[] keyResult = setupKey(currentDepth, depthIndex, depth, lastIndexOfDot, key, parts);
@@ -217,6 +236,7 @@ public class YamlLoader extends EmptyLoader {
 							? (int[][]) ((Pair) readerValueParsed).getValue()
 									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
+					if(!stringContainer.isEmpty())stringContainer.append(' ');
 					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
 					continue;
@@ -463,7 +483,7 @@ public class YamlLoader extends EmptyLoader {
 
 	private Pair readMapList(int pos, List<int[]> input, int[] trimmed, int[][] parts, int[] value, int[] indexes) {
 		int listDepth = -1;
-		Integer[] depth = new Integer[5];
+		Integer[] depth = new Integer[2];
 		int depthIndex = -1;
 
 		// Temp values
@@ -486,7 +506,7 @@ public class YamlLoader extends EmptyLoader {
 			if (listDepth!=-1 && currentDepth < listDepth)
 				break;
 
-			if ((readerMode == READ_MAP_LIST || readerMode == READ_LIST) && currentDepth != listDepth) {
+			if ((readerMode == READ_MAP_LIST || readerMode == READ_LIST) && currentDepth <= listDepth-2) {
 				if (stringContainer != null && key != null) {
 					map.put(key, stringContainer.toString());
 					stringContainer=null;
@@ -529,6 +549,11 @@ public class YamlLoader extends EmptyLoader {
 							Logger.getLogger("YamlLoader").warning("[MapList] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 							continue;
 						}
+						if(depth.length<=depthIndex+1) {
+							Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+							System.arraycopy(depth, 0, copy, 0, depth.length);
+							depth=copy;
+						}
 						readerMode = READ_MAP_LIST;
 						originMap = map;
 						key = valueString.substring(parts[0][0], parts[0][1]);
@@ -565,12 +590,15 @@ public class YamlLoader extends EmptyLoader {
 				if (parts == null) {
 					if(stringContainer == null)
 						stringContainer = new StringContainer(64);
+					if(map.get(key)!=null)
+						stringContainer.append(map.remove(key)+"");
 					readerMode = READ_SIMPLE_STRING;
 					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
 									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
+					if(!stringContainer.isEmpty())stringContainer.append(' ');
 					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
 					break;
@@ -579,19 +607,26 @@ public class YamlLoader extends EmptyLoader {
 				if (map == null)
 					map = new HashMap<>();
 
+				if(stringContainer!=null && !stringContainer.isEmpty()) {
+					map.put(key, stringContainer.toString());
+					stringContainer=null;
+				}
 				key = lines.substring(parts[0][0], parts[0][1]);
 				int rnDepth = findDepth(depth, currentDepth);
 				if(rnDepth==-1) {
 					Logger.getLogger("YamlLoader").warning("[MapList] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 					continue;
 				}
+				if(depth.length<=depthIndex+1) {
+					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					System.arraycopy(depth, 0, copy, 0, depth.length);
+					depth=copy;
+				}
 				if (parts.length == 1) {
 					if (isList(input.get(pos + 1), trimmed, true)) {
-						Pair pair = readMapList(pos + 1, input, trimmed, parts, value, indexes);
-						pos = (int) pair.getKey() - 1;
-						@SuppressWarnings("unchecked")
-						List<Object> listVal = (List<Object>) pair.getValue();
-						map.put(key, listVal);
+						List<Object> result = new ArrayList<>();
+						pos=readList(result, ++pos,listDepth, input, trimmed, parts, value, indexes);
+						map.put(key, result.isEmpty()?null:result);
 						continue;
 					}
 					if (stack == null)
@@ -638,11 +673,14 @@ public class YamlLoader extends EmptyLoader {
 				if (parts == null) {
 					if(stringContainer==null)
 						stringContainer = new StringContainer(64);
+					if(map.get(key)!=null)
+						stringContainer.append(map.remove(key)+"");
 					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
 									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
+					if(!stringContainer.isEmpty())stringContainer.append(' ');
 					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
 					break;
@@ -663,13 +701,16 @@ public class YamlLoader extends EmptyLoader {
 					Logger.getLogger("YamlLoader").warning("[MapList] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 					continue;
 				}
+				if(depth.length<=depthIndex+1) {
+					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					System.arraycopy(depth, 0, copy, 0, depth.length);
+					depth=copy;
+				}
 				if (parts.length == 1) {
 					if (isList(input.get(pos + 1), trimmed, true)) {
-						Pair pair = readMapList(pos + 1, input, trimmed, parts, value, indexes);
-						pos = (int) pair.getKey() - 1;
-						@SuppressWarnings("unchecked")
-						List<Object> listVal = (List<Object>) pair.getValue();
-						map.put(key, listVal);
+						List<Object> result = new ArrayList<>();
+						pos=readList(result, ++pos,listDepth, input, trimmed, parts, value, indexes);
+						map.put(key, result.isEmpty()?null:result);
 						continue;
 					}
 					if (stack == null)
@@ -717,6 +758,8 @@ public class YamlLoader extends EmptyLoader {
 				if (parts == null) {
 					if(stringContainer==null)
 						stringContainer = new StringContainer(64);
+					if(map.get(key)!=null)
+						stringContainer.append(map.remove(key)+"");
 					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
@@ -742,13 +785,16 @@ public class YamlLoader extends EmptyLoader {
 					Logger.getLogger("YamlLoader").warning("[MapList] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 					continue;
 				}
+				if(depth.length<=depthIndex+1) {
+					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					System.arraycopy(depth, 0, copy, 0, depth.length);
+					depth=copy;
+				}
 				if (parts.length == 1) {
 					if (isList(input.get(pos + 1), trimmed, true)) {
-						Pair pair = readMapList(pos + 1, input, trimmed, parts, value, indexes);
-						pos = (int) pair.getKey() - 1;
-						@SuppressWarnings("unchecked")
-						List<Object> listVal = (List<Object>) pair.getValue();
-						map.put(key, listVal);
+						List<Object> result = new ArrayList<>();
+						pos=readList(result, ++pos,listDepth, input, trimmed, parts, value, indexes);
+						map.put(key, result.isEmpty()?null:result);
 						continue;
 					}
 					if (stack == null)
@@ -796,14 +842,21 @@ public class YamlLoader extends EmptyLoader {
 				if (parts == null) {
 					if(stringContainer==null)
 						stringContainer = new StringContainer(64);
+					if(map.get(key)!=null)
+						stringContainer.append(map.remove(key)+"");
 					Object readerValueParsed = splitFromComment(lines, 0, trimmed);
 					int[][] readerValue = readerValueParsed instanceof Pair
 							? (int[][]) ((Pair) readerValueParsed).getValue()
 									: (int[][]) readerValueParsed;
 					indexes = readerValueParsed instanceof Pair ? (int[]) ((Pair) readerValueParsed).getKey() : null;
+					if(!stringContainer.isEmpty())stringContainer.append(' ');
 					stringContainer.append(indexes == null ? lines.substring(readerValue[0][0], readerValue[0][1])
 							: removeCharsAt(lines.subSequence(readerValue[0][0], readerValue[0][1]), indexes));
 					break;
+				}
+				if(stringContainer!=null && !stringContainer.isEmpty()) {
+					map.put(key, stringContainer.toString());
+					stringContainer=null;
 				}
 				key = lines.substring(parts[0][0], parts[0][1]);
 				int rnDepth = findDepth(depth, currentDepth);
@@ -811,13 +864,16 @@ public class YamlLoader extends EmptyLoader {
 					Logger.getLogger("YamlLoader").warning("[MapList] An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 					continue;
 				}
+				if(depth.length<=depthIndex+1) {
+					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					System.arraycopy(depth, 0, copy, 0, depth.length);
+					depth=copy;
+				}
 				if (parts.length == 1) {
 					if (isList(input.get(pos + 1), trimmed, true)) {
-						Pair pair = readMapList(pos + 1, input, trimmed, parts, value, indexes);
-						pos = (int) pair.getKey() - 1;
-						@SuppressWarnings("unchecked")
-						List<Object> listVal = (List<Object>) pair.getValue();
-						map.put(key, listVal);
+						List<Object> result = new ArrayList<>();
+						pos=readList(result, ++pos,listDepth, input, trimmed, parts, value, indexes);
+						map.put(key, result.isEmpty()?null:result);
 						break;
 					}
 					if (stack == null)
