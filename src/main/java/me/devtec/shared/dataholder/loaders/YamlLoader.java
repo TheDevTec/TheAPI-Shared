@@ -98,7 +98,7 @@ public class YamlLoader extends EmptyLoader {
 				lastIndexOfDot=keyResult[0];
 				depthIndex=keyResult[1];
 				if(depth.length<=depthIndex+1) {
-					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
 					depth=copy;
 				}
@@ -181,7 +181,7 @@ public class YamlLoader extends EmptyLoader {
 				lastIndexOfDot=keyResult[0];
 				depthIndex=keyResult[1];
 				if(depth.length<=depthIndex+1) {
-					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
 					depth=copy;
 				}
@@ -259,7 +259,7 @@ public class YamlLoader extends EmptyLoader {
 				lastIndexOfDot=keyResult[0];
 				depthIndex=keyResult[1];
 				if(depth.length<=depthIndex+1) {
-					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
 					depth=copy;
 				}
@@ -336,7 +336,7 @@ public class YamlLoader extends EmptyLoader {
 				lastIndexOfDot=keyResult[0];
 				depthIndex=keyResult[1];
 				if(depth.length<=depthIndex+1) {
-					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
 					depth=copy;
 				}
@@ -550,7 +550,7 @@ public class YamlLoader extends EmptyLoader {
 							continue;
 						}
 						if(depth.length<=depthIndex+1) {
-							Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+							Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 							System.arraycopy(depth, 0, copy, 0, depth.length);
 							depth=copy;
 						}
@@ -618,7 +618,7 @@ public class YamlLoader extends EmptyLoader {
 					continue;
 				}
 				if(depth.length<=depthIndex+1) {
-					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
 					depth=copy;
 				}
@@ -702,7 +702,7 @@ public class YamlLoader extends EmptyLoader {
 					continue;
 				}
 				if(depth.length<=depthIndex+1) {
-					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
 					depth=copy;
 				}
@@ -786,7 +786,7 @@ public class YamlLoader extends EmptyLoader {
 					continue;
 				}
 				if(depth.length<=depthIndex+1) {
-					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
 					depth=copy;
 				}
@@ -865,7 +865,7 @@ public class YamlLoader extends EmptyLoader {
 					continue;
 				}
 				if(depth.length<=depthIndex+1) {
-					Integer[] copy = new Integer[depth.length>>1 + depth.length +1];
+					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
 					depth=copy;
 				}
