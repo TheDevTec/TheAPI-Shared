@@ -955,7 +955,7 @@ public class YamlLoader extends EmptyLoader {
 
 	protected static Iterator<CharSequence> saveAsIteratorAs(@Nonnull Config config, boolean markSaved,
 			boolean asYaml) {
-		return new Iterator<>() {
+		return new Iterator<CharSequence>() {
 			// 0=header
 			// 1=lines
 			// 2=footer
