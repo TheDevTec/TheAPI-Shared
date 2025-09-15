@@ -955,7 +955,7 @@ public class YamlLoader extends EmptyLoader {
 
 	protected static Iterator<CharSequence> saveAsIteratorAs(@Nonnull Config config, boolean markSaved,
 			boolean asYaml) {
-		return new Iterator<CharSequence>() {
+		return new Iterator<>() {
 			// 0=header
 			// 1=lines
 			// 2=footer
@@ -1078,11 +1078,15 @@ public class YamlLoader extends EmptyLoader {
 		for (int i = start; i < end; ++i)
 			if (input.charAt(i) == ':') {
 				charIndex = i;
-				if (i + 1 < end && input.charAt(i + 1) == ' ') {
-					int[][] result = new int[2][];
-					result[0] = getFromQuotes(input, start, i);
-					result[1] = trim(input, i + 2, end);
-					return result;
+				if (i + 1 < end) {
+					char nextIndex = input.charAt(i + 1);
+					if(nextIndex == ' ') {
+						int[][] result = new int[2][];
+						result[0] = getFromQuotes(input, start, i);
+						result[1] = trim(input, i + 2, end);
+						return result;
+					}
+					charIndex=-1;
 				}
 			}
 
