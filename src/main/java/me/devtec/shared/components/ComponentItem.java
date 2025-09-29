@@ -3,6 +3,7 @@ package me.devtec.shared.components;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import me.devtec.shared.Ref;
 import me.devtec.shared.json.Json;
 
 public class ComponentItem extends Component {
@@ -53,23 +54,26 @@ public class ComponentItem extends Component {
 		return this;
 	}
 
+	public ComponentItem setNbt(Map<String, Object> value) {
+		nbt = Json.writer().simpleWrite(value);
+		return this;
+	}
+
 	@Override
 	public Map<String, Object> toJsonMap() {
 		Map<String, Object> map = new LinkedHashMap<>();
 		map.put("id", getId());
 		map.put("count", getCount());
-		if (getNbt() != null) {
-			map.put("tag", getNbt());
-		}
+		if (getNbt() != null)
+			map.put(Ref.serverVersionInt() >= 21 && Ref.serverVersionRelease() >= 5 ? "components" : "tag", Json.reader().simpleRead(getNbt()));
 		return map;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static ComponentItem fromJson(String json) {
 		Object read = Json.reader().simpleRead(json);
-		if (read instanceof Map) {
+		if (read instanceof Map)
 			return fromJson((Map<String, Object>) read);
-		}
 		return null;
 	}
 
@@ -77,8 +81,9 @@ public class ComponentItem extends Component {
 		if (json.containsKey("id")) {
 			ComponentItem comp = new ComponentItem(json.get("id").toString(),
 					((Number) json.getOrDefault("count", 1)).intValue());
-			if (json.containsKey("tag")) {
-				comp.setNbt(Json.writer().simpleWrite(json.get("tag")));
+			if (json.containsKey("tag") || json.containsKey("components")) {
+				Object obj = json.getOrDefault("tag", json.get("components"));
+				comp.setNbt(obj instanceof String ? obj.toString() : Json.writer().simpleWrite(obj));
 			}
 			return comp;
 		}
