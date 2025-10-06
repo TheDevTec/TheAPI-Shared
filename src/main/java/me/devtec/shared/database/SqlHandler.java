@@ -242,10 +242,11 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean exists(SelectQuery query) throws SQLException {
-		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
-		fillSelectQuery(prepared, query.where, query.like, query.whereOr);
-		ResultSet set = prepared.executeQuery();
-		return set != null && set.next();
+		try (PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true))){
+			fillSelectQuery(prepared, query.where, query.like, query.whereOr);
+			ResultSet set = prepared.executeQuery();
+			return set != null && set.next();
+		}
 	}
 
 	private void fillSelectQuery(PreparedStatement prepared, List<Object[]> where2, List<Object[]> like,
@@ -269,7 +270,11 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean createTable(String name, Row[] values) throws SQLException {
-		return prepareStatement("CREATE TABLE IF NOT EXISTS " + name + "(" + buildTableValues(values) + ")").execute();
+		boolean status = false;
+		try (PreparedStatement prepared = prepareStatement("CREATE TABLE IF NOT EXISTS " + name + "(" + buildTableValues(values) + ")")){
+			status= prepared.execute();
+		}
+		return status;
 	}
 
 	public String buildTableValues(Row[] values) {
@@ -287,54 +292,59 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean deleteTable(String name) throws SQLException {
-		return prepareStatement("DROP TABLE " + name).execute();
+		boolean status = false;
+		try (PreparedStatement prepared = prepareStatement("DROP TABLE " + name)){
+			status= prepared.execute();
+		}
+		return status;
 	}
 
 	@Override
 	public Result get(SelectQuery query) throws SQLException {
-		PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true));
-		int index = 0;
-		fillPreparedStatement(prepared, index, query.where, query.like, query.whereOr);
-		ResultSet set = prepared.executeQuery();
-		String[] lookup = query.getSearch();
-		if (set != null && set.next()) {
-			if (lookup.length == 1 && "*".equals(lookup[0])) {
-				int size = 0;
-				List<String> val = new ArrayList<>();
-				while (true)
-					try {
-						val.add(set.getObject(++size) + "");
-					} catch (Exception err) {
-						break;
+		try (PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true))){
+			int index = 0;
+			fillPreparedStatement(prepared, index, query.where, query.like, query.whereOr);
+			ResultSet set = prepared.executeQuery();
+			String[] lookup = query.getSearch();
+			if (set != null && set.next()) {
+				if (lookup.length == 1 && "*".equals(lookup[0])) {
+					int size = 0;
+					List<String> val = new ArrayList<>();
+					while (true)
+						try {
+							val.add(set.getObject(++size) + "");
+						} catch (Exception err) {
+							break;
+						}
+					Result res = new Result(val.toArray(new String[size - 1]));
+					Result main = res;
+					Result next = main;
+					while (set.next()) {
+						String[] vals = new String[size - 1];
+						for (int i = 0; i < size - 1; ++i)
+							vals[i] = set.getObject(i + 1) + "";
+						res = new Result(vals);
+						next.nextResult(next = res);
 					}
-				Result res = new Result(val.toArray(new String[size - 1]));
+					return main;
+				}
+				String[] vals = new String[query.search.length];
+				for (int i = 0; i < query.search.length; ++i)
+					vals[i] = set.getObject(query.search[i]) + "";
+				Result res = new Result(vals);
 				Result main = res;
 				Result next = main;
 				while (set.next()) {
-					String[] vals = new String[size - 1];
-					for (int i = 0; i < size - 1; ++i)
-						vals[i] = set.getObject(i + 1) + "";
+					vals = new String[query.search.length];
+					for (int i = 0; i < query.search.length; ++i)
+						vals[i] = set.getObject(query.search[i]) + "";
 					res = new Result(vals);
 					next.nextResult(next = res);
 				}
 				return main;
 			}
-			String[] vals = new String[query.search.length];
-			for (int i = 0; i < query.search.length; ++i)
-				vals[i] = set.getObject(query.search[i]) + "";
-			Result res = new Result(vals);
-			Result main = res;
-			Result next = main;
-			while (set.next()) {
-				vals = new String[query.search.length];
-				for (int i = 0; i < query.search.length; ++i)
-					vals[i] = set.getObject(query.search[i]) + "";
-				res = new Result(vals);
-				next.nextResult(next = res);
-			}
-			return main;
+			return null;
 		}
-		return null;
 	}
 
 	private void fillPreparedStatement(PreparedStatement prepared, int index, List<Object[]> where2,
@@ -357,23 +367,25 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean insert(InsertQuery query) throws SQLException {
-		PreparedStatement prepared = prepareStatement(buildInsertCommand(query, true));
-		int index = 0;
-		for (String value : query.values)
-			prepared.setObject(++index, value);
-		return prepared.executeUpdate() != 0;
+		try (PreparedStatement prepared = prepareStatement(buildInsertCommand(query, true))){
+			int index = 0;
+			for (String value : query.values)
+				prepared.setObject(++index, value);
+			return prepared.executeUpdate() != 0;
+		}
 	}
 
 	@Override
 	public boolean update(UpdateQuery query) throws SQLException {
-		PreparedStatement prepared = prepareStatement(buildUpdateCommand(query, true));
-		int index = 0;
-		// Values are first
-		for (String[] keyWithValue : query.values)
-			prepared.setObject(++index, keyWithValue[1]);
-		// Next are "ifs"
-		fillPreparedStatement(prepared, index, query.where, query.like, query.whereOr);
-		return prepared.executeUpdate() != 0;
+		try (PreparedStatement prepared = prepareStatement(buildUpdateCommand(query, true))) {
+			int index = 0;
+			// Values are first
+			for (String[] keyWithValue : query.values)
+				prepared.setObject(++index, keyWithValue[1]);
+			// Next are "ifs"
+			fillPreparedStatement(prepared, index, query.where, query.like, query.whereOr);
+			return prepared.executeUpdate() != 0;
+		}
 	}
 
 	@Override
@@ -418,34 +430,39 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public boolean remove(RemoveQuery query) throws SQLException {
-		PreparedStatement prepared = prepareStatement(buildRemoveCommand(query, true));
-		fillSelectQuery(prepared, query.where, query.like, query.whereOr);
-		return prepared.executeUpdate() != 0;
+		try (PreparedStatement prepared = prepareStatement(buildRemoveCommand(query, true))){
+			fillSelectQuery(prepared, query.where, query.like, query.whereOr);
+			return prepared.executeUpdate() != 0;
+		}
 	}
 
 	@Override
 	public List<String> getTables() throws SQLException {
-		ResultSet set = prepareStatement("SHOW TABLES").executeQuery();
-		if (set != null && set.next()) {
-			List<String> tables = new ArrayList<>();
-			do
-				tables.add(set.getString(0));
-			while (set.next());
-			return tables;
+		try (PreparedStatement prepared = prepareStatement("SHOW TABLES")){
+			ResultSet set = prepared.executeQuery();
+			if (set != null && set.next()) {
+				List<String> tables = new ArrayList<>();
+				do
+					tables.add(set.getString(0));
+				while (set.next());
+				return tables;
+			}
+			return null;
 		}
-		return null;
 	}
 
 	@Override
 	public Row[] getTableValues(String name) throws SQLException {
-		ResultSet set = prepareStatement("DESCRIBE '" + name + "'").executeQuery();
-		if (set == null || !set.next())
-			return null;
-		List<Row> rows = new ArrayList<>();
-		while (set.next())
-			rows.add(new Row(set.getString(0), set.getString(1), "YES".equals(set.getString(2)), set.getString(3),
-					set.getString(4), set.getString(5)));
-		return rows.toArray(new Row[0]);
+		try (PreparedStatement prepared = prepareStatement("DESCRIBE '" + name + "'")){
+			ResultSet set = prepared.executeQuery();
+			if (set == null || !set.next())
+				return null;
+			List<Row> rows = new ArrayList<>();
+			while (set.next())
+				rows.add(new Row(set.getString(0), set.getString(1), "YES".equals(set.getString(2)), set.getString(3),
+						set.getString(4), set.getString(5)));
+			return rows.toArray(new Row[0]);
+		}
 	}
 
 	@Override

@@ -23,6 +23,6 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    compileOnly "com.github.TheDevTec:TheAPI-Shared:13.6.9"
+    compileOnly "com.github.TheDevTec:TheAPI-Shared:13.7"
 }
 ```
