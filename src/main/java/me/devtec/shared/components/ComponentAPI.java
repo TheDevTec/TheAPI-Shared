@@ -29,7 +29,7 @@ public class ComponentAPI {
 	public static ComponentTransformer<?> registerTransformer(String name, ComponentTransformer<?> transformer) {
 		if (ComponentAPI.transformers.put(name.toUpperCase(), transformer) != null)
 			Logger.getGlobal()
-					.warning("[TheAPI/ComponentAPI] Overriding " + name.toUpperCase() + " component transformer.");
+			.warning("[TheAPI/ComponentAPI] Overriding " + name.toUpperCase() + " component transformer.");
 		return transformer;
 	}
 
@@ -56,9 +56,9 @@ public class ComponentAPI {
 			return null;
 		return ComponentAPI.fromString(input,
 				/* Depends on version & software */ hexModeEnabled == null
-						? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15))
+				? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15))
 						: hexModeEnabled,
-				true);
+						true);
 	}
 
 	public static Component fromString(String input, boolean hexMode) {
@@ -66,9 +66,9 @@ public class ComponentAPI {
 			return null;
 		return ComponentAPI.fromString(input,
 				hexMode ? hexModeEnabled == null
-						? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15))
+				? (hexModeEnabled = !Ref.serverType().isBukkit() || Ref.isNewerThan(15))
 						: hexModeEnabled : false,
-				true);
+						true);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -87,7 +87,7 @@ public class ComponentAPI {
 				return Component.EMPTY_COMPONENT;
 			Object obj = placeholders.replaceAsJson(value, player);
 			return obj instanceof Collection ? fromJson((Collection<?>) obj)
-					: obj instanceof Map ? fromJson((Map<String, Object>) obj) : fromString(obj + "");
+					: obj instanceof Map ? fromJson((Map<String, Object>) obj) : fromString((obj + "").replace("\\n", "\n"));
 		}
 		if (value instanceof Collection)
 			return fromJsonList((Collection<?>) value, placeholders, player);
@@ -95,7 +95,7 @@ public class ComponentAPI {
 		String result = config.getString(path);
 		if (result == null || result.isEmpty())
 			return Component.EMPTY_COMPONENT;
-		return fromString(placeholders.replace(result, player));
+		return fromString(placeholders.replace(result, player).replace("\\n", "\n"));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -245,7 +245,7 @@ public class ComponentAPI {
 									count = 1;
 									spaceFinder = privatePos == 0 || container.charAt(privatePos - 1) == ' '
 											? privatePos
-											: privatePos - 1;
+													: privatePos - 1;
 								}
 							} else if (input.charAt(i + 4) == ':' && input.charAt(i + 5) == '/'
 									&& input.charAt(i + 6) == '/') {
@@ -259,7 +259,7 @@ public class ComponentAPI {
 									count = 1;
 									spaceFinder = privatePos == 0 || container.charAt(privatePos - 1) == ' '
 											? privatePos
-											: privatePos - 1;
+													: privatePos - 1;
 								}
 							}
 						}
@@ -305,7 +305,7 @@ public class ComponentAPI {
 							switch (c) {
 							case 'a':
 								if (i + 2 < input.length() && (input.charAt(i + 1) == 'p' && input.charAt(i + 2) == 'p'
-										|| input.charAt(i + 1) == 'r' && input.charAt(i + 2) == 't')) {
+								|| input.charAt(i + 1) == 'r' && input.charAt(i + 2) == 't')) {
 									container.append(input.charAt(i + 1)).append(input.charAt(i + 2));
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -354,7 +354,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'n':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'e'
-										&& input.charAt(i + 2) == 't') {
+								&& input.charAt(i + 2) == 't') {
 									container.append('e').append('t');
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -362,7 +362,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'o':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'r'
-										&& input.charAt(i + 2) == 'g') {
+								&& input.charAt(i + 2) == 'g') {
 									container.append('r').append('g');
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -405,7 +405,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'b':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'l' && input.charAt(i + 2) == 'o'
-										&& input.charAt(i + 3) == 'g') {
+								&& input.charAt(i + 3) == 'g') {
 									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
 									i += 3;
@@ -414,7 +414,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 't':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'e' && input.charAt(i + 2) == 'c'
-										&& input.charAt(i + 3) == 'h') {
+								&& input.charAt(i + 3) == 'h') {
 									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
 									i += 3;
@@ -433,9 +433,9 @@ public class ComponentAPI {
 									lookingMode = 4; // Read until space
 								} else if (i + 4 < input.length()
 										&& (input.charAt(i + 1) == 'p' && input.charAt(i + 2) == 'a'
-												&& input.charAt(i + 3) == 'c' && input.charAt(i + 4) == 'e'
-												|| input.charAt(i + 1) == 't' && input.charAt(i + 2) == 'o'
-														&& input.charAt(i + 3) == 'r' && input.charAt(i + 4) == 'e')) {
+										&& input.charAt(i + 3) == 'c' && input.charAt(i + 4) == 'e'
+										|| input.charAt(i + 1) == 't' && input.charAt(i + 2) == 'o'
+										&& input.charAt(i + 3) == 'r' && input.charAt(i + 4) == 'e')) {
 									for (int ic = 1; ic < 5; ++ic)
 										container.append(input.charAt(i + ic));
 									i += 4;
@@ -465,7 +465,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'f':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'u'
-										&& input.charAt(i + 2) == 'n') {
+								&& input.charAt(i + 2) == 'n') {
 									container.append('u').append('n');
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -473,7 +473,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'x':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'y'
-										&& input.charAt(i + 2) == 'z') {
+								&& input.charAt(i + 2) == 'z') {
 									container.append('y').append('z');
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -481,7 +481,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'w':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'i' && input.charAt(i + 2) == 'k'
-										&& input.charAt(i + 3) == 'i') {
+								&& input.charAt(i + 3) == 'i') {
 									container.append('i').append('k').append('i');
 									i += 3;
 									lookingMode = 4; // Read until space
@@ -517,7 +517,7 @@ public class ComponentAPI {
 							switch (c) {
 							case 'a':
 								if (i + 2 < input.length() && (input.charAt(i + 1) == 'p' && input.charAt(i + 2) == 'p'
-										|| input.charAt(i + 1) == 'r' && input.charAt(i + 2) == 't')) {
+								|| input.charAt(i + 1) == 'r' && input.charAt(i + 2) == 't')) {
 									container.append(input.charAt(i + 1)).append(input.charAt(i + 2));
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -566,7 +566,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'n':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'e'
-										&& input.charAt(i + 2) == 't') {
+								&& input.charAt(i + 2) == 't') {
 									container.append('e').append('t');
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -574,7 +574,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'o':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'r'
-										&& input.charAt(i + 2) == 'g') {
+								&& input.charAt(i + 2) == 'g') {
 									container.append('r').append('g');
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -617,7 +617,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'b':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'l' && input.charAt(i + 2) == 'o'
-										&& input.charAt(i + 3) == 'g') {
+								&& input.charAt(i + 3) == 'g') {
 									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
 									i += 3;
@@ -626,7 +626,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 't':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'e' && input.charAt(i + 2) == 'c'
-										&& input.charAt(i + 3) == 'h') {
+								&& input.charAt(i + 3) == 'h') {
 									for (int ic = 1; ic < 4; ++ic)
 										container.append(input.charAt(i + ic));
 									i += 3;
@@ -645,9 +645,9 @@ public class ComponentAPI {
 									lookingMode = 4; // Read until space
 								} else if (i + 4 < input.length()
 										&& (input.charAt(i + 1) == 'p' && input.charAt(i + 2) == 'a'
-												&& input.charAt(i + 3) == 'c' && input.charAt(i + 4) == 'e'
-												|| input.charAt(i + 1) == 't' && input.charAt(i + 2) == 'o'
-														&& input.charAt(i + 3) == 'r' && input.charAt(i + 4) == 'e')) {
+										&& input.charAt(i + 3) == 'c' && input.charAt(i + 4) == 'e'
+										|| input.charAt(i + 1) == 't' && input.charAt(i + 2) == 'o'
+										&& input.charAt(i + 3) == 'r' && input.charAt(i + 4) == 'e')) {
 									for (int ic = 1; ic < 5; ++ic)
 										container.append(input.charAt(i + ic));
 									i += 4;
@@ -677,7 +677,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'f':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'u'
-										&& input.charAt(i + 2) == 'n') {
+								&& input.charAt(i + 2) == 'n') {
 									container.append('u').append('n');
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -685,7 +685,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'x':
 								if (i + 2 < input.length() && input.charAt(i + 1) == 'y'
-										&& input.charAt(i + 2) == 'z') {
+								&& input.charAt(i + 2) == 'z') {
 									container.append('y').append('z');
 									i += 2;
 									lookingMode = 4; // Read until space
@@ -693,7 +693,7 @@ public class ComponentAPI {
 								break switchCase;
 							case 'w':
 								if (i + 3 < input.length() && input.charAt(i + 1) == 'i' && input.charAt(i + 2) == 'k'
-										&& input.charAt(i + 3) == 'i') {
+								&& input.charAt(i + 3) == 'i') {
 									container.append('i').append('k').append('i');
 									i += 3;
 									lookingMode = 4; // Read until space
@@ -831,7 +831,7 @@ public class ComponentAPI {
 		for (Object text : list)
 			if (text instanceof Map)
 				builder.append(ComponentAPI.getColor(((Map<String, Object>) text).get("color")))
-						.append(String.valueOf(((Map<String, Object>) text).get("text")));
+				.append(String.valueOf(((Map<String, Object>) text).get("text")));
 			else
 				builder.append(ColorUtils.colorize(text + ""));
 		return builder.toString();

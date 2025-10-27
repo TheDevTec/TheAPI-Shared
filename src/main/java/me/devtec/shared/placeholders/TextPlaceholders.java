@@ -177,7 +177,7 @@ public class TextPlaceholders {
 	@SuppressWarnings("unchecked")
 	public Object replaceAsJson(Object object, @Nullable UUID player) {
 		if (object instanceof Map) {
-			Map<String, Object> map = new HashMap<>(((Map<String, Object>) object).size());
+			Map<String, Object> map = new HashMap<>( ((Map<String, Object>) object).size());
 			for (Entry<String, Object> entry : ((Map<String, Object>) object).entrySet())
 				if ("color".equals(entry.getKey()))
 					map.put(entry.getKey(), entry.getValue());
@@ -206,8 +206,8 @@ public class TextPlaceholders {
 					map.put(entry.getKey(),
 							replaceAsJson(entry.getValue(), player,
 									shouldConvertToComponent
-											? "value".equals(entry.getKey()) || "content".equals(entry.getKey())
-													|| "contents".equals(entry.getKey())
+									? "value".equals(entry.getKey()) || "content".equals(entry.getKey())
+											|| "contents".equals(entry.getKey())
 											: false));
 			return map;
 		}
@@ -220,7 +220,7 @@ public class TextPlaceholders {
 		if (object instanceof String)
 			return shouldConvertToComponent
 					? ComponentAPI.toJsonList(ComponentAPI.fromString(replace(object.toString(), player)))
-					: replace(object.toString(), player);
+							: replace(object.toString(), player);
 		return object;
 	}
 
@@ -230,7 +230,7 @@ public class TextPlaceholders {
 	}
 
 	public String replace(String text, @Nullable UUID player) {
-		return replace(new StringContainer(text), player).toString();
+		return replace(new StringContainer(text).replace("\\n", "\n"), player).toString();
 	}
 
 	public StringContainer replace(StringContainer text, @Nullable UUID player) {
