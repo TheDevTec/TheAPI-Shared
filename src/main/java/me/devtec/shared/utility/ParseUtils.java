@@ -28,8 +28,8 @@ public class ParseUtils {
 			return false;
 		if (text.length() == 5)
 			return toLowerCase(text.charAt(0)) == 'f' && toLowerCase(text.charAt(1)) == 'a'
-					&& toLowerCase(text.charAt(2)) == 'l' && toLowerCase(text.charAt(3)) == 's'
-					&& toLowerCase(text.charAt(4)) == SMALL_E;
+			&& toLowerCase(text.charAt(2)) == 'l' && toLowerCase(text.charAt(3)) == 's'
+			&& toLowerCase(text.charAt(4)) == SMALL_E;
 		// true
 		return toLowerCase(text.charAt(0)) == 't' && toLowerCase(text.charAt(1)) == 'r'
 				&& toLowerCase(text.charAt(2)) == 'u' && toLowerCase(text.charAt(3)) == SMALL_E;
@@ -97,6 +97,7 @@ public class ParseUtils {
 		boolean minus = false;
 		short totalWidth = 0;
 
+		boolean exponentMinus = false;
 		boolean hasDecimal = false;
 		boolean hasExponent = false;
 		byte exponentSymbol = 0;
@@ -110,6 +111,11 @@ public class ParseUtils {
 				if (!minus && totalWidth == 0 && !foundZero)
 					continue;
 			case MINUS:
+				if(hasExponent) {
+					if(exponentMinus)break;
+					exponentMinus=true;
+					continue;
+				}
 				if (minus)
 					break;
 				minus = true;
@@ -135,8 +141,8 @@ public class ParseUtils {
 					return text.charAt(++i) == 'a' && text.charAt(++i) == 'N';
 				if (!foundZero && totalWidth == 0 && c == 'I' && i + 8 <= end)
 					return text.charAt(++i) == 'n' && text.charAt(++i) == 'f' && text.charAt(++i) == 'i'
-							&& text.charAt(++i) == 'n' && text.charAt(++i) == 'i' && text.charAt(++i) == 't'
-							&& text.charAt(++i) == 'y';
+					&& text.charAt(++i) == 'n' && text.charAt(++i) == 'i' && text.charAt(++i) == 't'
+					&& text.charAt(++i) == 'y';
 				return false;
 			}
 			if (!hasDecimal && totalWidth == 0 && c == 48) {
@@ -759,8 +765,8 @@ public class ParseUtils {
 							return isFloat ? Float.NaN : Double.NaN;
 					if (c == 'I' && i + 8 <= end)
 						if (text.charAt(i + 1) == 'n' && text.charAt(i + 2) == 'f' && text.charAt(i + 3) == 'i'
-								&& text.charAt(i + 4) == 'n' && text.charAt(i + 5) == 'i' && text.charAt(i + 6) == 't'
-								&& text.charAt(i + 7) == 'y')
+						&& text.charAt(i + 4) == 'n' && text.charAt(i + 5) == 'i' && text.charAt(i + 6) == 't'
+						&& text.charAt(i + 7) == 'y')
 							return isFloat ? minus ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY
 									: minus ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
 				}
