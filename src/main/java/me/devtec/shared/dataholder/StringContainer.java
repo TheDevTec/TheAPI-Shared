@@ -111,6 +111,33 @@ public class StringContainer implements CharSequence {
 		return this;
 	}
 
+	public StringContainer append(CharSequence s, int start, int end) {
+		if (s == null)
+			s = "null";
+		int len = end - start;
+		ensureCapacityInternal(count + len);
+		if (s instanceof String)
+			appendChars((String)s, start, end);
+		else
+			appendChars(s, start, end);
+		return this;
+	}
+
+	private void appendChars(String s, int start, int end) {
+		int len = end - start;
+		ensureCapacityInternal(count + len);
+		s.getChars(start, end, value, count);
+		count += end - start;
+	}
+
+	private void appendChars(CharSequence s, int start, int end) {
+		int len = end - start;
+		ensureCapacityInternal(count + len);
+		// Ruční kopírování znaků - nejrychlejší pro obecný CharSequence
+		for (int i = start; i < end; i++)
+			value[count++] = s.charAt(i);
+	}
+
 	public StringContainer append(CharSequence asb) {
 		if (asb == null)
 			return appendNull();
@@ -118,10 +145,7 @@ public class StringContainer implements CharSequence {
 			return append((StringContainer) asb);
 		if (asb instanceof String)
 			return append((String) asb);
-		int len = asb.length();
-		ensureCapacityInternal(count + len);
-		asb.toString().getChars(0, len, value, count);
-		count += len;
+		appendChars(asb, 0, asb.length());
 		return this;
 	}
 

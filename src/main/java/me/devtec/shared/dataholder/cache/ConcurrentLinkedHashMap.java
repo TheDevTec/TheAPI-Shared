@@ -16,18 +16,23 @@ import me.devtec.shared.dataholder.StringContainer;
 public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	private static final int DEFAULT_SIZE = 16;
 	private static final float DEFAULT_LOAD_FACTOR = 0.75f;
+	private static final int MAXIMUM_CAPACITY = 1 << 30;
+	private static final Entry<?, ?> DELETED_ENTRY = new Entry<>(null, null, null, null) {};
 
 	private transient volatile Entry<K, V>[] entries;
 	private transient volatile AtomicInteger size = new AtomicInteger();
 	private transient final ReentrantLock lock;
-	private transient WeakEntry head;
-	private transient WeakEntry tail;
+	private transient Entry<K, V> head;
+	private transient Entry<K, V> tail;
 	private final float loadFactor;
+	private int threshold;
 
 	@SuppressWarnings("unchecked")
 	public ConcurrentLinkedHashMap(int size, float loadFactor) {
 		this.loadFactor = loadFactor;
-		entries = new Entry[size <= 0 ? DEFAULT_SIZE : size];
+		int capacity = calculateCapacity(size <= 0 ? DEFAULT_SIZE : size);
+		entries = new Entry[capacity];
+		threshold = (int) (capacity * loadFactor);
 		lock = new ReentrantLock();
 		head = null;
 		tail = null;
@@ -37,99 +42,143 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 		this(DEFAULT_SIZE, DEFAULT_LOAD_FACTOR);
 	}
 
+	private int calculateCapacity(int size) {
+		int capacity = 1;
+		while (capacity < size && capacity < MAXIMUM_CAPACITY)
+			capacity <<= 1;
+		return Math.min(capacity, MAXIMUM_CAPACITY);
+	}
+
 	private int hash(Object key) {
-		return key == null ? 0 : (key.hashCode() & 0x7fffffff) % entries.length;
+		int h = key == null ? 0 : key.hashCode();
+		return (h ^ h >>> 16) & entries.length - 1;
 	}
 
 	@Override
 	public V put(@Nonnull K key, V value) {
 		lock.lock();
 		try {
-			if (size.get() >= entries.length * loadFactor)
+			if (size.get() >= threshold)
 				resize();
-			int index = hash(key);
-			while (entries[index] != null) {
-				if (entries[index].getKey().equals(key))
-					return entries[index].setValue(value);
-				index = (index + 1) % entries.length;
-			}
-			WeakEntry newEntry = new WeakEntry(value) {
-				@Override
-				public K getKey() {
-					return key;
-				}
-			};
-			if (head == null)
-				head = newEntry;
-			else {
-				tail.next = newEntry;
-				newEntry.prev = tail;
-			}
-			tail = newEntry;
-			entries[index] = newEntry;
-			size.incrementAndGet();
-			return null;
+			return putInternal(key, value, false);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private void putInternal(Entry<K, V> entry) {
-		lock.lock();
-		try {
-			if (size.get() >= entries.length * loadFactor)
-				resize();
-			int index = hash(entry.getKey());
-			while (entries[index] != null) {
-				if (entries[index].getKey().equals(entry.getKey())) {
-					entries[index].setValue(entry.getValue());
-					return;
-				}
-				index = (index + 1) % entries.length;
+	private V putInternal(K key, V value, boolean fromResize) {
+		int index = hash(key);
+		int startIndex = index;
+		Entry<K, V> deletedEntry = null;
+		int deletedIndex = -1;
+
+		while (entries[index] != null && entries[index] != DELETED_ENTRY) {
+			if (entries[index].key.equals(key)) {
+				V oldValue = entries[index].value;
+				entries[index].value = value;
+				return oldValue;
 			}
-			entries[index] = entry;
-			size.incrementAndGet();
-		} finally {
-			lock.unlock();
+			index = index + 1 & entries.length - 1;
+			if (index == startIndex) {
+				resize();
+				return putInternal(key, value, false);
+			}
 		}
+
+		if (entries[index] == DELETED_ENTRY) {
+			deletedEntry = entries[index];
+			deletedIndex = index;
+		}
+
+		Entry<K, V> newEntry;
+		if (fromResize)
+			newEntry = new Entry<>(key, value, null, null);
+		else {
+			newEntry = new Entry<>(key, value, null, null);
+			if (head == null)
+				head = tail = newEntry;
+			else {
+				tail.next = newEntry;
+				newEntry.prev = tail;
+				tail = newEntry;
+			}
+		}
+
+		if (deletedEntry != null)
+			entries[deletedIndex] = newEntry;
+		else {
+			entries[index] = newEntry;
+			size.incrementAndGet();
+		}
+		return null;
 	}
 
 	@SuppressWarnings("unchecked")
 	private void resize() {
-		Entry<K, V>[] oldEntries = entries;
-		entries = new Entry[(int) (oldEntries.length * 1.75)];
-		size.set(0);
-		for (Entry<K, V> entry : oldEntries)
-			if (entry != null)
-				putInternal(entry);
+		int oldCapacity = entries.length;
+		if (oldCapacity >= MAXIMUM_CAPACITY) {
+			threshold = Integer.MAX_VALUE;
+			return;
+		}
+
+		int newCapacity = oldCapacity << 1;
+		if (newCapacity > MAXIMUM_CAPACITY || newCapacity < 0)
+			newCapacity = MAXIMUM_CAPACITY;
+
+		entries = new Entry[newCapacity];
+		threshold = (int) (newCapacity * loadFactor);
+		AtomicInteger newSize = new AtomicInteger(0);
+
+		Entry<K, V> current = head;
+		while (current != null) {
+			int index = hash(current.key);
+			while (entries[index] != null)
+				index = index + 1 & entries.length - 1;
+			entries[index] = new Entry<>(current.key, current.value, null, null);
+			newSize.incrementAndGet();
+			current = current.next;
+		}
+
+		size.set(newSize.get());
 	}
 
 	@Override
 	public V get(@Nonnull Object key) {
 		int index = hash(key);
+		int startIndex = index;
+
 		while (entries[index] != null) {
-			if (entries[index].getKey().equals(key))
-				return entries[index].getValue();
-			index = (index + 1) % entries.length;
+			Entry<K, V> entry = entries[index];
+			if (entry != DELETED_ENTRY && key.equals(entry.key))
+				return entry.value;
+			index = index + 1 & entries.length - 1;
+			if (index == startIndex)
+				break;
 		}
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public V remove(@Nonnull Object key) {
 		lock.lock();
 		try {
 			int index = hash(key);
+			int startIndex = index;
+
 			while (entries[index] != null) {
-				if (entries[index].getKey().equals(key)) {
-					V value = entries[index].getValue();
+				Entry<K, V> entry = entries[index];
+				if (entry != DELETED_ENTRY && key.equals(entry.key)) {
+					V value = entry.value;
+					entries[index] = (Entry<K, V>) DELETED_ENTRY;
 					size.decrementAndGet();
-					removeFromLinkedList((WeakEntry) entries[index]);
-					entries[index] = null;
-					rehash();
+
+					removeFromLinkedList(entry);
 					return value;
 				}
-				index = (index + 1) % entries.length;
+				index = index + 1 & entries.length - 1;
+				if (index == startIndex)
+					break;
 			}
 			return null;
 		} finally {
@@ -137,27 +186,21 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 		}
 	}
 
-	private void removeFromLinkedList(WeakEntry entry) {
-		if (entry == null)
-			return;
+	private void removeFromLinkedList(Entry<K, V> entry) {
+		if (entry == null) return;
+
 		if (entry.prev != null)
 			entry.prev.next = entry.next;
 		else
 			head = entry.next;
+
 		if (entry.next != null)
 			entry.next.prev = entry.prev;
 		else
 			tail = entry.prev;
-	}
 
-	@SuppressWarnings("unchecked")
-	private void rehash() {
-		Entry<K, V>[] oldEntries = entries;
-		entries = new Entry[oldEntries.length];
-		size.set(0);
-		for (Entry<K, V> entry : oldEntries)
-			if (entry != null)
-				putInternal(entry);
+		entry.prev = null;
+		entry.next = null;
 	}
 
 	@Override
@@ -190,161 +233,72 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 
 	@Override
 	public boolean containsValue(Object value) {
-		try {
-			if (head != null)
-				for (WeakEntry entry = head; entry != null; entry = entry.next)
-					if (Objects.equals(entry.getValue(), value))
-						return true;
-			return false;
-		} finally {
-			lock.unlock();
+		Entry<K, V> current = head;
+		while (current != null) {
+			if (Objects.equals(current.value, value))
+				return true;
+			current = current.next;
 		}
+		return false;
 	}
 
 	@Override
 	public void putAll(Map<? extends K, ? extends V> m) {
-		for (Map.Entry<? extends K, ? extends V> entry : m.entrySet())
-			put(entry.getKey(), entry.getValue());
-	}
-
-	@Override
-	public Set<K> keySet() {
-		return new AbstractSet<K>() {
-			@Override
-			public Iterator<K> iterator() {
-				return new Iterator<K>() {
-					boolean first = true;
-					private WeakEntry entry;
-
-					@Override
-					public void remove() {
-						ConcurrentLinkedHashMap.this.remove(entry.getKey());
-					}
-
-					@Override
-					public boolean hasNext() {
-						return first ? head != null : entry.next != null;
-					}
-
-					@Override
-					public K next() {
-						if (first) {
-							first = false;
-							return (entry = head).getKey();
-						}
-						return (entry = entry.next).getKey();
-					}
-				};
-			}
-
-			@Override
-			public int size() {
-				return size.get();
-			}
-		};
-	}
-
-	@Override
-	public Collection<V> values() {
-		return new AbstractSet<V>() {
-			@Override
-			public Iterator<V> iterator() {
-				return new Iterator<V>() {
-					boolean first = true;
-					private WeakEntry entry;
-
-					@Override
-					public void remove() {
-						ConcurrentLinkedHashMap.this.remove(entry.getKey());
-					}
-
-					@Override
-					public boolean hasNext() {
-						return first ? head != null : entry.next != null;
-					}
-
-					@Override
-					public V next() {
-						if (first) {
-							first = false;
-							return (entry = head).getValue();
-						}
-						return (entry = entry.next).getValue();
-					}
-				};
-			}
-
-			@Override
-			public int size() {
-				return size.get();
-			}
-		};
-	}
-
-	@Override
-	public Set<Entry<K, V>> entrySet() {
-		return new AbstractSet<Entry<K, V>>() {
-			@Override
-			public Iterator<Entry<K, V>> iterator() {
-				return new Iterator<Entry<K, V>>() {
-					boolean first = true;
-					private WeakEntry entry;
-
-					@Override
-					public void remove() {
-						ConcurrentLinkedHashMap.this.remove(entry.getKey());
-					}
-
-					@Override
-					public boolean hasNext() {
-						return first ? head != null : entry.next != null;
-					}
-
-					@Override
-					public Entry<K, V> next() {
-						if (first) {
-							first = false;
-							return entry = head;
-						}
-						return entry = entry.next;
-					}
-				};
-			}
-
-			@Override
-			public int size() {
-				return size.get();
-			}
-		};
-	}
-
-	@Override
-	public String toString() {
 		lock.lock();
 		try {
-			StringContainer container = new StringContainer("{", 0, 32);
-			boolean first = true;
-			for (WeakEntry entry = head; entry != null; entry = entry.next) {
-				if (!first)
-					container.append(',').append(' ');
-				container.append(entry.toString());
-				first = false;
-			}
-			return container.append('}').toString();
+			for (Map.Entry<? extends K, ? extends V> entry : m.entrySet())
+				put(entry.getKey(), entry.getValue());
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	abstract class WeakEntry implements Entry<K, V> {
-		private V value;
-		protected WeakEntry prev;
-		protected WeakEntry next;
+	@Override
+	public Set<K> keySet() {
+		return new KeySet();
+	}
 
-		WeakEntry(V value) {
+	@Override
+	public Collection<V> values() {
+		return new ValueCollection();
+	}
+
+	@Override
+	public Set<Map.Entry<K, V>> entrySet() {
+		return new EntrySet();
+	}
+
+	@Override
+	public String toString() {
+		StringContainer container = new StringContainer("{", 0, 32);
+		Entry<K, V> current = head;
+		boolean first = true;
+		while (current != null) {
+			if (!first)
+				container.append(',').append(' ');
+			container.append(current.toString());
+			first = false;
+			current = current.next;
+		}
+		return container.append('}').toString();
+	}
+
+	private static class Entry<K, V> implements Map.Entry<K, V> {
+		final K key;
+		V value;
+		Entry<K, V> prev;
+		Entry<K, V> next;
+
+		Entry(K key, V value, Entry<K, V> prev, Entry<K, V> next) {
+			this.key = key;
 			this.value = value;
-			prev = null;
-			next = null;
+			this.prev = prev;
+			this.next = next;
+		}
+
+		@Override
+		public K getKey() {
+			return key;
 		}
 
 		@Override
@@ -361,7 +315,158 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 
 		@Override
 		public String toString() {
-			return getKey() + "=" + value;
+			return key + "=" + value;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (!(o instanceof Map.Entry)) return false;
+
+			Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
+			return Objects.equals(key, e.getKey()) && Objects.equals(value, e.getValue());
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hashCode(key) ^ Objects.hashCode(value);
+		}
+	}
+
+	private class KeySet extends AbstractSet<K> {
+		@Override
+		public Iterator<K> iterator() {
+			return new KeyIterator();
+		}
+
+		@Override
+		public int size() {
+			return ConcurrentLinkedHashMap.this.size();
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			return ConcurrentLinkedHashMap.this.containsKey(o);
+		}
+
+		@Override
+		public boolean remove(Object o) {
+			return ConcurrentLinkedHashMap.this.remove(o) != null;
+		}
+
+		@Override
+		public void clear() {
+			ConcurrentLinkedHashMap.this.clear();
+		}
+	}
+
+	private class ValueCollection extends AbstractSet<V> {
+		@Override
+		public Iterator<V> iterator() {
+			return new ValueIterator();
+		}
+
+		@Override
+		public int size() {
+			return ConcurrentLinkedHashMap.this.size();
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			return ConcurrentLinkedHashMap.this.containsValue(o);
+		}
+
+		@Override
+		public void clear() {
+			ConcurrentLinkedHashMap.this.clear();
+		}
+	}
+
+	private class EntrySet extends AbstractSet<Map.Entry<K, V>> {
+		@Override
+		public Iterator<Map.Entry<K, V>> iterator() {
+			return new EntryIterator();
+		}
+
+		@Override
+		public int size() {
+			return ConcurrentLinkedHashMap.this.size();
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			if (!(o instanceof Map.Entry)) return false;
+
+			Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
+			V value = ConcurrentLinkedHashMap.this.get(e.getKey());
+			return value != null && value.equals(e.getValue());
+		}
+
+		@Override
+		public boolean remove(Object o) {
+			if (!(o instanceof Map.Entry)) return false;
+
+			Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
+			V value = ConcurrentLinkedHashMap.this.get(e.getKey());
+			if (value != null && value.equals(e.getValue())) {
+				ConcurrentLinkedHashMap.this.remove(e.getKey());
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public void clear() {
+			ConcurrentLinkedHashMap.this.clear();
+		}
+	}
+
+	private abstract class AbstractIterator {
+		protected Entry<K, V> next;
+		protected Entry<K, V> current;
+		AbstractIterator() {
+			next = head;
+			current = null;
+			size.get();
+		}
+
+		public boolean hasNext() {
+			return next != null;
+		}
+
+		protected Entry<K, V> nextEntry() {
+			if (next == null) throw new java.util.NoSuchElementException();
+			current = next;
+			next = next.next;
+			return current;
+		}
+
+		public void remove() {
+			if (current == null) throw new IllegalStateException();
+			ConcurrentLinkedHashMap.this.remove(current.key);
+			current = null;
+			size.get();
+		}
+	}
+
+	private class KeyIterator extends AbstractIterator implements Iterator<K> {
+		@Override
+		public K next() {
+			return nextEntry().key;
+		}
+	}
+
+	private class ValueIterator extends AbstractIterator implements Iterator<V> {
+		@Override
+		public V next() {
+			return nextEntry().value;
+		}
+	}
+
+	private class EntryIterator extends AbstractIterator implements Iterator<Map.Entry<K, V>> {
+		@Override
+		public Map.Entry<K, V> next() {
+			return nextEntry();
 		}
 	}
 }

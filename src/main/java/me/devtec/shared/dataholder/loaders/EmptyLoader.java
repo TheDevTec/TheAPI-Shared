@@ -86,67 +86,96 @@ public class EmptyLoader extends DataLoader {
 	@Override
 	public boolean remove(String key, boolean withSubKeys) {
 		Checkers.nonNull(key, "Key");
+		boolean modified = false;
+
 		if (withSubKeys) {
-			int pos = key.indexOf('.');
-			String primaryKey = pos == -1 ? key : key.substring(0, pos);
-			if (pos == -1) {
-				boolean modified = primaryKeys.remove(primaryKey);
-				if (data.remove(key) != null)
-					modified = true;
-				key += '.';
-				Iterator<Entry<String, DataValue>> itr = entrySet().iterator();
-				while (itr.hasNext()) {
-					Entry<String, DataValue> section = itr.next();
-					if (section.getKey().startsWith(key)) {
-						itr.remove();
+			int dotPos = key.indexOf('.');
+			String primaryKey = dotPos == -1 ? key : key.substring(0, dotPos);
+			String prefix = key + '.';
+
+			// Odstranit hlavní klíč a podklíče
+			if (dotPos == -1) {
+				// Odstranit primární klíč
+				modified = primaryKeys.remove(primaryKey);
+				// Odstranit hlavní klíč
+				modified |= data.remove(key) != null;
+
+				// Použít přímý iterator nad entrySet pro odstranění podklíčů
+				Iterator<Map.Entry<String, DataValue>> iterator = data.entrySet().iterator();
+				while (iterator.hasNext()) {
+					Map.Entry<String, DataValue> entry = iterator.next();
+					String entryKey = entry.getKey();
+					if (entryKey.startsWith(prefix)) {
+						iterator.remove();
 						modified = true;
 					}
 				}
-				if (modified) {
-					keySet = null;
-					entrySet = null;
+			} else {
+				// Odstranit konkrétní klíč
+				modified = data.remove(key) != null;
+
+				// Odstranit podklíče
+				Iterator<Map.Entry<String, DataValue>> iterator = data.entrySet().iterator();
+				while (iterator.hasNext()) {
+					Map.Entry<String, DataValue> entry = iterator.next();
+					String entryKey = entry.getKey();
+					if (entryKey.startsWith(prefix)) {
+						iterator.remove();
+						modified = true;
+					}
 				}
-				return modified;
+
+				// Zkontrolovat, zda zůstaly další klíče se stejným primárním klíčem
+				boolean hasOtherPrimaryKeys = false;
+				int primaryKeyLength = primaryKey.length();
+
+				for (String existingKey : data.keySet())
+					if (existingKey.startsWith(primaryKey) &&
+							(existingKey.length() == primaryKeyLength ||
+							existingKey.charAt(primaryKeyLength) == '.')) {
+						hasOtherPrimaryKeys = true;
+						break;
+					}
+
+				// Pokud nezůstaly žádné další klíče s tímto primárním klíčem, odstranit ho
+				if (!hasOtherPrimaryKeys)
+					primaryKeys.remove(primaryKey);
 			}
-			boolean onlyOne = true;
-			boolean modified = data.remove(key) != null;
-			key += '.';
-			Iterator<Entry<String, DataValue>> itr = entrySet().iterator();
-			while (itr.hasNext()) {
-				Entry<String, DataValue> section = itr.next();
-				if (section.getKey().startsWith(key)) {
-					itr.remove();
-					modified = true;
-				} else if (section.getKey().startsWith(primaryKey) && (section.getKey().length() == primaryKey.length()
-						|| section.getKey().charAt(primaryKey.length()) == '.'))
-					onlyOne = false;
-			}
-			if (onlyOne && primaryKeys.remove(primaryKey))
+		} else // Odstranit pouze konkrétní klíč
+			if (data.remove(key) != null) {
 				modified = true;
-			if (modified) {
-				keySet = null;
-				entrySet = null;
+
+				int dotPos = key.indexOf('.');
+				if (dotPos != -1) {
+					// U vnořeného klíče - zkontrolovat primární klíč
+					String primaryKey = key.substring(0, dotPos);
+					boolean hasOtherKeys = false;
+					int primaryKeyLength = primaryKey.length();
+
+					for (String existingKey : data.keySet())
+						if (existingKey.startsWith(primaryKey) &&
+								(existingKey.length() == primaryKeyLength ||
+								existingKey.charAt(primaryKeyLength) == '.')) {
+							hasOtherKeys = true;
+							break;
+						}
+
+					// Pokud nezůstaly žádné další klíče s tímto primárním klíčem, odstranit ho
+					if (!hasOtherKeys)
+						primaryKeys.remove(primaryKey);
+				} else
+					// Primární klíč - odstranit ho ze seznamu primárních klíčů
+					primaryKeys.remove(key);
 			}
-			return modified;
-		}
-		if (data.remove(key) != null) {
-			int pos = key.indexOf('.');
-			String primaryKey = pos == -1 ? key : key.substring(0, pos);
-			for (String section : getKeys())
-				if (section.startsWith(primaryKey)
-						&& (section.length() == primaryKey.length() || section.charAt(primaryKey.length()) == '.')) {
-					keySet = null;
-					entrySet = null;
-					return true;
-				}
-			primaryKeys.remove(primaryKey);
+
+		// Resetovat cached kolekce pokud došlo ke změně
+		if (modified) {
 			keySet = null;
 			entrySet = null;
-			return true;
 		}
-		return false;
-	}
 
+		return modified;
+	}
 	@Override
 	public void reset() {
 		keySet = null;
@@ -228,7 +257,7 @@ public class EmptyLoader extends DataLoader {
 		String prefix = key + '.';
 		int prefixLength = prefix.length();
 
-		return new Iterator<String>() {
+		return new Iterator<>() {
 			String next = null;
 			boolean hasPrefetched = false;
 
