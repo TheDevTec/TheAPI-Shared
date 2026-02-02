@@ -257,7 +257,7 @@ public class EmptyLoader extends DataLoader {
 		String prefix = key + '.';
 		int prefixLength = prefix.length();
 
-		return new Iterator<>() {
+		return new Iterator<String>() {
 			String next = null;
 			boolean hasPrefetched = false;
 

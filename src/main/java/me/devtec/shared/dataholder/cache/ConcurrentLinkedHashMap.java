@@ -17,7 +17,8 @@ public class ConcurrentLinkedHashMap<K, V> implements Map<K, V> {
 	private static final int DEFAULT_SIZE = 16;
 	private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 	private static final int MAXIMUM_CAPACITY = 1 << 30;
-	private static final Entry<?, ?> DELETED_ENTRY = new Entry<>(null, null, null, null) {};
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private static final Entry<?, ?> DELETED_ENTRY = new Entry(null, null, null, null) {};
 
 	private transient volatile Entry<K, V>[] entries;
 	private transient volatile AtomicInteger size = new AtomicInteger();
