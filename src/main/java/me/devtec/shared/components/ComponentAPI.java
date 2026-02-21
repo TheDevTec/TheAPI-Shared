@@ -810,7 +810,7 @@ public class ComponentAPI {
 			}
 		} else if (!container.isEmpty())
 			component.setText(container.toString());
-		else if (container.isEmpty())
+		else if (container.isEmpty() && main.getExtra().get(main.getExtra().size() - 1).isStyleSame(main.getExtra().size()==1?main:main.getExtra().get(Math.max(0, main.getExtra().size() - 2))))
 			main.getExtra().remove(main.getExtra().size() - 1);
 		return main;
 	}

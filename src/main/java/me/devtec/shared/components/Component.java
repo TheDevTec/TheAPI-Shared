@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import me.devtec.shared.annotations.Nonnull;
 import me.devtec.shared.annotations.Nullable;
@@ -284,7 +285,7 @@ public class Component {
 				return 101;
 			case "white":
 				return 102;
-			// 0 - 9
+				// 0 - 9
 			case "black":
 				return 48;
 			case "dark_blue":
@@ -332,7 +333,7 @@ public class Component {
 		case 102:
 			setColor("white");
 			break;
-		// 0 - 9
+			// 0 - 9
 		case 48:
 			setColor("black");
 			break;
@@ -487,5 +488,98 @@ public class Component {
 					map.put("extra", list);
 			}
 		return map;
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if(object instanceof Component) {
+			if(!getClass().equals(getClass()))return false;
+			if(object instanceof ComponentItem) {
+				ComponentItem item = (ComponentItem)this;
+				ComponentItem secondItem = (ComponentItem)object;
+				if(!Objects.equals(item.getId(), secondItem.getId()) || item.getCount()!=secondItem.getCount() || !Objects.equals(item.getNbt(), secondItem.getNbt()))return false;
+				return true;
+			}
+			if(object instanceof ComponentEntity) {
+				ComponentEntity item = (ComponentEntity)this;
+				ComponentEntity secondItem = (ComponentEntity)object;
+				if(!Objects.equals(item.getId(), secondItem.getId()) || !Objects.equals(item.getType(), secondItem.getType()) || !Objects.equals(item.getName(), secondItem.getName()))return false;
+				return true;
+			}
+			Component compare = (Component)object;
+			if(getText()==null ? compare.getText()==null : getText().equals(compare.getText())) {
+				if(getExtra()==null && compare.getExtra()==null || getExtra()!=null && compare.getExtra()!=null && getExtra().size()==compare.getExtra().size() || getExtra()==null && compare.getExtra()!=null && compare.getExtra().isEmpty()
+						|| compare.getExtra()==null && getExtra()!=null && getExtra().isEmpty()) {
+					int pos = 0;
+					if(getExtra()!=null)
+						for(Component extra : getExtra())
+							if(!Objects.equals(extra,compare.getExtra().get(pos++)))
+								return false;
+				}
+				if(!Objects.equals(getColor(), compare.getColor()) || !Objects.equals(getFont(), compare.getFont()) || !Objects.equals(getInsertion(), compare.getInsertion()) ||
+						isBold()!=compare.isBold() || isItalic()!=compare.isItalic()
+						|| isObfuscated()!=compare.isObfuscated()
+						|| isStrikethrough()!=compare.isStrikethrough()
+						|| isUnderlined()!=compare.isUnderlined())
+					return false;
+				if(getClickEvent()!=null && compare.getClickEvent()!=null) {
+					if(getClickEvent().getAction()!=compare.getClickEvent().getAction() || !Objects.equals(getClickEvent().getValue(), compare.getClickEvent().getValue()))
+						return false;
+				}else if(getClickEvent() == null ? compare.getClickEvent() != null : compare.getClickEvent() == null)
+					return false;
+				if(getHoverEvent()!=null && compare.getHoverEvent()!=null) {
+					if(getHoverEvent().getAction()!=compare.getHoverEvent().getAction() || !Objects.equals(getHoverEvent().getValue(), compare.getHoverEvent().getValue()))
+						return false;
+				}else if(getHoverEvent() == null ? compare.getHoverEvent() != null : compare.getHoverEvent() == null)
+					return false;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean isStyleSame(Object object) {
+		if(object instanceof Component) {
+			if(!getClass().equals(getClass()))return false;
+			if(object instanceof ComponentItem) {
+				ComponentItem item = (ComponentItem)this;
+				ComponentItem secondItem = (ComponentItem)object;
+				if(!Objects.equals(item.getId(), secondItem.getId()) || item.getCount()!=secondItem.getCount() || !Objects.equals(item.getNbt(), secondItem.getNbt()))return false;
+				return true;
+			}
+			if(object instanceof ComponentEntity) {
+				ComponentEntity item = (ComponentEntity)this;
+				ComponentEntity secondItem = (ComponentEntity)object;
+				if(!Objects.equals(item.getId(), secondItem.getId()) || !Objects.equals(item.getType(), secondItem.getType()) || !Objects.equals(item.getName(), secondItem.getName()))return false;
+				return true;
+			}
+			Component compare = (Component)object;
+			if(getExtra()==null && compare.getExtra()==null || getExtra()!=null && compare.getExtra()!=null && getExtra().size()==compare.getExtra().size() || getExtra()==null && compare.getExtra()!=null && compare.getExtra().isEmpty()
+					|| compare.getExtra()==null && getExtra()!=null && getExtra().isEmpty()) {
+				int pos = 0;
+				if(getExtra()!=null)
+					for(Component extra : getExtra())
+						if(!extra.isStyleSame(compare.getExtra().get(pos++)))
+							return false;
+			}
+			if(!Objects.equals(getColor(), compare.getColor()) || !Objects.equals(getFont(), compare.getFont()) || !Objects.equals(getInsertion(), compare.getInsertion()) ||
+					isBold()!=compare.isBold() || isItalic()!=compare.isItalic()
+					|| isObfuscated()!=compare.isObfuscated()
+					|| isStrikethrough()!=compare.isStrikethrough()
+					|| isUnderlined()!=compare.isUnderlined())
+				return false;
+			if(getClickEvent()!=null && compare.getClickEvent()!=null) {
+				if(getClickEvent().getAction()!=compare.getClickEvent().getAction() || !Objects.equals(getClickEvent().getValue(), compare.getClickEvent().getValue()))
+					return false;
+			}else if(getClickEvent() == null ? compare.getClickEvent() != null : compare.getClickEvent() == null)
+				return false;
+			if(getHoverEvent()!=null && compare.getHoverEvent()!=null) {
+				if(getHoverEvent().getAction()!=compare.getHoverEvent().getAction() || !Objects.equals(getHoverEvent().getValue(), compare.getHoverEvent().getValue()))
+					return false;
+			}else if(getHoverEvent() == null ? compare.getHoverEvent() != null : compare.getHoverEvent() == null)
+				return false;
+			return true;
+		}
+		return false;
 	}
 }
