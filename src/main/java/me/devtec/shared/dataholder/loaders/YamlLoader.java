@@ -50,6 +50,7 @@ public class YamlLoader extends EmptyLoader {
 		int[] indexes = null;
 
 		Integer[] depth = new Integer[5];
+		int[] keyStarts = new int[5];
 		int depthIndex = -1;
 
 		for (int pos = 0; pos < input.size(); ++pos) {
@@ -90,7 +91,7 @@ public class YamlLoader extends EmptyLoader {
 				}
 
 				// Key
-				int[] keyResult = setupKey(currentDepth, depthIndex, depth, lastIndexOfDot, key, parts);
+				int[] keyResult = setupKey(currentDepth, depthIndex, depth, keyStarts, lastIndexOfDot, key, parts);
 				if(keyResult==null) {
 					Logger.getLogger("YamlLoader").warning("An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 					continue;
@@ -99,8 +100,11 @@ public class YamlLoader extends EmptyLoader {
 				depthIndex=keyResult[1];
 				if(depth.length<=depthIndex+1) {
 					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
+					int[] keyStartsCopy = new int[copy.length];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
+					System.arraycopy(keyStarts, 0, keyStartsCopy, 0, keyStarts.length);
 					depth=copy;
+					keyStarts=keyStartsCopy;
 				}
 
 				if (parts.length == 1) {
@@ -173,7 +177,7 @@ public class YamlLoader extends EmptyLoader {
 
 				readerMode = READ_SECTION;
 
-				int[] keyResult = setupKey(currentDepth, depthIndex, depth, lastIndexOfDot, key, parts);
+				int[] keyResult = setupKey(currentDepth, depthIndex, depth, keyStarts, lastIndexOfDot, key, parts);
 				if(keyResult==null) {
 					Logger.getLogger("YamlLoader").warning("An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 					continue;
@@ -182,8 +186,11 @@ public class YamlLoader extends EmptyLoader {
 				depthIndex=keyResult[1];
 				if(depth.length<=depthIndex+1) {
 					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
+					int[] keyStartsCopy = new int[copy.length];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
+					System.arraycopy(keyStarts, 0, keyStartsCopy, 0, keyStarts.length);
 					depth=copy;
+					keyStarts=keyStartsCopy;
 				}
 
 				if (parts.length == 1) {
@@ -251,7 +258,7 @@ public class YamlLoader extends EmptyLoader {
 					val.writtenValue = writtenValue;
 				}
 
-				int[] keyResult = setupKey(currentDepth, depthIndex, depth, lastIndexOfDot, key, parts);
+				int[] keyResult = setupKey(currentDepth, depthIndex, depth, keyStarts, lastIndexOfDot, key, parts);
 				if(keyResult==null) {
 					Logger.getLogger("YamlLoader").warning("An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 					continue;
@@ -260,8 +267,11 @@ public class YamlLoader extends EmptyLoader {
 				depthIndex=keyResult[1];
 				if(depth.length<=depthIndex+1) {
 					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
+					int[] keyStartsCopy = new int[copy.length];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
+					System.arraycopy(keyStarts, 0, keyStartsCopy, 0, keyStarts.length);
 					depth=copy;
+					keyStarts=keyStartsCopy;
 				}
 
 				if (parts.length == 1) {
@@ -328,7 +338,7 @@ public class YamlLoader extends EmptyLoader {
 					val.writtenValue = writtenValue;
 				}
 
-				int[] keyResult = setupKey(currentDepth, depthIndex, depth, lastIndexOfDot, key, parts);
+				int[] keyResult = setupKey(currentDepth, depthIndex, depth, keyStarts, lastIndexOfDot, key, parts);
 				if(keyResult==null) {
 					Logger.getLogger("YamlLoader").warning("An error occurred while reading line "+(pos+1)+", which contains (incorrect spacing): "+lines.substring(line[0], line[1]));
 					continue;
@@ -337,8 +347,11 @@ public class YamlLoader extends EmptyLoader {
 				depthIndex=keyResult[1];
 				if(depth.length<=depthIndex+1) {
 					Integer[] copy = new Integer[depth.length << 1 + depth.length +1];
+					int[] keyStartsCopy = new int[copy.length];
 					System.arraycopy(depth, 0, copy, 0, depth.length);
+					System.arraycopy(keyStarts, 0, keyStartsCopy, 0, keyStarts.length);
 					depth=copy;
+					keyStarts=keyStartsCopy;
 				}
 
 				if (parts.length == 1) {
@@ -409,21 +422,21 @@ public class YamlLoader extends EmptyLoader {
 		loaded = comments != null || !data.isEmpty();
 	}
 
-	private int[] setupKey(int spaces, int depthIndex, Integer[] depth, int lastIndexOfDot, StringContainer key, int[][] parts) {
+	private int[] setupKey(int spaces, int depthIndex, Integer[] depth, int[] keyStarts, int lastIndexOfDot, StringContainer key, int[][] parts) {
 		int realDepth = findDepth(depth, spaces);
 		if(realDepth==-1)return null;
 		if(depthIndex==-1) {
-			lastIndexOfDot = buildKey(lines, key, parts[0], depth, 0, 0, lastIndexOfDot);
+			lastIndexOfDot = buildKey(lines, key, parts[0], keyStarts, 0, 0, lastIndexOfDot);
 			return new int[] {lastIndexOfDot,realDepth};
 		}
 		if(spaces==0) {
 			Arrays.fill(depth,1,depth.length, null);
-			lastIndexOfDot = buildKey(lines, key, parts[0], depth, 0, depthIndex, lastIndexOfDot);
+			lastIndexOfDot = buildKey(lines, key, parts[0], keyStarts, 0, depthIndex, lastIndexOfDot);
 			depthIndex=-1;
 		}else {
 			if(realDepth+1<depth.length)
 				Arrays.fill(depth, realDepth+1, depth.length, null);
-			lastIndexOfDot = buildKey(lines, key, parts[0], depth, realDepth, depthIndex, lastIndexOfDot);
+			lastIndexOfDot = buildKey(lines, key, parts[0], keyStarts, realDepth, depthIndex, lastIndexOfDot);
 		}
 		return new int[] {lastIndexOfDot,realDepth};
 	}
@@ -1048,23 +1061,24 @@ public class YamlLoader extends EmptyLoader {
 		return trimmed;
 	}
 
-	private int buildKey(StringContainer lines, StringContainer key, int[] currentKey, Integer[] depth, int currentDepth, int previousDepth,
+	private int buildKey(StringContainer lines, StringContainer key, int[] currentKey, int[] keyStarts, int currentDepth, int previousDepth,
 			int lastIndexOfDot) {
-		if (currentDepth <= 0)
+		// Track the start position of each depth's segment in `key`, so we don't have to
+		// search for '.' separators (which would mis-fire when a key itself contains a dot,
+		// e.g. "sr.mod"). keyStarts[d] = index in `key` right after the dot that separates
+		// depth d from its parent (or 0 for depth 0).
+		if (currentDepth <= 0) {
 			key.clear();
-		else if (currentDepth > previousDepth) { // Up
+			keyStarts[0] = 0;
+			lastIndexOfDot = 0;
+		} else if (currentDepth > previousDepth) { // Going deeper - append new dot + segment
 			key.append('.');
 			lastIndexOfDot = key.length();
-		} else if (currentDepth < previousDepth) {
-			for(int i = currentDepth; i < previousDepth+1; ++i) {
-				key.delete(key.lastIndexOf('.', lastIndexOfDot), key.length()); // Don't
-				lastIndexOfDot = key.length();
-			}
-			key.append('.');
+			keyStarts[currentDepth] = lastIndexOfDot;
+		} else { // Same level or going back up - truncate at the recorded start of this depth
+			key.delete(keyStarts[currentDepth], key.length());
 			lastIndexOfDot = key.length();
 		}
-		else
-			key.delete(lastIndexOfDot, key.length()); // Don't remove dot
 		key.append(lines.subSequence(currentKey[0], currentKey[1]));
 		return lastIndexOfDot;
 	}
