@@ -2,6 +2,7 @@ package me.devtec.shared.dataholder.loaders;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -25,6 +26,7 @@ public class EmptyLoader extends DataLoader {
 
 	protected Set<String> keySet;
 	protected Set<Entry<String, DataValue>> entrySet;
+	protected Map<String, Set<String>> directSectionKeys = new HashMap<>();
 
 	@Override
 	public boolean loadingFromFile() {
@@ -78,6 +80,7 @@ public class EmptyLoader extends DataLoader {
 			int pos = key.indexOf('.');
 			String primaryKey = pos == -1 ? key : key.substring(0, pos);
 			primaryKeys.add(primaryKey);
+			indexSectionKey(key);
 			keySet = null;
 			entrySet = null;
 		}
@@ -172,6 +175,7 @@ public class EmptyLoader extends DataLoader {
 		if (modified) {
 			keySet = null;
 			entrySet = null;
+			rebuildSectionKeyIndex();
 		}
 
 		return modified;
@@ -180,6 +184,7 @@ public class EmptyLoader extends DataLoader {
 	public void reset() {
 		keySet = null;
 		entrySet = null;
+		directSectionKeys.clear();
 		primaryKeys.clear();
 		data.clear();
 		header.clear();
@@ -221,6 +226,7 @@ public class EmptyLoader extends DataLoader {
 		clone.primaryKeys = new LinkedHashSet<>(primaryKeys);
 		clone.footer = new ArrayList<>(footer);
 		clone.header = new ArrayList<>(header);
+		clone.directSectionKeys = copySectionKeyIndex(directSectionKeys);
 		clone.loaded = loaded;
 		return clone;
 	}
@@ -228,78 +234,50 @@ public class EmptyLoader extends DataLoader {
 	@Override
 	public Set<String> keySet(String key, boolean subkeys) {
 		Checkers.nonNull(key, "Key");
-		Set<String> keys = new LinkedHashSet<>();
-		String prefix = key + '.';
-		int prefixLength = prefix.length();
-
-		for (String section : getKeys()) {
-			if (!section.startsWith(prefix))
-				continue;
-
-			String remainder = section.substring(prefixLength);
-
-			if (subkeys)
-				keys.add(remainder);
-			else {
-				int dotIndex = remainder.indexOf('.');
-				if (dotIndex == -1)
-					keys.add(remainder);
-				else
-					keys.add(remainder.substring(0, dotIndex));
-			}
-		}
-		return keys;
+		if (subkeys)
+			return collectNestedSectionKeys(key);
+		Set<String> keys = directSectionKeys.get(key);
+		return keys == null ? new LinkedHashSet<>() : new LinkedHashSet<>(keys);
 	}
 
 	@Override
 	public Iterator<String> keySetIterator(String key, boolean subkeys) {
-		Checkers.nonNull(key, "Key");
+		return keySet(key, subkeys).iterator();
+	}
+
+	private void indexSectionKey(String key) {
+		int separator = key.indexOf('.');
+		while (separator != -1) {
+			String section = key.substring(0, separator);
+			int nextSeparator = key.indexOf('.', separator + 1);
+			int endOfDirectKey = nextSeparator == -1 ? key.length() : nextSeparator;
+			directSectionKeys.computeIfAbsent(section, ignored -> new LinkedHashSet<>())
+					.add(key.substring(separator + 1, endOfDirectKey));
+			separator = nextSeparator;
+		}
+	}
+
+	private void rebuildSectionKeyIndex() {
+		directSectionKeys.clear();
+		for (String key : data.keySet())
+			indexSectionKey(key);
+	}
+
+	private Set<String> collectNestedSectionKeys(String key) {
+		Set<String> keys = new LinkedHashSet<>();
 		String prefix = key + '.';
 		int prefixLength = prefix.length();
+		for (String section : getKeys())
+			if (section.startsWith(prefix))
+				keys.add(section.substring(prefixLength));
+		return keys;
+	}
 
-		return new Iterator<String>() {
-			String next = null;
-			boolean hasPrefetched = false;
-
-			private void fetchNext() {
-				if (hasPrefetched)
-					return;
-				hasPrefetched = true;
-				for (String section : getKeys()) {
-					if (!section.startsWith(prefix))
-						continue;
-					String remainder = section.substring(prefixLength);
-					int dotIndex = remainder.indexOf('.');
-					String candidate = subkeys ? remainder
-							: dotIndex == -1 ? remainder : remainder.substring(0, dotIndex);
-					next = candidate;
-					return;
-				}
-				next = null;
-			}
-
-			@Override
-			public boolean hasNext() {
-				fetchNext();
-				return next != null;
-			}
-
-			@Override
-			public String next() {
-				fetchNext();
-				if (next == null)
-					return null;
-				String result = next;
-				next = null;
-				hasPrefetched = false;
-				return result;
-			}
-
-			@Override
-			public void remove() {
-				EmptyLoader.this.remove(next);
-			}
-		};
+	private static Map<String, Set<String>> copySectionKeyIndex(Map<String, Set<String>> source) {
+		Map<String, Set<String>> copy = new HashMap<>();
+		for (Entry<String, Set<String>> entry : source.entrySet())
+			copy.put(entry.getKey(), new LinkedHashSet<>(entry.getValue()));
+		return copy;
 	}
 
 	@Override

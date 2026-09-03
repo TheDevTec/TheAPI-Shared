@@ -939,10 +939,9 @@ public class ComponentAPI {
 			component.setClickEvent(click);
 			if (component.getExtra() != null)
 				for (Component extra : component.getExtra())
-					if (extra.getClickEvent() == null)
-						extra.setClickEvent(click);
-			if (component.getClickEvent() == null)
-				component.setClickEvent(click);
+					// A click event explicitly provided by JSON must override one inferred
+					// while parsing a URL in this component's text.
+					extra.setClickEvent(click);
 		}
 		if (map.containsKey("insertion"))
 			component.setInsertion(map.get("insertion") + "");
