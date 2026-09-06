@@ -1,35 +1,40 @@
 package me.devtec.shared.dataholder;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.util.*;
-import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 import me.devtec.shared.annotations.Checkers;
 import me.devtec.shared.annotations.Nonnull;
 import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.loaders.DataLoader;
 import me.devtec.shared.dataholder.loaders.EmptyLoader;
-import me.devtec.shared.dataholder.loaders.constructor.DataValue;
+import me.devtec.shared.dataholder.loaders.LoaderWriteUtil;
 import me.devtec.shared.dataholder.merge.MergeSetting;
 import me.devtec.shared.dataholder.merge.MergeStandards;
 import me.devtec.shared.json.Json;
 import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
 import me.devtec.shared.utility.ParseUtils;
-import me.devtec.shared.utility.StreamUtils;
 
-public class Config {
+public class Config implements AutoCloseable {
 	protected DataLoader loader;
 	protected File file;
 	protected transient boolean isSaving; // LOCK
@@ -40,9 +45,10 @@ public class Config {
 	protected Runnable updaterWatcher;
 	protected List<Runnable> runnablesOnReload;
 
+	@SuppressWarnings("resource")
 	public static Config loadFromInput(@Nonnull InputStream input) {
 		Checkers.nonNull(input, "InputStream");
-		return new Config().reload(StreamUtils.fromStream(input));
+		return new Config().reload(input);
 	}
 
 	public static Config loadFromInput(@Nonnull InputStream input, @Nonnull String outputFile,
@@ -53,13 +59,14 @@ public class Config {
 		return Config.loadFromInput(input, new File(outputFile), settings);
 	}
 
+	@SuppressWarnings("resource")
 	public static Config loadFromInput(@Nonnull InputStream input, @Nonnull File outputFile,
 			@Nonnull MergeSetting... settings) {
 		Checkers.nonNull(input, "InputStream");
 		Checkers.nonNull(outputFile, "Output File");
 		Checkers.nonNull(settings, "MergeSetting");
 		Config config = new Config(outputFile);
-		config.merge(new Config().reload(StreamUtils.fromStream(input)), settings);
+		config.merge(new Config().reload(input), settings);
 		return config;
 	}
 
@@ -118,6 +125,7 @@ public class Config {
 		return new Config(filePath);
 	}
 
+	@SuppressWarnings("resource")
 	public static Config loadFromString(@Nonnull String input) {
 		Checkers.nonNull(input, "Contents");
 		return new Config().reload(input);
@@ -167,7 +175,7 @@ public class Config {
 	}
 
 	public boolean isModified() {
-		return requireSave;
+		return requireSave || loader.document().externalDirty;
 	}
 
 	public void markModified() {
@@ -176,6 +184,7 @@ public class Config {
 
 	public void markNonModified() {
 		requireSave = false;
+		loader.document().externalDirty = false;
 	}
 
 	public boolean exists(@Nonnull String key) {
@@ -184,7 +193,7 @@ public class Config {
 
 	public boolean existsKey(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		return getDataLoader().get().containsKey(key);
+		return loader.hasValue(key);
 	}
 
 	public Config setFile(@Nullable File file) {
@@ -213,35 +222,16 @@ public class Config {
 	public boolean setIfAbsent(@Nonnull String key, @Nonnull Object value, @Nullable List<String> comments) {
 		Checkers.nonNull(key, "Key");
 		Checkers.nonNull(value, "Value");
-		if (!existsKey(key)) {
-			DataValue val = getDataLoader().getOrCreate(key);
-			val.value = value;
-			val.comments = comments;
-			val.modified = true;
-			markModified();
-			return true;
-		}
-		return false;
+		if (!loader.setIfAbsent(key, value, comments))
+			return false;
+		markModified();
+		return true;
 	}
 
 	public Config set(@Nonnull String key, @Nullable Object value) {
 		Checkers.nonNull(key, "Key");
-		if (value == null) {
-			if (getDataLoader().remove(key))
-				markModified();
-			return this;
-		}
-		DataValue val = getDataLoader().get(key);
-		if (val == null) {
-			getDataLoader().set(key, val = DataValue.of(value));
-			val.modified = true;
+		if (loader.setValue(key, value))
 			markModified();
-		} else if (val.value == null || !val.value.equals(value)) {
-			val.value = value;
-			val.writtenValue = null;
-			val.modified = true;
-			markModified();
-		}
 		return this;
 	}
 
@@ -255,58 +245,26 @@ public class Config {
 	@Nullable
 	public List<String> getComments(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		DataValue val = getDataLoader().get(key);
-		if (val != null)
-			return val.comments;
-		return null;
+		return loader.getComments(key);
 	}
 
 	public Config setComments(@Nonnull String key, @Nullable List<String> value) {
 		Checkers.nonNull(key, "Key");
-		if (value == null || value.isEmpty()) {
-			DataValue val = getDataLoader().get(key);
-			if (val != null && val.comments != null && !val.comments.isEmpty()) {
-				val.comments = null;
-				val.modified = true;
-				markModified();
-			}
-			return this;
-		}
-		DataValue val = getDataLoader().getOrCreate(key);
-		if (val.comments == null || !value.containsAll(val.comments)) {
-			val.comments = value;
-			val.modified = true;
+		if (loader.setComments(key, value))
 			markModified();
-		}
 		return this;
 	}
 
 	@Nullable
 	public String getCommentAfterValue(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		DataValue val = getDataLoader().getOrCreate(key);
-		if (val != null)
-			return val.commentAfterValue;
-		return null;
+		return loader.getComment(key);
 	}
 
 	public Config setCommentAfterValue(@Nonnull String key, @Nullable String comment) {
 		Checkers.nonNull(key, "Key");
-		if (comment == null || comment.isEmpty()) {
-			DataValue val = getDataLoader().get(key);
-			if (val == null || val.commentAfterValue == null)
-				return this;
-			val.commentAfterValue = null;
-			val.modified = true;
+		if (loader.setComment(key, comment))
 			markModified();
-			return this;
-		}
-		DataValue val = getDataLoader().getOrCreate(key);
-		if (!comment.equals(val.commentAfterValue)) {
-			val.commentAfterValue = comment;
-			val.modified = true;
-			markModified();
-		}
 		return this;
 	}
 
@@ -341,8 +299,41 @@ public class Config {
 		return getDataLoader().getFooter();
 	}
 
+	private void replaceLoader(DataLoader next) {
+		if (next == null)
+			next = new EmptyLoader();
+		DataLoader previous = loader;
+		loader = next;
+		if (previous != null && previous != next)
+			try {
+				previous.reset();
+			} catch (Throwable ignored) {
+			}
+	}
+
 	public Config reload(@Nullable String input) {
-		loader = DataLoader.findLoaderFor(input);
+		DataLoader next = DataLoader.findLoaderFor(input);
+		if (!next.isLoaded()) {
+			next.reset();
+			return this;
+		}
+		replaceLoader(next);
+		markModified();
+		return this;
+	}
+
+	/**
+	 * Size-aware stream reload. Unlike StreamUtils.fromStream(), this path does not
+	 * require the whole source to fit into one String/StringContainer.
+	 */
+	public Config reload(@Nonnull InputStream input) {
+		Checkers.nonNull(input, "InputStream");
+		DataLoader next = DataLoader.findLoaderFor(input);
+		if (!next.isLoaded()) {
+			next.reset();
+			return this;
+		}
+		replaceLoader(next);
 		markModified();
 		return this;
 	}
@@ -353,8 +344,29 @@ public class Config {
 
 	public Config reload(@Nonnull File file) {
 		Checkers.nonNull(file, "File");
-		clear();
-		loader = DataLoader.findLoaderFor(file);
+		DataLoader next = DataLoader.findLoaderFor(file);
+		if (!next.isLoaded()) {
+			next.reset();
+			return this;
+		}
+
+		/*
+		 * Reload is transactional for a non-empty source. Loader discovery falls back
+		 * to EmptyLoader when no parser accepts malformed/unsupported content; do not
+		 * destroy a currently usable Config in that case. Empty/missing files are still
+		 * allowed to intentionally reset the Config to empty.
+		 */
+		if (file.exists() && file.length() > 0L && "empty".equals(next.name()) && loader != null
+				&& !"empty".equals(loader.name())) {
+			try {
+				next.reset();
+			} catch (Throwable ignored) {
+			}
+			return this;
+		}
+
+		replaceLoader(next);
+		this.file = file;
 		markNonModified();
 		if (runnablesOnReload != null)
 			synchronized (runnablesOnReload) {
@@ -372,10 +384,8 @@ public class Config {
 	@Nullable
 	public Object get(@Nonnull String key, @Nullable Object defaultValue) {
 		Checkers.nonNull(key, "Key");
-		DataValue val = getDataLoader().get(key);
-		if (val == null || val.value == null)
-			return defaultValue;
-		return val.value;
+		Object value = loader.getValue(key);
+		return value == null ? defaultValue : value;
 	}
 
 	@Nullable
@@ -410,21 +420,15 @@ public class Config {
 	@Nullable
 	public String getString(@Nonnull String key, @Nullable String defaultValue) {
 		Checkers.nonNull(key, "Key");
-		DataValue val = getDataLoader().get(key);
-		if (val == null || val.value == null)
-			return defaultValue;
-		if (val.writtenValue != null)
-			return val.writtenValue;
-		return val.value instanceof String ? (String) val.value : val.value + "";
+		String value = loader.getStringValue(key);
+		return value == null ? defaultValue : value;
 	}
 
 	public boolean isJson(@Nonnull String key) {
-		DataValue val = getDataLoader().get(key);
-		if (val == null || val.value == null)
-			return false;
-		if (val.writtenValue != null && val.writtenValue.length() > 1) {
-			char firstChar = val.writtenValue.charAt(0);
-			char lastChar = val.writtenValue.charAt(val.writtenValue.length() - 1);
+		String writtenValue = loader.getWrittenValue(key);
+		if (writtenValue != null && writtenValue.length() > 1) {
+			char firstChar = writtenValue.charAt(0);
+			char lastChar = writtenValue.charAt(writtenValue.length() - 1);
 			return firstChar == '[' && lastChar == ']' || firstChar == '{' && lastChar == '}';
 		}
 		return false;
@@ -700,49 +704,52 @@ public class Config {
 
 	public Config save(@Nonnull String dataTypeName) {
 		Checkers.nonNull(dataTypeName, "DataType Name");
+
 		if (file == null || isSaving() || !isModified())
 			return this;
+
 		isSaving = true;
-		if (!file.exists()) {
-			File folder = file.getParentFile();
-			if (folder != null)
-				folder.mkdirs();
-			try {
-				file.createNewFile();
-			} catch (Exception e) {
-				isSaving = false;
-				e.printStackTrace();
+
+		final File target = file;
+		final File parent = target.getAbsoluteFile().getParentFile();
+
+		if (parent != null && !parent.isDirectory())
+			parent.mkdirs();
+
+		final boolean builtIn = DataLoader.supportsFormat(dataTypeName);
+		final DataLoader writer = builtIn ? null : DataLoader.findLoaderByName(dataTypeName);
+
+		try {
+			if (!builtIn && writer == null)
 				return this;
+
+			if (builtIn || writer.supportsStreamingSave())
+				try (FileOutputStream fileOutput = new FileOutputStream(target, false);
+						BufferedOutputStream output = new BufferedOutputStream(fileOutput, 64 * 1024)) {
+
+					if (builtIn)
+						DataLoader.saveTo(this, dataTypeName, output, false);
+					else
+						writer.saveTo(this, output, false);
+				}
+			else if (writer.supportsIteratorMode())
+				LoaderWriteUtil.writeIterator(target, writer.saveAsIterator(this, false));
+			else {
+				byte[] bytes = writer.save(this, false);
+
+				try (FileOutputStream fileOutput = new FileOutputStream(target, false)) {
+					fileOutput.write(bytes);
+				}
 			}
+
+			getDataLoader().markSavedValues();
+			markNonModified();
+		} catch (Exception exception) {
+			exception.printStackTrace();
+		} finally {
+			isSaving = false;
 		}
-		DataLoader writer;
-		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
-			writer = getDataLoader();
-		else
-			writer = DataLoader.findLoaderByName(dataTypeName);
-		if (writer != null)
-			if (writer.supportsIteratorMode()) {
-				Iterator<CharSequence> iterator = writer.saveAsIterator(this, true);
-				try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE,
-						StandardOpenOption.TRUNCATE_EXISTING)) {
-					while (iterator.hasNext()) {
-						CharSequence next = iterator.next();
-						channel.write(ByteBuffer.wrap(next instanceof StringContainer
-								? ((StringContainer) next).getBytes()
-								: next instanceof String ? ((String) next).getBytes() : next.toString().getBytes()));
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			} else
-				try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE,
-						StandardOpenOption.TRUNCATE_EXISTING)) {
-					channel.write(ByteBuffer.wrap(writer.save(this, true)));
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-		markNonModified();
-		isSaving = false;
+
 		return this;
 	}
 
@@ -775,11 +782,7 @@ public class Config {
 
 	public boolean isKey(@Nonnull String key) {
 		Checkers.nonNull(key, "Key");
-		for (String section : getDataLoader().getKeys())
-			if (section.startsWith(key))
-				if (section.length() == key.length() || section.charAt(key.length()) == '.')
-					return true;
-		return false;
+		return getDataLoader().hasKeyOrSection(key);
 	}
 
 	@Nonnull
@@ -815,12 +818,18 @@ public class Config {
 	@Nonnull
 	public String toString(String dataTypeName, boolean markSaved) {
 		Checkers.nonNull(dataTypeName, "DataType Name");
+		if (DataLoader.supportsFormat(dataTypeName))
+			return DataLoader.saveAsString(this, dataTypeName, markSaved);
+		String result;
 		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
-			return getDataLoader().saveAsString(this, markSaved);
-		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
-		if (loader != null)
-			return loader.saveAsString(this, markSaved);
-		return null;
+			result = getDataLoader().saveAsString(this, markSaved);
+		else {
+			DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
+			result = loader == null ? null : loader.saveAsString(this, markSaved);
+		}
+		if (markSaved && result != null)
+			getDataLoader().markSavedValues();
+		return result;
 	}
 
 	@Nonnull
@@ -844,12 +853,18 @@ public class Config {
 	@Nonnull
 	public byte[] toByteArray(String dataTypeName, boolean markSaved) {
 		Checkers.nonNull(dataTypeName, "DataType Name");
+		if (DataLoader.supportsFormat(dataTypeName))
+			return DataLoader.save(this, dataTypeName, markSaved);
+		byte[] result;
 		if (getDataLoader().name().equalsIgnoreCase(dataTypeName))
-			return getDataLoader().save(this, markSaved);
-		DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
-		if (loader != null)
-			return loader.save(this, markSaved);
-		return null;
+			result = getDataLoader().save(this, markSaved);
+		else {
+			DataLoader loader = DataLoader.findLoaderByName(dataTypeName);
+			result = loader == null ? null : loader.save(this, markSaved);
+		}
+		if (markSaved && result != null)
+			getDataLoader().markSavedValues();
+		return result;
 	}
 
 	public Config clear() {
@@ -899,7 +914,7 @@ public class Config {
 	}
 
 	public Config addRunnableOnReload(Runnable runnable) {
-		synchronized (runnablesOnReload) {
+		synchronized (this) {
 			if (runnablesOnReload == null)
 				runnablesOnReload = new ArrayList<>();
 			runnablesOnReload.add(runnable);
@@ -908,7 +923,7 @@ public class Config {
 	}
 
 	public Config removeRunnableOnReload(Runnable runnable) {
-		synchronized (runnablesOnReload) {
+		synchronized (this) {
 			if (runnablesOnReload != null)
 				runnablesOnReload.remove(runnable);
 		}
@@ -954,7 +969,7 @@ public class Config {
 						}
 						while (wkey != null) {
 							for (WatchEvent<?> event : wkey.pollEvents())
-								if (((Path) event.context()).toAbsolutePath().equals(path)) {
+								if (path.getParent().resolve((Path) event.context()).equals(path)) {
 									if (lastUpdateAt - System.currentTimeMillis() / 1000 <= 0) {
 										lastUpdateAt = System.currentTimeMillis() / 1000 + 1;
 										processAutoUpdate();
@@ -977,46 +992,45 @@ public class Config {
 		return this;
 	}
 
+	@SuppressWarnings("resource")
 	public void processAutoUpdate() {
+		if (file == null)
+			return;
 		DataLoader read = DataLoader.findLoaderFor(file);
-		Iterator<Entry<String, DataValue>> iterator = read.entrySet().iterator();
-
-		// Add added sections & modified values
-		while (iterator.hasNext()) {
-			Entry<String, DataValue> key = iterator.next();
-			DataValue val = getDataLoader().getOrCreate(key.getKey());
-			if (val.modified)
-				continue;
-			val.value = key.getValue().value;
-			val.writtenValue = key.getValue().writtenValue;
-			val.comments = key.getValue().comments;
-			val.commentAfterValue = key.getValue().commentAfterValue;
+		if (!read.isLoaded()) {
+			read.document().close();
+			return;
 		}
-
-		iterator = getDataLoader().entrySet().iterator();
-
-		// Remove removed sections
-
-		Set<String> sectionsToRemove = null;
-
-		while (iterator.hasNext()) {
-			Entry<String, DataValue> key = iterator.next();
-			if (key.getValue().modified)
-				continue;
-			if (read.get(key.getKey()) == null) {
-				if (sectionsToRemove == null)
-					sectionsToRemove = new HashSet<>();
-				sectionsToRemove.add(key.getKey());
+		try {
+			me.devtec.shared.dataholder.store.ConfigStore source = read.document().storage.store();
+			for (int n = source.firstEntry(); n != 0; n = source.nextEntry(n)) {
+				String path = source.path(n);
+				me.devtec.shared.dataholder.store.ConfigStore current = loader.document().storage.store();
+				int target = current.resolve(path, false);
+				if (target != 0 && current.modified(target))
+					continue;
+				target = loader.document().child(0, path);
+				loader.document().put(target, source.value(n), source.metadata(n), false);
 			}
-		}
-
-		if (sectionsToRemove != null)
-			for (String section : sectionsToRemove)
-				getDataLoader().remove(section);
-		if (runnablesOnReload != null)
-			synchronized (runnablesOnReload) {
-				for (Runnable runnable : runnablesOnReload)
+			me.devtec.shared.dataholder.store.ConfigStore current = loader.document().storage.store();
+			for (int n = current.firstEntry(); n != 0;) {
+				int next = current.nextEntry(n);
+				String path = current.path(n);
+				if (!current.modified(n) && !source.hasValue(source.resolve(path, false)))
+					current.remove(path, false);
+				n = next;
+			}
+			if (runnablesOnReload != null)
+				for (Runnable runnable : new ArrayList<>(runnablesOnReload))
 					runnable.run();
-			}
+		} finally {
+			read.document().close();
+		}
 	}
+
+	@Override
+	public void close() {
+		reset();
+	}
+
 }

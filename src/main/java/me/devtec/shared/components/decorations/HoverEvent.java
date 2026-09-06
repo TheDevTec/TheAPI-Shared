@@ -1,8 +1,10 @@
-package me.devtec.shared.components;
+package me.devtec.shared.components.decorations;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import me.devtec.shared.components.ComponentAPI;
+import me.devtec.shared.components.base.Component;
 import me.devtec.shared.json.Json;
 
 public class HoverEvent {

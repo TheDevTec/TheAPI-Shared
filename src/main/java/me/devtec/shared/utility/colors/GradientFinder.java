@@ -1,6 +1,7 @@
 package me.devtec.shared.utility.colors;
 
 public interface GradientFinder {
+
 	boolean find();
 
 	String getFirstHex();
@@ -16,4 +17,12 @@ public interface GradientFinder {
 	int getEnd();
 
 	void skip(int characters);
+
+	default int getFirstRGB() {
+		return -1;
+	}
+
+	default int getSecondRGB() {
+		return -1;
+	}
 }

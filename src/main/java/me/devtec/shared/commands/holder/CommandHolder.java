@@ -8,10 +8,15 @@ import java.util.List;
 import me.devtec.shared.API;
 import me.devtec.shared.commands.structures.ArgumentCommandStructure;
 import me.devtec.shared.commands.structures.CommandStructure;
+import me.devtec.shared.commands.structures.CommandStructure.CooldownDetection;
+import me.devtec.shared.commands.structures.CommandStructure.LookupResult;
 import me.devtec.shared.utility.StringUtils;
 
 @SuppressWarnings("unchecked")
 public class CommandHolder<S> {
+
+	private static final String[] EMPTY_ARRAY = { "" };
+
 	private final CommandStructure<S> structure;
 
 	private Object registeredCommandObject;
@@ -22,124 +27,155 @@ public class CommandHolder<S> {
 		this.structure = structure;
 	}
 
-	private final String[] EMPTY_ARRAY = { "" };
-
 	public Collection<String> tablist(Object obj, String[] args) {
-		if (!this.structure.getSenderClass().isAssignableFrom(obj.getClass()))
+		if (!structure.getSenderClass().isInstance(obj))
 			return Collections.emptyList();
-		S s = (S) obj;
-		if (args.length == 0)
+
+		S sender = (S) obj;
+
+		if (args == null || args.length == 0)
 			args = EMPTY_ARRAY;
-		return StringUtils.copyPartialMatches(args[args.length - 1], lookupTab(this.structure, s, args, args[0], 0));
+
+		String prefix = args[args.length - 1];
+		List<String> result = new ArrayList<>(8);
+
+		lookupTab(structure, sender, args, 0, prefix, result);
+
+		return result.isEmpty() ? Collections.<String>emptyList() : result;
 	}
 
-	private Collection<String> lookupTab(CommandStructure<S> structure, S sender, String[] args, String arg,
-			int argPos) {
-		List<String> result = new ArrayList<>();
+	private void lookupTab(CommandStructure<S> current, S sender, String[] args, int argPos,
+			String prefix, List<String> result) {
 
-		if (args.length < argPos)
-			return result;
+		int target = args.length - 1;
 
-		List<CommandStructure<S>> next = structure.getNextStructures(sender);
+		if (argPos > target)
+			return;
 
-		if (next.isEmpty()) {
-			if (structure instanceof ArgumentCommandStructure) {
-				ArgumentCommandStructure<S> argumentStructure = (ArgumentCommandStructure<S>) structure;
-				int len = argumentStructure.length();
-				if (len == -1 || len >= args.length)
-					return argumentStructure.tabList(sender, structure, args);
+		if (argPos == target) {
+			if (!current.hasChildStructures())
+				return;
+
+			List<CommandStructure<S>> next = new ArrayList<>(4);
+			current.getNextStructures(sender, next);
+
+			for (CommandStructure<S> nextStructure : next) {
+				Collection<String> values = nextStructure.tabList(sender, nextStructure, args);
+
+				if (values != null && !values.isEmpty())
+					StringUtils.copyPartialMatches(prefix, values, result);
 			}
-			return result;
+
+			return;
 		}
 
-		if (args.length - 1 == argPos) {
-			for (CommandStructure<S> nextStructure : next)
-				result.addAll(nextStructure.tabList(sender, nextStructure, args));
-			return result;
+		if (!current.hasChildStructures())
+			return;
+
+		List<CommandStructure<S>> matches = new ArrayList<>(4);
+
+		current.findStructures(sender, args[argPos], args, argPos, true, matches);
+
+		for (CommandStructure<S> sub : matches) {
+			int nextPos = argPos + 1;
+
+			if (sub instanceof ArgumentCommandStructure) {
+				ArgumentCommandStructure<S> argument = (ArgumentCommandStructure<S>) sub;
+				int length = argument.length();
+
+				if (length == -1) {
+					Collection<String> values = argument.tabList(sender, argument, args);
+
+					if (values != null && !values.isEmpty())
+						StringUtils.copyPartialMatches(prefix, values, result);
+
+					continue;
+				}
+
+				if (length > 1) {
+					int end = argPos + length;
+
+					if (target < end) {
+						Collection<String> values = argument.tabList(sender, argument, args);
+
+						if (values != null && !values.isEmpty())
+							StringUtils.copyPartialMatches(prefix, values, result);
+
+						continue;
+					}
+
+					nextPos = end;
+				}
+			}
+
+			lookupTab(sub, sender, args, nextPos, prefix, result);
 		}
-
-		argPos++;
-		String nextArg = args.length <= argPos ? args[args.length - 1] : args[argPos];
-
-		Object[] resolved = structure.findStructure(sender, arg, args, argPos, true);
-		if (resolved == null || resolved.length == 0)
-			return result;
-
-		List<CommandStructure<S>> subs = (List<CommandStructure<S>>) resolved[0];
-		for (CommandStructure<S> sub : subs)
-			result.addAll(lookupTab(sub, sender, args, nextArg, argPos));
-		return result;
 	}
 
 	public void execute(Object obj, String[] args) {
-		if (!structure.getSenderClass().isAssignableFrom(obj.getClass()))
+		if (!structure.getSenderClass().isInstance(obj))
 			return;
 
 		S sender = (S) obj;
 		CommandStructure<S> current = structure;
 		CommandStructure<S> lastFallback = current.getFallback() != null ? current : null;
-		int validDepth = 0;
+
+		if (args == null)
+			args = new String[0];
 
 		if (args.length == 0) {
-			if (current.getCooldownDetection() != null && current.getCooldownDetection().waiting(sender, current, args))
-				return;
-
-			if (current.getExecutor() != null)
-				current.getExecutor().execute(sender, current, args);
-			else if (current.getFallback() != null)
-				current.getFallback().execute(sender, current, args);
+			executeCurrent(sender, current, args);
 			return;
 		}
 
+		LookupResult<S> lookup = new LookupResult<>();
+
+		int validDepth = 0;
 		boolean hasValidChildren = false;
 		int i = 0;
-		while (i < args.length) {
-			String arg = args[i];
-			Object[] result = current.findStructure(sender, arg, args, i, false);
-			List<CommandStructure<S>> nextList = (List<CommandStructure<S>>) result[0];
-			boolean noPerms = (boolean) result[1];
-			hasValidChildren = !nextList.isEmpty();
 
+		while (i < args.length) {
 			if (current.getFallback() != null)
 				lastFallback = current;
 
-			if (noPerms) {
+			current.findFirstStructure(sender, args[i], args, i, false, lookup);
+
+			CommandStructure<S> next = lookup.getStructure();
+			hasValidChildren = next != null;
+
+			if (lookup.hasNoPermission()) {
 				if (current.getFallback() != null)
 					current.getFallback().execute(sender, current, args);
+
 				return;
 			}
-
-			if (nextList.isEmpty())
-				break;
-
-			CommandStructure<S> next = null;
-			for (CommandStructure<S> n : nextList)
-				if (n != null) {
-					next = n;
-					break;
-				}
 
 			if (next == null)
 				break;
 
-			int lengthConsumed = 1;
+			int remaining = args.length - i;
+			int consumed = 1;
 
 			if (next instanceof ArgumentCommandStructure) {
-				int len = ((ArgumentCommandStructure<S>) next).length();
-				if (len > 0) {
-					if (i + len > args.length)
-						len = args.length - i;
-					lengthConsumed = len;
-				}
+				int length = ((ArgumentCommandStructure<S>) next).length();
+
+				if (length == -1)
+					consumed = remaining;
+				else if (length > 0)
+					consumed = Math.min(length, remaining);
 			}
 
 			current = next;
-			validDepth = i + lengthConsumed;
-			i += lengthConsumed;
+			i += consumed;
+			validDepth = i;
 		}
 
 		if (args.length > validDepth && !current.hasChildStructures() && lastFallback != null) {
-			current.getExecutor().execute(sender, current, args);
+			if (current.getExecutor() != null)
+				current.getExecutor().execute(sender, current, args);
+			else if (current.getFallback() != null)
+				current.getFallback().execute(sender, current, args);
+
 			return;
 		}
 
@@ -148,7 +184,13 @@ public class CommandHolder<S> {
 			return;
 		}
 
-		if (current.getCooldownDetection() != null && current.getCooldownDetection().waiting(sender, current, args))
+		executeCurrent(sender, current, args);
+	}
+
+	private void executeCurrent(S sender, CommandStructure<S> current, String[] args) {
+		CooldownDetection<S> cooldown = current.getCooldownDetection();
+
+		if (cooldown != null && cooldown.waiting(sender, current, args))
 			return;
 
 		if (current.getExecutor() != null)
@@ -167,7 +209,7 @@ public class CommandHolder<S> {
 	}
 
 	public CommandStructure<S> getStructure() {
-		return this.structure;
+		return structure;
 	}
 
 	public Object getRegisteredCommand() {

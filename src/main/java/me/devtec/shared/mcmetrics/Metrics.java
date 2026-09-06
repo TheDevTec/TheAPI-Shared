@@ -22,6 +22,7 @@ import javax.net.ssl.HttpsURLConnection;
 import me.devtec.shared.Ref;
 import me.devtec.shared.Ref.ServerType;
 import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.json.Json;
 import me.devtec.shared.scheduler.Scheduler;
 import me.devtec.shared.scheduler.Tasker;
@@ -40,28 +41,31 @@ public class Metrics {
 	private static final boolean logSentData;
 	private static final boolean logResponseStatusText;
 	static {
-		Config config = new Config("plugins/bStats/config.yml");
-		if (!config.existsKey("serverUuid")) {
-			config.setIfAbsent("enabled", true);
-			config.setIfAbsent("serverUuid", UUID.randomUUID().toString());
-			config.setIfAbsent("logFailedRequests", false);
-			config.setIfAbsent("logSentData", false);
-			config.setIfAbsent("logResponseStatusText", false);
+		try (Config config = new Config("plugins/bStats/config.yml")) {
+			if (!config.existsKey("serverUuid")) {
+				config.setIfAbsent("enabled", true);
+				config.setIfAbsent("serverUuid", UUID.randomUUID().toString());
+				config.setIfAbsent("logFailedRequests", false);
+				config.setIfAbsent("logSentData", false);
+				config.setIfAbsent("logResponseStatusText", false);
 
-			// Inform the server owners about bStats
-			config.setHeader(Arrays.asList("# bStats (https://bStats.org) collects some basic information for plugin authors, like how",
-					"# many people use their plugin and their total player count. It's recommended to keep bStats",
-					"# enabled, but if you're not comfortable with this, you can turn this setting off. There is no",
-					"# performance penalty associated with having metrics enabled, and data sent to bStats is fully", "# anonymous."));
-			config.save("yaml");
+				// Inform the server owners about bStats
+				config.setHeader(Arrays.asList(
+						"# bStats (https://bStats.org) collects some basic information for plugin authors, like how",
+						"# many people use their plugin and their total player count. It's recommended to keep bStats",
+						"# enabled, but if you're not comfortable with this, you can turn this setting off. There is no",
+						"# performance penalty associated with having metrics enabled, and data sent to bStats is fully",
+						"# anonymous."));
+				config.save("yaml");
+			}
+			serverUUID = config.getString("serverUuid");
+
+			// Load the data
+			enabled = config.getBoolean("enabled", true);
+			logErrors = config.getBoolean("logFailedRequests", false);
+			logSentData = config.getBoolean("logSentData", false);
+			logResponseStatusText = config.getBoolean("logResponseStatusText", false);
 		}
-		serverUUID = config.getString("serverUuid");
-
-		// Load the data
-		enabled = config.getBoolean("enabled", true);
-		logErrors = config.getBoolean("logFailedRequests", false);
-		logSentData = config.getBoolean("logSentData", false);
-		logResponseStatusText = config.getBoolean("logResponseStatusText", false);
 
 	}
 
@@ -77,19 +81,19 @@ public class Metrics {
 	public Metrics(String pluginVersion, int pluginId) {
 		this.pluginVersion = pluginVersion;
 		this.pluginId = pluginId;
-		if (Ref.serverType().isBukkit()) {
+		if (Ref.type().isBukkit())
 			platform = "bukkit";
-		} else if (Ref.serverType() == ServerType.BUNGEECORD) {
+		else if (Ref.type() == ServerType.BUNGEECORD)
 			platform = "bungeecord";
-		} else if (Ref.serverType() == ServerType.VELOCITY) {
+		else if (Ref.type() == ServerType.VELOCITY)
 			platform = "velocity";
-		} else {
+		else {
 			platform = "uknown";
 			return;
 		}
 		long initialDelay = (long) (20 * 60 * (3 + Math.random() * 3));
 		long secondDelay = (long) (20 * 60 * (Math.random() * 30));
-		if (enabled) {
+		if (enabled)
 			taskId = new Tasker() {
 
 				@Override
@@ -97,13 +101,11 @@ public class Metrics {
 					submitData();
 				}
 			}.runRepeating(initialDelay + secondDelay, 20 * 60 * 30);
-		}
 	}
 
 	public void shutdown() {
-		if (taskId == 0) {
+		if (taskId == 0)
 			return;
-		}
 		Scheduler.cancelTask(taskId);
 		taskId = 0;
 	}
@@ -115,29 +117,29 @@ public class Metrics {
 	private Map<String, Object> getServerData() {
 		// platform
 		Map<String, Object> data = new HashMap<>();
-        switch (platform) {
-            case "bukkit":
-                data.put("playerAmount", gatheringInfoManager.getPlayers());
-                data.put("onlineMode", gatheringInfoManager.getOnlineMode());
-                data.put("bukkitVersion", gatheringInfoManager.getServerVersion());
-                data.put("bukkitName", gatheringInfoManager.getServerName());
-                break;
-            case "bungeecord":
-                data.put("playerAmount", gatheringInfoManager.getPlayers());
-                data.put("managedServers", gatheringInfoManager.getManagedServers());
-                data.put("onlineMode", gatheringInfoManager.getOnlineMode());
-                data.put("bungeecordVersion", gatheringInfoManager.getServerVersion());
-                data.put("bungeecordName", gatheringInfoManager.getServerName());
-                break;
-            case "velocity":
-                data.put("playerAmount", gatheringInfoManager.getPlayers());
-                data.put("managedServers", gatheringInfoManager.getManagedServers());
-                data.put("onlineMode", gatheringInfoManager.getOnlineMode());
-                data.put("velocityVersionVersion", gatheringInfoManager.getServerVersion());
-                data.put("velocityVersionName", gatheringInfoManager.getServerName());
-                data.put("velocityVersionVendor", gatheringInfoManager.getServerVersionVendor());
-                break;
-        }
+		switch (platform) {
+		case "bukkit":
+			data.put("playerAmount", gatheringInfoManager.getPlayers());
+			data.put("onlineMode", gatheringInfoManager.getOnlineMode());
+			data.put("bukkitVersion", gatheringInfoManager.getServerVersion());
+			data.put("bukkitName", gatheringInfoManager.getServerName());
+			break;
+		case "bungeecord":
+			data.put("playerAmount", gatheringInfoManager.getPlayers());
+			data.put("managedServers", gatheringInfoManager.getManagedServers());
+			data.put("onlineMode", gatheringInfoManager.getOnlineMode());
+			data.put("bungeecordVersion", gatheringInfoManager.getServerVersion());
+			data.put("bungeecordName", gatheringInfoManager.getServerName());
+			break;
+		case "velocity":
+			data.put("playerAmount", gatheringInfoManager.getPlayers());
+			data.put("managedServers", gatheringInfoManager.getManagedServers());
+			data.put("onlineMode", gatheringInfoManager.getOnlineMode());
+			data.put("velocityVersionVersion", gatheringInfoManager.getServerVersion());
+			data.put("velocityVersionName", gatheringInfoManager.getServerName());
+			data.put("velocityVersionVendor", gatheringInfoManager.getServerVersionVendor());
+			break;
+		}
 		data.put("javaVersion", System.getProperty("java.version"));
 		data.put("osName", System.getProperty("os.name"));
 		data.put("osArch", System.getProperty("os.arch"));
@@ -148,7 +150,8 @@ public class Metrics {
 		Map<String, Object> pluginData = new HashMap<>();
 		pluginData.put("pluginVersion", pluginVersion);
 		pluginData.put("id", pluginId);
-		Map<String, Object>[] chartData = customCharts.stream().map(CustomChart::getRequestJsonObject).filter(Objects::nonNull).toArray((IntFunction<Map<String, Object>[]>) HashMap[]::new);
+		Map<String, Object>[] chartData = customCharts.stream().map(CustomChart::getRequestJsonObject)
+				.filter(Objects::nonNull).toArray((IntFunction<Map<String, Object>[]>) HashMap[]::new);
 		pluginData.put("customCharts", chartData);
 
 		data.put("service", pluginData);
@@ -162,9 +165,8 @@ public class Metrics {
 
 			String data = Json.writer().simpleWrite(getServerData());
 			// Compress the data to save bandwidth
-			if (logSentData) {
+			if (logSentData)
 				gatheringInfoManager.getInfoLogger().accept("Sent bStats metrics data: " + data);
-			}
 
 			String url = String.format(REPORT_URL, platform);
 			HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
@@ -184,21 +186,19 @@ public class Metrics {
 			try (DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream())) {
 				outputStream.write(compressedData);
 			}
-			StringBuilder builder = new StringBuilder();
-			try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+			StringContainer builder = new StringContainer();
+			try (BufferedReader bufferedReader = new BufferedReader(
+					new InputStreamReader(connection.getInputStream()))) {
 				String line;
-				while ((line = bufferedReader.readLine()) != null) {
+				while ((line = bufferedReader.readLine()) != null)
 					builder.append(line);
-				}
 			}
 
-			if (logResponseStatusText) {
+			if (logResponseStatusText)
 				gatheringInfoManager.getInfoLogger().accept("Sent data to bStats and received response: " + builder);
-			}
 		} catch (Exception e) {
-			if (logErrors) {
+			if (logErrors)
 				gatheringInfoManager.getErrorLogger().accept("Could not submit bStats metrics data", e);
-			}
 		}
 	}
 
@@ -209,9 +209,8 @@ public class Metrics {
 	 * @return The gzipped string.
 	 */
 	private static byte[] compress(final String str) throws IOException {
-		if (str == null) {
+		if (str == null)
 			return null;
-		}
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try (GZIPOutputStream gzip = new GZIPOutputStream(outputStream)) {
 			gzip.write(str.getBytes(StandardCharsets.UTF_8));

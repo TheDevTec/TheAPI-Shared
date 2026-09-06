@@ -1,0 +1,78 @@
+CASE 0
+header list[]
+a | String:hello | String:hello | null | null
+b | Boolean:true | String:true | null | null
+c | Integer:123 | String:00123 | null | null
+d | String:a\\nb\\t"c | String:a\\nb\\t"c | null | null
+footer list[]
+CASE 1
+header list[]
+nil | null | null | null | null
+yes | Boolean:true | String:true | null | null
+no | Boolean:false | String:false | null | null
+i | Integer:1 | String:1 | null | null
+l | Long:2147483648 | String:2147483648 | null | null
+f | Double:1.0 | String:1.0 | null | null
+neg | Integer:-2 | String:-2 | null | null
+z | Integer:0 | String:-0 | null | null
+e | Double:1000.0 | String:1e3 | null | null
+big | Double:1.0E30 | String:999999999999999999999999999999 | null | null
+footer list[]
+CASE 2
+header list[]
+root.child.a | Integer:1 | String:1 | null | null
+root.child.b | String:two | String:two | null | null
+footer list[]
+CASE 3
+header list[]
+a | list[Integer:1, String:true, Boolean:false] | String:[1, true, false] | null | null
+b | list[Integer:1, Integer:2, String:three] | String:[1, 2, "three"] | null | null
+c | map[String:x=Integer:1] | String:{"x": 1} | null | null
+footer list[]
+CASE 4
+header list[]
+a | list[map[String:count=Integer:2, String:name=String:one], map[String:items=list[Integer:3, Integer:4], String:name=String:two]] | String:[{name=one, count=2}, {name=two, items=[3, 4]}] | null | null
+footer list[]
+CASE 5
+header list[]
+a | String:first\r\nsecond\r\n | String:first\r\nsecond\r\n | null | null
+b | String:> third fourth | String:> third fourth | null | null
+c | String:|- fifth | String:|- fifth | null | null
+footer list[]
+CASE 6
+header list[]
+a | Integer:1 | String:1  | list[String:# header, String:# before] | String:# inline
+s | null | null | list[String:# section] | null
+s.b | Integer:2 | String:2 | list[String:# child] | null
+footer list[String:# footer]
+CASE 7
+header list[]
+žluťoučký | String:příliš | String:příliš | null | null
+emoji | String:😀 | String:😀 | null | null
+'key | String:colon': value | String:colon': value | null | null
+key#hash | String:x | String:x | null | null
+foo.bar | Integer:3 | String:3 | null | null
+footer list[]
+CASE 8
+header list[]
+a | Integer:3 | String:3  | list[String:# replacement] | String:# last
+b | Integer:2 | String:2 | null | null
+footer list[]
+CASE 9
+header list[]
+a | String:&x [1, 2] | String:&x [1, 2] | null | null
+b | String:*x | String:*x | null | null
+c | String:!!str 123 | String:!!str 123 | null | null
+footer list[]
+CASE 10
+header list[]
+a | String:it | String:it | null | null
+b | String:text  | String:text  | null | String:#comment
+c | String:a#b:c | String:a#b:c | null | null
+footer list[]
+CASE 11
+header list[]
+a | list[] | String:[] | null | null
+b | map[] | String:{} | null | null
+c | list[Boolean:true, null, map[String:x=list[Integer:1, Integer:2]]] | String:[true, null, {"x": [1, 2]}] | null | null
+footer list[]

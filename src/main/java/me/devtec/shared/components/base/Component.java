@@ -1,15 +1,32 @@
-package me.devtec.shared.components;
+package me.devtec.shared.components.base;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 import me.devtec.shared.annotations.Nonnull;
 import me.devtec.shared.annotations.Nullable;
+import me.devtec.shared.components.ComponentAPI;
+import me.devtec.shared.components.ComponentTransformer;
+import me.devtec.shared.components.decorations.ClickEvent;
+import me.devtec.shared.components.decorations.HoverEvent;
+import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.text.TextRenderer;
 
+/**
+ * Platform-neutral chat component used by TheAPI.
+ *
+ * <p>
+ * A component stores text, style, click/hover events and nested extra
+ * components. Parsing and config loading are delegated to {@link ComponentAPI},
+ * while text placeholders and color preprocessing are handled by
+ * {@link TextRenderer}.
+ * </p>
+ */
 public class Component {
 	public static final Component EMPTY_COMPONENT = new ProtectedComponent("");
 	public static final Component NEW_LINE = new ProtectedComponent("\n");
@@ -53,16 +70,45 @@ public class Component {
 		}
 	}
 
+	/** Parses legacy/hex text using the platform defaults. */
 	public static Component fromString(String input) {
 		return ComponentAPI.fromString(input);
 	}
 
+	/** Parses text with explicit control over hex support. */
 	public static Component fromString(String input, boolean hexMode) {
 		return ComponentAPI.fromString(input, hexMode);
 	}
 
+	/** Parses text with explicit hex and URL detection settings. */
 	public static Component fromString(String input, boolean hexMode, boolean urlMode) {
 		return ComponentAPI.fromString(input, hexMode, urlMode);
+	}
+
+	/** Renders text through a {@link TextRenderer} and parses the result. */
+	public static Component fromString(String input, @Nullable TextRenderer renderer) {
+		return ComponentAPI.fromString(input, renderer);
+	}
+
+	/** Renders text for an explicit target UUID and parses the result. */
+	public static Component fromString(String input, @Nullable TextRenderer renderer, @Nullable UUID target) {
+		return ComponentAPI.fromString(input, renderer, target);
+	}
+
+	/** Loads a component from a config path without additional text rendering. */
+	public static Component fromConfig(@Nonnull Config config, @Nonnull String path) {
+		return ComponentAPI.fromConfig(config, path);
+	}
+
+	/** Loads a config message using the renderer's default target. */
+	public static Component fromConfig(@Nonnull Config config, @Nonnull String path, @Nullable TextRenderer renderer) {
+		return ComponentAPI.fromConfig(config, path, renderer);
+	}
+
+	/** Loads a config message using an explicit target UUID. */
+	public static Component fromConfig(@Nonnull Config config, @Nonnull String path, @Nullable TextRenderer renderer,
+			@Nullable UUID target) {
+		return ComponentAPI.fromConfig(config, path, renderer, target);
 	}
 
 	public Component setText(String value) {
@@ -269,7 +315,7 @@ public class Component {
 		return Component.colorToChar(getColor());
 	}
 
-	protected static char colorToChar(String color) {
+	public static char colorToChar(String color) {
 		if (color != null)
 			switch (color) {
 			// a - f
@@ -285,7 +331,7 @@ public class Component {
 				return 101;
 			case "white":
 				return 102;
-				// 0 - 9
+			// 0 - 9
 			case "black":
 				return 48;
 			case "dark_blue":
@@ -333,7 +379,7 @@ public class Component {
 		case 102:
 			setColor("white");
 			break;
-			// 0 - 9
+		// 0 - 9
 		case 48:
 			setColor("black");
 			break;
@@ -492,45 +538,55 @@ public class Component {
 
 	@Override
 	public boolean equals(Object object) {
-		if(object instanceof Component) {
-			if(!getClass().equals(getClass()))return false;
-			if(object instanceof ComponentItem) {
-				ComponentItem item = (ComponentItem)this;
-				ComponentItem secondItem = (ComponentItem)object;
-				if(!Objects.equals(item.getId(), secondItem.getId()) || item.getCount()!=secondItem.getCount() || !Objects.equals(item.getNbt(), secondItem.getNbt()))return false;
+		if (object instanceof Component) {
+			if (!getClass().equals(getClass()))
+				return false;
+			if (object instanceof ComponentItem) {
+				ComponentItem item = (ComponentItem) this;
+				ComponentItem secondItem = (ComponentItem) object;
+				if (!Objects.equals(item.getId(), secondItem.getId()) || item.getCount() != secondItem.getCount()
+						|| !Objects.equals(item.getNbt(), secondItem.getNbt()))
+					return false;
 				return true;
 			}
-			if(object instanceof ComponentEntity) {
-				ComponentEntity item = (ComponentEntity)this;
-				ComponentEntity secondItem = (ComponentEntity)object;
-				if(!Objects.equals(item.getId(), secondItem.getId()) || !Objects.equals(item.getType(), secondItem.getType()) || !Objects.equals(item.getName(), secondItem.getName()))return false;
+			if (object instanceof ComponentEntity) {
+				ComponentEntity item = (ComponentEntity) this;
+				ComponentEntity secondItem = (ComponentEntity) object;
+				if (!Objects.equals(item.getId(), secondItem.getId())
+						|| !Objects.equals(item.getType(), secondItem.getType())
+						|| !Objects.equals(item.getName(), secondItem.getName()))
+					return false;
 				return true;
 			}
-			Component compare = (Component)object;
-			if(getText()==null ? compare.getText()==null : getText().equals(compare.getText())) {
-				if(getExtra()==null && compare.getExtra()==null || getExtra()!=null && compare.getExtra()!=null && getExtra().size()==compare.getExtra().size() || getExtra()==null && compare.getExtra()!=null && compare.getExtra().isEmpty()
-						|| compare.getExtra()==null && getExtra()!=null && getExtra().isEmpty()) {
+			Component compare = (Component) object;
+			if (getText() == null ? compare.getText() == null : getText().equals(compare.getText())) {
+				if (getExtra() == null && compare.getExtra() == null
+						|| getExtra() != null && compare.getExtra() != null
+								&& getExtra().size() == compare.getExtra().size()
+						|| getExtra() == null && compare.getExtra() != null && compare.getExtra().isEmpty()
+						|| compare.getExtra() == null && getExtra() != null && getExtra().isEmpty()) {
 					int pos = 0;
-					if(getExtra()!=null)
-						for(Component extra : getExtra())
-							if(!Objects.equals(extra,compare.getExtra().get(pos++)))
+					if (getExtra() != null)
+						for (Component extra : getExtra())
+							if (!Objects.equals(extra, compare.getExtra().get(pos++)))
 								return false;
 				}
-				if(!Objects.equals(getColor(), compare.getColor()) || !Objects.equals(getFont(), compare.getFont()) || !Objects.equals(getInsertion(), compare.getInsertion()) ||
-						isBold()!=compare.isBold() || isItalic()!=compare.isItalic()
-						|| isObfuscated()!=compare.isObfuscated()
-						|| isStrikethrough()!=compare.isStrikethrough()
-						|| isUnderlined()!=compare.isUnderlined())
+				if (!Objects.equals(getColor(), compare.getColor()) || !Objects.equals(getFont(), compare.getFont())
+						|| !Objects.equals(getInsertion(), compare.getInsertion()) || isBold() != compare.isBold()
+						|| isItalic() != compare.isItalic() || isObfuscated() != compare.isObfuscated()
+						|| isStrikethrough() != compare.isStrikethrough() || isUnderlined() != compare.isUnderlined())
 					return false;
-				if(getClickEvent()!=null && compare.getClickEvent()!=null) {
-					if(getClickEvent().getAction()!=compare.getClickEvent().getAction() || !Objects.equals(getClickEvent().getValue(), compare.getClickEvent().getValue()))
+				if (getClickEvent() != null && compare.getClickEvent() != null) {
+					if (getClickEvent().getAction() != compare.getClickEvent().getAction()
+							|| !Objects.equals(getClickEvent().getValue(), compare.getClickEvent().getValue()))
 						return false;
-				}else if(getClickEvent() == null ? compare.getClickEvent() != null : compare.getClickEvent() == null)
+				} else if (getClickEvent() == null ? compare.getClickEvent() != null : compare.getClickEvent() == null)
 					return false;
-				if(getHoverEvent()!=null && compare.getHoverEvent()!=null) {
-					if(getHoverEvent().getAction()!=compare.getHoverEvent().getAction() || !Objects.equals(getHoverEvent().getValue(), compare.getHoverEvent().getValue()))
+				if (getHoverEvent() != null && compare.getHoverEvent() != null) {
+					if (getHoverEvent().getAction() != compare.getHoverEvent().getAction()
+							|| !Objects.equals(getHoverEvent().getValue(), compare.getHoverEvent().getValue()))
 						return false;
-				}else if(getHoverEvent() == null ? compare.getHoverEvent() != null : compare.getHoverEvent() == null)
+				} else if (getHoverEvent() == null ? compare.getHoverEvent() != null : compare.getHoverEvent() == null)
 					return false;
 				return true;
 			}
@@ -539,44 +595,54 @@ public class Component {
 	}
 
 	public boolean isStyleSame(Object object) {
-		if(object instanceof Component) {
-			if(!getClass().equals(getClass()))return false;
-			if(object instanceof ComponentItem) {
-				ComponentItem item = (ComponentItem)this;
-				ComponentItem secondItem = (ComponentItem)object;
-				if(!Objects.equals(item.getId(), secondItem.getId()) || item.getCount()!=secondItem.getCount() || !Objects.equals(item.getNbt(), secondItem.getNbt()))return false;
+		if (object instanceof Component) {
+			if (!getClass().equals(getClass()))
+				return false;
+			if (object instanceof ComponentItem) {
+				ComponentItem item = (ComponentItem) this;
+				ComponentItem secondItem = (ComponentItem) object;
+				if (!Objects.equals(item.getId(), secondItem.getId()) || item.getCount() != secondItem.getCount()
+						|| !Objects.equals(item.getNbt(), secondItem.getNbt()))
+					return false;
 				return true;
 			}
-			if(object instanceof ComponentEntity) {
-				ComponentEntity item = (ComponentEntity)this;
-				ComponentEntity secondItem = (ComponentEntity)object;
-				if(!Objects.equals(item.getId(), secondItem.getId()) || !Objects.equals(item.getType(), secondItem.getType()) || !Objects.equals(item.getName(), secondItem.getName()))return false;
+			if (object instanceof ComponentEntity) {
+				ComponentEntity item = (ComponentEntity) this;
+				ComponentEntity secondItem = (ComponentEntity) object;
+				if (!Objects.equals(item.getId(), secondItem.getId())
+						|| !Objects.equals(item.getType(), secondItem.getType())
+						|| !Objects.equals(item.getName(), secondItem.getName()))
+					return false;
 				return true;
 			}
-			Component compare = (Component)object;
-			if(getExtra()==null && compare.getExtra()==null || getExtra()!=null && compare.getExtra()!=null && getExtra().size()==compare.getExtra().size() || getExtra()==null && compare.getExtra()!=null && compare.getExtra().isEmpty()
-					|| compare.getExtra()==null && getExtra()!=null && getExtra().isEmpty()) {
+			Component compare = (Component) object;
+			if (getExtra() == null && compare.getExtra() == null
+					|| getExtra() != null && compare.getExtra() != null
+							&& getExtra().size() == compare.getExtra().size()
+					|| getExtra() == null && compare.getExtra() != null && compare.getExtra().isEmpty()
+					|| compare.getExtra() == null && getExtra() != null && getExtra().isEmpty()) {
 				int pos = 0;
-				if(getExtra()!=null)
-					for(Component extra : getExtra())
-						if(!extra.isStyleSame(compare.getExtra().get(pos++)))
+				if (getExtra() != null)
+					for (Component extra : getExtra())
+						if (!extra.isStyleSame(compare.getExtra().get(pos++)))
 							return false;
 			}
-			if(!Objects.equals(getColor(), compare.getColor()) || !Objects.equals(getFont(), compare.getFont()) || !Objects.equals(getInsertion(), compare.getInsertion()) ||
-					isBold()!=compare.isBold() || isItalic()!=compare.isItalic()
-					|| isObfuscated()!=compare.isObfuscated()
-					|| isStrikethrough()!=compare.isStrikethrough()
-					|| isUnderlined()!=compare.isUnderlined())
+			if (!Objects.equals(getColor(), compare.getColor()) || !Objects.equals(getFont(), compare.getFont())
+					|| !Objects.equals(getInsertion(), compare.getInsertion()) || isBold() != compare.isBold()
+					|| isItalic() != compare.isItalic() || isObfuscated() != compare.isObfuscated()
+					|| isStrikethrough() != compare.isStrikethrough() || isUnderlined() != compare.isUnderlined())
 				return false;
-			if(getClickEvent()!=null && compare.getClickEvent()!=null) {
-				if(getClickEvent().getAction()!=compare.getClickEvent().getAction() || !Objects.equals(getClickEvent().getValue(), compare.getClickEvent().getValue()))
+			if (getClickEvent() != null && compare.getClickEvent() != null) {
+				if (getClickEvent().getAction() != compare.getClickEvent().getAction()
+						|| !Objects.equals(getClickEvent().getValue(), compare.getClickEvent().getValue()))
 					return false;
-			}else if(getClickEvent() == null ? compare.getClickEvent() != null : compare.getClickEvent() == null)
+			} else if (getClickEvent() == null ? compare.getClickEvent() != null : compare.getClickEvent() == null)
 				return false;
-			if(getHoverEvent()!=null && compare.getHoverEvent()!=null) {
-				if(getHoverEvent().getAction()!=compare.getHoverEvent().getAction() || !Objects.equals(getHoverEvent().getValue(), compare.getHoverEvent().getValue()))
+			if (getHoverEvent() != null && compare.getHoverEvent() != null) {
+				if (getHoverEvent().getAction() != compare.getHoverEvent().getAction()
+						|| !Objects.equals(getHoverEvent().getValue(), compare.getHoverEvent().getValue()))
 					return false;
-			}else if(getHoverEvent() == null ? compare.getHoverEvent() != null : compare.getHoverEvent() == null)
+			} else if (getHoverEvent() == null ? compare.getHoverEvent() != null : compare.getHoverEvent() == null)
 				return false;
 			return true;
 		}

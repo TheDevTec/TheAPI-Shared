@@ -40,9 +40,8 @@ public class SocketClient {
 	};
 	private final Processor LOGIN_STATE = (channel, input) -> {
 		this.serverName = (String) input.get("name");
-		if (serverName == null) {
+		if (serverName == null)
 			return false;
-		}
 		socketPhase = SocketPhase.ACTIVE;
 		stateProcessor = READ_STATE;
 		return true;
@@ -77,33 +76,29 @@ public class SocketClient {
 	}
 
 	public void write(@Nonnull Config config) {
-		if (config == null || config.getKeys().isEmpty() || channel == null || !channel.isConnected()) {
+		if (config == null || config.getKeys().isEmpty() || channel == null || !channel.isConnected())
 			return;
-		}
 		ByteBuffer buffer = ByteBuffer.wrap(config.toByteArray(DataType.JSON));
-		while (buffer.hasRemaining()) {
+		while (buffer.hasRemaining())
 			try {
 				channel.write(buffer);
 			} catch (IOException e) {
 				e.printStackTrace();
 				break;
 			}
-		}
 	}
 
 	public void write(@Nonnull Map<String, Object> json) {
-		if (json == null || json.isEmpty() || channel == null || !channel.isConnected()) {
+		if (json == null || json.isEmpty() || channel == null || !channel.isConnected())
 			return;
-		}
 		ByteBuffer buffer = ByteBuffer.wrap(new StringContainer(Json.writer().simpleWrite(json)).getBytes());
-		while (buffer.hasRemaining()) {
+		while (buffer.hasRemaining())
 			try {
 				channel.write(buffer);
 			} catch (IOException e) {
 				e.printStackTrace();
 				break;
 			}
-		}
 	}
 
 	@Nullable
@@ -126,20 +121,18 @@ public class SocketClient {
 	}
 
 	public void awaitConnection() {
-		while (socketPhase == SocketPhase.LOGIN) {
+		while (socketPhase == SocketPhase.LOGIN)
 			try {
 				Thread.sleep(5);
 			} catch (InterruptedException e) {
 				break;
 			}
-		}
 	}
 
 	@Nonnull
 	public SocketClient connect(String password, boolean reconnectIfOffline) {
-		if (socketPhase != SocketPhase.WAITING && socketPhase != SocketPhase.CLOSED) {
+		if (socketPhase != SocketPhase.WAITING && socketPhase != SocketPhase.CLOSED)
 			return this;
-		}
 		socketPhase = SocketPhase.LOGIN;
 		new Tasker() {
 
@@ -151,12 +144,12 @@ public class SocketClient {
 					channel.connect(new InetSocketAddress(ip, port));
 
 					try {
-						while (!channel.finishConnect()) {
+						while (!channel.finishConnect())
 							;
-						}
 					} catch (Exception e) {
 						boolean connected = false;
-						if (e.getMessage() != null && "Connection refused: no further information".equals(e.getMessage())) {
+						if (e.getMessage() != null
+								&& "Connection refused: no further information".equals(e.getMessage())) {
 							if (reconnectIfOffline) {
 								try {
 									Thread.sleep(10000);
@@ -177,13 +170,13 @@ public class SocketClient {
 								channel.connect(new InetSocketAddress(ip, port));
 
 								try {
-									while (!channel.finishConnect()) {
+									while (!channel.finishConnect())
 										;
-									}
 									connected = true;
 									break;
 								} catch (Exception r) {
-									if (r.getMessage() != null && "Connection refused: no further information".equals(r.getMessage())) {
+									if (r.getMessage() != null
+											&& "Connection refused: no further information".equals(r.getMessage())) {
 
 									}
 								}
@@ -213,19 +206,20 @@ public class SocketClient {
 
 						@Override
 						public void run() {
-							socketPhaseLoop: while (socketPhase != SocketPhase.WAITING) {
+							socketPhaseLoop: while (socketPhase != SocketPhase.WAITING)
 								try {
 									int readyChannels = selector.select();
-									if (readyChannels == 0) {
+									if (readyChannels == 0)
 										continue;
-									}
 									Set<SelectionKey> selectedKeys = selector.selectedKeys();
 									Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
 									while (keyIterator.hasNext()) {
 										SelectionKey key = keyIterator.next();
 										if (key.isWritable() && socketPhase == SocketPhase.LOGIN && !providedLogin) {
-											Config settings = new Config().set("name", clientName).set("password", password);
-											write(settings);
+											try (Config settings = new Config().set("name", clientName).set("password",
+													password)) {
+												write(settings);
+											}
 											providedLogin = true;
 										}
 										if (key.isReadable()) {
@@ -238,29 +232,27 @@ public class SocketClient {
 												buffer.flip();
 												container.append(StreamUtils.decode(buffer));
 											}
-											if (container.isEmpty()) {
+											if (container.isEmpty())
 												continue;
-											}
 
 											@SuppressWarnings("unchecked")
-											Map<String, Object> data = (Map<String, Object>) Json.reader().read(container.toString());
+											Map<String, Object> data = (Map<String, Object>) Json.reader()
+													.read(container.toString());
 
 											// Process data
-											if (!stateProcessor.process(channel, data)) {
+											if (!stateProcessor.process(channel, data))
 												break socketPhaseLoop;
-											}
 										}
 										keyIterator.remove();
 									}
 									Thread.sleep(10);
 								} catch (Exception e) {
-									if (e.getMessage() != null && ("Connection reset by peer".equals(e.getMessage()) || "Connection refused: no further information".equals(e.getMessage())
-											|| "Connection reset".equals(e.getMessage()))) {
+									if (e.getMessage() != null && ("Connection reset by peer".equals(e.getMessage())
+											|| "Connection refused: no further information".equals(e.getMessage())
+											|| "Connection reset".equals(e.getMessage())))
 										break;
-									}
 									e.printStackTrace();
 								}
-							}
 							if (socketPhase != SocketPhase.CLOSED) {
 								ClientClosedEvent event = new ClientClosedEvent(SocketClient.this, false);
 								EventManager.call(event);

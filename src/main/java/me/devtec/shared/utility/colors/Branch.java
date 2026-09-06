@@ -13,6 +13,6 @@ public class Branch {
 
 	@Override
 	public String toString() {
-		return "" + c;
+		return String.valueOf(c);
 	}
 }

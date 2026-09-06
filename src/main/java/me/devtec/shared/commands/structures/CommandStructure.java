@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import me.devtec.shared.API;
@@ -19,26 +18,49 @@ import me.devtec.shared.commands.selectors.Selector;
 import me.devtec.shared.commands.structures.CallableArgumentCommandStructure.CallableArgument;
 
 public class CommandStructure<S> {
+
 	private CommandExecutor<S> executor;
 	private String permission;
-	private int priority;
+	protected int priority;
 
 	private PermissionChecker<S> permissionChecker;
 	private final CommandStructure<S> parent;
+	private final CommandStructure<S> root;
 
 	private final Map<Selector, SelectorCommandStructure<S>> selectors = new ConcurrentHashMap<>();
 	private final List<ArgumentCommandStructure<S>> arguments = new ArrayList<>();
+
 	private CommandExecutor<S> fallback;
 	private CooldownDetection<S> detection;
 	private Class<S> senderClass;
 
 	protected CommandStructure(CommandStructure<S> parent, CommandExecutor<S> executor) {
-		this.setExecutor(executor);
 		this.parent = parent;
+		this.root = parent == null ? this : parent.root;
+		this.executor = executor;
 	}
 
 	public interface CooldownDetection<T> {
 		boolean waiting(T sender, CommandStructure<T> structure, String[] args);
+	}
+
+	public static final class LookupResult<T> {
+
+		private CommandStructure<T> structure;
+		private boolean noPermission;
+
+		public CommandStructure<T> getStructure() {
+			return structure;
+		}
+
+		public boolean hasNoPermission() {
+			return noPermission;
+		}
+
+		private void reset() {
+			structure = null;
+			noPermission = false;
+		}
 	}
 
 	public CommandStructure<S> cooldownDetection(CooldownDetection<S> detection) {
@@ -47,20 +69,25 @@ public class CommandStructure<S> {
 	}
 
 	public CooldownDetection<S> getCooldownDetection() {
-		if (detection == null && getParent() != null)
-			return getParent().getCooldownDetection();
-		return detection;
+		CommandStructure<S> current = this;
+
+		while (current != null) {
+			if (current.detection != null)
+				return current.detection;
+
+			current = current.parent;
+		}
+
+		return null;
 	}
 
-	/**
-	 * @apiNote Creates new {@link CommandStructure}
-	 *
-	 */
 	public static <T> CommandStructure<T> create(@Nonnull Class<T> executorClass, @Nonnull PermissionChecker<T> perm,
 			@Nonnull CommandExecutor<T> executor) {
+
 		Checkers.nonNull(executorClass, "Executor class");
 		Checkers.nonNull(perm, "Permission Checker");
 		Checkers.nonNull(executor, "Command Executor");
+
 		CommandStructure<T> structure = new CommandStructure<>(null, executor);
 		structure.permissionChecker = perm;
 		structure.senderClass = executorClass;
@@ -68,315 +95,299 @@ public class CommandStructure<S> {
 	}
 
 	public PermissionChecker<S> getPermissionChecker() {
-		return permissionChecker == null ? first().permissionChecker : permissionChecker;
+		return root.permissionChecker;
 	}
 
-	/**
-	 * @apiNote Add selector argument to current {@link CommandStructure}
-	 *
-	 */
 	public SelectorCommandStructure<S> selector(Selector selector, CommandExecutor<S> ex) {
 		SelectorCommandStructure<S> sub = new SelectorCommandStructure<>(this, selector, ex, null);
-		this.selectors.put(sub.getSelector(), sub);
+		selectors.put(sub.getSelector(), sub);
 		return sub;
 	}
 
-	/**
-	 * @apiNote Add selector argument with own tab executor to current
-	 *          {@link CommandStructure}
-	 *
-	 */
 	public SelectorCommandStructure<S> selector(Selector selector, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
 		SelectorCommandStructure<S> sub = new SelectorCommandStructure<>(this, selector, ex, tabEx);
-		this.selectors.put(sub.getSelector(), sub);
+		selectors.put(sub.getSelector(), sub);
 		return sub;
 	}
 
-	/**
-	 * @apiNote Fallback executor when every try to find selector / argument
-	 *          structure fail
-	 *
-	 */
-	public CommandStructure<S> fallback(CommandExecutor<S> ex) { // Everything failed? Don't worry! This will be
-																	// executed
-		this.fallback = ex;
+	public CommandStructure<S> fallback(CommandExecutor<S> ex) {
+		fallback = ex;
 		return this;
 	}
 
-	/**
-	 * @apiNote Returns fallback executor
-	 *
-	 */
 	public CommandExecutor<S> getFallback() {
-		return this.fallback;
+		return fallback;
 	}
 
-	/**
-	 * @apiNote Returns command executor
-	 *
-	 */
 	public CommandExecutor<S> getExecutor() {
-		return this.executor;
+		return executor;
 	}
 
-	/**
-	 * @apiNote Override current command executor
-	 *
-	 */
 	public CommandStructure<S> setExecutor(CommandExecutor<S> executor) {
 		this.executor = executor;
 		return this;
 	}
 
-	/**
-	 * @apiNote Add string/s argument to current {@link CommandStructure}
-	 *
-	 */
 	public ArgumentCommandStructure<S> argument(String argument, CommandExecutor<S> ex, String... aliases) {
-		return this.argument(argument, 0, ex, aliases);
+		return argument(argument, 0, ex, aliases);
 	}
 
-	/**
-	 * @apiNote Add string/s argument with own tab executor to current
-	 *          {@link CommandStructure}
-	 *
-	 */
 	public ArgumentCommandStructure<S> argument(String argument, int length, CommandExecutor<S> ex, String... aliases) {
 		ArgumentCommandStructure<S> sub = new ArgumentCommandStructure<>(this, argument, length, ex, null, aliases);
-		this.arguments.add(sub);
+		arguments.add(sub);
 		return sub;
 	}
 
-	/**
-	 * @apiNote Add string/s argument with own tab executor to current
-	 *          {@link CommandStructure}
-	 *
-	 */
 	public ArgumentCommandStructure<S> argument(String argument, CommandExecutor<S> ex, CommandTabExecutor<S> tab,
 			String... aliases) {
-		return this.argument(argument, 0, ex, tab, aliases);
+		return argument(argument, 0, ex, tab, aliases);
 	}
 
-	/**
-	 * @apiNote Add string/s argument with own tab executor to current
-	 *          {@link CommandStructure}
-	 *
-	 */
 	public ArgumentCommandStructure<S> argument(String argument, int length, CommandExecutor<S> ex,
 			CommandTabExecutor<S> tab, String... aliases) {
+
 		ArgumentCommandStructure<S> sub = new ArgumentCommandStructure<>(this, argument, length, ex, tab, aliases);
-		this.arguments.add(sub);
+		arguments.add(sub);
 		return sub;
 	}
 
-	/**
-	 * @apiNote Add string/s argument to current {@link CommandStructure}
-	 *
-	 */
 	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, CommandExecutor<S> ex) {
-		return this.callableArgument(future, 0, ex);
+		return callableArgument(future, 0, ex);
 	}
 
-	/**
-	 * @apiNote Add string/s argument to current {@link CommandStructure}
-	 *
-	 */
 	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length,
 			CommandExecutor<S> ex) {
-		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, null,
-				future);
-		this.arguments.add(sub);
+
+		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(
+				this, length, ex, null, future);
+
+		arguments.add(sub);
 		return sub;
 	}
 
-	/**
-	 * @apiNote Add string/s argument with own tab executor to current
-	 *          {@link CommandStructure}
-	 *
-	 */
 	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, CommandExecutor<S> ex,
 			CommandTabExecutor<S> tabEx) {
-		return this.callableArgument(future, 0, ex, tabEx);
+		return callableArgument(future, 0, ex, tabEx);
 	}
 
-	/**
-	 * @apiNote Add string/s argument with own tab executor to current
-	 *          {@link CommandStructure}
-	 *
-	 */
 	public CallableArgumentCommandStructure<S> callableArgument(CallableArgument<S> future, int length,
 			CommandExecutor<S> ex, CommandTabExecutor<S> tabEx) {
-		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(this, length, ex, tabEx,
-				future);
-		this.arguments.add(sub);
+
+		CallableArgumentCommandStructure<S> sub = new CallableArgumentCommandStructure<>(
+				this, length, ex, tabEx, future);
+
+		arguments.add(sub);
 		return sub;
 	}
 
-	/**
-	 * @apiNote Higher number means higher priority in lookup
-	 */
 	public CommandStructure<S> priority(int level) {
-		this.priority = level;
+		priority = level;
 		return this;
 	}
 
-	/**
-	 * @apiNote Returns priority
-	 */
 	public int getPriority() {
-		return this.priority;
+		return priority;
 	}
 
-	/**
-	 * @apiNote Permission to use this and other sub-commands
-	 */
 	public CommandStructure<S> permission(String permission) {
 		this.permission = permission;
 		return this;
 	}
 
-	/**
-	 * @apiNote Returns permission
-	 */
 	public String getPermission() {
-		if (permission == null && getParent() != null)
-			return getParent().getPermission();
-		return permission;
+		CommandStructure<S> current = this;
+
+		while (current != null) {
+			if (current.permission != null)
+				return current.permission;
+
+			current = current.parent;
+		}
+
+		return null;
 	}
 
-	/**
-	 * @apiNote Returns original {@link CommandStructure}
-	 */
 	public CommandStructure<S> first() {
-		return this.getParent() == null ? this : this.getParent().first();
+		return root;
 	}
 
-	/**
-	 * @apiNote Returns original {@link CommandStructure}
-	 */
 	public CommandStructure<S> firstParent() {
-		return first();
+		return root;
 	}
 
-	/**
-	 * @apiNote @Nullable Returns parent of this {@link CommandStructure}
-	 *
-	 */
 	public CommandStructure<S> getParent() {
-		return this.parent;
+		return parent;
 	}
 
-	/**
-	 * @apiNote @Nullable Returns parent of this
-	 *          {@link CommandStructure#getParent()}
-	 *
-	 */
 	public CommandStructure<S> parent() {
-		return this.getParent();
+		return parent;
 	}
 
-	/**
-	 * @apiNote Jump X times down to parent of this
-	 *          {@link CommandStructure#getParent()}
-	 *
-	 */
 	public CommandStructure<S> getParent(int jumps) {
 		return parent(jumps);
 	}
 
-	/**
-	 * @apiNote Jump X times down to parent of this
-	 *          {@link CommandStructure#getParent()}
-	 *
-	 */
 	public CommandStructure<S> parent(int jumps) {
-		if (jumps <= 0 || getParent() == null)
-			return this;
-		return getParent().parent(--jumps);
+		CommandStructure<S> current = this;
+
+		while (jumps-- > 0 && current.parent != null)
+			current = current.parent;
+
+		return current;
 	}
 
-	/**
-	 * @apiNote Returns tab completer values of this {@link CommandStructure}
-	 *
-	 */
 	public Collection<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
 		return Collections.emptyList();
 	}
 
-	/**
-	 * @apiNote Returns executor's class
-	 *
-	 */
 	public Class<S> getSenderClass() {
-		return this.first().senderClass;
+		return root.senderClass;
 	}
 
-	/**
-	 * @apiNote Build and convert to {@link CommandHolder}
-	 *
-	 */
 	public CommandHolder<S> build() {
-		return new CommandHolder<>(this.first());
+		return new CommandHolder<>(root);
 	}
 
 	@Override
 	public String toString() {
-		return this.getClass().getCanonicalName() + ":" + this.tabList(null, null, null);
+		return getClass().getCanonicalName() + ":" + tabList(null, null, null);
 	}
 
-	// Special utils to make this structure working!
+	public final Object[] findStructure(S sender, String arg, String[] args, int currentDepth, boolean tablist) {
+		List<CommandStructure<S>> result = new ArrayList<>(4);
+		boolean noPerms = findStructures(sender, arg, args, currentDepth, tablist, result);
+		return new Object[] { result, Boolean.valueOf(noPerms) };
+	}
 
 	@SuppressWarnings("unchecked")
-	public final Object[] findStructure(S sender, String arg, String[] args, int currentDepth, boolean tablist) {
-		Map<Integer, List<CommandStructure<S>>> prioritized = new TreeMap<>();
-		boolean noPerms = false;
+	public final boolean findStructures(S sender, String arg, String[] args, int currentDepth, boolean tablist,
+			List<CommandStructure<S>> result) {
 
-		PermissionChecker<S> permsChecker = first().permissionChecker;
+		PermissionChecker<S> checker = root.permissionChecker;
+
+		boolean denied = false;
+		int highestDenied = Integer.MIN_VALUE;
+		int highestAllowed = Integer.MIN_VALUE;
 
 		for (ArgumentCommandStructure<S> sub : arguments) {
-			int length = sub.length();
-			int remainingArgs = args.length - currentDepth;
-			if (remainingArgs <= 0)
-				break;
+			String permission = sub.getPermission();
+			boolean allowed = permission == null || checker.has(sender, permission, tablist);
 
-			String perm = sub.getPermission();
-			if (perm != null && !permsChecker.has(sender, perm, tablist)) {
-				noPerms = true;
+			/*
+			 * Callable argument se bez permission nevyhodnocuje.
+			 * Může obsahovat drahý/dynamický callback.
+			 */
+			if (!allowed && sub instanceof CallableArgumentCommandStructure)
 				continue;
-			}
-
-			// Pokud je délka definovaná a aktuální počet argumentů je menší,
-			// tak tuto strukturu přesto zařaď – jako částečný match
-			if (length != -1 && args.length < length) {
-				prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
-				continue;
-			}
 
 			Collection<String> values = sub.getArgs(sender, sub, args);
+
 			if (!contains(sub, values, arg))
 				continue;
 
-			prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
+			if (!allowed) {
+				denied = true;
+
+				if (sub.priority > highestDenied)
+					highestDenied = sub.priority;
+
+				continue;
+			}
+
+			if (sub.priority > highestAllowed)
+				highestAllowed = sub.priority;
+
+			insertByPriority(result, sub);
 		}
 
 		for (SelectorCommandStructure<S> sub : selectors.values()) {
 			if (!API.selectorUtils.check(sender, sub.getSelector(), arg))
 				continue;
 
-			String perm = sub.getPermission();
-			if (perm != null && !permsChecker.has(sender, perm, tablist)) {
-				noPerms = true;
+			String permission = sub.getPermission();
+
+			if (permission != null && !checker.has(sender, permission, tablist)) {
+				denied = true;
+
+				if (sub.priority > highestDenied)
+					highestDenied = sub.priority;
+
 				continue;
 			}
 
-			prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
+			if (sub.priority > highestAllowed)
+				highestAllowed = sub.priority;
+
+			insertByPriority(result, sub);
 		}
 
-		List<CommandStructure<S>> result = new ArrayList<>();
-		for (List<CommandStructure<S>> group : prioritized.values())
-			result.addAll(group);
+		return denied && (result.isEmpty() || highestDenied > highestAllowed);
+	}
 
-		return new Object[] { result, noPerms };
+	@SuppressWarnings("unchecked")
+	public final void findFirstStructure(S sender, String arg, String[] args, int currentDepth, boolean tablist,
+			LookupResult<S> result) {
+
+		result.reset();
+
+		PermissionChecker<S> checker = root.permissionChecker;
+
+		CommandStructure<S> best = null;
+		int bestPriority = Integer.MIN_VALUE;
+
+		boolean denied = false;
+		int deniedPriority = Integer.MIN_VALUE;
+
+		for (ArgumentCommandStructure<S> sub : arguments) {
+			String permission = sub.getPermission();
+			boolean allowed = permission == null || checker.has(sender, permission, tablist);
+
+			if (!allowed && sub instanceof CallableArgumentCommandStructure)
+				continue;
+
+			Collection<String> values = sub.getArgs(sender, sub, args);
+
+			if (!contains(sub, values, arg))
+				continue;
+
+			if (!allowed) {
+				denied = true;
+
+				if (sub.priority > deniedPriority)
+					deniedPriority = sub.priority;
+
+				continue;
+			}
+
+			if (best == null || sub.priority > bestPriority) {
+				best = sub;
+				bestPriority = sub.priority;
+			}
+		}
+
+		for (SelectorCommandStructure<S> sub : selectors.values()) {
+			if (!API.selectorUtils.check(sender, sub.getSelector(), arg))
+				continue;
+
+			String permission = sub.getPermission();
+
+			if (permission != null && !checker.has(sender, permission, tablist)) {
+				denied = true;
+
+				if (sub.priority > deniedPriority)
+					deniedPriority = sub.priority;
+
+				continue;
+			}
+
+			if (best == null || sub.priority > bestPriority) {
+				best = sub;
+				bestPriority = sub.priority;
+			}
+		}
+
+		result.structure = best;
+		result.noPermission = denied && (best == null || deniedPriority > bestPriority);
 	}
 
 	public final boolean hasChildStructures() {
@@ -384,34 +395,53 @@ public class CommandStructure<S> {
 	}
 
 	public final List<CommandStructure<S>> getNextStructures(S sender) {
-		PermissionChecker<S> checker = first().permissionChecker;
-		Map<Integer, List<CommandStructure<S>>> prioritized = new TreeMap<>();
+		if (!hasChildStructures())
+			return Collections.emptyList();
 
-		for (ArgumentCommandStructure<S> sub : arguments) {
-			String perm = sub.getPermission();
-			if (perm == null || checker.has(sender, perm, true))
-				prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
-		}
-
-		for (SelectorCommandStructure<S> sub : selectors.values()) {
-			String perm = sub.getPermission();
-			if (perm == null || checker.has(sender, perm, true))
-				prioritized.computeIfAbsent(sub.getPriority(), k -> new ArrayList<>()).add(sub);
-		}
-
-		List<CommandStructure<S>> result = new ArrayList<>();
-		for (List<CommandStructure<S>> group : prioritized.values())
-			result.addAll(group);
-
+		List<CommandStructure<S>> result = new ArrayList<>(arguments.size() + selectors.size());
+		getNextStructures(sender, result);
 		return result;
 	}
 
+	public final void getNextStructures(S sender, List<CommandStructure<S>> result) {
+		PermissionChecker<S> checker = root.permissionChecker;
+
+		for (ArgumentCommandStructure<S> sub : arguments) {
+			String permission = sub.getPermission();
+
+			if (permission == null || checker.has(sender, permission, true))
+				insertByPriority(result, sub);
+		}
+
+		for (SelectorCommandStructure<S> sub : selectors.values()) {
+			String permission = sub.getPermission();
+
+			if (permission == null || checker.has(sender, permission, true))
+				insertByPriority(result, sub);
+		}
+	}
+
+	private static <T> void insertByPriority(List<CommandStructure<T>> result, CommandStructure<T> structure) {
+		int priority = structure.priority;
+		int pos = result.size();
+
+		while (pos > 0 && result.get(pos - 1).priority < priority)
+			--pos;
+
+		result.add(pos, structure);
+	}
+
 	public static boolean contains(ArgumentCommandStructure<?> sub, Collection<String> list, String arg) {
+		if (list == null)
+			return false;
+
 		if (!(sub instanceof CallableArgumentCommandStructure) && list.isEmpty())
 			return true;
+
 		for (String value : list)
-			if (value.equalsIgnoreCase(arg))
+			if (value != null && value.equalsIgnoreCase(arg))
 				return true;
+
 		return false;
 	}
 }

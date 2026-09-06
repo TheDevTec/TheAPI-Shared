@@ -7,30 +7,37 @@ import me.devtec.shared.commands.holder.CommandExecutor;
 import me.devtec.shared.commands.holder.CommandTabExecutor;
 
 public class CallableArgumentCommandStructure<S> extends ArgumentCommandStructure<S> {
+
 	private static final String[] EMPTY_STRING = {};
+
 	private final CallableArgument<S> futureArgs;
 
-	protected CallableArgumentCommandStructure(CommandStructure<S> parent, int length, CommandExecutor<S> ex, CommandTabExecutor<S> tabEx, CallableArgument<S> future) {
-		super(parent, null, length, ex, tabEx, CallableArgumentCommandStructure.EMPTY_STRING);
-		this.futureArgs = future;
+	protected CallableArgumentCommandStructure(CommandStructure<S> parent, int length, CommandExecutor<S> ex,
+			CommandTabExecutor<S> tabEx, CallableArgument<S> future) {
+
+		super(parent, null, length, ex, tabEx, EMPTY_STRING);
+		futureArgs = future;
 	}
 
 	@Override
 	public Collection<String> tabList(S sender, CommandStructure<S> structure, String[] arguments) {
-		return getTabExecutor() != null ? getTabExecutor().execute(sender, structure, arguments) : this.getArgs(sender, structure, arguments);
+		if (getTabExecutor() != null) {
+			Collection<String> result = getTabExecutor().execute(sender, structure, arguments);
+			return result == null ? Collections.emptyList() : result;
+		}
+
+		return getArgs(sender, structure, arguments);
 	}
 
-	/**
-	 * @apiNote Returns arguments of this {@link ArgumentCommandStructure}
-	 */
 	@Override
 	public Collection<String> getArgs(S sender, CommandStructure<S> structure, String[] arguments) {
 		try {
-			return this.futureArgs.call(sender, structure, arguments);
+			Collection<String> result = futureArgs.call(sender, structure, arguments);
+			return result == null ? Collections.emptyList() : result;
 		} catch (Exception e) {
 			e.printStackTrace();
+			return Collections.emptyList();
 		}
-		return Collections.emptyList();
 	}
 
 	public interface CallableArgument<S> {

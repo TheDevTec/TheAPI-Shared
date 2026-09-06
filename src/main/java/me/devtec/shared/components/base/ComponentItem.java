@@ -1,4 +1,4 @@
-package me.devtec.shared.components;
+package me.devtec.shared.components.base;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -65,7 +65,7 @@ public class ComponentItem extends Component {
 		map.put("id", getId());
 		map.put("count", getCount());
 		if (getNbt() != null)
-			map.put(Ref.serverVersionInt() >= 21 && Ref.serverVersionRelease() >= 5 ? "components" : "tag", Json.reader().simpleRead(getNbt()));
+			map.put(Ref.isAtLeast(21, 5) ? "components" : "tag", Json.reader().simpleRead(getNbt()));
 		return map;
 	}
 

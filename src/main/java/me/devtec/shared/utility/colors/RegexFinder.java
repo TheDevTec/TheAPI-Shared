@@ -8,54 +8,104 @@ import me.devtec.shared.dataholder.StringContainer;
 @Deprecated
 public class RegexFinder implements GradientFinder {
 
+	private static final String COLOR =
+			"(#[A-Fa-f0-9]{6}|§x(?:§[0-9A-Fa-f]){6})";
+
 	private static Pattern pattern;
+
 	private static int firstLength;
 	private static int secondLength;
 
-	public static void init(String prefix1, String suffix1, String prefix2, String suffix2) {
-		firstLength = prefix1.length() + suffix1.length();
-		secondLength = prefix2.length() + suffix2.length();
-		pattern = Pattern.compile(prefix1 + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + suffix1 + "(.*?)" + prefix2 + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + suffix2 + "|.*?(?=(?:" + prefix1
-				+ "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + suffix1 + ".*?" + prefix2 + "(#[A-Fa-f0-9]{6}|§x(§[0-9A-Fa-f]){6})" + suffix2 + "))");
+	public static void init(
+			String prefix1,
+			String suffix1,
+			String prefix2,
+			String suffix2) {
+
+		firstLength =
+				prefix1.length()
+				+ suffix1.length();
+
+		secondLength =
+				prefix2.length()
+				+ suffix2.length();
+
+		pattern = Pattern.compile(
+				prefix1
+				+ COLOR
+				+ suffix1
+				+ "(.*?)"
+				+ prefix2
+				+ COLOR
+				+ suffix2);
 	}
 
-	private int skipChars;
+	private final StringContainer container;
 	private final Matcher matcher;
-	// Match
+
+	private int skipChars = -1;
+
 	private String firstHex;
-	private int firstHexLength;
 	private String secondHex;
+
+	private int firstHexLength;
 	private int secondHexLength;
+
 	private int startAt;
 	private int endAt;
 
 	// <prefix1>#rrggbb<suffix1> text <prefix2>#rrggbb<suffix2>
 	public RegexFinder(StringContainer container) {
+		if (pattern == null)
+			throw new IllegalStateException(
+					"RegexFinder wasn't initialized.");
+
+		this.container = container;
 		matcher = pattern.matcher(container);
 	}
 
 	@Override
 	public boolean find() {
 		boolean match;
-		if (skipChars != 0) {
-			match = matcher.find(skipChars);
-			skipChars = 0;
-		} else {
-			match = matcher.find();
-		}
-		if (match) {
-			if (matcher.groupCount() == 0 || matcher.group().isEmpty()) {
-				return find();
-			}
-			firstHex = matcher.group(1);
-			firstHexLength = firstHex.length() + firstLength;
-			secondHex = matcher.group(4);
-			secondHexLength = secondHex.length() + secondLength;
 
-			startAt = matcher.start() + firstHexLength;
-			endAt = matcher.end() - secondHexLength;
-		}
-		return match;
+		if (skipChars >= 0) {
+			int start = skipChars;
+
+			skipChars = -1;
+
+			if (start < 0)
+				start = 0;
+
+			if (start >= container.length())
+				return false;
+
+			match = matcher.find(start);
+		} else
+			match = matcher.find();
+
+		if (!match)
+			return false;
+
+		firstHex = matcher.group(1);
+		secondHex = matcher.group(3);
+
+		firstHexLength =
+				firstHex.length()
+				+ firstLength;
+
+		secondHexLength =
+				secondHex.length()
+				+ secondLength;
+
+		startAt =
+				matcher.start()
+				+ firstHexLength;
+
+		endAt =
+				matcher.end()
+				- secondHexLength;
+
+		return true;
 	}
 
 	@Override
@@ -90,7 +140,11 @@ public class RegexFinder implements GradientFinder {
 
 	@Override
 	public void skip(int characters) {
-		skipChars = endAt + characters;
-	}
+		int position = endAt + characters;
 
+		skipChars =
+				position < 0
+				? 0
+						: position;
+	}
 }

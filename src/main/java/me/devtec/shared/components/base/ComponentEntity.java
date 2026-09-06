@@ -1,9 +1,10 @@
-package me.devtec.shared.components;
+package me.devtec.shared.components.base;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import me.devtec.shared.components.ComponentAPI;
 import me.devtec.shared.json.Json;
 
 public class ComponentEntity extends Component {

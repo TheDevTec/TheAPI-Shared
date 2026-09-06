@@ -1,4 +1,4 @@
-package me.devtec.shared.components;
+package me.devtec.shared.components.decorations;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

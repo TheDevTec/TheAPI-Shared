@@ -1,8 +1,11 @@
-package me.devtec.shared.components;
+package me.devtec.shared.components.base;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import me.devtec.shared.components.decorations.ClickEvent;
+import me.devtec.shared.components.decorations.HoverEvent;
 
 public final class ProtectedComponent extends Component {
 

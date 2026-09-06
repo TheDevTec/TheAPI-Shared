@@ -15,387 +15,513 @@ public class StringUtils {
 	// DO NOT TOUCH
 	public static final Random random = new Random();
 
+	private static final long[] POWERS_OF_TEN = { 1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L,
+			100000000L, 1000000000L, 10000000000L, 100000000000L, 1000000000000L, 10000000000000L, 100000000000000L,
+			1000000000000000L, 10000000000000000L, 100000000000000000L, 1000000000000000000L };
+
 	public enum FormatType {
 		BASIC, NORMAL, COMPLEX
 	}
 
-	/**
-	 * @apiNote Format double and remove unused zeros on the end
-	 * <p>
-	 *          Format types: {@link FormatType#BASIC} 1000.01
-	 *          {@link FormatType#NORMAL} 1,000.01 {@link FormatType#COMPLEX}
-	 *          {Normal type} + BalanceType (k, m, b, t...)
-	 */
 	public static String formatDouble(FormatType type, double value) {
 		switch (type) {
-		case BASIC: {
-			boolean minus = false;
-			if (value < 0) {
-				minus = true;
-				value *= -1;
-			}
-
-			long integerPart = (long) value;
-			long decimalPart = Math.round(Math.abs(value - integerPart) * 100);
-			StringContainer sb = new StringContainer(MathUtils.getLongLength(integerPart) + 3);
-			if (decimalPart == 100) {
-				++integerPart;
-				decimalPart = 0;
-			}
-			sb.append(integerPart);
-			return formatDouble(minus, decimalPart, sb);
-		}
-		case NORMAL: {
-			boolean minus = false;
-			if (value < 0) {
-				minus = true;
-				value *= -1;
-			}
-
-			long integerPart = (long) value;
-			long decimalPart = Math.round(Math.abs(value - integerPart) * 100);
-
-			int width = MathUtils.getLongLength(integerPart);
-			StringContainer sb = new StringContainer(width + width / 3 + 3);
-			if (decimalPart == 100) {
-				++integerPart;
-				decimalPart = 0;
-			}
-
-			int count = 0;
-			do {
-				if (count == 3) {
-					sb.insert(0, ',');
-					count = 0;
-				}
-				sb.insert(0, integerPart % 10);
-				integerPart /= 10;
-				count++;
-			} while (integerPart > 0);
-			return formatDouble(minus, decimalPart, sb);
-		}
+		case BASIC:
+			return formatBasic(value);
+		case NORMAL:
+			return formatNormal(value);
 		case COMPLEX: {
-			double testValue = value < 0 ? value * -1 : value;
-			if (testValue >= 1.0E63) {
-				if (value < 0) {
-					return "-∞";
-				}
-				return "∞";
-			}
-			if (testValue >= 1.0E60) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E60) + "NOV";
-			}
-			if (testValue >= 1.0E57) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E57) + "OCT";
-			}
-			if (testValue >= 1.0E54) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E54) + "SEP";
-			}
-			if (testValue >= 1.0E51) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E51) + "SED";
-			}
-			if (testValue >= 1.0E48) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E48) + "QUI";
-			}
-			if (testValue >= 1.0E45) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E45) + "QUA";
-			}
-			if (testValue >= 1.0E42) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E42) + "tre";
-			}
-			if (testValue >= 1.0E39) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E39) + "duo";
-			}
-			if (testValue >= 1.0E36) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E36) + "und";
-			}
-			if (testValue >= 1.0E33) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E33) + "dec";
-			}
-			if (testValue >= 1.0E30) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E30) + "non";
-			}
-			if (testValue >= 1.0E27) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E27) + "oct";
-			}
-			if (testValue >= 1.0E24) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E24) + "sep";
-			}
-			if (testValue >= 1.0E21) { // No, it's not "sex"...
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E21) + "sex";
-			}
-			if (testValue >= 1.0E18) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E18) + "qui";
-			}
-			if (testValue >= 1.0E15) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E15) + "qua";
-			}
-			if (testValue >= 1.0E12) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E12) + "t";
-			}
-			if (testValue >= 1.0E9) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E9) + "b";
-			}
-			if (testValue >= 1.0E6) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1.0E6) + "m";
-			}
-			if (testValue >= 1000) {
-				return StringUtils.formatDouble(FormatType.NORMAL, value / 1000) + "k";
-			}
-			return StringUtils.formatDouble(FormatType.NORMAL, value);
+			double testValue = value < 0 ? -value : value;
+
+			if (testValue >= 1.0E63)
+				return value < 0 ? "-∞" : "∞";
+
+			if (testValue >= 1.0E60)
+				return formatNormal(value / 1.0E60) + "NOV";
+			if (testValue >= 1.0E57)
+				return formatNormal(value / 1.0E57) + "OCT";
+			if (testValue >= 1.0E54)
+				return formatNormal(value / 1.0E54) + "SEP";
+			if (testValue >= 1.0E51)
+				return formatNormal(value / 1.0E51) + "SED";
+			if (testValue >= 1.0E48)
+				return formatNormal(value / 1.0E48) + "QUI";
+			if (testValue >= 1.0E45)
+				return formatNormal(value / 1.0E45) + "QUA";
+			if (testValue >= 1.0E42)
+				return formatNormal(value / 1.0E42) + "tre";
+			if (testValue >= 1.0E39)
+				return formatNormal(value / 1.0E39) + "duo";
+			if (testValue >= 1.0E36)
+				return formatNormal(value / 1.0E36) + "und";
+			if (testValue >= 1.0E33)
+				return formatNormal(value / 1.0E33) + "dec";
+			if (testValue >= 1.0E30)
+				return formatNormal(value / 1.0E30) + "non";
+			if (testValue >= 1.0E27)
+				return formatNormal(value / 1.0E27) + "oct";
+			if (testValue >= 1.0E24)
+				return formatNormal(value / 1.0E24) + "sep";
+			if (testValue >= 1.0E21)
+				return formatNormal(value / 1.0E21) + "sex";
+			if (testValue >= 1.0E18)
+				return formatNormal(value / 1.0E18) + "qui";
+			if (testValue >= 1.0E15)
+				return formatNormal(value / 1.0E15) + "qua";
+			if (testValue >= 1.0E12)
+				return formatNormal(value / 1.0E12) + "t";
+			if (testValue >= 1.0E9)
+				return formatNormal(value / 1.0E9) + "b";
+			if (testValue >= 1.0E6)
+				return formatNormal(value / 1.0E6) + "m";
+			if (testValue >= 1000)
+				return formatNormal(value / 1000) + "k";
+
+			return formatNormal(value);
 		}
 		default:
+			return String.valueOf(value);
+		}
+	}
+
+	private static String formatBasic(double value) {
+		boolean minus = value < 0;
+
+		if (minus)
+			value = -value;
+
+		long integerPart = (long) value;
+		long decimalPart = Math.round(Math.abs(value - integerPart) * 100);
+
+		if (decimalPart == 100) {
+			++integerPart;
+			decimalPart = 0;
+		}
+
+		StringContainer builder = new StringContainer(MathUtils.getLongLength(integerPart) + 4);
+
+		if (minus)
+			builder.append('-');
+
+		builder.append(integerPart);
+		appendDecimal(builder, decimalPart);
+		return builder.toString();
+	}
+
+	private static String formatNormal(double value) {
+		boolean minus = value < 0;
+
+		if (minus)
+			value = -value;
+
+		long integerPart = (long) value;
+		long decimalPart = Math.round(Math.abs(value - integerPart) * 100);
+
+		if (decimalPart == 100) {
+			++integerPart;
+			decimalPart = 0;
+		}
+
+		int width = MathUtils.getLongLength(integerPart);
+		StringContainer builder = new StringContainer(width + width / 3 + 4);
+
+		if (minus)
+			builder.append('-');
+
+		appendGroupedLong(builder, integerPart, width);
+		appendDecimal(builder, decimalPart);
+
+		return builder.toString();
+	}
+
+	private static void appendGroupedLong(StringContainer builder, long value, int width) {
+		long divisor = POWERS_OF_TEN[width - 1];
+
+		for (int remaining = width; remaining > 0; --remaining) {
+			int digit = (int) (value / divisor);
+
+			builder.append((char) ('0' + digit));
+
+			value -= digit * divisor;
+
+			if (remaining > 1 && (remaining - 1) % 3 == 0)
+				builder.append(',');
+
+			divisor /= 10;
+		}
+	}
+
+	private static void appendDecimal(StringContainer builder, long decimalPart) {
+		if (decimalPart == 0)
+			return;
+
+		builder.append('.');
+
+		if (decimalPart < 10) {
+			builder.append('0');
+			builder.append(decimalPart);
+			return;
+		}
+
+		if (decimalPart % 10 == 0)
+			builder.append(decimalPart / 10);
+		else
+			builder.append(decimalPart);
+	}
+
+	public static List<String> fixedSplit(String text, int lengthOfSplit) {
+		if (text == null)
+			return null;
+
+		if (lengthOfSplit <= 0)
+			throw new IllegalArgumentException("lengthOfSplit must be greater than 0");
+
+		int textLength = text.length();
+		int estimated = textLength / lengthOfSplit + 1;
+		List<String> result = new ArrayList<>(estimated);
+
+		if (textLength <= lengthOfSplit) {
+			result.add(text);
+			return result;
+		}
+
+		boolean hex = !Ref.type().isBukkit() || Ref.isAtLeast(16, 0);
+		int start = 0;
+
+		while (start < textLength) {
+			int end = Math.min(start + lengthOfSplit, textLength);
+
+			if (end < textLength) {
+				if (end > start && text.charAt(end - 1) == '§')
+					--end;
+
+				if (hex)
+					end = avoidHexSplit(text, start, end);
+			}
+
+			if (end <= start)
+				end = Math.min(start + lengthOfSplit, textLength);
+
+			result.add(text.substring(start, end));
+			start = end;
+		}
+
+		return result;
+	}
+
+	private static int avoidHexSplit(String text, int start, int end) {
+		int from = Math.max(start, end - 13);
+
+		for (int i = end - 1; i >= from; --i) {
+			if (text.charAt(i) != '§' || i + 1 >= text.length())
+				continue;
+
+			char x = text.charAt(i + 1);
+
+			if (x != 'x' && x != 'X' || !isHexSequence(text, i))
+				continue;
+
+			if (end > i && end < i + 14 && i > start)
+				return i;
+
 			break;
 		}
-		return value + "";
+
+		return end;
 	}
 
-	private static String formatDouble(boolean minus, long decimalPart, StringContainer sb) {
-		if (decimalPart != 0) {
-			sb.append('.');
-			if (decimalPart < 10) {
-				sb.append('0');
-				sb.append(decimalPart);
-			} else {
-				double smaller = (double) decimalPart / 10;
-				if (MathUtils.hasDecimal(smaller)) {
-					sb.append(decimalPart);
-				} else {
-					sb.append((long) smaller);
-				}
-			}
-		}
-		if (minus) {
-			sb.insert(0, '-');
-		}
-		return sb.toString();
+	private static boolean isHexSequence(String text, int start) {
+		if (start + 13 >= text.length() || text.charAt(start) != '§')
+			return false;
+
+		char x = text.charAt(start + 1);
+
+		if (x != 'x' && x != 'X')
+			return false;
+
+		for (int i = start + 2; i < start + 14; i += 2)
+			if (text.charAt(i) != '§')
+				return false;
+
+		return true;
 	}
 
-	/**
-	 * @apiNote Split text correctly with colors
-	 */
-	public static List<String> fixedSplit(String text, int lengthOfSplit) {
-		if (text == null) {
-			return null;
-		}
-
-		List<String> splitted = new ArrayList<>();
-		if (text.length() <= lengthOfSplit) {
-			splitted.add(text);
-		} else if (Ref.serverType().isBukkit() && Ref.isOlderThan(16)) {
-			int start = 0;
-			for (int i = lengthOfSplit; i < text.length(); i += lengthOfSplit) {
-				if (text.charAt(i) == '§' || text.charAt(i - 1) == '§') {
-					splitted.add(text.substring(start, i - 1));
-					start = i - 1;
-				} else {
-					splitted.add(text.substring(start, i));
-					start = i;
-				}
-			}
-			splitted.add(text.substring(start));
-		} else { // Hex mode
-			int start = 0;
-
-			int steps = lengthOfSplit;
-			for (int i = 0; i < text.length(); ++i) {
-				char c = text.charAt(i);
-				--steps;
-				if (i != 0 && c == '§' && text.charAt(i + 1) == 'x' && steps - 13 < 0) {
-					steps = 0;
-					splitted.add(text.substring(start, i - 1));
-					start = i - 1;
-					continue;
-				}
-				if (steps == 0) {
-					if (c == '§' || text.charAt(i - 1) == '§') {
-						splitted.add(text.substring(start, i - 1));
-						start = i - 1;
-					} else {
-						splitted.add(text.substring(start, i));
-						start = i;
-					}
-				}
-			}
-			splitted.add(text.substring(start));
-		}
-		return splitted;
-	}
-
-	/**
-	 * @apiNote Copy matches of String from Iterable<String>
-	 * @return List<String>
-	 */
 	public static List<String> copyPartialMatches(String prefix, Iterable<String> originals) {
-		List<String> matches = new ArrayList<>();
-		for (String completion : originals) {
-			if (completion != null && (completion.regionMatches(true, 0, prefix, 0, prefix.length()) || completion.toLowerCase().contains(prefix.toLowerCase()))) {
-				matches.add(completion);
-			}
+		if (originals == null)
+			return Collections.emptyList();
+
+		if (prefix == null)
+			prefix = "";
+
+		int capacity = 8;
+
+		if (originals instanceof Collection) {
+			int size = ((Collection<?>) originals).size();
+			capacity = prefix.isEmpty() ? size : Math.min(size, 16);
 		}
+
+		List<String> matches = new ArrayList<>(capacity);
+		copyPartialMatches(prefix, originals, matches);
 		return matches;
 	}
 
-	/**
-	 * @apiNote Copy matches of String from Iterable<String>
-	 * @return List<String>
-	 */
+	public static void copyPartialMatches(String prefix, Iterable<String> originals, Collection<String> output) {
+		if (originals == null || output == null)
+			return;
+
+		if (prefix == null)
+			prefix = "";
+
+		if (prefix.isEmpty()) {
+			for (String completion : originals)
+				if (completion != null)
+					output.add(completion);
+
+			return;
+		}
+
+		for (String completion : originals)
+			if (completion != null && containsIgnoreCase(completion, prefix))
+				output.add(completion);
+	}
+
+	private static boolean containsIgnoreCase(String text, String search) {
+		int searchLength = search.length();
+		int textLength = text.length();
+
+		if (searchLength == 0)
+			return true;
+
+		if (searchLength > textLength)
+			return false;
+
+		if (searchLength == 1) {
+			char searchChar = search.charAt(0);
+
+			for (int i = 0; i < textLength; ++i)
+				if (equalsIgnoreCase(text.charAt(i), searchChar))
+					return true;
+
+			return false;
+		}
+
+		char first = search.charAt(0);
+		char last = search.charAt(searchLength - 1);
+		int lastOffset = searchLength - 1;
+		int max = textLength - searchLength;
+
+		for (int i = 0; i <= max; ++i) {
+			if (!equalsIgnoreCase(text.charAt(i), first) || !equalsIgnoreCase(text.charAt(i + lastOffset), last))
+				continue;
+
+			int j = 1;
+
+			while (j < lastOffset && equalsIgnoreCase(text.charAt(i + j), search.charAt(j)))
+				++j;
+
+			if (j == lastOffset)
+				return true;
+		}
+
+		return false;
+	}
+
+	private static boolean equalsIgnoreCase(char first, char second) {
+		if (first == second)
+			return true;
+
+		if (first < 128 && second < 128) {
+			if (first >= 'A' && first <= 'Z')
+				first = (char) (first + 32);
+
+			if (second >= 'A' && second <= 'Z')
+				second = (char) (second + 32);
+
+			return first == second;
+		}
+
+		return Character.toUpperCase(first) == Character.toUpperCase(second);
+	}
+
 	public static List<String> copySortedPartialMatches(String prefix, Iterable<String> originals) {
-		List<String> collection = StringUtils.copyPartialMatches(prefix, originals);
-		Collections.sort(collection);
-		return collection;
+		List<String> result = copyPartialMatches(prefix, originals);
+
+		if (result.size() > 1)
+			Collections.sort(result);
+
+		return result;
 	}
 
-	/**
-	 * @apiNote Join Iterable into one String with split String {@link me.devtec.shared.utility.StringUtils#join(Iterable, String, int, int)}
-	 * @param split Split string (defaulty ' ')
-	 * @param args  Arguments
-	 * @return String
-	 */
 	public static String join(Iterable<?> args, String split) {
-		return StringUtils.join(args, split, 0, -1);
+		return join(args, split, 0, -1);
 	}
 
-	/**
-	 * @apiNote Join Iterable into one String with split String {@link me.devtec.shared.utility.StringUtils#join(Iterable, String, int, int)}
-	 * @param split Split string (defaulty ' ')
-	 * @param start Start argument (defaulty 0)
-	 * @param args  Arguments
-	 * @return String
-	 */
 	public static String join(Iterable<?> args, String split, int start) {
-		return StringUtils.join(args, split, start, -1);
+		return join(args, split, start, -1);
 	}
 
-	/**
-	 * @apiNote Join Iterable into one String with split String
-	 * @param split Split string (defaulty ' ')
-	 * @param start Start argument (defaulty 0)
-	 * @param end   Last argument (defaultly -1)
-	 * @param args  Arguments
-	 * @return String
-	 */
 	public static String join(Iterable<?> args, String split, int start, int end) {
-		if (args == null || split == null) {
+		if (args == null || split == null)
 			return null;
-		}
-		StringContainer msg = new StringContainer(split.length() + 32);
+
+		if (start < 0)
+			start = 0;
+
+		if (end != -1 && end <= start)
+			return "";
+
 		Iterator<?> iterator = args.iterator();
-		boolean first = true;
-		for (int i = start; iterator.hasNext() && (end == -1 || i < end); ++i) {
-			if (!first) {
-				msg.append(split);
-			} else {
-				first = false;
-			}
-			msg.append(String.valueOf(iterator.next()));
+
+		int skipped = 0;
+
+		while (skipped < start && iterator.hasNext()) {
+			iterator.next();
+			++skipped;
 		}
-		return msg.toString();
+
+		if (!iterator.hasNext())
+			return "";
+
+		int estimated = 32 + split.length() * 4;
+
+		if (args instanceof Collection) {
+			int size = ((Collection<?>) args).size();
+			int amount = size - start;
+
+			if (end != -1)
+				amount = Math.min(amount, end - start);
+
+			if (amount > 0)
+				estimated = Math.max(16, amount * 8 + Math.max(0, amount - 1) * split.length());
+		}
+
+		StringContainer result = new StringContainer(estimated);
+
+		int index = start;
+		boolean first = true;
+
+		while (iterator.hasNext() && (end == -1 || index < end)) {
+			if (!first)
+				result.append(split);
+			else
+				first = false;
+
+			appendObject(result, iterator.next());
+			++index;
+		}
+
+		return result.toString();
 	}
 
-	/**
-	 * @apiNote Join objects into one String with split String {@link me.devtec.shared.utility.StringUtils#join(Object[], String, int, int)}
-	 * @param split Split string (defaulty ' ')
-	 * @param args  Arguments
-	 * @return String
-	 */
 	public static String join(Object[] args, String split) {
-		return StringUtils.join(args, split, 0, args.length);
+		return args == null ? null : join(args, split, 0, args.length);
 	}
 
-	/**
-	 * @apiNote Join objects into one String with split String {@link me.devtec.shared.utility.StringUtils#join(Object[], String, int, int)
-	 * @param split Split string (defaulty ' ')
-	 * @param start Start argument (defaulty 0)
-	 * @param args  Arguments
-	 * @return String
-	 */
 	public static String join(Object[] args, String split, int start) {
-		return StringUtils.join(args, split, start, args.length);
+		return args == null ? null : join(args, split, start, args.length);
 	}
 
-	/**
-	 * @apiNote Join objects into one String with split String
-	 * @param split Split string (defaulty ' ')
-	 * @param start Start argument (defaulty 0)
-	 * @param end   Last argument (defaultly args.length)
-	 * @param args  Arguments
-	 * @return String
-	 */
 	public static String join(Object[] args, String split, int start, int end) {
-		if (args == null || split == null) {
+		if (args == null || split == null)
 			return null;
+
+		if (start < 0)
+			start = 0;
+
+		if (end > args.length)
+			end = args.length;
+
+		if (start >= end || start >= args.length)
+			return "";
+
+		int amount = end - start;
+		int capacity = amount * 8 + (amount - 1) * split.length();
+
+		if (capacity < 16)
+			capacity = 16;
+
+		StringContainer result = new StringContainer(capacity);
+
+		appendObject(result, args[start]);
+
+		for (int i = start + 1; i < end; ++i) {
+			result.append(split);
+			appendObject(result, args[i]);
 		}
-		StringContainer msg = new StringContainer(split.length() * (args.length - 1) + args.length * 4);
-		boolean first = true;
-		for (int i = start; i < args.length && i < end; ++i) {
-			if (!first) {
-				msg.append(split);
-			} else {
-				first = false;
-			}
-			msg.append(String.valueOf(args[i]));
-		}
-		return msg.toString();
+
+		return result.toString();
 	}
 
-	/**
-	 * @apiNote Join strings to one String with split ' ' @see
-	 *          {@link StringUtils#join(Object[], String, int, int)}
-	 * @param args Arguments
-	 * @return String
-	 *
-	 */
+	private static void appendObject(StringContainer container, Object value) {
+		if (value == null) {
+			container.appendNull();
+			return;
+		}
+
+		if (value instanceof String) {
+			container.append((String) value);
+			return;
+		}
+
+		if (value instanceof StringContainer) {
+			container.append((StringContainer) value);
+			return;
+		}
+
+		if (value instanceof CharSequence) {
+			container.append((CharSequence) value);
+			return;
+		}
+
+		if (value instanceof Character) {
+			container.append(((Character) value).charValue());
+			return;
+		}
+
+		if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long) {
+			container.append(((Number) value).longValue());
+			return;
+		}
+
+		container.append(String.valueOf(value));
+	}
+
 	public static String buildString(String[] args) {
-		return StringUtils.join(args, " ", 0, args.length);
+		return args == null ? null : join(args, " ", 0, args.length);
 	}
 
-	/**
-	 * @apiNote Join strings to one String with split ' ' @see
-	 *          {@link StringUtils#join(Object[], String, int, int)}
-	 * @param start Start argument (defaulty 0)
-	 * @param args  Arguments
-	 * @return String
-	 *
-	 */
 	public static String buildString(int start, String[] args) {
-		return StringUtils.join(args, " ", start, args.length);
+		return args == null ? null : join(args, " ", start, args.length);
 	}
 
-	/**
-	 * @apiNote Join strings to one String with split ' ' @see
-	 *          {@link StringUtils#join(Object[], String, int, int)}
-	 * @param start Start argument (defaulty 0)
-	 * @param end   Last argument (defaultly args.length)
-	 * @param args  Arguments
-	 * @return String
-	 *
-	 */
 	public static String buildString(int start, int end, String[] args) {
-		return StringUtils.join(args, " ", start, end);
+		return args == null ? null : join(args, " ", start, end);
 	}
 
-	/**
-	 * @apiNote Return random object from list
-	 */
 	public static <T> T randomFromList(List<T> list) {
-		if (list == null || list.isEmpty()) {
+		if (list == null || list.isEmpty())
 			return null;
-		}
-		return list.get(StringUtils.random.nextInt(list.size()));
+
+		return list.get(random.nextInt(list.size()));
 	}
 
-	/**
-	 * @apiNote Return random object from collection
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> T randomFromCollection(Collection<T> list) {
-		if (list == null || list.isEmpty()) {
+	public static <T> T randomFromCollection(Collection<T> collection) {
+		if (collection == null || collection.isEmpty())
 			return null;
-		}
-		if (list instanceof List) {
-			return StringUtils.randomFromList((List<T>) list);
-		}
-		return (T) list.toArray()[StringUtils.random.nextInt(list.size())];
+
+		if (collection instanceof List)
+			return randomFromList((List<T>) collection);
+
+		int size = collection.size();
+
+		if (size == 1)
+			return collection.iterator().next();
+
+		int target = random.nextInt(size);
+		Iterator<T> iterator = collection.iterator();
+
+		while (target-- > 0)
+			iterator.next();
+
+		return iterator.next();
 	}
 }

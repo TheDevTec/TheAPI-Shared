@@ -4,32 +4,36 @@ import me.devtec.shared.json.custom.CustomJsonWriter;
 
 public interface JWriter {
 
-	default Object writeWithoutParse(Object s) {
-		return JsonUtils.writeWithoutParseStatic(s);
+	default Object writeWithoutParse(Object object) {
+		return JsonUtils.writeWithoutParseStatic(object);
 	}
 
-	default String write(Object s) {
+	default String write(Object object) {
 		try {
-			if (s == null) {
+			if (object == null)
 				return "null";
-			}
-			if (s instanceof CharSequence) {
-				return CustomJsonWriter.parseToString(s.toString());
-			}
-			return s instanceof Number || s instanceof Character ? '\'' + s.toString() + '\'' : toGson(writeWithoutParse(s));
+
+			if (object instanceof CharSequence)
+				return CustomJsonWriter.parseToString(object.toString());
+
+			if (object instanceof Number || object instanceof Character)
+				return '\'' + object.toString() + '\'';
+
+			return toGson(writeWithoutParse(object));
 		} catch (Exception ignored) {
+			return null;
 		}
-		return null;
 	}
 
 	// For lists or maps
 	default String simpleWrite(Object object) {
-		if (object == null) {
+		if (object == null)
 			return "null";
-		}
-		if (object instanceof CharSequence || object instanceof Boolean || object instanceof Number || object instanceof Character) {
+
+		if (object instanceof CharSequence || object instanceof Boolean || object instanceof Number
+				|| object instanceof Character)
 			return object.toString();
-		}
+
 		return toGson(object);
 	}
 

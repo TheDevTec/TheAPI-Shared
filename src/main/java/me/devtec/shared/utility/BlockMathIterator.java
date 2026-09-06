@@ -34,9 +34,8 @@ public class BlockMathIterator implements Iterable<double[]> {
 
 	public double[] get() {
 		double[] b = { this.baseX + this.x, this.baseY + this.y, this.baseZ + this.z };
-		if (!this.has()) {
+		if (!this.has())
 			return b;
-		}
 		if (++this.x >= this.sizeX) {
 			this.x = 0;
 			if (++this.y >= this.sizeY) {
@@ -52,12 +51,12 @@ public class BlockMathIterator implements Iterable<double[]> {
 		return new Iterator<double[]>() {
 			@Override
 			public boolean hasNext() {
-				return BlockMathIterator.this.has();
+				return has();
 			}
 
 			@Override
 			public double[] next() {
-				return BlockMathIterator.this.get();
+				return get();
 			}
 		};
 	}

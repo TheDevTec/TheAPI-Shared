@@ -3,6 +3,8 @@ package me.devtec.shared.components;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.devtec.shared.components.base.Component;
+
 public interface ComponentTransformer<T> {
 	default T fromString(String string) {
 		return this.fromComponent(ComponentAPI.fromString(string));

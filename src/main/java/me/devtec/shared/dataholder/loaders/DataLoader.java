@@ -1,318 +1,559 @@
 package me.devtec.shared.dataholder.loaders;
 
-import java.io.File;
+import java.io.*;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
-import me.devtec.shared.annotations.Checkers;
-import me.devtec.shared.annotations.Comment;
-import me.devtec.shared.annotations.Nonnull;
-import me.devtec.shared.annotations.Nullable;
 import me.devtec.shared.dataholder.Config;
+import me.devtec.shared.dataholder.ConfigDocument;
 import me.devtec.shared.dataholder.StringContainer;
+import me.devtec.shared.dataholder.codec.ConfigWriter;
+import me.devtec.shared.dataholder.codec.ConfigBufferedWriter;
+import me.devtec.shared.dataholder.codec.FormatRegistry;
 import me.devtec.shared.dataholder.loaders.constructor.DataLoaderConstructor;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 import me.devtec.shared.dataholder.loaders.constructor.LoaderPriority;
-import me.devtec.shared.utility.StreamUtils;
+import me.devtec.shared.dataholder.store.ConfigMapView;
+import me.devtec.shared.dataholder.store.ConfigStore;
+import me.devtec.shared.dataholder.store.NodeMetadata;
 
-public abstract class DataLoader implements Cloneable {
+/**
+ * Compatibility facade. Format codecs and the canonical node store have
+ * independent lifecycles.
+ */
+public class DataLoader implements Cloneable {
+	protected ConfigDocument document;
+	protected boolean loaded;
+	private final String format;
+	private ConfigMapView mapView;
+	private ConfigDocument mapDocument;
+	public static volatile Throwable lastLoadError;
+	private static final List<DataLoaderConstructor> CUSTOM = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-	// Data loaders hierarchy
-	public static final Map<LoaderPriority, List<DataLoaderConstructor>> dataLoaders = new HashMap<>();
-
-	// Do not modify!
-	private static boolean anyLoaderWhichAllowFiles;
-
-	static {
-		for (LoaderPriority priority : LoaderPriority.values())
-			DataLoader.dataLoaders.put(priority, new ArrayList<>());
-
-		// BUILT-IN LOADERS
-		DataLoader.dataLoaders.get(LoaderPriority.LOW).add(new DataLoaderConstructor() {
-
-			@Override
-			public DataLoader construct() {
-				return new ByteLoader();
-			}
-
-			@Override
-			public String name() {
-				return "byte";
-			}
-		});
-		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
-
-			@Override
-			public DataLoader construct() {
-				return new JsonLoader();
-			}
-
-			@Override
-			public String name() {
-				return "json";
-			}
-		});
-		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
-
-			@Override
-			public DataLoader construct() {
-				return new TomlLoader();
-			}
-
-			@Override
-			public String name() {
-				return "toml";
-			}
-		});
-		DataLoader.dataLoaders.get(LoaderPriority.NORMAL).add(new DataLoaderConstructor() {
-
-			@Override
-			public DataLoader construct() {
-				return new PropertiesLoader();
-			}
-
-			@Override
-			public String name() {
-				return "properties";
-			}
-		});
-		DataLoader.dataLoaders.get(LoaderPriority.HIGH).add(new DataLoaderConstructor() {
-
-			@Override
-			public DataLoader construct() {
-				return new YamlLoader();
-			}
-
-			@Override
-			public String name() {
-				return "yaml";
-			}
-		});
-		DataLoader.dataLoaders.get(LoaderPriority.HIGHEST).add(new DataLoaderConstructor() {
-
-			@Override
-			public String name() {
-				return "empty";
-			}
-
-			@Override
-			public DataLoader construct() {
-				return new EmptyLoader();
-			}
-		});
+	public DataLoader() {
+		this("empty");
 	}
 
-	@Comment(comment = "Registers DataLoaderConstructor under specified priority. Lower priority means that this DataConstructor will be retrieved earlier.")
-	public static void register(@Nonnull LoaderPriority priority, @Nonnull DataLoaderConstructor constructor) {
-		Checkers.nonNull(priority, "LoaderPriority");
-		Checkers.nonNull(constructor, "DataLoaderConstructor");
-		DataLoader.dataLoaders.get(priority).add(constructor);
-		if (constructor.construct().loadingFromFile())
-			anyLoaderWhichAllowFiles = true;
+	protected DataLoader(String format) {
+		this.format = format;
+		document = new ConfigDocument();
+		document.format = format;
 	}
 
-	@Comment(comment = "Unregisters DataLoaderConstructor.")
-	public void unregister(@Nonnull DataLoaderConstructor constructor) {
-		Checkers.nonNull(constructor, "DataLoaderConstructor");
-		for (List<DataLoaderConstructor> entry : DataLoader.dataLoaders.values())
-			if (entry.remove(constructor))
-				break;
+	private DataLoader(ConfigDocument d) {
+		format = d.format;
+		document = d;
+		loaded = true;
 	}
 
-	@Comment(comment = "Checks if it can read the contents of the file directly from File. If not, StreamUtils will be used to read the contents.")
-	public abstract boolean loadingFromFile();
+	public ConfigDocument document() {
+		return document;
+	}
 
-	@Comment(comment = "Gets the primary keys.")
-	@Nonnull
-	public abstract Set<String> getPrimaryKeys();
+	public boolean loadingFromFile() {
+		return false;
+	}
 
-	@Comment(comment = "Gets the entire stored structure in memory")
-	@Nonnull
-	public abstract Map<String, DataValue> get();
+	public Set<String> getPrimaryKeys() {
+		return document.storage.store().keys(null, false, false);
+	}
 
-	@Comment(comment = "Creates a section with the object.")
-	public abstract void set(@Nonnull String key, @Nonnull DataValue value);
+	public ConfigMapView get() {
+		if (mapDocument != document) {
+			mapDocument = document;
+			mapView = new ConfigMapView(document);
+		}
+		return mapView;
+	}
 
-	@Comment(comment = "Removes a section. If boolean is set to true, it also removes all subsections with this section.")
-	public abstract boolean remove(@Nonnull String key, boolean withSubKeys);
+	public boolean hasValue(String key) {
+		return document.storage.store().hasValue(key);
+	}
 
-	@Comment(comment = "Removes a section.")
-	public boolean remove(@Nonnull String key) {
+	public Object getValue(String key) {
+		final ConfigStore store = document.storage.store();
+		return store.externalValue(document, key, store.getValue(key));
+	}
+
+	public String getStringValue(String key) {
+		return document.storage.store().getStringValue(key);
+	}
+
+	public String getWrittenValue(String key) {
+		return document.storage.store().getWrittenValue(key);
+	}
+
+	public List<String> getComments(String key) {
+		return document.storage.store().getComments(key);
+	}
+
+	public String getComment(String key) {
+		return document.storage.store().getComment(key);
+	}
+
+	public boolean setValue(String key, Object value) {
+		if (value == null)
+			return remove(key);
+
+		final ConfigStore store = document.storage.store();
+		final int node = store.resolve(key, true);
+
+		final NodeMetadata metadata;
+
+		if (store.hasValue(node)) {
+			// Memory backend může levně porovnat hodnotu.
+			// Disk backend kvůli tomu nedekóduje potenciálně obří starou hodnotu.
+			if (!store.disk() && java.util.Objects.equals(store.getValue(node), value))
+				return false;
+
+			metadata = new NodeMetadata(null, store.getComment(node), store.getComments(node));
+		} else
+			metadata = new NodeMetadata();
+
+		document.put(node, value, metadata, true);
+		return true;
+	}
+
+	public boolean setIfAbsent(String key, Object value, List<String> comments) {
+		final ConfigStore store = document.storage.store();
+		final int node = store.resolve(key, true);
+
+		if (store.hasValue(node))
+			return false;
+
+		document.put(node, value, new NodeMetadata(null, null, comments), true);
+
+		return true;
+	}
+
+	public boolean setComments(String key, List<String> comments) {
+		final ConfigStore store = document.storage.store();
+
+		if (comments == null || comments.isEmpty()) {
+			final int node = store.resolve(key, false);
+
+			if (node == 0)
+				return false;
+
+			final List<String> previous = store.getComments(node);
+
+			if (previous == null || previous.isEmpty())
+				return false;
+
+			final NodeMetadata metadata = new NodeMetadata(store.getWrittenValue(node), store.getComment(node), null);
+
+			document.put(node, store.value(node), metadata, true);
+			return true;
+		}
+
+		final int node = store.resolve(key, true);
+		final List<String> previous = store.getComments(node);
+
+		if (comments.equals(previous))
+			return false;
+
+		final NodeMetadata metadata = new NodeMetadata(store.getWrittenValue(node), store.getComment(node),
+				new ArrayList<>(comments));
+
+		document.put(node, store.value(node), metadata, true);
+		return true;
+	}
+
+	public boolean setComment(String key, String comment) {
+		final ConfigStore store = document.storage.store();
+
+		if (comment == null || comment.isEmpty()) {
+			final int node = store.resolve(key, false);
+
+			if (node == 0 || store.getComment(node) == null)
+				return false;
+
+			final NodeMetadata metadata = new NodeMetadata(store.getWrittenValue(node), null, store.getComments(node));
+
+			document.put(node, store.value(node), metadata, true);
+			return true;
+		}
+
+		final int node = store.resolve(key, true);
+		final String previous = store.getComment(node);
+
+		if (comment.equals(previous))
+			return false;
+
+		final NodeMetadata metadata = new NodeMetadata(store.getWrittenValue(node), comment, store.getComments(node));
+
+		document.put(node, store.value(node), metadata, true);
+		return true;
+	}
+
+	public void set(String key, DataValue value) {
+		final ConfigStore store = document.storage.store();
+		final int node = store.resolve(key, true);
+
+		document.put(node, value.value, new NodeMetadata(value.writtenValue, value.commentAfterValue, value.comments),
+				value.modified);
+	}
+
+	public DataValue get(String key) {
+		return get().get(key);
+	}
+
+	public DataValue getOrCreate(String key) {
+		DataValue v = get(key);
+		if (v == null) {
+			v = DataValue.empty();
+			set(key, v);
+		}
+		return v;
+	}
+
+	public boolean remove(String key) {
 		return remove(key, false);
 	}
 
-	@Comment(comment = "Gets the set header lines. This collection can be edited.")
-	@Nonnull
-	public abstract Collection<String> getHeader();
+	public boolean remove(String key, boolean subtree) {
+		final ConfigStore store = document.storage.store();
 
-	@Comment(comment = "Gets the set footer lines. This collection can be edited.")
-	@Nonnull
-	public abstract Collection<String> getFooter();
+		final boolean removed = store.remove(key, subtree);
 
-	@Comment(comment = "Gets all the keys.")
-	@Nonnull
-	public abstract Set<String> getKeys();
+		if (removed)
+			document.storage.beforeMutation(0);
 
-	@Comment(comment = "Clears all keys, sections and all settings.")
-	public abstract void reset();
-
-	@Comment(comment = "Loads the contents of the file.")
-	public abstract void load(StringContainer container, @Nonnull List<int[]> input);
-
-	@Comment(comment = "Loads the contents of the file.")
-	public abstract void load(@Nullable String input);
-
-	public abstract boolean supportsReadingLines();
-
-	@Comment(comment = "Loads the file. If the class doesn't override this method on its own, StreamUtils will be used to read the contents of the file.")
-	public void load(@Nonnull File file) {
-		this.load(StreamUtils.fromStream(file));
+		return removed;
 	}
 
-	@Comment(comment = "Checks if the file was loaded according to class after calling the load method.")
-	public abstract boolean isLoaded();
-
-	@Comment(comment = "Gets stored data from a collection on a specific section.")
-	@Nullable
-	public abstract DataValue get(@Nonnull String key);
-
-	@Comment(comment = "Gets stored data from a collection on a specific section. If there are none, creates a section with empty data.")
-	@Nonnull
-	public abstract DataValue getOrCreate(@Nonnull String key);
-
-	@Comment(comment = "Saves the entire structure to single String")
-	@Nonnull
-	public String saveAsString(Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		return saveAsContainer(config, markSaved).toString();
+	public Collection<String> getHeader() {
+		return document.header;
 	}
 
-	@Comment(comment = "Saves the entire structure to byte[]")
-	@Nonnull
-	public byte[] save(Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		return saveAsContainer(config, markSaved).getBytes();
+	public Collection<String> getFooter() {
+		return document.footer;
 	}
 
-	@Comment(comment = "Saves the entire structure to StringContainer")
-	@Nonnull
-	public StringContainer saveAsContainer(Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		int size = config.getDataLoader().get().size();
-		StringContainer builder = new StringContainer(size * 20);
-		Iterator<CharSequence> itr = saveAsIterator(config, markSaved);
-		while (itr != null && itr.hasNext())
-			builder.append(itr.next());
-		return builder;
+	public Set<String> getKeys() {
+		return document.storage.store().keys(null, false, true);
 	}
 
-	@Comment(comment = "Saves the entire structure to Iterator<byte[]> which prevent from overload")
-	@Nullable
-	public Iterator<CharSequence> saveAsIterator(@Nonnull Config config, boolean markSaved) {
-		Checkers.nonNull(config, "Config");
-		return null;
+	public Set<Map.Entry<String, DataValue>> entrySet() {
+		return get().entrySet();
 	}
 
-	@Comment(comment = "Returns status of iterator mode of this DataLoader type")
+	public Set<String> keySet(String key, boolean subkeys) {
+		return document.storage.store().keys(key, subkeys, false);
+	}
+
+	public Iterator<String> keySetIterator(String key, boolean subkeys) {
+		return keySet(key, subkeys).iterator();
+	}
+
+	public boolean hasKeyOrSection(String key) {
+		return document.storage.store().hasKeyOrSection(key);
+	}
+
+	public boolean isLoaded() {
+		return loaded;
+	}
+
+	public String name() {
+		return document.format;
+	}
+
+	public void reset() {
+		document.close();
+		document = new ConfigDocument();
+		document.format = format;
+		loaded = false;
+	}
+
+	public void load(StringContainer container, List<int[]> lines) {
+		load(container.toString());
+	}
+
+	public void load(String input) {
+		try {
+			ConfigDocument next = parse(new StringReader(input == null ? "" : input), format,
+					input == null ? 0 : input.length() * 2L);
+			document.close();
+			document = next;
+			loaded = true;
+		} catch (IOException | RuntimeException e) {
+			lastLoadError = e;
+			loaded = false;
+		}
+	}
+
+	public void load(File file) {
+		try {
+			ConfigDocument next = read(file, format);
+			document.close();
+			document = next;
+			loaded = true;
+		} catch (IOException | RuntimeException e) {
+			lastLoadError = e;
+			e.printStackTrace();
+			loaded = false;
+		}
+	}
+
+	public boolean supportsReadingLines() {
+		return false;
+	}
+
+	public boolean supportsLargeFiles() {
+		return true;
+	}
+
+	public boolean canLoadLargeFile(File file) {
+		return true;
+	}
+
+	public void loadLargeFile(File file) {
+		load(file);
+	}
+
 	public boolean supportsIteratorMode() {
 		return false;
 	}
 
-	@Comment(comment = "Gets the name of this DataLoader")
-	@Nonnull
-	public abstract String name();
+	public boolean supportsStreamingSave() {
+		return true;
+	}
 
-	@Comment(comment = "Gets the entire structure from the Map and converts it to EntrySet")
-	@Nonnull
-	public abstract Set<Entry<String, DataValue>> entrySet();
+	public void markSavedValues() {
+		document.storage.store().markSaved();
+	}
 
-	@Comment(comment = "Gets all subsection names under a specific section. If boolean is set to true, it gets absolutely all subsections with full names.")
-	@Nonnull
-	public abstract Set<String> keySet(@Nonnull String key, boolean subkeys);
-
-	@Comment(comment = "Creates an Iterator that will retrieve subsections under a specific section. If boolean is set to true, it gets absolutely all subsections with full names.")
-	@Nonnull
-	public abstract Iterator<String> keySetIterator(@Nonnull String key, boolean subkeys);
-
-	@Comment(comment = "Clones the entire DataLoader")
 	@Override
-	@Nonnull
-	public abstract DataLoader clone();
-
-	@Comment(comment = "Finds DataLoader by its name")
-	@Nonnull
-	public static DataLoader findLoaderByName(@Nonnull String type) {
-		Checkers.nonNull(type, "DataLoader Type Name");
-		for (LoaderPriority priority : LoaderPriority.values())
-			for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority))
-				if (constructor.isConstructorOf(type))
-					return constructor.construct();
-		return new EmptyLoader();
+	public DataLoader clone() {
+		return new DataLoader(document.copy());
 	}
 
-	@Comment(comment = "It finds the correct DataLoader according to the contents of the file and reads it.")
-	@Nonnull
-	public static DataLoader findLoaderFor(@Nonnull File input) {
-		Checkers.nonNull(input, "Input File");
-		if (!anyLoaderWhichAllowFiles)
-			return findLoaderFor(StreamUtils.fromStream(input));
-		if (input.length() > 0L) {
-			String inputString = null;
-			List<int[]> inputLines = null;
-			StringContainer container = null;
-			loadersLoop: for (LoaderPriority priority : LoaderPriority.values())
-				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
-					DataLoader loader = constructor.construct();
-					if (inputString == null && loader.loadingFromFile())
-						loader.load(input);
-					else {
-						if (inputString == null) {
-							inputString = StreamUtils.fromStream(input);
-							if (inputString == null)
-								break loadersLoop;
-						}
-						if (loader.supportsReadingLines()) {
-							if (container == null) {
-								container = new StringContainer(inputString, 0, 0);
-								inputLines = LoaderReadUtil.readLinesFromContainer(container);
-							}
-							loader.load(container, inputLines);
-						} else
-							loader.load(inputString);
-					}
-					if (loader.isLoaded())
-						return loader;
-				}
+	public void saveTo(Config config, OutputStream output, boolean markSaved) throws IOException {
+		saveTo(config, format, output, markSaved);
+	}
+
+	public static boolean supportsFormat(String name) {
+		String format = name.toLowerCase(Locale.ROOT);
+		return "yaml".equals(format) || "json".equals(format) || "toml".equals(format) || "properties".equals(format)
+				|| "byte".equals(format) || "empty".equals(format);
+	}
+
+	public static void saveTo(Config config, String format, OutputStream output, boolean markSaved) throws IOException {
+		format = format.toLowerCase(Locale.ROOT);
+		ConfigDocument d = config.getDataLoader().document;
+		if ("byte".equals(format))
+			FormatRegistry.writeByte(d, output);
+		else {
+			Writer writer = new ConfigBufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8.newEncoder()
+					.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)));
+			ConfigWriter.INSTANCE.write(d, format, writer);
+			writer.flush();
 		}
-		EmptyLoader empty = new EmptyLoader();
-		empty.load(input);
-		return empty;
+		if (markSaved)
+			d.storage.store().markSaved();
 	}
 
-	@Comment(comment = "It finds the correct DataLoader according to the contents and reads it.")
-	@Nonnull
-	public static DataLoader findLoaderFor(@Nullable String inputString) {
-		if (inputString != null && !inputString.isEmpty())
-			for (LoaderPriority priority : LoaderPriority.values())
-				for (DataLoaderConstructor constructor : DataLoader.dataLoaders.get(priority)) {
-					DataLoader loader = constructor.construct();
-					if (loader.supportsReadingLines()) {
-						StringContainer container = new StringContainer(inputString, 0, 0);
-						List<int[]> inputLines = LoaderReadUtil.readLinesFromContainer(container);
-						loader.load(container, inputLines);
-					} else
-						loader.load(inputString);
-					if (loader.isLoaded())
-						return loader;
+	public byte[] save(Config config, boolean markSaved) {
+		return save(config, format, markSaved);
+	}
+
+	public static byte[] save(Config config, String format, boolean markSaved) {
+		final long limit = Math.min(Integer.MAX_VALUE - 8, Runtime.getRuntime().maxMemory() / 8);
+		if (config.getDataLoader().document.storage.store().estimatedHeap() > limit * 4)
+			throw new IllegalStateException("Config output is too large for a byte array; use save() or saveTo()");
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream() {
+			private void check(int n) {
+				if ((long) count + n > limit)
+					throw new IllegalStateException("Config output exceeds in-memory limit; use save() or saveTo()");
+			}
+
+			@Override
+			public synchronized void write(int b) {
+				check(1);
+				super.write(b);
+			}
+
+			@Override
+			public synchronized void write(byte[] b, int off, int len) {
+				check(len);
+				super.write(b, off, len);
+			}
+		};
+		try {
+			saveTo(config, format, bytes, markSaved);
+			return bytes.toByteArray();
+		} catch (IOException e) {
+			throw new IllegalStateException("Config serialization failed", e);
+		}
+	}
+
+	public String saveAsString(Config config, boolean markSaved) {
+		return saveAsString(config, format, markSaved);
+	}
+
+	public static String saveAsString(Config config, String format, boolean markSaved) {
+		format = format.toLowerCase(Locale.ROOT);
+		if ("byte".equals(format))
+			return new String(save(config, format, markSaved), StandardCharsets.US_ASCII);
+		ConfigDocument document = config.getDataLoader().document;
+		me.devtec.shared.dataholder.codec.StringContainerWriter writer = new me.devtec.shared.dataholder.codec.StringContainerWriter();
+		try {
+			ConfigWriter.INSTANCE.write(document, format, writer);
+			String result = writer.toString();
+			if (markSaved)
+				document.storage.store().markSaved();
+			return result;
+		} catch (IOException e) {
+			throw new IllegalStateException("Config serialization failed", e);
+		}
+	}
+
+	public StringContainer saveAsContainer(Config config, boolean markSaved) {
+		if ("byte".equals(format))
+			return new StringContainer(saveAsString(config, markSaved));
+		me.devtec.shared.dataholder.codec.StringContainerWriter writer = new me.devtec.shared.dataholder.codec.StringContainerWriter();
+		try {
+			ConfigWriter.INSTANCE.write(config.getDataLoader().document, format, writer);
+			if (markSaved)
+				config.getDataLoader().markSavedValues();
+			return writer.container();
+		} catch (IOException e) {
+			throw new IllegalStateException("Config serialization failed", e);
+		}
+	}
+
+	public Iterator<CharSequence> saveAsIterator(Config config, boolean markSaved) {
+		return Collections.<CharSequence>singletonList(saveAsString(config, markSaved)).iterator();
+	}
+
+	public static void register(LoaderPriority priority, DataLoaderConstructor constructor) {
+		CUSTOM.add(constructor);
+	}
+
+	public static boolean unregister(DataLoaderConstructor constructor) {
+		return CUSTOM.remove(constructor);
+	}
+
+	public static DataLoader findLoaderByName(String name) {
+		for (DataLoaderConstructor c : CUSTOM)
+			if (c.isConstructorOf(name))
+				return c.construct();
+		String f = name.toLowerCase(Locale.ROOT);
+		return Arrays.asList("yaml", "json", "toml", "properties", "byte", "empty").contains(f) ? new DataLoader(f)
+				: null;
+	}
+
+	public static DataLoader findLoaderFor(String input) {
+		try {
+			return new DataLoader(
+					parse(new StringReader(input == null ? "" : input), null, input == null ? 0 : input.length() * 2L));
+		} catch (IOException | RuntimeException e) {
+			lastLoadError = e;
+			return failed();
+		}
+	}
+
+	public static DataLoader findLoaderFor(File file) {
+		try {
+			return new DataLoader(read(file, null));
+		} catch (IOException | RuntimeException e) {
+			lastLoadError = e;
+
+			e.printStackTrace();
+
+			return failed();
+		}
+	}
+
+	public static DataLoader findLoaderFor(InputStream input) {
+		try (Reader r = new InputStreamReader(input,
+				StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT))) {
+			return new DataLoader(parse(r, null, 0));
+		} catch (IOException | RuntimeException e) {
+			lastLoadError = e;
+			return failed();
+		}
+	}
+
+	private static DataLoader failed() {
+		DataLoader d = new EmptyLoader();
+		d.loaded = false;
+		return d;
+	}
+
+	private static ConfigDocument read(File file, String format) throws IOException {
+		final long sourceBytes = file.length();
+		if (sourceBytes == 0)
+			return new ConfigDocument();
+		try (FileInputStream input = new FileInputStream(file)) {
+			// Small files can use the same array-backed Reader path as String input.
+			// The extra byte detects growth without ever truncating the input.
+			if (sourceBytes <= 64 * 1024) {
+				byte[] bytes = new byte[(int) sourceBytes + 1];
+				int count = 0;
+				while (count < bytes.length) {
+					int read = input.read(bytes, count, bytes.length - count);
+					if (read < 0) {
+						java.nio.CharBuffer text = StandardCharsets.UTF_8.newDecoder()
+								.onMalformedInput(CodingErrorAction.REPORT)
+								.decode(java.nio.ByteBuffer.wrap(bytes, 0, count));
+						Reader reader = text.hasArray()
+								? new CharArrayReader(text.array(), text.arrayOffset() + text.position(), text.remaining())
+								: new StringReader(text.toString());
+						return parse(reader, format, count);
+					}
+					count += read;
 				}
-		EmptyLoader empty = new EmptyLoader();
-		empty.load(inputString);
-		return empty;
+				// File grew during the read: replay the prefix and keep streaming.
+				try (Reader reader = new InputStreamReader(new SequenceInputStream(
+						new ByteArrayInputStream(bytes), input), StandardCharsets.UTF_8.newDecoder()
+								.onMalformedInput(CodingErrorAction.REPORT))) {
+					return parse(reader, format, sourceBytes);
+				}
+			}
+			try (Reader reader = new InputStreamReader(input,
+					StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT))) {
+				return parse(reader, format, sourceBytes);
+			}
+		}
+	}
+
+	private static ConfigDocument parse(Reader r, String format, long bytes) throws IOException {
+		char[] sample = new char[4096];
+		int n = r.read(sample);
+		// Codecs own their input buffers. Retain only the detection prefix here.
+		PushbackReader reader = new PushbackReader(r, sample.length);
+		int start = n > 0 && sample[0] == '\uFEFF' ? 1 : 0;
+		if (n > start) reader.unread(sample, start, n - start);
+		if (format == null)
+			format = FormatRegistry.detect(n > start ? new String(sample, start, n - start) : "");
+		ConfigDocument d = new ConfigDocument();
+
+		try {
+			d.storage.preflight(bytes);
+
+			d.storage.beginBulkLoad(bytes);
+
+			try {
+				FormatRegistry.parse("byte".equals(format) ? new BufferedReader(reader, 8192) : reader, format, d);
+			} finally {
+				d.storage.endBulkLoad();
+			}
+
+			return d;
+
+		} catch (IOException | RuntimeException e) {
+			d.close();
+			throw e;
+		}
 	}
 }

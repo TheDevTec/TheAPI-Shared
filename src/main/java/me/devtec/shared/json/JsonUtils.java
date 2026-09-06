@@ -3,313 +3,909 @@ package me.devtec.shared.json;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
+import java.util.*;
 
 import me.devtec.shared.Pair;
 import me.devtec.shared.Ref;
-import me.devtec.shared.utility.ArrayUtils;
 
-public class JsonUtils {
+public final class JsonUtils {
 
-	// Collections#unmodifiable
-	private static final Class<?> unmodifiableCollection = Ref.getClass("java.util.Collections$UnmodifiableCollection");
-	// Stream#toList()
-	private static final Class<?> immutableCollection = Ref.getClass("java.util.ImmutableCollections$AbstractImmutableCollection");
-	// Arrays#asList()
-	private static final Class<?> arraysCollection = Ref.getClass("java.util.Arrays$ArrayList");
+	private static final String KEY_CLASS = "c";
+	private static final String KEY_TYPE = "t";
+	private static final String KEY_ENUM = "e";
+	private static final String KEY_STATE = "s";
+	private static final String KEY_FIELDS = "f";
+	private static final String KEY_SUPER_FIELDS = "sf";
 
-	// Collections#unmodifiable
-	private static final Class<?> unmodifiableMap = Ref.getClass("java.util.Collections$UnmodifiableMap");
-	// Stream#toList()
-	private static final Class<?> immutableMap = Ref.getClass("java.util.ImmutableCollections$AbstractImmutableMap");
+	private static final String TYPE_MAP = "map";
+	private static final String TYPE_ARRAY = "array";
+	private static final String TYPE_ENUM = "enum";
+	private static final String TYPE_COLLECTION = "collection";
 
-	public static Object writeWithoutParseStatic(Object s) {
+	private JsonUtils() {
+	}
+
+	// =====================================================================
+	// Write
+	// =====================================================================
+
+	public static Object writeWithoutParseStatic(Object value) {
 		try {
-			if (s == null) {
-				return null;
+			return write(value, new IdentityHashMap<>());
+		} catch (Exception err) {
+			err.printStackTrace();
+			return null;
+		}
+	}
+
+	private static Object write(Object value, IdentityHashMap<Object, Boolean> visiting) throws Exception {
+		if (value == null)
+			return null;
+
+		if (isSimpleValue(value))
+			return value;
+
+		Object custom = Json.processDataWriters(value);
+
+		if (custom != null)
+			return custom;
+
+		if (value instanceof Enum) {
+			Enum<?> enumValue = (Enum<?>) value;
+
+			Map<String, Object> object = new LinkedHashMap<>();
+			object.put(KEY_CLASS, enumValue.getDeclaringClass().getName());
+			object.put(KEY_ENUM, enumValue.name());
+			object.put(KEY_TYPE, TYPE_ENUM);
+
+			return object;
+		}
+
+		/*
+		 * Prevent:
+		 *
+		 * A -> B -> A
+		 *
+		 * Direct object.field = object references are handled separately below and
+		 * preserve the old "~" format.
+		 */
+		if (visiting.put(value, Boolean.TRUE) != null)
+			throw new IllegalStateException(
+					"Circular reference detected while serializing " + value.getClass().getName());
+
+		try {
+			if (value instanceof Map)
+				return writeMap((Map<?, ?>) value, visiting);
+
+			if (value instanceof Collection)
+				return writeCollection((Collection<?>) value, visiting);
+
+			if (value.getClass().isArray())
+				return writeArray(value, visiting);
+
+			return writeObject(value, visiting);
+		} finally {
+			visiting.remove(value);
+		}
+	}
+
+	private static boolean isSimpleValue(Object value) {
+		return value instanceof CharSequence || value instanceof Boolean || value instanceof Number
+				|| value instanceof Character || value instanceof UUID;
+	}
+
+	// =====================================================================
+	// Write - Map
+	// =====================================================================
+
+	private static Object writeMap(Map<?, ?> source, IdentityHashMap<Object, Boolean> visiting) throws Exception {
+		Class<?> type = source.getClass();
+
+		if (isSimpleMap(type)) {
+			Map<Object, Object> result = source instanceof LinkedHashMap ? new LinkedHashMap<>() : new HashMap<>();
+
+			for (Map.Entry<?, ?> entry : source.entrySet())
+				result.put(write(entry.getKey(), visiting), write(entry.getValue(), visiting));
+
+			return result;
+		}
+
+		Map<String, Object> object = new LinkedHashMap<>();
+		object.put(KEY_CLASS, type.getName());
+		object.put(KEY_TYPE, TYPE_MAP);
+
+		List<Object> values = new ArrayList<>(source.size());
+
+		for (Map.Entry<?, ?> entry : source.entrySet())
+			values.add(write(new Pair(entry.getKey(), entry.getValue()), visiting));
+
+		object.put(KEY_STATE, values);
+
+		return object;
+	}
+
+	private static boolean isSimpleMap(Class<?> type) {
+		if (HashMap.class.isAssignableFrom(type))
+			return true;
+
+		String name = type.getName();
+
+		/*
+		 * Collections.unmodifiableMap(...) Collections.singletonMap(...)
+		 * Collections.emptyMap(...) Collections.synchronizedMap(...)
+		 * Collections.checkedMap(...)
+		 */
+		if (name.startsWith("java.util.Collections$"))
+			return true;
+
+		/*
+		 * Map.of(...) Map.copyOf(...)
+		 *
+		 * Java 9+
+		 */
+		return name.startsWith("java.util.ImmutableCollections$");
+	}
+
+	// =====================================================================
+	// Write - Collection
+	// =====================================================================
+
+	private static Object writeCollection(Collection<?> source, IdentityHashMap<Object, Boolean> visiting)
+			throws Exception {
+		Class<?> type = source.getClass();
+
+		if (isSimpleCollection(type)) {
+			List<Object> result = new ArrayList<>(source.size());
+
+			for (Object value : source)
+				result.add(write(value, visiting));
+
+			return result;
+		}
+
+		Map<String, Object> object = new LinkedHashMap<>();
+		object.put(KEY_CLASS, type.getName());
+		object.put(KEY_TYPE, TYPE_COLLECTION);
+
+		List<Object> values = new ArrayList<>(source.size());
+
+		for (Object value : source)
+			values.add(write(value, visiting));
+
+		object.put(KEY_STATE, values);
+
+		return object;
+	}
+
+	private static boolean isSimpleCollection(Class<?> type) {
+		if (type == ArrayList.class || type == LinkedList.class)
+			return true;
+
+		String name = type.getName();
+
+		/*
+		 * Arrays.asList(...)
+		 */
+		/*
+		 * Collections.unmodifiable* Collections.singleton* Collections.empty*
+		 * Collections.synchronized* Collections.checked*
+		 */
+		if ("java.util.Arrays$ArrayList".equals(name) || name.startsWith("java.util.Collections$"))
+			return true;
+
+		/*
+		 * List.of(...) Set.of(...) List.copyOf(...)
+		 *
+		 * Java 9+
+		 */
+		return name.startsWith("java.util.ImmutableCollections$");
+	}
+
+	// =====================================================================
+	// Write - Array
+	// =====================================================================
+
+	private static Object writeArray(Object source, IdentityHashMap<Object, Boolean> visiting) throws Exception {
+		Class<?> componentType = source.getClass().getComponentType();
+		int length = Array.getLength(source);
+
+		Map<String, Object> object = new LinkedHashMap<>();
+		object.put(KEY_CLASS, componentType.getName());
+		object.put(KEY_TYPE, TYPE_ARRAY);
+
+		List<Object> values = new ArrayList<>(length);
+
+		for (int i = 0; i < length; ++i)
+			values.add(write(Array.get(source, i), visiting));
+
+		object.put(KEY_STATE, values);
+
+		return object;
+	}
+
+	// =====================================================================
+	// Write - Object
+	// =====================================================================
+
+	private static Object writeObject(Object source, IdentityHashMap<Object, Boolean> visiting) throws Exception {
+		Class<?> sourceClass = source.getClass();
+
+		Map<String, Object> object = new LinkedHashMap<>();
+		Map<String, Object> fields = new LinkedHashMap<>();
+		Map<String, Object> superFields = new LinkedHashMap<>();
+
+		object.put(KEY_CLASS, sourceClass.getName());
+		object.put(KEY_FIELDS, fields);
+
+		Class<?> owner = sourceClass;
+
+		while (owner != null && owner != Object.class) {
+			Field[] declaredFields;
+
+			try {
+				declaredFields = owner.getDeclaredFields();
+			} catch (Throwable ignored) {
+				owner = owner.getSuperclass();
+				continue;
 			}
-			if (s instanceof CharSequence || s instanceof Boolean || s instanceof Number || s instanceof Character || s instanceof UUID) {
-				return s;
-			}
-			Object result = Json.processDataWriters(s);
-			if (result != null) {
-				return result;
-			}
-			if (s instanceof Enum) {
-				Map<String, Object> object = new HashMap<>();
-				object.put("c", s.getClass().getName());
-				object.put("e", ((Enum<?>) s).name());
-				object.put("t", "enum");
-				return object;
-			}
-			if (s instanceof Map) {
-				if (s instanceof HashMap || unmodifiableMap.isAssignableFrom(s.getClass()) || immutableMap.isAssignableFrom(s.getClass())) {
-					Map<Object, Object> obj = s instanceof LinkedHashMap ? new LinkedHashMap<>() : new HashMap<>();
-					for (Map.Entry<?, ?> o : ((Map<?, ?>) s).entrySet()) {
-						obj.put(JsonUtils.writeWithoutParseStatic(o.getKey()), JsonUtils.writeWithoutParseStatic(o.getValue()));
-					}
-					return obj;
-				}
-				Map<String, Object> object = new HashMap<>();
-				object.put("c", s.getClass().getName());
-				object.put("t", "map");
-				List<Object> vals = new ArrayList<>();
-				for (Map.Entry<?, ?> o : ((Map<?, ?>) s).entrySet()) {
-					vals.add(JsonUtils.writeWithoutParseStatic(new Pair(o.getKey(), o.getValue())));
-				}
-				object.put("s", vals);
-				return object;
-			}
-			if (s instanceof Collection) {
-				if (s instanceof ArrayList || s instanceof LinkedList || unmodifiableCollection.isAssignableFrom(s.getClass()) || immutableCollection.isAssignableFrom(s.getClass()) || arraysCollection !=null && arraysCollection.isAssignableFrom(s.getClass())) {
-					List<Object> obj = new LinkedList<>();
-					for (Object o : (Collection<?>) s) {
-						obj.add(JsonUtils.writeWithoutParseStatic(o));
-					}
-					return obj;
-				}
-				Map<String, Object> object = new HashMap<>();
-				object.put("c", s.getClass().getName());
-				object.put("t", "collection");
-				List<Object> vals = new ArrayList<>();
-				for (Object o : (Collection<?>) s) {
-					vals.add(JsonUtils.writeWithoutParseStatic(o));
-				}
-				object.put("s", vals);
-				return object;
-			}
-			if (s.getClass().isArray()) {
-				Map<String, Object> object = new HashMap<>();
-				object.put("c", s.getClass().getComponentType().getName());
-				object.put("t", "array");
-				List<Object> vals = new ArrayList<>();
-				for (int i = 0; i < Array.getLength(s); ++i) {
-					vals.add(JsonUtils.writeWithoutParseStatic(Array.get(s, i)));
-				}
-				object.put("s", vals);
-				return object;
-			}
-			Map<String, Object> object = new HashMap<>();
-			Map<String, Object> fields = new HashMap<>();
-			Map<String, Object> sub_fields = new HashMap<>();
-			object.put("c", s.getClass().getName());
-			object.put("f", fields);
-			Class<?> c = s.getClass();
-			for (Field f : c.getDeclaredFields()) {
-				if ((f.getModifiers() & Modifier.STATIC) != 0) {
+
+			for (Field field : declaredFields) {
+				if (!shouldSerialize(field))
+					continue;
+
+				Object fieldValue;
+
+				try {
+					field.setAccessible(true);
+					fieldValue = field.get(source);
+				} catch (Throwable ignored) {
 					continue;
 				}
-				f.setAccessible(true);
-				Object obj = f.get(s);
-				if (s.equals(obj)) {
-					fields.put("~" + f.getName(), "~");
-				} else {
-					fields.put(f.getName(), JsonUtils.writeWithoutParseStatic(obj));
+
+				boolean direct = owner == sourceClass;
+
+				if (fieldValue == source) {
+					if (direct)
+						fields.put("~" + field.getName(), "~");
+					else
+						superFields.put(owner.getName() + ":~" + field.getName(), "~");
+
+					continue;
 				}
+
+				Object serialized = write(fieldValue, visiting);
+
+				if (direct)
+					fields.put(field.getName(), serialized);
+				else
+					superFields.put(owner.getName() + ":" + field.getName(), serialized);
 			}
-			c = c.getSuperclass();
-			while (c != null) {
-				for (Field f : c.getDeclaredFields()) {
-					if ((f.getModifiers() & Modifier.STATIC) != 0) {
-						continue;
-					}
-					f.setAccessible(true);
-					Object obj = f.get(s);
-					if (s.equals(obj)) {
-						sub_fields.put(c.getName() + ":~" + f.getName(), "~");
-					} else {
-						sub_fields.put(c.getName() + ":" + f.getName(), JsonUtils.writeWithoutParseStatic(obj));
-					}
-				}
-				c = c.getSuperclass();
-			}
-			if (!sub_fields.isEmpty()) {
-				object.put("sf", sub_fields);
-			}
-			return object;
-		} catch (Exception err) {
-			err.printStackTrace();
+
+			owner = owner.getSuperclass();
 		}
-		return null;
+
+		if (!superFields.isEmpty())
+			object.put(KEY_SUPER_FIELDS, superFields);
+
+		return object;
 	}
 
-	public static Object cast(Object value, Class<?> type) {
-		if (value == null) {
+	private static boolean shouldSerialize(Field field) {
+		return !Modifier.isStatic(field.getModifiers()) && !field.isSynthetic();
+	}
+
+	// =====================================================================
+	// Read
+	// =====================================================================
+
+	@SuppressWarnings({ "unchecked" })
+	public static Object read(Object value) {
+		if (value == null)
 			return null;
-		}
-		if (type.isArray()) {
-			Collection<?> o = (Collection<?>) value;
-			List<Object> c = new ArrayList<>(o.size());
-			for (Object a : o) {
-				c.add(JsonUtils.read(a));
+
+		try {
+			/*
+			 * Plain JSON array.
+			 *
+			 * The old implementation didn't recursively process these, therefore serialized
+			 * objects inside a List could remain Maps.
+			 */
+			if (value instanceof Collection)
+				return readCollection((Collection<?>) value);
+
+			if (!(value instanceof Map))
+				return value;
+
+			Map<?, ?> rawMap = (Map<?, ?>) value;
+
+			/*
+			 * JSON objects normally have String keys. The cast itself is safe due to type
+			 * erasure and metadata lookups only use String keys.
+			 */
+			Map<String, Object> map = (Map<String, Object>) rawMap;
+
+			Object custom = Json.processDataReaders(map);
+
+			if (custom != null)
+				return custom;
+
+			if (!isSerializedObject(map))
+				return readMap(rawMap);
+
+			String className = getAsString(map, KEY_CLASS);
+
+			Class<?> type;
+
+			try {
+				type = getClassByName(className);
+			} catch (ClassNotFoundException ignored) {
+				return readMap(rawMap);
 			}
-			return c.toArray();
-		}
-		if (Double.TYPE == type) {
-			return ((Number) value).doubleValue();
-		}
-		if (Long.TYPE == type) {
-			return ((Number) value).longValue();
-		}
-		if (Integer.TYPE == type) {
-			return ((Number) value).intValue();
-		}
-		if (Float.TYPE == type) {
-			return ((Number) value).floatValue();
-		}
-		if (Byte.TYPE == type) {
-			return ((Number) value).byteValue();
-		}
-		if (Short.TYPE == type) {
-			return ((Number) value).shortValue();
-		}
-		if (Character.TYPE == type) {
+
+			if (type == null)
+				return readMap(rawMap);
+
+			String dataType = getAsString(map, KEY_TYPE);
+
+			if (dataType != null)
+				switch (dataType) {
+				case TYPE_MAP:
+					return readCustomMap(map, type);
+
+				case TYPE_ARRAY:
+					return readArray(map, type);
+
+				case TYPE_ENUM:
+					return readEnum(map, type, value);
+
+				case TYPE_COLLECTION:
+					return readCustomCollection(map, type);
+
+				default:
+					return value;
+				}
+
+			Object object = newInstance(type);
+
+			if (object == null)
+				return value;
+
+			restoreFields(object, type, map);
+
+			return object;
+
+		} catch (Exception err) {
+			err.printStackTrace();
 			return value;
 		}
-		return JsonUtils.read(value);
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Object read(Object s) {
-		if (s == null || s.equals("null")) {
-			return null;
-		}
-		try {
-			if (s instanceof Map) {
-				Map<String, Object> map = (Map<String, Object>) s;
-				Object result = Json.processDataReaders(map);
-				if (result != null) {
-					return result;
-				}
-				String className = (String) map.get("c");
-				if (className == null) {
-					for (Entry<String, Object> entry : map.entrySet()) {
-						entry.setValue(read(entry.getValue()));
-					}
-					return s;
-				}
-				Class<?> c = JsonUtils.getClassByName(className);
-				if (c == null) {
-					for (Entry<String, Object> entry : map.entrySet()) {
-						entry.setValue(read(entry.getValue()));
-					}
-					return s;
-				}
-				String type = (String) map.get("t");
-				if (type != null) { // collection, array or map
-                    switch (type) {
-                        case "map": {
-                            Object object;
-                            try {
-                                object = c.newInstance();
-                            } catch (Exception e) {
-                                object = Ref.getUnsafe().allocateInstance(c);
-                            }
-                            Map o = (Map) object;
-                            for (Object cc : (List<?>) map.getOrDefault("s", Collections.emptyList())) {
-                                Pair pair = (Pair) JsonUtils.read(cc);
-                                o.put(pair.getKey(), pair.getValue());
-                            }
-                            return o;
-                        }
-                        case "array":
-                            List<?> collection = (List<?>) map.getOrDefault("s", Collections.emptyList());
-                            Object array = ArrayUtils.newSafeInstance(c, collection.size());
-                            int i = 0;
-                            for (Object cc : collection) {
-								Array.set(array, i++, JsonUtils.cast(JsonUtils.read(cc), c));
-							}
-                            return array;
-                        case "enum":
-                            Object obj = map.get("e");
-                            return obj == null ? s : Ref.getNulled(c, type);
-                        case "collection": {
-                            Object object;
-                            try {
-                                object = c.newInstance();
-                            } catch (Exception e) {
-                                object = Ref.getUnsafe().allocateInstance(c);
-                            }
-                            Collection<Object> o = (Collection<Object>) object;
-                            for (Object cc : (List<?>) map.getOrDefault("s", Collections.emptyList())) {
-								o.add(JsonUtils.read(cc));
-							}
-                            return o;
-                        }
-                    }
-                    return null;
-				}
-				Object object;
-				try {
-					object = c.newInstance();
-				} catch (Exception e) {
-					object = Ref.getUnsafe().allocateInstance(c);
-				}
+	private static boolean isSerializedObject(Map<String, Object> map) {
+		String className = getAsString(map, KEY_CLASS);
 
-				Map<String, Object> fields = (Map<String, Object>) map.getOrDefault("f", Collections.emptyMap());
-				Map<String, Object> sub_fields = (Map<String, Object>) map.getOrDefault("sf", Collections.emptyMap());
-				for (Map.Entry<String, Object> e : fields.entrySet()) {
-					if (e.getKey().startsWith("~")) {
-						Field f = c.getDeclaredField(e.getKey().substring(1));
-						f.setAccessible(true);
-						f.set(object, object);
-						continue;
-					}
-					Field f = c.getDeclaredField(e.getKey());
-					f.setAccessible(true);
-					f.set(object, JsonUtils.cast(e.getValue(), f.getType()));
-				}
-				if (sub_fields != null) {
-					for (Map.Entry<String, Object> e : sub_fields.entrySet()) {
-						String field = e.getKey().split(":")[1];
-						if (field.startsWith("~")) {
-							Field f = Class.forName(e.getKey().split(":")[0]).getDeclaredField(field.substring(1));
-							f.setAccessible(true);
-							f.set(object, object);
-							continue;
-						}
-						Field f = Class.forName(e.getKey().split(":")[0]).getDeclaredField(field);
-						f.setAccessible(true);
-						f.set(object, JsonUtils.cast(e.getValue(), f.getType()));
-					}
-				}
-				return object;
+		if (className == null)
+			return false;
+
+		if (map.containsKey(KEY_FIELDS))
+			return true;
+
+		String type = getAsString(map, KEY_TYPE);
+
+		return TYPE_MAP.equals(type) || TYPE_ARRAY.equals(type) || TYPE_ENUM.equals(type)
+				|| TYPE_COLLECTION.equals(type);
+	}
+
+	// =====================================================================
+	// Read - Plain Collection
+	// =====================================================================
+
+	private static Object readCollection(Collection<?> source) {
+		Collection<Object> result;
+
+		if (source instanceof Set)
+			result = new LinkedHashSet<>();
+		else if (source instanceof LinkedList)
+			result = new LinkedList<>();
+		else
+			result = new ArrayList<>(source.size());
+
+		for (Object value : source)
+			result.add(read(value));
+
+		return result;
+	}
+
+	// =====================================================================
+	// Read - Plain Map
+	// =====================================================================
+
+	private static Object readMap(Map<?, ?> source) {
+		Map<Object, Object> result = source instanceof LinkedHashMap ? new LinkedHashMap<>() : new HashMap<>();
+
+		for (Map.Entry<?, ?> entry : source.entrySet())
+			result.put(read(entry.getKey()), read(entry.getValue()));
+
+		return result;
+	}
+
+	// =====================================================================
+	// Read - Custom Map
+	// =====================================================================
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Object readCustomMap(Map<String, Object> map, Class<?> type) {
+		Object object = newInstance(type);
+
+		if (!(object instanceof Map))
+			return map;
+
+		Map result = (Map) object;
+
+		Object state = map.get(KEY_STATE);
+
+		if (state instanceof Collection)
+			for (Object value : (Collection<?>) state) {
+				Object decoded = read(value);
+
+				if (!(decoded instanceof Pair))
+					continue;
+
+				Pair pair = (Pair) decoded;
+
+				result.put(pair.getKey(), pair.getValue());
 			}
-		} catch (Exception err) {
-			err.printStackTrace();
-		}
-		return s;
+
+		return result;
 	}
+
+	// =====================================================================
+	// Read - Collection
+	// =====================================================================
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Object readCustomCollection(Map<String, Object> map, Class<?> type) {
+		Object object = newInstance(type);
+
+		if (!(object instanceof Collection))
+			return map;
+
+		Collection result = (Collection) object;
+
+		Object state = map.get(KEY_STATE);
+
+		if (state instanceof Collection)
+			for (Object value : (Collection<?>) state)
+				result.add(read(value));
+
+		return result;
+	}
+
+	// =====================================================================
+	// Read - Array
+	// =====================================================================
+
+	private static Object readArray(Map<String, Object> map, Class<?> componentType) {
+		Object state = map.get(KEY_STATE);
+
+		int size = state instanceof Collection ? ((Collection<?>) state).size() : 0;
+
+		Object array = Array.newInstance(componentType, size);
+
+		if (!(state instanceof Collection))
+			return array;
+
+		int index = 0;
+
+		for (Object value : (Collection<?>) state)
+			Array.set(array, index++, cast(value, componentType));
+
+		return array;
+	}
+
+	// =====================================================================
+	// Read - Enum
+	// =====================================================================
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Object readEnum(Map<String, Object> map, Class<?> type, Object fallback) {
+		Object enumName = map.get(KEY_ENUM);
+
+		if (enumName == null || !type.isEnum())
+			return fallback;
+
+		try {
+			return Enum.valueOf((Class) type, String.valueOf(enumName));
+		} catch (Exception ignored) {
+			return fallback;
+		}
+	}
+
+	// =====================================================================
+	// Restore fields
+	// =====================================================================
+
+	private static void restoreFields(Object object, Class<?> objectType, Map<String, Object> map) {
+		Object fields = map.get(KEY_FIELDS);
+
+		if (fields instanceof Map)
+			restoreDirectFields(object, objectType, (Map<?, ?>) fields);
+
+		Object superFields = map.get(KEY_SUPER_FIELDS);
+
+		if (superFields instanceof Map)
+			restoreSuperFields(object, objectType, (Map<?, ?>) superFields);
+	}
+
+	private static void restoreDirectFields(Object object, Class<?> owner, Map<?, ?> fields) {
+		for (Map.Entry<?, ?> entry : fields.entrySet()) {
+			if (!(entry.getKey() instanceof String))
+				continue;
+
+			String fieldName = (String) entry.getKey();
+			boolean self = fieldName.startsWith("~");
+
+			if (self)
+				fieldName = fieldName.substring(1);
+
+			Field field;
+
+			try {
+				field = owner.getDeclaredField(fieldName);
+				field.setAccessible(true);
+			} catch (Throwable ignored) {
+				continue;
+			}
+
+			try {
+				if (self)
+					field.set(object, object);
+				else
+					field.set(object, cast(entry.getValue(), field.getType()));
+			} catch (Throwable ignored) {
+			}
+		}
+	}
+
+	private static void restoreSuperFields(Object object, Class<?> objectType, Map<?, ?> fields) {
+		for (Map.Entry<?, ?> entry : fields.entrySet()) {
+			if (!(entry.getKey() instanceof String))
+				continue;
+
+			String key = (String) entry.getKey();
+
+			/*
+			 * No split(":").
+			 *
+			 * Format:
+			 *
+			 * com.example.Parent:field com.example.Parent:~selfField
+			 */
+			int separator = key.indexOf(':');
+
+			if (separator == -1)
+				continue;
+
+			String className = key.substring(0, separator);
+			String fieldName = key.substring(separator + 1);
+
+			boolean self = fieldName.startsWith("~");
+
+			if (self)
+				fieldName = fieldName.substring(1);
+
+			Class<?> owner;
+
+			try {
+				owner = getClassByName(className);
+			} catch (ClassNotFoundException ignored) {
+				continue;
+			}
+
+			/*
+			 * Do not allow arbitrary unrelated classes from malformed data.
+			 */
+			if (!owner.isAssignableFrom(objectType))
+				continue;
+
+			Field field;
+
+			try {
+				field = owner.getDeclaredField(fieldName);
+				field.setAccessible(true);
+			} catch (Throwable ignored) {
+				continue;
+			}
+
+			try {
+				if (self)
+					field.set(object, object);
+				else
+					field.set(object, cast(entry.getValue(), field.getType()));
+			} catch (Throwable ignored) {
+			}
+		}
+	}
+
+	// =====================================================================
+	// Cast
+	// =====================================================================
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static Object cast(Object value, Class<?> type) {
+		if (value == null || type == null)
+			return null;
+
+		Object parsed = read(value);
+
+		if (parsed == null)
+			return null;
+
+		/*
+		 * Already the correct type.
+		 */
+		if (!type.isPrimitive() && type.isInstance(parsed))
+			return parsed;
+
+		// -------------------------------------------------------------
+		// Array
+		// -------------------------------------------------------------
+
+		if (type.isArray())
+			return castArray(parsed, type.getComponentType());
+
+		// -------------------------------------------------------------
+		// Collection
+		// -------------------------------------------------------------
+
+		if (Collection.class.isAssignableFrom(type) && parsed instanceof Collection)
+			return castCollection((Collection<?>) parsed, type);
+
+		// -------------------------------------------------------------
+		// Map
+		// -------------------------------------------------------------
+
+		if (Map.class.isAssignableFrom(type) && parsed instanceof Map)
+			return castMap((Map<?, ?>) parsed, type);
+
+		// -------------------------------------------------------------
+		// Numbers
+		// -------------------------------------------------------------
+
+		if (parsed instanceof Number) {
+			Number number = (Number) parsed;
+
+			if (type == double.class || type == Double.class)
+				return number.doubleValue();
+
+			if (type == long.class || type == Long.class)
+				return number.longValue();
+
+			if (type == int.class || type == Integer.class)
+				return number.intValue();
+
+			if (type == float.class || type == Float.class)
+				return number.floatValue();
+
+			if (type == byte.class || type == Byte.class)
+				return number.byteValue();
+
+			if (type == short.class || type == Short.class)
+				return number.shortValue();
+		}
+
+		// -------------------------------------------------------------
+		// Boolean
+		// -------------------------------------------------------------
+
+		if (type == boolean.class || type == Boolean.class) {
+			if (parsed instanceof Boolean)
+				return parsed;
+
+			return Boolean.valueOf(String.valueOf(parsed));
+		}
+
+		// -------------------------------------------------------------
+		// Character
+		// -------------------------------------------------------------
+
+		if (type == char.class || type == Character.class) {
+			if (parsed instanceof Character)
+				return parsed;
+
+			String text = String.valueOf(parsed);
+
+			return text.isEmpty() ? Character.valueOf('\0') : Character.valueOf(text.charAt(0));
+		}
+
+		// -------------------------------------------------------------
+		// Enum fallback
+		// -------------------------------------------------------------
+
+		if (type.isEnum() && parsed instanceof CharSequence)
+			try {
+				return Enum.valueOf((Class) type, parsed.toString());
+			} catch (Exception ignored) {
+			}
+
+		return parsed;
+	}
+
+	private static Object castArray(Object value, Class<?> componentType) {
+		if (value == null)
+			return null;
+
+		int size;
+
+		if (value instanceof Collection)
+			size = ((Collection<?>) value).size();
+		else if (value.getClass().isArray())
+			size = Array.getLength(value);
+		else
+			return value;
+
+		Object array = Array.newInstance(componentType, size);
+
+		if (value instanceof Collection) {
+			int index = 0;
+
+			for (Object element : (Collection<?>) value)
+				Array.set(array, index++, cast(element, componentType));
+
+			return array;
+		}
+
+		for (int i = 0; i < size; ++i)
+			Array.set(array, i, cast(Array.get(value, i), componentType));
+
+		return array;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Object castCollection(Collection<?> source, Class<?> type) {
+		if (type.isInstance(source))
+			return source;
+
+		Object instance = newInstance(type);
+
+		if (instance instanceof Collection) {
+			Collection result = (Collection) instance;
+			result.addAll(source);
+			return result;
+		}
+
+		/*
+		 * Interface / abstract type fallbacks.
+		 */
+		if (type.isAssignableFrom(ArrayList.class))
+			return new ArrayList<Object>(source);
+
+		if (type.isAssignableFrom(LinkedHashSet.class))
+			return new LinkedHashSet<Object>(source);
+
+		if (type.isAssignableFrom(LinkedList.class))
+			return new LinkedList<Object>(source);
+
+		if (type.isAssignableFrom(TreeSet.class))
+			try {
+				return new TreeSet(source);
+			} catch (Exception ignored) {
+			}
+
+		return source;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Object castMap(Map<?, ?> source, Class<?> type) {
+		if (type.isInstance(source))
+			return source;
+
+		Object instance = newInstance(type);
+
+		if (instance instanceof Map) {
+			Map result = (Map) instance;
+			result.putAll(source);
+			return result;
+		}
+
+		if (type.isAssignableFrom(LinkedHashMap.class))
+			return new LinkedHashMap<Object, Object>(source);
+
+		if (type.isAssignableFrom(TreeMap.class))
+			try {
+				return new TreeMap(source);
+			} catch (Exception ignored) {
+			}
+
+		return source;
+	}
+
+	// =====================================================================
+	// Object creation
+	// =====================================================================
+
+	private static Object newInstance(Class<?> type) {
+		if (type == null)
+			return null;
+
+		Object instance = Ref.newInstance(type);
+
+		if (instance != null)
+			return instance;
+
+		return Ref.allocateInstance(type);
+	}
+
+	// =====================================================================
+	// Helpers
+	// =====================================================================
+
+	private static String getAsString(Map<String, Object> map, String key) {
+
+		Object value = map.get(key);
+
+		return value instanceof String ? (String) value : null;
+	}
+
+	// =====================================================================
+	// Class resolving
+	// =====================================================================
 
 	public static Class<?> getClassByName(String className) throws ClassNotFoundException {
+		if (className == null)
+			throw new ClassNotFoundException("null");
+
 		switch (className) {
 		case "int":
 			return int.class;
+
 		case "double":
 			return double.class;
+
 		case "float":
 			return float.class;
+
 		case "long":
 			return long.class;
+
 		case "char":
 			return char.class;
+
 		case "byte":
 			return byte.class;
+
 		case "short":
 			return short.class;
+
 		case "boolean":
 			return boolean.class;
+
+		case "void":
+			return void.class;
+
+		default:
+			break;
 		}
+
+		/*
+		 * Important for Bukkit/Spigot/Paper plugins where user classes may live in a
+		 * different ClassLoader than TheAPI itself.
+		 */
+		ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+
+		if (contextLoader != null)
+			try {
+				return Class.forName(className, false, contextLoader);
+			} catch (ClassNotFoundException ignored) {
+			}
+
+		ClassLoader ownLoader = JsonUtils.class.getClassLoader();
+
+		if (ownLoader != null && ownLoader != contextLoader)
+			try {
+				return Class.forName(className, false, ownLoader);
+			} catch (ClassNotFoundException ignored) {
+			}
+
 		return Class.forName(className);
 	}
-
 }
