@@ -1,473 +1,468 @@
 package me.devtec.shared.database;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Savepoint;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import me.devtec.shared.database.DatabaseAPI.DatabaseSettings;
 import me.devtec.shared.database.DatabaseAPI.DatabaseType;
-import me.devtec.shared.database.DatabaseHandler.SelectQuery.Sorting;
 import me.devtec.shared.dataholder.StringContainer;
-import me.devtec.shared.scheduler.Tasker;
-import me.devtec.shared.utility.StringUtils;
 
+/**
+ * One serialized JDBC session. Prefer one handler per unit of work or a pooled
+ * DataSource.
+ */
 public class SqlHandler implements DatabaseHandler {
 	private Connection sql;
 	private final DatabaseSettings settings;
 	private final String path;
+	private final DatabaseType type;
+	private int transactionDepth;
 
 	public SqlHandler(String path, DatabaseSettings settings) throws SQLException {
-		this.settings = settings;
-		this.path = path;
+		this(detect(path), path, settings);
+	}
+
+	public SqlHandler(DatabaseType type, String path, DatabaseSettings settings) throws SQLException {
+		this.type = Objects.requireNonNull(type);
+		this.path = Objects.requireNonNull(path);
+		this.settings = Objects.requireNonNull(settings);
 		open();
-		new Tasker() {
-
-			@Override
-			public void run() {
-				try {
-					if (SqlHandler.this.isConnected())
-						sql.prepareStatement("select 1").executeQuery().next();
-					else
-						open();
-				} catch (Exception doNotIddle) {
-					try {
-						if (SqlHandler.this.isConnected())
-							sql.prepareStatement("select 1").executeQuery().next();
-						else
-							open();
-					} catch (Exception ignored) {
-					}
-				}
-			}
-		}.runRepeating(0, 20 * 60 * 3);
 	}
 
-	public String buildSelectCommand(SelectQuery query) {
-		return buildSelectCommand(query, false);
+	/**
+	 * Owns the supplied connection; close returns a pooled connection to its pool.
+	 */
+	public SqlHandler(Connection connection, DatabaseType type) throws SQLException {
+		this.sql = Objects.requireNonNull(connection);
+		this.type = Objects.requireNonNull(type);
+		path = null;
+		settings = null;
+		if (connection.isClosed())
+			throw new SQLException("Connection is closed");
 	}
 
-	public String buildSelectCommand(SelectQuery query, boolean safeMode) {
-		StringContainer builder = new StringContainer(32).append("select ");
-		boolean first = true;
-		for (String search : query.getSearch()) {
-			if (!first)
-				builder.append(',');
-			else
-				first = false;
-			builder.append(search);
-		}
-		builder.append(' ');
-		builder.append("from").append(' ');
-		buildCommand(safeMode, builder, query.table, query.where, query.like, query.whereOr);
-		if (query.sorting != null)
-			builder.append(' ').append("order").append(' ').append("by").append(' ')
-			.append(StringUtils.join(query.sortingKey, ",").replace("'", "\\'")).append(' ')
-			.append(query.sorting == Sorting.UP || query.sorting == Sorting.HIGHEST_TO_LOWEST ? "DESC" : "ASC");
-		if (query.limit != null)
-			builder.append(' ').append("limit").append(' ').append(query.limit);
-		return builder.toString();
-	}
-
-	public String buildInsertCommand(InsertQuery query) {
-		return buildInsertCommand(query, false);
-	}
-
-	public String buildInsertCommand(InsertQuery query, boolean safeMode) {
-		StringContainer builder = new StringContainer(32).append("insert into ");
-		builder.append('`').append(query.table).append('`').append(' ');
-		builder.append("values").append('(');
-		if (safeMode) {
-			boolean first = true;
-			int size = query.values.size();
-			for (int i = 0; i < size; ++i) {
-				if (first)
-					first = false;
-				else
-					builder.append(',').append(' ');
-				builder.append('?');
-			}
-		} else {
-			boolean first = true;
-			for (String val : query.values) {
-				if (first)
-					first = false;
-				else
-					builder.append(',').append(' ');
-				builder.append('"').append(val.replace("'", "\\'")).append('"');
-			}
-		}
-		return builder.append(')').toString();
-	}
-
-	public String buildUpdateCommand(UpdateQuery query) {
-		return buildUpdateCommand(query, true);
-	}
-
-	public String buildUpdateCommand(UpdateQuery query, boolean safeMode) {
-		StringContainer builder = new StringContainer(32).append("update ");
-		builder.append('`').append(query.table).append('`').append(' ');
-		builder.append("set");
-
-		boolean first = true;
-		if (safeMode) {
-			for (String[] val : query.values) {
-				if (first)
-					first = false;
-				else
-					builder.append(',');
-				builder.append(' ').append(val[0].replace("'", "\\'")).append('=').append('?');
-			}
-			buildArgs(builder, query.where, query.like, true);
-			for (List<Object[]>[] where : query.whereOr)
-				buildWhereOrArgs(builder, where, true);
-		} else {
-			for (String[] val : query.values) {
-				if (first)
-					first = false;
-				else
-					builder.append(',');
-				builder.append(' ').append(val[0].replace("'", "\\'")).append('=').append(val[1].replace("'", "\\'"));
-			}
-			buildArgs(builder, query.where, query.like, false);
-			for (List<Object[]>[] where : query.whereOr)
-				buildWhereOrArgs(builder, where, false);
-		}
-		if (query.limit != null)
-			builder.append(' ').append("limit").append(' ').append(query.limit);
-		return builder.toString();
-	}
-
-	public String buildRemoveCommand(RemoveQuery query) {
-		return buildRemoveCommand(query, false);
-	}
-
-	public String buildRemoveCommand(RemoveQuery query, boolean safeMode) {
-		StringContainer builder = new StringContainer(32).append("delete from ");
-		buildCommand(safeMode, builder, query.table, query.where, query.like, query.whereOr);
-		if (query.limit != null)
-			builder.append(' ').append("limit").append(' ').append(query.limit);
-		return builder.toString();
-	}
-
-	private void buildCommand(boolean safeMode, StringContainer builder, String table, List<Object[]> where2,
-			List<Object[]> like, List<List<Object[]>[]> whereOr) {
-		builder.append('`').append(table).append('`');
-		if (safeMode) {
-			buildArgs(builder, where2, like, true);
-			for (List<Object[]>[] where : whereOr)
-				buildWhereOrArgs(builder, where, true);
-		} else {
-			buildArgs(builder, where2, like, false);
-			for (List<Object[]>[] where : whereOr)
-				buildWhereOrArgs(builder, where, false);
-		}
-	}
-
-	private void buildWhereOrArgs(StringContainer builder, List<Object[]>[] where, boolean safeMode) {
-		boolean first = true;
-		builder.append(' ').append("or");
-		for (Object[] pair : where[0])
-			first = buildPair(builder, safeMode, first, pair, 0, false);
-		first = true;
-		for (Object[] pair : where[1])
-			first = buildPair(builder, safeMode, first, pair, 1, false);
-	}
-
-	private boolean buildPair(StringContainer builder, boolean safeMode, boolean first, Object[] pair, int type, boolean appendWhere) {
-		if (first) {
-			first = false;
-			builder.append(' ');
-			if(appendWhere)builder.append("where");
-		} else
-			builder.append(' ').append("and");
-		return appendValue(builder, safeMode, first, pair, type);
-	}
-
-	private boolean appendValue(StringContainer builder, boolean safeMode, boolean first, Object[] pair, int type) {
-		builder.append(' ').append(pair[0].toString().replace("'", "\\'"));
-		switch(type) {
-		case 0:
-			builder.append('=');
-			break;
-		case 1:
-			builder.append("LIKE");
-			break;
-		case 2:
-			builder.append("NOT LIKE");
-			break;
-		}
-		if (safeMode)
-			builder.append('?');
-		else if (pair[1] instanceof SelectQuery)
-			builder.append('(').append(buildSelectCommand((SelectQuery) pair[1])).append(')');
-		else
-			builder.append((pair[1] + "").replace("'", "\\'"));
-		return first;
-	}
-
-	private void buildArgs(StringContainer builder, List<Object[]> where2, List<Object[]> like, boolean safeMode) {
-		boolean first = true;
-		for (Object[] pair : where2)
-			first = buildPair(builder, safeMode, first, pair, 0, true);
-		first = true;
-		for (Object[] pair : like)
-			first = buildPair(builder, safeMode, first, pair, 1, true);
-	}
-
-	@Override
-	public boolean isConnected() throws SQLException {
-		return sql != null && !sql.isClosed() && sql.isValid(0);
-	}
-
-	@Override
-	public void open() throws SQLException {
-		if (sql != null)
-			try {
-				sql.close();
-			} catch (Exception ignored) {
-			}
-		sql = DriverManager.getConnection(path, settings.getUser(), settings.getPassword());
-		sql.setAutoCommit(true);
-	}
-
-	@Override
-	public void close() throws SQLException {
-		sql.close();
-		sql = null;
-	}
-
-	@Override
-	public boolean exists(SelectQuery query) throws SQLException {
-		try (PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true))){
-			fillSelectQuery(prepared, query.where, query.like, query.whereOr);
-			ResultSet set = prepared.executeQuery();
-			return set != null && set.next();
-		}
-	}
-
-	private void fillSelectQuery(PreparedStatement prepared, List<Object[]> where2, List<Object[]> like,
-			List<List<Object[]>[]> whereOr) throws SQLException {
-		int index = 1;
-		for (Object[] pair : where2)
-			prepared.setObject(index++,
-					pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		for (Object[] pair : like)
-			prepared.setObject(index++,
-					pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		for (List<Object[]>[] where : whereOr) {
-			for (Object[] pair : where[0])
-				prepared.setObject(index++,
-						pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-			for (Object[] pair : where[1])
-				prepared.setObject(index++,
-						pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		}
-	}
-
-	@Override
-	public boolean createTable(String name, Row[] values) throws SQLException {
-		boolean status = false;
-		try (PreparedStatement prepared = prepareStatement("CREATE TABLE IF NOT EXISTS " + name + "(" + buildTableValues(values) + ")")){
-			status= prepared.execute();
-		}
-		return status;
-	}
-
-	public String buildTableValues(Row[] values) {
-		StringContainer builder = new StringContainer(16);
-		boolean first = true;
-		for (Row row : values) {
-			if (!first)
-				builder.append(',').append(' ');
-			first = false;
-			builder.append(row.getFieldName().replace("'", "\\'")).append(' ').append(row.getFieldType().toLowerCase())
-			.append(' ').append(row.isNulled() ? "NULL" : "NOT NULL");
-		}
-		return builder.toString();
-	}
-
-	@Override
-	public boolean deleteTable(String name) throws SQLException {
-		boolean status = false;
-		try (PreparedStatement prepared = prepareStatement("DROP TABLE " + name)){
-			status= prepared.execute();
-		}
-		return status;
-	}
-
-	@Override
-	public Result get(SelectQuery query) throws SQLException {
-		try (PreparedStatement prepared = prepareStatement(buildSelectCommand(query, true))){
-			int index = 0;
-			fillPreparedStatement(prepared, index, query.where, query.like, query.whereOr);
-			ResultSet set = prepared.executeQuery();
-			String[] lookup = query.getSearch();
-			if (set != null && set.next()) {
-				if (lookup.length == 1 && "*".equals(lookup[0])) {
-					int size = 0;
-					List<String> val = new ArrayList<>();
-					while (true)
-						try {
-							val.add(set.getObject(++size) + "");
-						} catch (Exception err) {
-							break;
-						}
-					Result res = new Result(val.toArray(new String[size - 1]));
-					Result main = res;
-					Result next = main;
-					while (set.next()) {
-						String[] vals = new String[size - 1];
-						for (int i = 0; i < size - 1; ++i)
-							vals[i] = set.getObject(i + 1) + "";
-						res = new Result(vals);
-						next.nextResult(next = res);
-					}
-					return main;
-				}
-				String[] vals = new String[query.search.length];
-				for (int i = 0; i < query.search.length; ++i)
-					vals[i] = set.getObject(query.search[i]) + "";
-				Result res = new Result(vals);
-				Result main = res;
-				Result next = main;
-				while (set.next()) {
-					vals = new String[query.search.length];
-					for (int i = 0; i < query.search.length; ++i)
-						vals[i] = set.getObject(query.search[i]) + "";
-					res = new Result(vals);
-					next.nextResult(next = res);
-				}
-				return main;
-			}
-			return null;
-		}
-	}
-
-	private void fillPreparedStatement(PreparedStatement prepared, int index, List<Object[]> where2,
-			List<Object[]> like, List<List<Object[]>[]> whereOr) throws SQLException {
-		for (Object[] pair : where2)
-			prepared.setObject(++index,
-					pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		for (Object[] pair : like)
-			prepared.setObject(++index,
-					pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		for (List<Object[]>[] where : whereOr) {
-			for (Object[] pair : where[0])
-				prepared.setObject(++index,
-						pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-			for (Object[] pair : where[1])
-				prepared.setObject(++index,
-						pair[1] instanceof SelectQuery ? buildSelectCommand((SelectQuery) pair[1]) : pair[1]);
-		}
-	}
-
-	@Override
-	public boolean insert(InsertQuery query) throws SQLException {
-		try (PreparedStatement prepared = prepareStatement(buildInsertCommand(query, true))){
-			int index = 0;
-			for (String value : query.values)
-				prepared.setObject(++index, value);
-			return prepared.executeUpdate() != 0;
-		}
-	}
-
-	@Override
-	public boolean update(UpdateQuery query) throws SQLException {
-		try (PreparedStatement prepared = prepareStatement(buildUpdateCommand(query, true))) {
-			int index = 0;
-			// Values are first
-			for (String[] keyWithValue : query.values)
-				prepared.setObject(++index, keyWithValue[1]);
-			// Next are "ifs"
-			fillPreparedStatement(prepared, index, query.where, query.like, query.whereOr);
-			return prepared.executeUpdate() != 0;
-		}
-	}
-
-	@Override
-	public PreparedStatement prepareStatement(String sqlCommand) throws SQLException {
-		try {
-			if (!isConnected())
-				open();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		try {
-			return sql.prepareStatement(sqlCommand);
-		} catch (SQLException err) {
-			return sql.prepareStatement(sqlCommand); // one more time!
-		}
-	}
-
-	@Override
-	public int executeUpdate(PreparedStatement prepared) throws SQLException {
-		return prepared.executeUpdate();
-	}
-
-	@Override
-	public long[] executeLargeBatch(PreparedStatement prepared) throws SQLException {
-		return prepared.executeLargeBatch();
-	}
-
-	@Override
-	public int[] executeBatch(PreparedStatement prepared) throws SQLException {
-		return prepared.executeBatch();
-	}
-
-	@Override
-	public ResultSet executeQuery(PreparedStatement prepared) throws SQLException {
-		return prepared.executeQuery();
-	}
-
-	@Override
-	public boolean execute(PreparedStatement prepared) throws SQLException {
-		return prepared.execute();
-	}
-
-	@Override
-	public boolean remove(RemoveQuery query) throws SQLException {
-		try (PreparedStatement prepared = prepareStatement(buildRemoveCommand(query, true))){
-			fillSelectQuery(prepared, query.where, query.like, query.whereOr);
-			return prepared.executeUpdate() != 0;
-		}
-	}
-
-	@Override
-	public List<String> getTables() throws SQLException {
-		try (PreparedStatement prepared = prepareStatement("SHOW TABLES")){
-			ResultSet set = prepared.executeQuery();
-			if (set != null && set.next()) {
-				List<String> tables = new ArrayList<>();
-				do
-					tables.add(set.getString(0));
-				while (set.next());
-				return tables;
-			}
-			return null;
-		}
-	}
-
-	@Override
-	public Row[] getTableValues(String name) throws SQLException {
-		try (PreparedStatement prepared = prepareStatement("DESCRIBE '" + name + "'")){
-			ResultSet set = prepared.executeQuery();
-			if (set == null || !set.next())
-				return null;
-			List<Row> rows = new ArrayList<>();
-			while (set.next())
-				rows.add(new Row(set.getString(0), set.getString(1), "YES".equals(set.getString(2)), set.getString(3),
-						set.getString(4), set.getString(5)));
-			return rows.toArray(new Row[0]);
-		}
+	private static DatabaseType detect(String path) throws SQLException {
+		for (DatabaseType type : DatabaseType.values())
+			if (path.toLowerCase(Locale.ROOT).startsWith("jdbc:" + type.getName() + ":"))
+				return type;
+		throw new SQLException("Unsupported JDBC protocol");
 	}
 
 	@Override
 	public DatabaseType getType() {
-		return DatabaseType.MYSQL;
+		return type;
 	}
 
+	@Override
+	public synchronized boolean isConnected() throws SQLException {
+		return sql != null && !sql.isClosed() && sql.isValid(2);
+	}
+
+	private Connection connection() throws SQLException {
+		if (sql == null || sql.isClosed())
+			throw new SQLException("Database is closed; call open() explicitly");
+		return sql;
+	}
+
+	@Override
+	public synchronized void open() throws SQLException {
+		if (transactionDepth != 0)
+			throw new SQLException("Cannot reopen during a transaction");
+		if (sql != null && !sql.isClosed())
+			return;
+		if (path == null)
+			throw new SQLException("Externally supplied connections cannot be reopened");
+		Properties properties = new Properties();
+		if (settings.getUser() != null)
+			properties.setProperty("user", settings.getUser());
+		if (settings.getPassword() != null)
+			properties.setProperty("password", settings.getPassword());
+		sql = DriverManager.getConnection(path, properties);
+	}
+
+	@Override
+	public synchronized void close() throws SQLException {
+		if (transactionDepth != 0)
+			throw new SQLException("Cannot close during a transaction");
+		if (sql != null)
+			try {
+				sql.close();
+			} finally {
+				sql = null;
+			}
+	}
+
+	@Override
+	public synchronized PreparedStatement prepareStatement(String command) throws SQLException {
+		return connection().prepareStatement(command);
+	}
+
+	@Override
+	public synchronized SqlStatement compile(Sql.Query query) throws SQLException {
+		if (query instanceof Sql.Mutation && type == DatabaseType.SQLITE) {
+			Sql.Mutation<?> mutation = (Sql.Mutation<?>) query;
+			if (mutation.limit != null && mutation.keys == null) {
+				Sql.Context context = new Sql.Context(type);
+				context.mutationKeys = sqliteIdentity(mutation.table);
+				context.query(query);
+				return new SqlStatement(context.sql.toString(), context.parameters);
+			}
+		}
+		return Sql.compile(query, type);
+	}
+
+	private String[] sqliteIdentity(String table) throws SQLException {
+		// rowid tables may have nullable PKs; hidden row identity is the safe default.
+		String schema = schemaPart(table), name = tablePart(table);
+		String master = schema == null
+				? "(SELECT name, type, sql FROM sqlite_temp_master UNION ALL SELECT name, type, sql FROM sqlite_master)"
+				: quote(schema) + ".sqlite_master";
+		String ddl = null;
+		try (PreparedStatement statement = connection()
+				.prepareStatement("SELECT sql FROM " + master + " WHERE type='table' AND name=?")) {
+			statement.setString(1, name);
+			try (ResultSet result = statement.executeQuery()) {
+				if (result.next())
+					ddl = result.getString(1);
+			}
+		}
+		if (ddl == null)
+			throw new SQLException("Unknown SQLite table: " + table);
+		Set<String> names = new HashSet<>(), nullable = new HashSet<>();
+		try (ResultSet columns = connection().getMetaData().getColumns(null, schema, metadataPattern(name), null)) {
+			while (columns.next()) {
+				String column = columns.getString("COLUMN_NAME").toLowerCase(Locale.ROOT);
+				names.add(column);
+				if (columns.getInt("NULLABLE") != DatabaseMetaData.columnNoNulls)
+					nullable.add(column);
+			}
+		}
+		boolean withoutRowid = ddl.toUpperCase(Locale.ROOT).matches("(?s).*\\bWITHOUT\\s+ROWID\\b.*");
+		if (!withoutRowid)
+			for (String rowid : new String[] { "_rowid_", "rowid", "oid" })
+				if (!names.contains(rowid))
+					return new String[] { rowid };
+		SortedMap<Short, String> keys = new TreeMap<>();
+		try (ResultSet primary = connection().getMetaData().getPrimaryKeys(null, schema, name)) {
+			while (primary.next())
+				keys.put(primary.getShort("KEY_SEQ"), primary.getString("COLUMN_NAME"));
+		}
+		if (keys.isEmpty())
+			throw new SQLFeatureNotSupportedException("No unambiguous SQLite row identity; specify keyColumns");
+		if (!withoutRowid)
+			for (String key : keys.values())
+				if (nullable.contains(key.toLowerCase(Locale.ROOT)))
+					throw new SQLFeatureNotSupportedException(
+							"Nullable SQLite primary key is not a safe row identity; specify non-null keyColumns");
+		return keys.values().toArray(new String[0]);
+	}
+
+	@Override
+	public synchronized <T> List<T> query(Sql.Query query, RowMapper<T> mapper) throws SQLException {
+		return DatabaseHandler.super.query(query, mapper);
+	}
+
+	@Override
+	public synchronized void forEach(Sql.Query query, RowConsumer consumer) throws SQLException {
+		DatabaseHandler.super.forEach(query, consumer);
+	}
+
+	@Override
+	public synchronized int update(Sql.Query query) throws SQLException {
+		return DatabaseHandler.super.update(query);
+	}
+
+	@Override
+	public synchronized boolean exists(Sql.Select query) throws SQLException {
+		return DatabaseHandler.super.exists(query);
+	}
+
+	@Override
+	public synchronized int[] batch(String sql, List<Object[]> rows) throws SQLException {
+		return DatabaseHandler.super.batch(sql, rows);
+	}
+
+	@Override
+	public synchronized List<Object> insertKeys(Sql.Insert query) throws SQLException {
+		SqlStatement compiled = compile(query);
+		List<Object> keys = new ArrayList<>();
+		try (PreparedStatement statement = connection().prepareStatement(compiled.sql(),
+				Statement.RETURN_GENERATED_KEYS)) {
+			compiled.bind(statement);
+			statement.executeUpdate();
+			try (ResultSet result = statement.getGeneratedKeys()) {
+				while (result.next())
+					keys.add(result.getObject(1));
+			}
+		}
+		return keys;
+	}
+
+	@Override
+	public synchronized <T> T transaction(Transaction<T> work) throws SQLException {
+		Connection connection = connection();
+		boolean owns = connection.getAutoCommit();
+		Savepoint savepoint = null;
+		if (owns)
+			connection.setAutoCommit(false);
+		else
+			savepoint = connection.setSavepoint();
+		transactionDepth++;
+		Throwable failure = null;
+		boolean rollbackFailed = false;
+		try {
+			T result = work.execute(this);
+			if (owns)
+				connection.commit();
+			else if (type != DatabaseType.SQLSERVER)
+				connection.releaseSavepoint(savepoint);
+			return result;
+		} catch (SQLException | RuntimeException | Error error) {
+			failure = error;
+			try {
+				if (owns)
+					connection.rollback();
+				else
+					connection.rollback(savepoint);
+			} catch (SQLException rollback) {
+				rollbackFailed = true;
+				error.addSuppressed(rollback);
+				// Restoring auto-commit after a failed rollback could commit partial work.
+				try {
+					connection.close();
+				} catch (SQLException close) {
+					error.addSuppressed(close);
+				}
+			}
+			throw error;
+		} finally {
+			transactionDepth--;
+			if (owns && !rollbackFailed)
+				try {
+					if (!connection.isClosed())
+						connection.setAutoCommit(true);
+				} catch (SQLException restore) {
+					if (failure == null)
+						throw restore;
+					failure.addSuppressed(restore);
+				}
+		}
+	}
+
+	@Override
+	public boolean execute(PreparedStatement statement) throws SQLException {
+		return statement.execute();
+	}
+
+	@Override
+	public int executeUpdate(PreparedStatement statement) throws SQLException {
+		return statement.executeUpdate();
+	}
+
+	@Override
+	public ResultSet executeQuery(PreparedStatement statement) throws SQLException {
+		return statement.executeQuery();
+	}
+
+	@Override
+	public int[] executeBatch(PreparedStatement statement) throws SQLException {
+		return statement.executeBatch();
+	}
+
+	@Override
+	public long[] executeLargeBatch(PreparedStatement statement) throws SQLException {
+		return statement.executeLargeBatch();
+	}
+
+	private String quote(String name) {
+		Sql.Context context = new Sql.Context(type);
+		context.identifier(name);
+		return context.sql.toString();
+	}
+
+	private String schema() throws SQLException {
+		try {
+			return connection().getSchema();
+		} catch (SQLFeatureNotSupportedException | AbstractMethodError ignored) {
+			return null;
+		}
+	}
+
+	private static String schemaPart(String table) {
+		int split = table.lastIndexOf('.');
+		return split < 0 ? null : table.substring(0, split);
+	}
+
+	private static String tablePart(String table) {
+		int split = table.lastIndexOf('.');
+		return split < 0 ? table : table.substring(split + 1);
+	}
+
+	private String metadataPattern(String name) throws SQLException {
+		String escape = connection().getMetaData().getSearchStringEscape();
+		return escape == null || escape.isEmpty() ? name
+				: name.replace(escape, escape + escape).replace("_", escape + "_").replace("%", escape + "%");
+	}
+
+	@Override
+	public synchronized List<String> getTables() throws SQLException {
+		List<String> tables = new ArrayList<>();
+		try (ResultSet result = connection().getMetaData().getTables(connection().getCatalog(), schema(), "%",
+				new String[] { "TABLE" })) {
+			while (result.next())
+				tables.add(result.getString("TABLE_NAME"));
+		}
+		return tables;
+	}
+
+	@Override
+	public synchronized Row[] getTableValues(String name) throws SQLException {
+		String schema = schemaPart(name), catalog = connection().getCatalog();
+		if (type == DatabaseType.MYSQL || type == DatabaseType.MARIADB) {
+			if (schema != null)
+				catalog = schema;
+			schema = null;
+		} else if (schema == null)
+			schema = schema();
+		String table = tablePart(name);
+		Set<String> primary = new HashSet<>();
+		DatabaseMetaData metadata = connection().getMetaData();
+		try (ResultSet result = metadata.getPrimaryKeys(catalog, schema, table)) {
+			while (result.next())
+				primary.add(result.getString("COLUMN_NAME"));
+		}
+		List<Row> rows = new ArrayList<>();
+		try (ResultSet result = metadata.getColumns(catalog, schema, metadataPattern(table), null)) {
+			while (result.next())
+				rows.add(new Row(result.getString("COLUMN_NAME"), result.getString("TYPE_NAME"),
+						result.getInt("NULLABLE") != DatabaseMetaData.columnNoNulls,
+						primary.contains(result.getString("COLUMN_NAME")) ? "PRI" : "", result.getString("COLUMN_DEF"),
+						"YES".equalsIgnoreCase(result.getString("IS_AUTOINCREMENT")) ? "AUTO_INCREMENT" : ""));
+		}
+		return rows.toArray(new Row[0]);
+	}
+
+	@Override
+	public synchronized boolean createTable(String name, Row[] values) throws SQLException {
+		String columns = buildTableValues(values), table = quote(name);
+		String command = "CREATE TABLE " + (type == DatabaseType.SQLSERVER ? "" : "IF NOT EXISTS ") + table + " ("
+				+ columns + ")";
+		if (type == DatabaseType.SQLSERVER)
+			command = "IF OBJECT_ID(N'" + name.replace("'", "''") + "', N'U') IS NULL " + command;
+		try (PreparedStatement statement = prepareStatement(command)) {
+			statement.executeUpdate();
+			return true;
+		}
+	}
+
+	@Override
+	public synchronized boolean deleteTable(String name) throws SQLException {
+		try (PreparedStatement statement = prepareStatement("DROP TABLE " + quote(name))) {
+			statement.executeUpdate();
+			return true;
+		}
+	}
+
+	public String buildTableValues(Row[] rows) {
+		if (rows == null || rows.length == 0)
+			throw new IllegalArgumentException("Table needs columns");
+		StringContainer result = new StringContainer();
+		List<String> primaryColumns = new ArrayList<>();
+		for (Row row : rows)
+			if ("PRI".equalsIgnoreCase(row.getKey()) || "PRIMARY KEY".equalsIgnoreCase(row.getKey()))
+				primaryColumns.add(row.getFieldName());
+		for (Row row : rows) {
+			if (result.length() != 0)
+				result.append(", ");
+			String fieldType = row.getFieldType().toUpperCase(Locale.ROOT);
+			String extra = row.getExtra() == null ? "" : row.getExtra().trim();
+			boolean identity = "AUTO_INCREMENT".equalsIgnoreCase(extra) || "AUTOINCREMENT".equalsIgnoreCase(extra);
+			boolean primary = "PRI".equalsIgnoreCase(row.getKey()) || "PRIMARY KEY".equalsIgnoreCase(row.getKey());
+			if (!extra.isEmpty() && !identity)
+				throw new IllegalArgumentException("Use explicit DDL for vendor-specific column extras");
+			if (!fieldType.matches("[A-Z][A-Z0-9_]*(\\([0-9]+(,[ ]*[0-9]+)?\\))?"))
+				throw new IllegalArgumentException("Use explicit DDL for vendor-specific field types");
+			if ("LONG".equals(fieldType))
+				fieldType = "BIGINT";
+			if (type == DatabaseType.SQLSERVER && "TIMESTAMP".equals(fieldType))
+				fieldType = "DATETIME2";
+			if (type == DatabaseType.SQLITE && identity) {
+				if (!primary || primaryColumns.size() != 1 || (!"INT".equals(fieldType) && !"INTEGER".equals(fieldType)))
+					throw new IllegalArgumentException("SQLite AUTOINCREMENT requires a single INTEGER PRIMARY KEY");
+				fieldType = "INTEGER";
+			}
+			if (type == DatabaseType.SQLSERVER) {
+				if ("BOOLEAN".equals(fieldType) || "BOOL".equals(fieldType))
+					fieldType = "BIT";
+				if ("DOUBLE".equals(fieldType))
+					fieldType = "FLOAT";
+				if (fieldType.contains("BLOB"))
+					fieldType = "VARBINARY(MAX)";
+				if (fieldType.endsWith("TEXT"))
+					fieldType = "VARCHAR(MAX)";
+				if ("DATETIME".equals(fieldType))
+					fieldType = "DATETIME2";
+			}
+			if (type == DatabaseType.H2) {
+				if ("DATETIME".equals(fieldType))
+					fieldType = "TIMESTAMP";
+				if (fieldType.contains("BLOB"))
+					fieldType = "BLOB";
+				if (fieldType.endsWith("TEXT"))
+					fieldType = "CLOB";
+			}
+			if (type != DatabaseType.MYSQL && type != DatabaseType.MARIADB)
+				if ("MEDIUMINT".equals(fieldType) || "YEAR".equals(fieldType))
+					fieldType = "INT";
+			result.append(quote(row.getFieldName())).append(' ').append(fieldType);
+			if (identity && type == DatabaseType.H2)
+				result.append(" GENERATED BY DEFAULT AS IDENTITY");
+			if (identity && type == DatabaseType.SQLSERVER)
+				result.append(" IDENTITY(1,1)");
+			if (primary && primaryColumns.size() == 1)
+				result.append(" PRIMARY KEY");
+			else if ("UNI".equalsIgnoreCase(row.getKey()) || "UNIQUE".equalsIgnoreCase(row.getKey()))
+				result.append(" UNIQUE");
+			if (identity && type == DatabaseType.SQLITE)
+				result.append(" AUTOINCREMENT");
+			result.append(row.isNulled() ? " NULL" : " NOT NULL");
+			if (identity && (type == DatabaseType.MYSQL || type == DatabaseType.MARIADB))
+				result.append(" AUTO_INCREMENT");
+			String defaultValue = row.getDefaultValue();
+			if (defaultValue != null && !defaultValue.isEmpty()) {
+				result.append(" DEFAULT ");
+				if ("NULL".equalsIgnoreCase(defaultValue) || "CURRENT_TIMESTAMP".equalsIgnoreCase(defaultValue)
+						|| defaultValue.matches("-?[0-9]+(\\.[0-9]+)?"))
+					result.append(defaultValue);
+				else
+					result.append('\'').append(defaultValue.replace("'", "''")).append('\'');
+			}
+		}
+		if (primaryColumns.size() > 1) {
+			result.append(", PRIMARY KEY (");
+			for (int i = 0; i < primaryColumns.size(); i++) {
+				if (i != 0)
+					result.append(", ");
+				result.append(quote(primaryColumns.get(i)));
+			}
+			result.append(')');
+		}
+		return result.toString();
+	}
 }

@@ -4,255 +4,38 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import me.devtec.shared.database.DatabaseAPI.DatabaseType;
 
-public interface DatabaseHandler {
-	class SelectQuery {
-
-		public enum Sorting {
-			HIGHEST_TO_LOWEST, UP, LOWEST_TO_HIGHEST, DOWN
-        }
-
-		protected final String table;
-		protected final String[] search;
-		protected String limit;
-		protected List<Object[]> where = new ArrayList<>();
-		protected List<Object[]> like = new ArrayList<>();
-		protected final List<List<Object[]>[]> whereOr = new ArrayList<>();
-		protected byte mode;
-
-		protected Sorting sorting;
-		protected final List<String> sortingKey = new ArrayList<>();
-
-		private SelectQuery(String table, String... value) {
-			this.table = table;
-			search = value == null || value.length == 0 ? new String[] { "*" } : value;
-		}
-
-		public static SelectQuery table(String table, String... search) {
-			return new SelectQuery(table, search);
-		}
-
-		public SelectQuery where(String key, String value) {
-			where.add(new Object[] { key, value });
-			return this;
-		}
-
-		public SelectQuery where(String key, SelectQuery value) {
-			where.add(new Object[] { key, value });
-			return this;
-		}
-
-		public SelectQuery like(String key, String value) {
-			like.add(new Object[] { key, value });
-			return this;
-		}
-
-		public SelectQuery like(String key, SelectQuery value) {
-			like.add(new Object[] { key, value });
-			return this;
-		}
-
-		@SuppressWarnings("unchecked")
-		public SelectQuery or() {
-			if (!where.isEmpty()) {
-				mode = 1;
-				whereOr.add(new List[] { where, like });
-				where = new ArrayList<>();
-				like = new ArrayList<>();
-			}
-			return this;
-		}
-
-		public SelectQuery sortType(Sorting type) {
-			sorting = type;
-			return this;
-		}
-
-		public SelectQuery sortBy(String key) {
-			sortingKey.add(key);
-			return this;
-		}
-
-		public SelectQuery limit(int limit) {
-			this.limit = limit == 0 ? null : "" + limit;
-			return this;
-		}
-
-		public SelectQuery limit(int limitFrom, int limitTo) {
-			limit = limitFrom + "," + limitTo;
-			return this;
-		}
-
-		public String getTable() {
-			return table;
-		}
-
-		public String[] getSearch() {
-			return search;
+public interface DatabaseHandler extends AutoCloseable {
+	@FunctionalInterface interface RowMapper<T> { T map(ResultSet result) throws SQLException; }
+	@FunctionalInterface interface RowConsumer { void accept(ResultSet result) throws SQLException; }
+	@FunctionalInterface interface Transaction<T> { T execute(DatabaseHandler database) throws SQLException; }
+	default SqlStatement compile(Sql.Query query) throws SQLException { return Sql.compile(query, getType()); }
+	default List<SqlRow> query(Sql.Query query) throws SQLException { return query(query, SqlRow::new); }
+	default <T> List<T> query(Sql.Query query, RowMapper<T> mapper) throws SQLException {
+		List<T> rows = new ArrayList<>(); forEach(query, result -> rows.add(mapper.map(result))); return rows;
+	}
+	default void forEach(Sql.Query query, RowConsumer consumer) throws SQLException {
+		SqlStatement compiled = compile(query);
+		try (PreparedStatement statement = prepareStatement(compiled.sql())) {
+			compiled.bind(statement); try (ResultSet result = statement.executeQuery()) { while (result.next()) consumer.accept(result); }
 		}
 	}
-
-	class InsertQuery {
-
-		protected final String table;
-		protected final List<String> values = new ArrayList<>();
-
-		private InsertQuery(String table) {
-			this.table = table;
-		}
-
-		public static InsertQuery table(String table, String... values) {
-			InsertQuery query = new InsertQuery(table);
-			Collections.addAll(query.values, values);
-			return query;
-		}
-
-		public String getTable() {
-			return table;
-		}
+	default int update(Sql.Query query) throws SQLException {
+		SqlStatement compiled = compile(query);
+		try (PreparedStatement statement = prepareStatement(compiled.sql())) { compiled.bind(statement); return statement.executeUpdate(); }
 	}
-
-	class UpdateQuery {
-
-		protected final String table;
-		protected List<Object[]> where = new ArrayList<>();
-		protected List<Object[]> like = new ArrayList<>();
-		protected final List<List<Object[]>[]> whereOr = new ArrayList<>();
-		protected byte mode;
-		protected final List<String[]> values = new ArrayList<>();
-		protected String limit = "1";
-
-		protected enum Action {
-			WHERE, VALUE
-		}
-
-		private UpdateQuery(String table) {
-			this.table = table;
-		}
-
-		public static UpdateQuery table(String table) {
-			return new UpdateQuery(table);
-		}
-
-		public UpdateQuery where(String key, String value) {
-			where.add(new Object[] { key, value });
-			return this;
-		}
-
-		public UpdateQuery where(String key, SelectQuery value) {
-			where.add(new Object[] { key, value });
-			return this;
-		}
-
-		public UpdateQuery like(String key, String value) {
-			like.add(new Object[] { key, value });
-			return this;
-		}
-
-		public UpdateQuery like(String key, SelectQuery value) {
-			like.add(new Object[] { key, value });
-			return this;
-		}
-
-		@SuppressWarnings("unchecked")
-		public UpdateQuery or() {
-			if (!where.isEmpty()) {
-				mode = 1;
-				whereOr.add(new List[] { where, like });
-				where = new ArrayList<>();
-				like = new ArrayList<>();
-			}
-			return this;
-		}
-
-		public UpdateQuery value(String key, String value) {
-			values.add(new String[] { key, value });
-			return this;
-		}
-
-		public UpdateQuery limit(int limit) {
-			this.limit = limit == 0 ? null : "" + limit;
-			return this;
-		}
-
-		public UpdateQuery limit(int limitFrom, int limitTo) {
-			limit = limitFrom + "," + limitTo;
-			return this;
-		}
-
-		public String getTable() {
-			return table;
-		}
+	default boolean exists(Sql.Select query) throws SQLException {
+		SqlStatement compiled = compile(query);
+		try (PreparedStatement statement = prepareStatement(compiled.sql())) { compiled.bind(statement); statement.setMaxRows(1); try (ResultSet result = statement.executeQuery()) { return result.next(); } }
 	}
-
-	class RemoveQuery {
-
-		protected final String table;
-		protected List<Object[]> where = new ArrayList<>();
-		protected List<Object[]> like = new ArrayList<>();
-		protected final List<List<Object[]>[]> whereOr = new ArrayList<>();
-		protected byte mode;
-		protected String limit = "1";
-
-		private RemoveQuery(String table) {
-			this.table = table;
-		}
-
-		public static RemoveQuery table(String table) {
-			return new RemoveQuery(table);
-		}
-
-		public RemoveQuery where(String key, String value) {
-			where.add(new Object[] { key, value });
-			return this;
-		}
-
-		public RemoveQuery where(String key, SelectQuery value) {
-			where.add(new Object[] { key, value });
-			return this;
-		}
-
-		public RemoveQuery like(String key, String value) {
-			like.add(new Object[] { key, value });
-			return this;
-		}
-
-		public RemoveQuery like(String key, SelectQuery value) {
-			like.add(new Object[] { key, value });
-			return this;
-		}
-
-		@SuppressWarnings("unchecked")
-		public RemoveQuery or() {
-			if (!where.isEmpty()) {
-				mode = 1;
-				whereOr.add(new List[] { where, like });
-				where = new ArrayList<>();
-				like = new ArrayList<>();
-			}
-			return this;
-		}
-
-		public RemoveQuery limit(int limit) {
-			this.limit = limit == 0 ? null : "" + limit;
-			return this;
-		}
-
-		public RemoveQuery limit(int limitFrom, int limitTo) {
-			limit = limitFrom + "," + limitTo;
-			return this;
-		}
-
-		public String getTable() {
-			return table;
-		}
+	default <T> T transaction(Transaction<T> work) throws SQLException { throw new java.sql.SQLFeatureNotSupportedException("Transactions are not implemented by this handler"); }
+	default List<Object> insertKeys(Sql.Insert insert) throws SQLException { throw new java.sql.SQLFeatureNotSupportedException("Generated keys are not implemented by this handler"); }
+	default int[] batch(String sql, List<Object[]> rows) throws SQLException {
+		try (PreparedStatement statement = prepareStatement(sql)) { for (Object[] row : rows) { statement.clearParameters(); for (int i = 0; i < row.length; i++) statement.setObject(i + 1, row[i]); statement.addBatch(); } return statement.executeBatch(); }
 	}
-
 	class Row {
 		private final String field;
 		private final String type;
@@ -367,35 +150,6 @@ public interface DatabaseHandler {
 		}
 	}
 
-	class Result implements Iterator<Result> {
-		private Result next;
-		private final String[] values;
-
-		protected Result(String[] value) {
-			values = value;
-		}
-
-		protected void nextResult(Result next) {
-			if (next != null) {
-				this.next = next;
-			}
-		}
-
-		@Override
-		public Result next() {
-			return next;
-		}
-
-		@Override
-		public boolean hasNext() {
-			return next != null;
-		}
-
-		public String[] getValue() {
-			return values;
-		}
-	}
-
 	DatabaseType getType();
 
 	boolean isConnected() throws SQLException;
@@ -404,27 +158,9 @@ public interface DatabaseHandler {
 
 	void close() throws SQLException;
 
-	boolean exists(SelectQuery query) throws SQLException;
-
 	boolean createTable(String name, Row[] values) throws SQLException;
 
 	boolean deleteTable(String name) throws SQLException;
-
-	default Result select(SelectQuery query) throws SQLException {
-		return get(query);
-	}
-
-	Result get(SelectQuery query) throws SQLException;
-
-	boolean insert(InsertQuery query) throws SQLException;
-
-	default boolean set(UpdateQuery query) throws SQLException {
-		return update(query);
-	}
-
-	boolean update(UpdateQuery query) throws SQLException;
-
-	boolean remove(RemoveQuery query) throws SQLException;
 
 	PreparedStatement prepareStatement(String sql) throws SQLException;
 
