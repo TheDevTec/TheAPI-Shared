@@ -23,25 +23,46 @@ public final class FormatRegistry {
 
 	public static String detect(String sample) {
 		String t = sample.trim();
+
 		if (t.isEmpty() || "{}".equals(t))
 			return "{}".equals(t) ? "json" : "empty";
+
 		if (t.charAt(0) == '{' || t.startsWith("[{"))
 			return "json";
-		for (String line : t.split("\n")) {
-			line = line.trim();
+
+		String[] lines = t.split("\\r?\\n");
+
+		for (String rawLine : lines) {
+			String line = rawLine.trim();
+
 			if (line.isEmpty() || line.startsWith("#"))
 				continue;
-			if (line.startsWith("[") && !line.startsWith("[{"))
+
+			if (line.startsWith("[") && line.endsWith("]") && !line.startsWith("[{"))
 				return "toml";
-			int colon = line.indexOf(':'), equals = line.indexOf('=');
-			if (equals >= 0 && (colon < 0 || equals < colon))
-				return "properties";
-			if (colon >= 0)
+		}
+
+		for (String rawLine : lines) {
+			String line = rawLine.trim();
+
+			if (line.isEmpty() || line.startsWith("#"))
+				continue;
+
+			int colon = line.indexOf(':');
+			int equals = line.indexOf('=');
+
+			if (colon >= 0 && (equals < 0 || colon < equals))
 				return "yaml";
+
+			if (equals >= 0)
+				return "properties";
+
 			break;
 		}
+
 		if (t.matches("[A-Za-z0-9+/=\\s]+"))
 			return "byte";
+
 		return "yaml";
 	}
 
