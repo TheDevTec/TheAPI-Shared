@@ -53,12 +53,25 @@ public class DatabaseAPI {
 
 		@Override
 		public String getConnectionString() {
-			if (sqlType.equals("sqlserver")) {
+			if ("sqlserver".equals(sqlType)) {
+				String attrs = attributes;
+				if (attrs == null || attrs.trim().isEmpty())
+					attrs = "loginTimeout=5;socketTimeout=30000;";
+
 				return "jdbc:sqlserver://" + ip + ":" + port + ";databaseName={" + database.replace("}", "}}") + "};"
-						+ (attributes == null ? "" : attributes);
+						+ attrs;
 			}
+
+			String attrs = attributes;
+
+			if (attrs == null || attrs.trim().isEmpty())
+				if ("mysql".equals(sqlType) || "mariadb".equals(sqlType))
+					attrs = "connectTimeout=5000&socketTimeout=30000&tcpKeepAlive=true";
+				else
+					attrs = "";
+
 			return "jdbc:" + sqlType + "://" + ip + ":" + port + "/" + database
-					+ (attributes == null || attributes.isEmpty() ? "" : attributes.startsWith("?") ? attributes : "?" + attributes);
+					+ (attrs.isEmpty() ? "" : attrs.startsWith("?") ? attrs : "?" + attrs);
 		}
 	}
 
@@ -95,9 +108,10 @@ public class DatabaseAPI {
 		@Override
 		public String getConnectionString() {
 			String location = file;
-			if (sqlType.equals("h2") && !location.startsWith("mem:") && !location.startsWith("file:")
+			if ("h2".equals(sqlType) && !location.startsWith("mem:") && !location.startsWith("file:")
 					&& !location.startsWith("tcp:") && !location.startsWith("ssl:") && !location.startsWith("~")
-					&& !new File(location).isAbsolute() && !location.startsWith("./") && !location.startsWith("../")) location = "./" + location;
+					&& !new File(location).isAbsolute() && !location.startsWith("./") && !location.startsWith("../"))
+				location = "./" + location;
 			return "jdbc:" + sqlType + ":" + location + (attributes == null ? "" : attributes);
 		}
 	}
@@ -127,47 +141,95 @@ public class DatabaseAPI {
 		java.util.Objects.requireNonNull(type, "DatabaseType");
 		java.util.Objects.requireNonNull(settings, "DatabaseSettings");
 		String url = settings.getConnectionString();
-		if (!url.startsWith("jdbc:" + type.getName() + ":")) throw new SQLException("Settings JDBC protocol does not match DatabaseType");
+		if (!url.startsWith("jdbc:" + type.getName() + ":"))
+			throw new SQLException("Settings JDBC protocol does not match DatabaseType");
 		String driver;
 		switch (type) {
-		case MYSQL: driver = "com.mysql.cj.jdbc.Driver"; break;
-		case MARIADB: driver = "org.mariadb.jdbc.Driver"; break;
-		case SQLSERVER: driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver"; break;
-		case SQLITE: driver = "org.sqlite.JDBC"; break;
-		case H2: driver = "org.h2.Driver"; break;
-		default: throw new SQLException("Unsupported database type");
+		case MYSQL:
+			driver = "com.mysql.cj.jdbc.Driver";
+			break;
+		case MARIADB:
+			driver = "org.mariadb.jdbc.Driver";
+			break;
+		case SQLSERVER:
+			driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+			break;
+		case SQLITE:
+			driver = "org.sqlite.JDBC";
+			break;
+		case H2:
+			driver = "org.h2.Driver";
+			break;
+		default:
+			throw new SQLException("Unsupported database type");
 		}
-		try { Class.forName(driver); }
-		catch (ClassNotFoundException missing) {
-			if (API.library == null) throw new SQLException("Add JDBC driver to the classpath: " + driver, missing);
-			try { checkOrDownloadIfNeeded(type.getName()); Class.forName(driver); }
-			catch (Exception | LinkageError failure) { throw new SQLException("Unable to load JDBC driver: " + driver, failure); }
+		try {
+			Class.forName(driver);
+		} catch (ClassNotFoundException missing) {
+			if (API.library == null)
+				throw new SQLException("Add JDBC driver to the classpath: " + driver, missing);
+			try {
+				checkOrDownloadIfNeeded(type.getName());
+				Class.forName(driver);
+			} catch (Exception | LinkageError failure) {
+				throw new SQLException("Unable to load JDBC driver: " + driver, failure);
+			}
 		}
 		return new SqlHandler(type, url, settings);
 	}
 
 	public static DatabaseHandler openConnection(DatabaseType type, javax.sql.DataSource source) throws SQLException {
-		java.util.Objects.requireNonNull(type); java.util.Objects.requireNonNull(source);
+		java.util.Objects.requireNonNull(type);
+		java.util.Objects.requireNonNull(source);
 		java.sql.Connection connection = source.getConnection();
-		try { return new SqlHandler(connection, type); }
-		catch (SQLException | RuntimeException failure) { try { connection.close(); } catch (SQLException close) { failure.addSuppressed(close); } throw failure; }
+		try {
+			return new SqlHandler(connection, type);
+		} catch (SQLException | RuntimeException failure) {
+			try {
+				connection.close();
+			} catch (SQLException close) {
+				failure.addSuppressed(close);
+			}
+			throw failure;
+		}
 	}
 
-	/** Allows explicit JDBC URL options, in-memory databases and externally supplied drivers. */
+	/**
+	 * Allows explicit JDBC URL options, in-memory databases and externally supplied
+	 * drivers.
+	 */
 	public static DatabaseSettings jdbc(String url, String user, String password) {
 		java.util.Objects.requireNonNull(url);
 		return new DatabaseSettings() {
 			private String suffix = "";
-			@Override public DatabaseSettings attributes(String value) { suffix = value == null ? "" : value; return this; }
-			@Override public String getUser() { return user; }
-			@Override public String getPassword() { return password; }
-			@Override public String getConnectionString() { return url + suffix; }
+
+			@Override
+			public DatabaseSettings attributes(String value) {
+				suffix = value == null ? "" : value;
+				return this;
+			}
+
+			@Override
+			public String getUser() {
+				return user;
+			}
+
+			@Override
+			public String getPassword() {
+				return password;
+			}
+
+			@Override
+			public String getConnectionString() {
+				return url + suffix;
+			}
 		};
 	}
 
 	private static void checkOrDownloadIfNeeded(String driver) {
 		File file = new File("plugins/TheAPI/libraries/" + driver + ".jar");
-		if (!file.exists()) API.library.downloadFileFromUrl("https://github.com/TheDevTec/TheAPI/raw/main/" + driver + ".jar", file);
+		if (!file.exists())
+			API.library.downloadFileFromUrl("https://github.com/TheDevTec/TheAPI/raw/main/" + driver + ".jar", file);
 		API.library.load(file);
 	}
 }

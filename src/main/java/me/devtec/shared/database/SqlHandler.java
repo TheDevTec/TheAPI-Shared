@@ -71,12 +71,39 @@ public class SqlHandler implements DatabaseHandler {
 
 	@Override
 	public synchronized boolean isConnected() throws SQLException {
-		return sql != null && !sql.isClosed() && sql.isValid(2);
+		if (sql == null)
+			return false;
+
+		try {
+			return !sql.isClosed() && sql.isValid(2);
+		} catch (SQLException ignored) {
+			return false;
+		}
 	}
 
-	private Connection connection() throws SQLException {
-		if (sql == null || sql.isClosed())
-			throw new SQLException("Database is closed; call open() explicitly");
+	private synchronized Connection connection() throws SQLException {
+		if (sql != null)
+			try {
+				if (!sql.isClosed() && sql.isValid(2))
+					return sql;
+			} catch (SQLException ignored) {
+			}
+
+		if (transactionDepth != 0)
+			throw new SQLException("Database connection was lost during a transaction");
+
+		if (path == null)
+			throw new SQLException("Externally supplied database connection is closed and cannot be reopened");
+
+		if (sql != null)
+			try {
+				sql.close();
+			} catch (SQLException ignored) {
+			} finally {
+				sql = null;
+			}
+
+		open();
 		return sql;
 	}
 
@@ -84,15 +111,33 @@ public class SqlHandler implements DatabaseHandler {
 	public synchronized void open() throws SQLException {
 		if (transactionDepth != 0)
 			throw new SQLException("Cannot reopen during a transaction");
-		if (sql != null && !sql.isClosed())
-			return;
+
+		if (sql != null)
+			try {
+				if (!sql.isClosed() && sql.isValid(2))
+					return;
+			} catch (SQLException ignored) {
+			}
+
 		if (path == null)
 			throw new SQLException("Externally supplied connections cannot be reopened");
+
+		if (sql != null)
+			try {
+				sql.close();
+			} catch (SQLException ignored) {
+			} finally {
+				sql = null;
+			}
+
 		Properties properties = new Properties();
+
 		if (settings.getUser() != null)
 			properties.setProperty("user", settings.getUser());
+
 		if (settings.getPassword() != null)
 			properties.setProperty("password", settings.getPassword());
+
 		sql = DriverManager.getConnection(path, properties);
 	}
 
@@ -403,7 +448,7 @@ public class SqlHandler implements DatabaseHandler {
 			if (type == DatabaseType.SQLSERVER && "TIMESTAMP".equals(fieldType))
 				fieldType = "DATETIME2";
 			if (type == DatabaseType.SQLITE && identity) {
-				if (!primary || primaryColumns.size() != 1 || (!"INT".equals(fieldType) && !"INTEGER".equals(fieldType)))
+				if (!primary || primaryColumns.size() != 1 || !"INT".equals(fieldType) && !"INTEGER".equals(fieldType))
 					throw new IllegalArgumentException("SQLite AUTOINCREMENT requires a single INTEGER PRIMARY KEY");
 				fieldType = "INTEGER";
 			}

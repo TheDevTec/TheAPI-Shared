@@ -10,14 +10,27 @@ import java.util.List;
 public final class SqlStatement {
 	private final String sql;
 	private final List<Object> parameters;
+
 	SqlStatement(String sql, List<Object> parameters) {
 		this.sql = sql;
 		this.parameters = Collections.unmodifiableList(new ArrayList<>(parameters));
 	}
-	public String sql() { return sql; }
-	public List<Object> parameters() { return parameters; }
-	public void bind(PreparedStatement statement) throws SQLException {
-		for (int i = 0; i < parameters.size(); i++) statement.setObject(i + 1, parameters.get(i));
+
+	public String sql() {
+		return sql;
 	}
-	@Override public String toString() { return sql; }
+
+	public List<Object> parameters() {
+		return parameters;
+	}
+
+	public void bind(PreparedStatement statement) throws SQLException {
+		for (int i = 0; i < parameters.size(); i++)
+			statement.setObject(i + 1, parameters.get(i));
+	}
+
+	@Override
+	public String toString() {
+		return sql;
+	}
 }

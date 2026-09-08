@@ -9,33 +9,85 @@ import java.util.List;
 import me.devtec.shared.database.DatabaseAPI.DatabaseType;
 
 public interface DatabaseHandler extends AutoCloseable {
-	@FunctionalInterface interface RowMapper<T> { T map(ResultSet result) throws SQLException; }
-	@FunctionalInterface interface RowConsumer { void accept(ResultSet result) throws SQLException; }
-	@FunctionalInterface interface Transaction<T> { T execute(DatabaseHandler database) throws SQLException; }
-	default SqlStatement compile(Sql.Query query) throws SQLException { return Sql.compile(query, getType()); }
-	default List<SqlRow> query(Sql.Query query) throws SQLException { return query(query, SqlRow::new); }
-	default <T> List<T> query(Sql.Query query, RowMapper<T> mapper) throws SQLException {
-		List<T> rows = new ArrayList<>(); forEach(query, result -> rows.add(mapper.map(result))); return rows;
+	@FunctionalInterface
+	interface RowMapper<T> {
+		T map(ResultSet result) throws SQLException;
 	}
+
+	@FunctionalInterface
+	interface RowConsumer {
+		void accept(ResultSet result) throws SQLException;
+	}
+
+	@FunctionalInterface
+	interface Transaction<T> {
+		T execute(DatabaseHandler database) throws SQLException;
+	}
+
+	default SqlStatement compile(Sql.Query query) throws SQLException {
+		return Sql.compile(query, getType());
+	}
+
+	default List<SqlRow> query(Sql.Query query) throws SQLException {
+		return query(query, SqlRow::new);
+	}
+
+	default <T> List<T> query(Sql.Query query, RowMapper<T> mapper) throws SQLException {
+		List<T> rows = new ArrayList<>();
+		forEach(query, result -> rows.add(mapper.map(result)));
+		return rows;
+	}
+
 	default void forEach(Sql.Query query, RowConsumer consumer) throws SQLException {
 		SqlStatement compiled = compile(query);
 		try (PreparedStatement statement = prepareStatement(compiled.sql())) {
-			compiled.bind(statement); try (ResultSet result = statement.executeQuery()) { while (result.next()) consumer.accept(result); }
+			compiled.bind(statement);
+			try (ResultSet result = statement.executeQuery()) {
+				while (result.next())
+					consumer.accept(result);
+			}
 		}
 	}
+
 	default int update(Sql.Query query) throws SQLException {
 		SqlStatement compiled = compile(query);
-		try (PreparedStatement statement = prepareStatement(compiled.sql())) { compiled.bind(statement); return statement.executeUpdate(); }
+		try (PreparedStatement statement = prepareStatement(compiled.sql())) {
+			compiled.bind(statement);
+			return statement.executeUpdate();
+		}
 	}
+
 	default boolean exists(Sql.Select query) throws SQLException {
 		SqlStatement compiled = compile(query);
-		try (PreparedStatement statement = prepareStatement(compiled.sql())) { compiled.bind(statement); statement.setMaxRows(1); try (ResultSet result = statement.executeQuery()) { return result.next(); } }
+		try (PreparedStatement statement = prepareStatement(compiled.sql())) {
+			compiled.bind(statement);
+			statement.setMaxRows(1);
+			try (ResultSet result = statement.executeQuery()) {
+				return result.next();
+			}
+		}
 	}
-	default <T> T transaction(Transaction<T> work) throws SQLException { throw new java.sql.SQLFeatureNotSupportedException("Transactions are not implemented by this handler"); }
-	default List<Object> insertKeys(Sql.Insert insert) throws SQLException { throw new java.sql.SQLFeatureNotSupportedException("Generated keys are not implemented by this handler"); }
+
+	default <T> T transaction(Transaction<T> work) throws SQLException {
+		throw new java.sql.SQLFeatureNotSupportedException("Transactions are not implemented by this handler");
+	}
+
+	default List<Object> insertKeys(Sql.Insert insert) throws SQLException {
+		throw new java.sql.SQLFeatureNotSupportedException("Generated keys are not implemented by this handler");
+	}
+
 	default int[] batch(String sql, List<Object[]> rows) throws SQLException {
-		try (PreparedStatement statement = prepareStatement(sql)) { for (Object[] row : rows) { statement.clearParameters(); for (int i = 0; i < row.length; i++) statement.setObject(i + 1, row[i]); statement.addBatch(); } return statement.executeBatch(); }
+		try (PreparedStatement statement = prepareStatement(sql)) {
+			for (Object[] row : rows) {
+				statement.clearParameters();
+				for (int i = 0; i < row.length; i++)
+					statement.setObject(i + 1, row[i]);
+				statement.addBatch();
+			}
+			return statement.executeBatch();
+		}
 	}
+
 	class Row {
 		private final String field;
 		private final String type;
@@ -71,7 +123,8 @@ public interface DatabaseHandler extends AutoCloseable {
 			extra = "";
 		}
 
-		public Row(String fieldName, SqlFieldType fieldType, int size, boolean nulled, String key, String defVal, String extra) {
+		public Row(String fieldName, SqlFieldType fieldType, int size, boolean nulled, String key, String defVal,
+				String extra) {
 			field = fieldName;
 			type = fieldType.name() + (size == 0 ? "" : "(" + size + ")");
 			this.nulled = nulled;
@@ -156,6 +209,7 @@ public interface DatabaseHandler extends AutoCloseable {
 
 	void open() throws SQLException;
 
+	@Override
 	void close() throws SQLException;
 
 	boolean createTable(String name, Row[] values) throws SQLException;
