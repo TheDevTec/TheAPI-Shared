@@ -313,6 +313,15 @@ public final class Ref {
 		return null;
 	}
 
+	private static final Field[] EMPTY_FIELDS = {};
+
+	public static Field[] fields(Class<?> type) {
+		if (type == null)
+			return EMPTY_FIELDS;
+
+		return type.getDeclaredFields();
+	}
+
 	public static List<Field> getAllFields(Class<?> type) {
 		if (type == null)
 			return Collections.emptyList();
