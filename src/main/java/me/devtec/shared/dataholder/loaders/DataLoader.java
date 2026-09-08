@@ -4,7 +4,6 @@ import java.io.*;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -342,9 +341,20 @@ public class DataLoader implements Cloneable {
 	}
 
 	public static boolean supportsFormat(String name) {
-		String format = name.toLowerCase(Locale.ROOT);
-		return "yaml".equals(format) || "json".equals(format) || "toml".equals(format) || "properties".equals(format)
-				|| "byte".equals(format) || "empty".equals(format);
+		if (name == null)
+			return false;
+
+		switch (name.toLowerCase(Locale.ROOT)) {
+		case "yaml":
+		case "json":
+		case "toml":
+		case "properties":
+		case "byte":
+		case "empty":
+			return true;
+		default:
+			return false;
+		}
 	}
 
 	public static void saveTo(Config config, String format, OutputStream output, boolean markSaved) throws IOException {
@@ -444,18 +454,34 @@ public class DataLoader implements Cloneable {
 	}
 
 	public static DataLoader findLoaderByName(String name) {
-		for (DataLoaderConstructor c : CUSTOM)
-			if (c.isConstructorOf(name))
-				return c.construct();
-		String f = name.toLowerCase(Locale.ROOT);
-		return Arrays.asList("yaml", "json", "toml", "properties", "byte", "empty").contains(f) ? new DataLoader(f)
-				: null;
+		if (name == null)
+			return null;
+
+		for (DataLoaderConstructor constructor : CUSTOM)
+			if (constructor.isConstructorOf(name))
+				return constructor.construct();
+
+		String format = name.toLowerCase(Locale.ROOT);
+
+		switch (format) {
+		case "yaml":
+		case "json":
+		case "toml":
+		case "properties":
+		case "byte":
+		case "empty":
+			return new DataLoader(format);
+		default:
+			return null;
+		}
 	}
 
 	public static DataLoader findLoaderFor(String input) {
 		try {
-			return new DataLoader(
-					parse(new StringReader(input == null ? "" : input), null, input == null ? 0 : input.length() * 2L));
+			if (input == null || input.isEmpty())
+				return new DataLoader(new ConfigDocument());
+
+			return new DataLoader(parse(new StringReader(input), null, input.length() * 2L));
 		} catch (IOException | RuntimeException e) {
 			lastLoadError = e;
 			return failed();
@@ -475,9 +501,9 @@ public class DataLoader implements Cloneable {
 	}
 
 	public static DataLoader findLoaderFor(InputStream input) {
-		try (Reader r = new InputStreamReader(input,
-				StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT))) {
-			return new DataLoader(parse(r, null, 0));
+		try (Reader reader = new InputStreamReader(input, StandardCharsets.UTF_8.newDecoder()
+				.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT))) {
+			return new DataLoader(parse(reader, null, 0));
 		} catch (IOException | RuntimeException e) {
 			lastLoadError = e;
 			return failed();
@@ -492,69 +518,87 @@ public class DataLoader implements Cloneable {
 
 	private static ConfigDocument read(File file, String format) throws IOException {
 		final long sourceBytes = file.length();
-		if (sourceBytes == 0)
-			return new ConfigDocument();
+
+		if (sourceBytes == 0) {
+			ConfigDocument document = new ConfigDocument();
+			document.format = format == null ? "empty" : format;
+			return document;
+		}
+
 		try (FileInputStream input = new FileInputStream(file)) {
-			// Small files can use the same array-backed Reader path as String input.
-			// The extra byte detects growth without ever truncating the input.
 			if (sourceBytes <= 64 * 1024) {
 				byte[] bytes = new byte[(int) sourceBytes + 1];
 				int count = 0;
+
 				while (count < bytes.length) {
 					int read = input.read(bytes, count, bytes.length - count);
+
 					if (read < 0) {
 						java.nio.CharBuffer text = StandardCharsets.UTF_8.newDecoder()
 								.onMalformedInput(CodingErrorAction.REPORT)
+								.onUnmappableCharacter(CodingErrorAction.REPORT)
 								.decode(java.nio.ByteBuffer.wrap(bytes, 0, count));
-						Reader reader = text.hasArray()
-								? new CharArrayReader(text.array(), text.arrayOffset() + text.position(),
-										text.remaining())
-								: new StringReader(text.toString());
-						return parse(reader, format, count);
+
+						if (text.hasArray())
+							return parse(new CharArrayReader(text.array(), text.arrayOffset() + text.position(),
+									text.remaining()), format, count);
+
+						char[] chars = new char[text.remaining()];
+						text.get(chars);
+						return parse(new CharArrayReader(chars), format, count);
 					}
-					count += read;
+
+					if (read != 0)
+						count += read;
 				}
-				// File grew during the read: replay the prefix and keep streaming.
+
 				try (Reader reader = new InputStreamReader(
 						new SequenceInputStream(new ByteArrayInputStream(bytes), input),
-						StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT))) {
+						StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
+								.onUnmappableCharacter(CodingErrorAction.REPORT))) {
 					return parse(reader, format, sourceBytes);
 				}
 			}
-			try (Reader reader = new InputStreamReader(input,
-					StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT))) {
+
+			try (Reader reader = new InputStreamReader(input, StandardCharsets.UTF_8.newDecoder()
+					.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT))) {
 				return parse(reader, format, sourceBytes);
 			}
 		}
 	}
 
-	private static ConfigDocument parse(Reader r, String format, long bytes) throws IOException {
+	private static ConfigDocument parse(Reader source, String format, long bytes) throws IOException {
 		char[] sample = new char[4096];
-		int n = r.read(sample);
-		// Codecs own their input buffers. Retain only the detection prefix here.
-		PushbackReader reader = new PushbackReader(r, sample.length);
-		int start = n > 0 && sample[0] == '\uFEFF' ? 1 : 0;
-		if (n > start)
-			reader.unread(sample, start, n - start);
+		int count = source.read(sample);
+		int start = count > 0 && sample[0] == '\uFEFF' ? 1 : 0;
+		int length = count > start ? count - start : 0;
+
 		if (format == null)
-			format = FormatRegistry.detect(n > start ? new String(sample, start, n - start) : "");
-		ConfigDocument d = new ConfigDocument();
+			format = FormatRegistry.detect(sample, start, length);
+
+		PushbackReader reader = new PushbackReader(source, sample.length);
+
+		if (length != 0)
+			reader.unread(sample, start, length);
+
+		ConfigDocument document = new ConfigDocument();
 
 		try {
-			d.storage.preflight(bytes);
-
-			d.storage.beginBulkLoad(bytes);
+			document.storage.preflight(bytes);
+			document.storage.beginBulkLoad(bytes);
 
 			try {
-				FormatRegistry.parse("byte".equals(format) ? new BufferedReader(reader, 8192) : reader, format, d);
+				if ("byte".equals(format))
+					FormatRegistry.parse(new BufferedReader(reader, 8192), format, document);
+				else
+					FormatRegistry.parse(reader, format, document);
 			} finally {
-				d.storage.endBulkLoad();
+				document.storage.endBulkLoad();
 			}
 
-			return d;
-
+			return document;
 		} catch (IOException | RuntimeException e) {
-			d.close();
+			document.close();
 			throw e;
 		}
 	}

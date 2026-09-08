@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import me.devtec.shared.dataholder.store.AdaptiveConfigStore;
+import me.devtec.shared.dataholder.store.ConfigStore;
 import me.devtec.shared.dataholder.store.DiskNodeStore;
 import me.devtec.shared.dataholder.store.LiveCollections;
 import me.devtec.shared.dataholder.store.MemoryEstimator;
@@ -23,15 +24,26 @@ public final class ConfigDocument implements AutoCloseable {
 	private boolean closed;
 
 	public int child(int parent, String segment) {
-		storage.beforeMutation(144 + 2L * segment.length());
-		return storage.store().resolve(parent, segment, true);
+		storage.beforeMutation(144L + 2L * segment.length());
+		return storage.store().child(parent, segment, true);
 	}
 
 	public void put(int node, Object value, NodeMetadata metadata, boolean modified) {
 		ValueRef ref = value instanceof ValueRef ? (ValueRef) value : new ValueRef.Memory(value);
-		storage.beforeMutation(ref.estimatedHeap() + MemoryEstimator.estimate(metadata.writtenValue)
-				+ MemoryEstimator.estimate(metadata.comments) + storage.store().additionalEntryHeap(node));
-		storage.store().put(node, ref, metadata, modified);
+
+		long estimate = ref.estimatedHeap();
+
+		if (metadata != null) {
+			estimate += MemoryEstimator.estimate(metadata.writtenValue);
+			estimate += MemoryEstimator.estimate(metadata.comments);
+			estimate += MemoryEstimator.estimate(metadata.commentAfterValue);
+		}
+
+		ConfigStore current = storage.store();
+
+		storage.beforeMutation(estimate + current.additionalEntryHeap(node));
+
+		storage.store().put(node, ref, metadata, modified, estimate);
 	}
 
 	public ConfigDocument copy() {
@@ -55,20 +67,27 @@ public final class ConfigDocument implements AutoCloseable {
 			public Object current(Object fallback) {
 				if (closed)
 					return fallback;
-				int n = storage.store().resolve(key, false);
-				return n == 0 ? fallback : storage.store().value(n).get();
+				ConfigStore store = storage.store();
+				int n = store.resolve(key, false);
+
+				return n == 0 ? fallback : store.value(n).get();
 			}
 
 			@Override
 			public void changed(Object value) {
 				if (closed)
 					return;
-				int n = storage.store().resolve(key, false);
+				ConfigStore store = storage.store();
+
+				int n = store.resolve(key, false);
+
 				if (n == 0)
 					return;
-				NodeMetadata m = storage.store().metadata(n);
-				m.writtenValue = null;
-				put(n, value, m, true);
+
+				NodeMetadata metadata = store.metadata(n);
+				metadata.writtenValue = null;
+
+				put(n, value, metadata, true);
 				externalDirty = true;
 			}
 		});

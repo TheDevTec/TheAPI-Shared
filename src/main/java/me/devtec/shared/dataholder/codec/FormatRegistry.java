@@ -22,45 +22,167 @@ public final class FormatRegistry {
 	}
 
 	public static String detect(String sample) {
-		String t = sample.trim();
+		if (sample == null || sample.isEmpty())
+			return "empty";
 
-		if (t.isEmpty() || "{}".equals(t))
-			return "{}".equals(t) ? "json" : "empty";
+		char[] chars = sample.toCharArray();
+		return detect(chars, 0, chars.length);
+	}
 
-		if (t.charAt(0) == '{' || t.startsWith("[{"))
+	public static String detect(char[] sample) {
+		return detect(sample, 0, sample == null ? 0 : sample.length);
+	}
+
+	public static String detect(char[] sample, int offset, int length) {
+		if (sample == null || length <= 0)
+			return "empty";
+
+		int end = offset + length;
+
+		boolean jsonPossible = true;
+		boolean tomlPossible = true;
+		boolean yamlPossible = true;
+		boolean bytePossible = true;
+
+		boolean foundContent = false;
+		boolean foundTomlSection = false;
+		boolean foundEquals = false;
+		boolean foundColon = false;
+
+		int lineStart = offset;
+
+		for (int i = offset; i <= end; i++) {
+			char c = i < end ? sample[i] : '\n';
+
+			if (i < end && bytePossible && c > ' ')
+				if (((c < 'A') || (c > 'Z')) && ((c < 'a') || (c > 'z')) && ((c < '0') || (c > '9')) && c != '+'
+						&& c != '/' && c != '=')
+					bytePossible = false;
+
+			if (c != '\n' && i < end)
+				continue;
+
+			int start = lineStart;
+			int lineEnd = i;
+
+			if (lineEnd > start && sample[lineEnd - 1] == '\r')
+				lineEnd--;
+
+			while (start < lineEnd && sample[start] <= ' ')
+				start++;
+
+			while (lineEnd > start && sample[lineEnd - 1] <= ' ')
+				lineEnd--;
+
+			lineStart = i + 1;
+
+			if (start >= lineEnd)
+				continue;
+
+			char first = sample[start];
+
+			if (first == '#')
+				continue;
+
+			foundContent = true;
+
+			if (jsonPossible)
+				if (first != '{' && first != '[')
+					jsonPossible = false;
+				else if (first == '[' && start + 1 < lineEnd && sample[start + 1] != '{')
+					jsonPossible = false;
+
+			if ((first == '[' && sample[lineEnd - 1] == ']') && (start + 1 >= lineEnd || sample[start + 1] != '{')) {
+				foundTomlSection = true;
+				yamlPossible = false;
+				jsonPossible = false;
+				continue;
+			}
+
+			int equals = -1;
+			int colon = -1;
+
+			boolean inString = false;
+			boolean escaped = false;
+			char quote = 0;
+
+			for (int j = start; j < lineEnd; j++) {
+				char ch = sample[j];
+
+				if (inString) {
+					if (escaped) {
+						escaped = false;
+						continue;
+					}
+
+					if (ch == '\\') {
+						escaped = true;
+						continue;
+					}
+
+					if (ch == quote) {
+						inString = false;
+						quote = 0;
+					}
+
+					continue;
+				}
+
+				if (ch == '"' || ch == '\'') {
+					inString = true;
+					quote = ch;
+					continue;
+				}
+
+				if (ch == '#')
+					break;
+
+				if (ch == '=' && equals == -1)
+					equals = j;
+				else if (ch == ':' && colon == -1)
+					colon = j;
+
+				if (equals != -1 && colon != -1)
+					break;
+			}
+
+			if (equals >= 0) {
+				foundEquals = true;
+
+				if (colon < 0 || equals < colon)
+					yamlPossible = false;
+			}
+
+			if (colon >= 0) {
+				foundColon = true;
+
+				if (equals < 0 || colon < equals)
+					tomlPossible = false;
+			}
+
+			if (equals < 0 && colon < 0 && !foundTomlSection)
+				tomlPossible = false;
+
+			if (first != '{' && first != '[')
+				jsonPossible = false;
+		}
+
+		if (!foundContent)
+			return "empty";
+
+		if (jsonPossible)
 			return "json";
 
-		String[] lines = t.split("\\r?\\n");
+		if (foundTomlSection && tomlPossible)
+			return "toml";
 
-		for (String rawLine : lines) {
-			String line = rawLine.trim();
+		if (foundEquals && tomlPossible)
+			return "properties";
 
-			if (line.isEmpty() || line.startsWith("#"))
-				continue;
+		if (foundColon && yamlPossible)
+			return "yaml";
 
-			if (line.startsWith("[") && line.endsWith("]") && !line.startsWith("[{"))
-				return "toml";
-		}
-
-		for (String rawLine : lines) {
-			String line = rawLine.trim();
-
-			if (line.isEmpty() || line.startsWith("#"))
-				continue;
-
-			int colon = line.indexOf(':');
-			int equals = line.indexOf('=');
-
-			if (colon >= 0 && (equals < 0 || colon < equals))
-				return "yaml";
-
-			if (equals >= 0)
-				return "properties";
-
-			break;
-		}
-
-		if (t.matches("[A-Za-z0-9+/=\\s]+"))
+		if (bytePossible)
 			return "byte";
 
 		return "yaml";

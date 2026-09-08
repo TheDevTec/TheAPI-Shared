@@ -12,6 +12,7 @@ import me.devtec.shared.dataholder.StringContainer;
 public abstract class ConfigStore implements AutoCloseable {
 	protected static final int PARENT = 0, FIRST = 1, LAST = 2, NEXT = 3, PREV = 4, HASH_NEXT = 5, ORDER_NEXT = 6,
 			ORDER_PREV = 7, EPOCH = 8, HASH = 9, FLAGS = 10, ESTIMATE = 11;
+	private static final ValueRef EMPTY_VALUE = new ValueRef.Memory(null);
 	protected int nodes = 1, entries, firstEntry, lastEntry;
 	protected long mutationEpoch, savedEpoch, retained = 256, revision;
 	protected final long seed;
@@ -72,12 +73,17 @@ public abstract class ConfigStore implements AutoCloseable {
 	}
 
 	public String getStringValue(int node) {
-		if (!hasValue(node) || isNullValue(node))
+		if (!hasValue(node))
 			return null;
+
 		String raw = getWrittenValue(node);
+
 		if (raw != null)
 			return raw;
-		return String.valueOf(getValue(node));
+
+		Object value = getValue(node);
+
+		return value == null ? null : String.valueOf(value);
 	}
 
 	public String getStringValue(String path) {
@@ -204,7 +210,6 @@ public abstract class ConfigStore implements AutoCloseable {
 
 		if (!create)
 			return 0;
-
 		return createChild(parent, path, start, end, hash, b);
 	}
 
@@ -293,22 +298,37 @@ public abstract class ConfigStore implements AutoCloseable {
 	}
 
 	public void put(int n, ValueRef value, NodeMetadata meta, boolean modified) {
-		long estimate = value.estimatedHeap() + MemoryEstimator.estimate(meta.writtenValue)
-				+ MemoryEstimator.estimate(meta.comments) + MemoryEstimator.estimate(meta.commentAfterValue);
-		content(n, value, meta); // publish metadata only after value write succeeds
+		long estimate = value.estimatedHeap();
+
+		if (meta != null) {
+			estimate += MemoryEstimator.estimate(meta.writtenValue);
+			estimate += MemoryEstimator.estimate(meta.comments);
+			estimate += MemoryEstimator.estimate(meta.commentAfterValue);
+		}
+
+		put(n, value, meta, modified, estimate);
+	}
+
+	public void put(int n, ValueRef value, NodeMetadata meta, boolean modified, long estimate) {
+		content(n, value, meta);
+
 		retained += estimate - field(n, ESTIMATE);
 		field(n, ESTIMATE, estimate);
+
 		if (!hasValue(n)) {
 			field(n, FLAGS, 1);
 			field(n, ORDER_PREV, lastEntry);
+
 			if (lastEntry == 0)
 				firstEntry = n;
 			else
 				field(lastEntry, ORDER_NEXT, n);
+
 			lastEntry = n;
 			entries++;
 			revision++;
 		}
+
 		field(n, EPOCH, modified ? ++mutationEpoch : 0);
 	}
 
@@ -318,7 +338,7 @@ public abstract class ConfigStore implements AutoCloseable {
 		if (subtree) {
 			node = resolve(path, false);
 
-			if ((node == 0) || (!hasValue(node) && firstChild(node) == 0))
+			if (node == 0 || !hasValue(node) && firstChild(node) == 0)
 				return false;
 		} else {
 			node = findValueNode(path);
@@ -372,7 +392,7 @@ public abstract class ConfigStore implements AutoCloseable {
 		field(n, FLAGS, 0);
 		field(n, ORDER_NEXT, 0);
 		field(n, ORDER_PREV, 0);
-		content(n, new ValueRef.Memory(null), new NodeMetadata());
+		content(n, EMPTY_VALUE, null);
 		releaseEntryPath(n);
 		entries--;
 	}
@@ -512,12 +532,15 @@ public abstract class ConfigStore implements AutoCloseable {
 			public int size() {
 				final long expected = revision;
 				final int root = section == null ? 0 : resolve(section, false);
-				if (section != null && root == 0) return 0;
+				if (section != null && root == 0)
+					return 0;
 				int count = 0;
-				for (int node = firstChild(root); node != 0;
-						node = recursive ? successor(node, root) : nextSibling(node)) {
-					if (expected != revision) throw new ConcurrentModificationException();
-					if (!recursive || hasValue(node)) ++count;
+				for (int node = firstChild(root); node != 0; node = recursive ? successor(node, root)
+						: nextSibling(node)) {
+					if (expected != revision)
+						throw new ConcurrentModificationException();
+					if (!recursive || hasValue(node))
+						++count;
 				}
 				return count;
 			}
@@ -653,12 +676,15 @@ public abstract class ConfigStore implements AutoCloseable {
 		copyLiveTo(target, Long.MAX_VALUE);
 	}
 
-	/** Returns false before decoding a value that would exceed the target budget. */
+	/**
+	 * Returns false before decoding a value that would exceed the target budget.
+	 */
 	public boolean copyLiveTo(ConfigStore target, long memoryLimit) {
 		for (int n = firstEntry; n != 0; n = nextEntry(n)) {
 			int targetNode = target.resolve(path(n), true);
 			if (!target.disk() && target.estimatedHeap() + target.additionalEntryHeap(targetNode)
-					+ field(n, ESTIMATE) > memoryLimit) return false;
+					+ field(n, ESTIMATE) > memoryLimit)
+				return false;
 			NodeMetadata m = metadata(n);
 			ValueRef v = target.disk() ? value(n) : new ValueRef.Memory(copyValue(value(n).get()));
 			target.put(targetNode, v, new NodeMetadata(m.writtenValue, m.commentAfterValue,

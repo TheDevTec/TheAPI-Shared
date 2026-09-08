@@ -12,9 +12,18 @@ public final class AdaptiveConfigStore implements AutoCloseable {
 	private ConfigStore store = new PackedMemoryStore();
 	private State state = State.MEMORY;
 	private long mutations, lastMigration, generation;
+	private static long spillLimit, returnLimit;
 	private boolean preflightDisk;
 	private boolean bulkLoad;
 	private long bulkSourceBytes;
+	private int recheckCountdown = Math.max(1, ConfigMemoryPolicy.recheckMutations);
+
+	static {
+		long budget = ConfigMemoryPolicy.budget();
+
+		spillLimit = (long) (budget * ConfigMemoryPolicy.spillRatio);
+		returnLimit = (long) (budget * ConfigMemoryPolicy.returnRatio);
+	}
 
 	public AdaptiveConfigStore() {
 		ConfigMemoryCoordinator.register(this);
@@ -45,11 +54,15 @@ public final class AdaptiveConfigStore implements AutoCloseable {
 	}
 
 	public void beforeMutation(long estimate) {
-		if (!store.disk()
-				&& store.estimatedHeap() + estimate > ConfigMemoryPolicy.budget() * ConfigMemoryPolicy.spillRatio)
+		if (!store.disk() && store.estimatedHeap() + estimate > spillLimit)
 			forceDisk();
-		if (++mutations % Math.max(1, ConfigMemoryPolicy.recheckMutations) == 0)
+
+		++mutations;
+
+		if (--recheckCountdown <= 0) {
+			recheckCountdown = Math.max(1, ConfigMemoryPolicy.recheckMutations);
 			optimize(false);
+		}
 	}
 
 	public void optimizeStorage() {
@@ -85,8 +98,8 @@ public final class AdaptiveConfigStore implements AutoCloseable {
 
 	private void optimize(boolean explicit) {
 		if (!store.disk()) {
-			if (store.estimatedHeap() > ConfigMemoryPolicy.budget() * ConfigMemoryPolicy.spillRatio
-					|| !ConfigMemoryPolicy.heapSafe(0) || ConfigMemoryCoordinator.pressure())
+			if (store.estimatedHeap() > spillLimit || !ConfigMemoryPolicy.heapSafe(0)
+					|| ConfigMemoryCoordinator.pressure())
 				forceDisk();
 
 			return;
@@ -95,25 +108,29 @@ public final class AdaptiveConfigStore implements AutoCloseable {
 		if (!explicit && preflightDisk)
 			return;
 
-		if ((explicit || mutations - lastMigration >= ConfigMemoryPolicy.cooldownMutations)
-				&& store.estimatedHeap() < ConfigMemoryPolicy.budget() * ConfigMemoryPolicy.returnRatio
-				&& ConfigMemoryPolicy.heapSafe(store.estimatedHeap()) && !ConfigMemoryCoordinator.pressure())
+		long estimated = store.estimatedHeap();
+
+		if ((explicit || mutations - lastMigration >= ConfigMemoryPolicy.cooldownMutations) && estimated < returnLimit
+				&& ConfigMemoryPolicy.heapSafe(estimated) && !ConfigMemoryCoordinator.pressure())
 			migrate(false);
 	}
 
 	public void forceDisk() {
-
 		if (!store().disk())
 			migrate(true);
 	}
 
 	public void forceMemory() {
 		if (store().disk()) {
-			if (store.estimatedHeap() > ConfigMemoryPolicy.budget() * ConfigMemoryPolicy.returnRatio
-					|| !ConfigMemoryPolicy.heapSafe(store.estimatedHeap()))
+			long estimated = store.estimatedHeap();
+
+			if (estimated > returnLimit || !ConfigMemoryPolicy.heapSafe(estimated))
 				throw new IllegalStateException("Config cannot safely fit in memory");
+
 			migrate(false);
-			if (store.disk()) throw new IllegalStateException("Config paths and values cannot safely fit in memory");
+
+			if (store.disk())
+				throw new IllegalStateException("Config paths and values cannot safely fit in memory");
 		}
 	}
 
@@ -132,7 +149,7 @@ public final class AdaptiveConfigStore implements AutoCloseable {
 				((DiskNodeStore) candidate).beginBulkLoad(bulkSourceBytes);
 
 			if (!disk) {
-				long limit = (long) (ConfigMemoryPolicy.budget() * ConfigMemoryPolicy.spillRatio);
+				long limit = spillLimit;
 				if (!old.copyLiveTo(candidate, limit)) {
 					candidate.close();
 					state = previous;

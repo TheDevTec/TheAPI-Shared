@@ -11,18 +11,34 @@ import me.devtec.shared.dataholder.store.DiskNodeStore;
 import me.devtec.shared.dataholder.store.DiskValueStore;
 import me.devtec.shared.dataholder.store.MemoryEstimator;
 
-/** Spills one collection independently of the number of Config keys. */
+/**
+ * Spills one collection independently of the number of Config keys.
+ */
 final class AdaptiveValueBuilder {
+
+	private static final long MIN_SPILL_THRESHOLD = 32768L;
+	private static final long BASE_ESTIMATE = 48L;
+	private static final long ENTRY_OVERHEAD = 40L;
+
 	private final ConfigDocument document;
 	private final boolean map;
+	private final long spillThreshold;
+
 	private List<Object> list;
 	private Map<Object, Object> entries;
-	private DiskValueStore disk;
-	private long ref, estimate = 48;
 
-	AdaptiveValueBuilder(ConfigDocument d, boolean map) {
-		document = d;
+	private DiskValueStore disk;
+	private long ref;
+	private long estimate = BASE_ESTIMATE;
+
+	AdaptiveValueBuilder(ConfigDocument document, boolean map) {
+		this.document = document;
 		this.map = map;
+
+		long budget = ConfigMemoryPolicy.budget();
+		long threshold = budget >>> 4;
+		spillThreshold = threshold < MIN_SPILL_THRESHOLD ? MIN_SPILL_THRESHOLD : threshold;
+
 		if (map)
 			entries = new LinkedHashMap<>();
 		else
@@ -30,21 +46,16 @@ final class AdaptiveValueBuilder {
 	}
 
 	void add(Object key, Object value) {
-		estimate += 40 + MemoryEstimator.estimate(key) + MemoryEstimator.estimate(value);
-		if (disk == null && estimate > Math.max(32768, ConfigMemoryPolicy.budget() / 16)) {
-			document.storage.forceDisk();
-			disk = ((DiskNodeStore) document.storage.store()).values;
-			ref = disk.composite(map);
-			if (map) {
-				for (Map.Entry<Object, Object> e : entries.entrySet())
-					disk.appendValue(ref, e.getKey(), e.getValue());
-				entries = null;
-			} else {
-				for (Object v : list)
-					disk.appendValue(ref, null, v);
-				list = null;
-			}
-		}
+		long added = ENTRY_OVERHEAD + MemoryEstimator.estimate(value);
+
+		if (map)
+			added += MemoryEstimator.estimate(key);
+
+		estimate += added;
+
+		if (disk == null && estimate > spillThreshold)
+			spill();
+
 		if (disk != null)
 			disk.appendValue(ref, key, value);
 		else if (map)
@@ -53,7 +64,30 @@ final class AdaptiveValueBuilder {
 			list.add(value);
 	}
 
+	private void spill() {
+		document.storage.forceDisk();
+
+		DiskNodeStore store = (DiskNodeStore) document.storage.store();
+		disk = store.values;
+		ref = disk.composite(map);
+
+		if (map) {
+			for (Map.Entry<Object, Object> entry : entries.entrySet())
+				disk.appendValue(ref, entry.getKey(), entry.getValue());
+
+			entries = null;
+		} else {
+			for (Object value : list)
+				disk.appendValue(ref, null, value);
+
+			list = null;
+		}
+	}
+
 	Object finish() {
-		return disk != null ? disk.finish(ref, estimate) : map ? entries : list;
+		if (disk != null)
+			return disk.finish(ref, estimate);
+
+		return map ? entries : list;
 	}
 }

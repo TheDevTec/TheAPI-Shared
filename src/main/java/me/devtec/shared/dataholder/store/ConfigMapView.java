@@ -4,9 +4,11 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import me.devtec.shared.dataholder.ConfigDocument;
+import me.devtec.shared.dataholder.StringContainer;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
 
 /**
@@ -40,9 +42,11 @@ public final class ConfigMapView extends AbstractMap<String, DataValue> {
 
 		if (writtenValue) {
 			int node = store.resolve(path, false);
+
 			if (!store.hasValue(node))
 				return null;
-			return store.metadata(node).writtenValue;
+
+			return store.getWrittenValue(node);
 		}
 
 		return store.getValue(path);
@@ -52,15 +56,18 @@ public final class ConfigMapView extends AbstractMap<String, DataValue> {
 	public DataValue get(Object key) {
 		if (!(key instanceof String))
 			return null;
-		ConfigStore s = document.storage.store();
-		int n = s.resolve((String) key, false);
-		if (!s.hasValue(n))
+
+		ConfigStore store = document.storage.store();
+		int node = store.resolve((String) key, false);
+
+		if (!store.hasValue(node))
 			return null;
-		NodeMetadata m = s.metadata(n);
-		Object value = s.value(n).get();
-		DataValue v = DataValue.of(m.writtenValue, value, m.commentAfterValue, m.comments);
-		v.modified = s.modified(n);
-		return v;
+
+		DataValue value = DataValue.of(store.getWrittenValue(node), store.getValue(node), store.getComment(node),
+				store.getComments(node));
+
+		value.modified = store.modified(node);
+		return value;
 	}
 
 	@Override
@@ -90,9 +97,13 @@ public final class ConfigMapView extends AbstractMap<String, DataValue> {
 
 			@Override
 			public Iterator<Entry<String, DataValue>> iterator() {
+				final ConfigStore store = document.storage.store();
 				final long generation = document.storage.generation();
-				final Iterator<String> keys = document.storage.store().keys(null, false, true).iterator();
+
 				return new Iterator<Entry<String, DataValue>>() {
+					private int next = store.firstEntry();
+					private final StringContainer path = new StringContainer(64);
+
 					private void check() {
 						if (generation != document.storage.generation())
 							throw new ConcurrentModificationException();
@@ -101,28 +112,36 @@ public final class ConfigMapView extends AbstractMap<String, DataValue> {
 					@Override
 					public boolean hasNext() {
 						check();
-						return keys.hasNext();
+						return next != 0;
 					}
 
 					@Override
 					public Entry<String, DataValue> next() {
 						check();
-						final String key = keys.next();
-						return new SimpleEntry<String, DataValue>(key, get(key)) {
+
+						if (next == 0)
+							throw new NoSuchElementException();
+
+						final int node = next;
+						next = store.nextEntry(node);
+
+						final String key = store.entryKey(node, path);
+
+						DataValue value = DataValue.of(store.getWrittenValue(node), store.getValue(node),
+								store.getComment(node), store.getComments(node));
+
+						value.modified = store.modified(node);
+
+						return new SimpleEntry<String, DataValue>(key, value) {
 							private static final long serialVersionUID = -7441730680501051025L;
 
 							@Override
-							public DataValue setValue(DataValue v) {
-								DataValue old = put(key, v);
-								super.setValue(v);
+							public DataValue setValue(DataValue value) {
+								DataValue old = ConfigMapView.this.put(key, value);
+								super.setValue(value);
 								return old;
 							}
 						};
-					}
-
-					@Override
-					public void remove() {
-						throw new UnsupportedOperationException();
 					}
 				};
 			}

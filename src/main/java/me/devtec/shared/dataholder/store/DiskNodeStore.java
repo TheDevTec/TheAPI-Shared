@@ -284,7 +284,6 @@ public final class DiskNodeStore extends ConfigStore {
 		if (!bulkBloomMightContain(hash)) {
 			if (!create)
 				return 0;
-
 			final int node = createBulkChild(parent, path, start, end, hash, bucket);
 
 			bulkBloomAdd(hash);
@@ -312,7 +311,6 @@ public final class DiskNodeStore extends ConfigStore {
 
 		if (!create)
 			return 0;
-
 		/*
 		 * Bloom false-positive.
 		 */
@@ -425,7 +423,9 @@ public final class DiskNodeStore extends ConfigStore {
 	@Override
 	protected void content(int n, ValueRef v, NodeMetadata m) {
 		long value = values.offset(v);
-		long meta = values.writeMetadata(m);
+
+		long meta = m == null ? 0L : values.writeMetadata(m);
+
 		field(n, 14, value);
 		field(n, 15, meta);
 	}

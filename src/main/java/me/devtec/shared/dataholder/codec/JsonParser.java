@@ -2,247 +2,386 @@ package me.devtec.shared.dataholder.codec;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 
 import me.devtec.shared.dataholder.ConfigDocument;
 import me.devtec.shared.dataholder.StringContainer;
-import me.devtec.shared.dataholder.store.NodeMetadata;
+import me.devtec.shared.utility.ParseUtils;
 
 public final class JsonParser {
+
 	public static final JsonParser INSTANCE = new JsonParser();
-	private static final java.util.regex.Pattern NUMBER = java.util.regex.Pattern
-			.compile("-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?");
+
+	private static final int MAX_DEPTH = 256;
+	private static final int MAX_SCALAR_LENGTH = 1024;
+	private static final long MATERIALIZATION_LIMIT = Math.min(16L * 1024 * 1024,
+			Runtime.getRuntime().maxMemory() / 16);
 
 	private JsonParser() {
 	}
 
 	public void parse(Reader reader, ConfigDocument document) throws IOException {
-		ConfigInput in = new ConfigInput(reader, "json");
-		in.spaces();
-		if (in.peek() == '{')
-			object(in, document, 0, 0);
-		else if (in.peek() == '[') {
-			in.read();
+		try (ConfigInput in = new ConfigInput(reader, "json")) {
 			in.spaces();
-			while (in.peek() != ']') {
+
+			int c = in.peek();
+
+			if (c == '{')
 				object(in, document, 0, 0);
-				in.spaces();
-				if (in.peek() != ',')
-					break;
+			else if (c == '[') {
 				in.read();
 				in.spaces();
-			}
-			in.expect(']');
-		} else
-			throw in.error("Config JSON root must be object or legacy object array");
-		in.spaces();
-		if (in.peek() != -1)
-			throw in.error("Trailing JSON content");
+
+				if (in.peek() != ']')
+					while (true) {
+						object(in, document, 0, 0);
+						in.spaces();
+
+						if (in.peek() != ',')
+							break;
+
+						in.read();
+						in.spaces();
+					}
+
+				in.expect(']');
+			} else
+				throw in.error("Config JSON root must be object or legacy object array");
+
+			in.spaces();
+
+			if (in.peek() != -1)
+				throw in.error("Trailing JSON content");
+		}
 	}
 
-	private void object(ConfigInput in, ConfigDocument d, int parent, int depth) throws IOException {
-		if (depth > 256)
-			throw in.error("Nesting exceeds 256");
+	private void object(ConfigInput in, ConfigDocument document, int parent, int depth) throws IOException {
+		if (depth > MAX_DEPTH)
+			throw in.error("Nesting exceeds " + MAX_DEPTH);
+
 		in.expect('{');
 		in.spaces();
+
 		if (in.peek() == '}') {
 			in.read();
+
 			if (parent != 0)
-				d.put(parent, new java.util.LinkedHashMap<>(), new NodeMetadata(), false);
+				document.put(parent, new LinkedHashMap<>(), null, false);
+
 			return;
 		}
+
 		while (true) {
 			String key = string(in);
+
 			in.spaces();
 			in.expect(':');
 			in.spaces();
-			int n = d.child(parent, key);
+
+			int node = document.child(parent, key);
+
 			if (in.peek() == '{')
-				object(in, d, n, depth + 1);
+				object(in, document, node, depth + 1);
 			else
-				d.put(n, value(in, d, depth + 1), new NodeMetadata(), false);
+				document.put(node, value(in, document, depth + 1), null, false);
+
 			in.spaces();
+
 			int c = in.read();
+
 			if (c == '}')
-				break;
+				return;
+
 			if (c != ',')
 				throw in.error("Expected ',' or '}'");
+
 			in.spaces();
 		}
 	}
 
-	static Object value(ConfigInput in, ConfigDocument d, int depth) throws IOException {
-		if (depth > 256)
-			throw in.error("Nesting exceeds 256");
+	static Object value(ConfigInput in, ConfigDocument document, int depth) throws IOException {
+		if (depth > MAX_DEPTH)
+			throw in.error("Nesting exceeds " + MAX_DEPTH);
+
 		in.spaces();
+
 		int c = in.peek();
+
 		if (c == '"')
-			return stringValue(in, d);
+			return stringValue(in, document);
+
 		if (c == '[' || c == '{') {
 			boolean map = c == '{';
 			int end = map ? '}' : ']';
+
 			in.read();
-			AdaptiveValueBuilder b = new AdaptiveValueBuilder(d, map);
+
+			AdaptiveValueBuilder builder = new AdaptiveValueBuilder(document, map);
+
 			in.spaces();
+
 			if (in.peek() == end) {
 				in.read();
-				return b.finish();
+				return builder.finish();
 			}
+
 			while (true) {
 				Object key = null;
+
 				if (map) {
 					key = string(in);
 					in.spaces();
 					in.expect(':');
 				}
-				b.add(key, value(in, d, depth + 1));
+
+				builder.add(key, value(in, document, depth + 1));
+
 				in.spaces();
+
 				c = in.read();
+
 				if (c == end)
-					break;
+					return builder.finish();
+
 				if (c != ',')
 					throw in.error("Expected collection separator");
+
 				in.spaces();
 			}
-			return b.finish();
 		}
-		StringContainer b = new StringContainer();
+
+		StringContainer token = new StringContainer(24);
+
 		while ((c = in.peek()) >= 0 && c > 32 && c != ',' && c != ']' && c != '}') {
-			b.append((char) in.read());
-			if (b.length() > 1024)
+			token.append((char) in.read());
+
+			if (token.length() > MAX_SCALAR_LENGTH)
 				throw in.error("Invalid scalar token");
 		}
-		String s = b.toString();
-		if (s != null)
-			switch (s) {
-			case "true":
-				return true;
-			case "false":
-				return false;
-			case "null":
+
+		int length = token.length();
+
+		if (length == 4) {
+			if (equals(token, 't', 'r', 'u', 'e'))
+				return Boolean.TRUE;
+
+			if (equals(token, 'n', 'u', 'l', 'l'))
 				return null;
-			default:
-				break;
-			}
-		if (!NUMBER.matcher(s).matches())
+		} else if (length == 5 && equals(token, 'f', 'a', 'l', 's', 'e'))
+			return Boolean.FALSE;
+
+		if (!isJsonNumber(token))
 			throw in.error("Invalid JSON scalar");
-		return number(s);
+
+		return number(token);
 	}
 
-	static Object number(String s) {
-		try {
-			if (s.indexOf('.') < 0 && s.indexOf('e') < 0 && s.indexOf('E') < 0) {
-				long n = Long.parseLong(s);
-				if (n >= Integer.MIN_VALUE && n <= Integer.MAX_VALUE)
-					return Integer.valueOf((int) n);
-				return Long.valueOf(n);
-			}
-			double v = Double.parseDouble(s);
-			return Double.isInfinite(v) ? new java.math.BigDecimal(s) : Double.valueOf(v);
-		} catch (NumberFormatException e) {
+	static Object number(CharSequence value) {
+		Number number = ParseUtils.getNumber(value);
+
+		if (number == null)
+			return value.toString();
+
+		if (number instanceof Double && Double.isInfinite(number.doubleValue()))
 			try {
-				return Double.valueOf(s);
+				return new BigDecimal(value.toString());
 			} catch (NumberFormatException ignored) {
-				return s;
 			}
+
+		return number;
+	}
+
+	private static boolean isJsonNumber(CharSequence value) {
+		int length = value.length();
+
+		if (length == 0)
+			return false;
+
+		int index = 0;
+
+		if (value.charAt(index) == '-')
+			if (++index == length)
+				return false;
+
+		char c = value.charAt(index);
+
+		if (c == '0') {
+			index++;
+
+			// JSON nepovoluje např. 00, 01, -01
+			if (index < length) {
+				c = value.charAt(index);
+
+				if (c >= '0' && c <= '9')
+					return false;
+			}
+		} else {
+			if (c < '1' || c > '9')
+				return false;
+
+			do {
+				index++;
+
+				if (index == length)
+					return true;
+
+				c = value.charAt(index);
+			} while (c >= '0' && c <= '9');
 		}
+
+		if (index < length && value.charAt(index) == '.') {
+			if (++index == length)
+				return false;
+
+			c = value.charAt(index);
+
+			if (c < '0' || c > '9')
+				return false;
+
+			do {
+				index++;
+
+				if (index == length)
+					return true;
+
+				c = value.charAt(index);
+			} while (c >= '0' && c <= '9');
+		}
+
+		if (index < length) {
+			c = value.charAt(index);
+
+			if (c != 'e' && c != 'E' || ++index == length)
+				return false;
+
+			c = value.charAt(index);
+
+			if (c == '+' || c == '-')
+				if (++index == length)
+					return false;
+
+			c = value.charAt(index);
+
+			if (c < '0' || c > '9')
+				return false;
+
+			do
+				index++;
+			while (index < length && value.charAt(index) >= '0' && value.charAt(index) <= '9');
+		}
+
+		return index == length;
 	}
 
 	static String string(ConfigInput in) throws IOException {
 		in.expect('"');
-		StringContainer b = new StringContainer();
-		final long materializationLimit = Math.min(16 * 1024 * 1024, Runtime.getRuntime().maxMemory() / 16);
-		int c;
-		while ((c = in.read()) != '"') {
+
+		StringContainer builder = new StringContainer(32);
+
+		while (true) {
+			int c = in.read();
+
+			if (c == '"')
+				return builder.toString();
+
 			if (c < 0 || c < 32)
 				throw in.error("Unterminated/invalid string");
-			if (c == '\\') {
-				c = in.read();
-				switch (c) {
-				case '"':
-				case '\\':
-				case '/':
-					break;
-				case 'b':
-					c = '\b';
-					break;
-				case 'f':
-					c = '\f';
-					break;
-				case 'n':
-					c = '\n';
-					break;
-				case 'r':
-					c = '\r';
-					break;
-				case 't':
-					c = '\t';
-					break;
-				case 'u':
-					int v = 0;
-					for (int i = 0; i < 4; i++) {
-						int h = Character.digit(in.read(), 16);
-						if (h < 0)
-							throw in.error("Invalid Unicode escape");
-						v = v * 16 + h;
-					}
-					c = v;
-					break;
-				default:
-					throw in.error("Invalid string escape");
-				}
-			}
-			b.append((char) c);
-			if (b.length() > materializationLimit)
+
+			if (c == '\\')
+				c = escape(in);
+
+			builder.append((char) c);
+
+			if (builder.length() > MATERIALIZATION_LIMIT)
 				throw in.error("String exceeds materialization limit");
 		}
-		return b.toString();
 	}
 
-	static Object stringValue(ConfigInput in, ConfigDocument d) throws IOException {
+	static Object stringValue(ConfigInput in, ConfigDocument document) throws IOException {
 		in.expect('"');
-		AdaptiveTextBuilder b = new AdaptiveTextBuilder(d);
-		int c;
-		while ((c = in.read()) != '"') {
+
+		AdaptiveTextBuilder builder = new AdaptiveTextBuilder(document);
+
+		while (true) {
+			int c = in.read();
+
+			if (c == '"')
+				return builder.finish();
+
 			if (c < 0 || c < 32)
 				throw in.error("Unterminated/invalid string");
-			if (c == '\\') {
-				c = in.read();
-				switch (c) {
-				case '"':
-				case '\\':
-				case '/':
-					break;
-				case 'b':
-					c = '\b';
-					break;
-				case 'f':
-					c = '\f';
-					break;
-				case 'n':
-					c = '\n';
-					break;
-				case 'r':
-					c = '\r';
-					break;
-				case 't':
-					c = '\t';
-					break;
-				case 'u':
-					int v = 0;
-					for (int i = 0; i < 4; i++) {
-						int h = Character.digit(in.read(), 16);
-						if (h < 0)
-							throw in.error("Invalid Unicode escape");
-						v = v * 16 + h;
-					}
-					c = v;
-					break;
-				default:
-					throw in.error("Invalid string escape");
-				}
-			}
-			b.append((char) c);
+
+			if (c == '\\')
+				c = escape(in);
+
+			builder.append((char) c);
 		}
-		return b.finish();
+	}
+
+	private static int escape(ConfigInput in) throws IOException {
+		int c = in.read();
+
+		switch (c) {
+		case '"':
+		case '\\':
+		case '/':
+			return c;
+
+		case 'b':
+			return '\b';
+
+		case 'f':
+			return '\f';
+
+		case 'n':
+			return '\n';
+
+		case 'r':
+			return '\r';
+
+		case 't':
+			return '\t';
+
+		case 'u':
+			return unicode(in);
+
+		default:
+			throw in.error("Invalid string escape");
+		}
+	}
+
+	private static int unicode(ConfigInput in) throws IOException {
+		int a = hex(in.read());
+		int b = hex(in.read());
+		int c = hex(in.read());
+		int d = hex(in.read());
+
+		if ((a | b | c | d) < 0)
+			throw in.error("Invalid Unicode escape");
+
+		return a << 12 | b << 8 | c << 4 | d;
+	}
+
+	private static int hex(int c) {
+		if (c >= '0' && c <= '9')
+			return c - '0';
+
+		if (c >= 'a' && c <= 'f')
+			return c - 'a' + 10;
+
+		if (c >= 'A' && c <= 'F')
+			return c - 'A' + 10;
+
+		return -1;
+	}
+
+	private static boolean equals(CharSequence value, char a, char b, char c, char d) {
+		return value.charAt(0) == a && value.charAt(1) == b && value.charAt(2) == c && value.charAt(3) == d;
+	}
+
+	private static boolean equals(CharSequence value, char a, char b, char c, char d, char e) {
+		return value.charAt(0) == a && value.charAt(1) == b && value.charAt(2) == c && value.charAt(3) == d
+				&& value.charAt(4) == e;
 	}
 }

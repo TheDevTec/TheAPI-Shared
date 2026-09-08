@@ -142,14 +142,14 @@ public final class PackedMemoryStore extends ConfigStore {
 	public int resolve(String path, boolean create) {
 		if (create)
 			return super.resolve(0, path, true);
-		return (int) findPathState(0, path);
+		return findPathState(0, path);
 	}
 
 	@Override
 	public int resolve(int parent, String path, boolean create) {
 		if (create)
 			return super.resolve(parent, path, true);
-		return (int) findPathState(parent, path);
+		return findPathState(parent, path);
 	}
 
 	@Override
@@ -170,6 +170,44 @@ public final class PackedMemoryStore extends ConfigStore {
 	}
 
 	@Override
+	public void put(int node, ValueRef value, NodeMetadata meta, boolean modified, long estimate) {
+		final int page = node >>> SHIFT;
+		final int local = node & MASK;
+		final long[] record = records[page];
+		final int offset = local * FIELDS;
+
+		final long oldEstimate = record[offset + ESTIMATE];
+		final boolean hadValue = (record[offset + FLAGS] & 1L) != 0L;
+
+		content(node, value, meta);
+
+		final long estimateDelta = estimate - oldEstimate;
+
+		retained += estimateDelta;
+		valueHeapBytes += estimateDelta;
+
+		record[offset + ESTIMATE] = estimate;
+
+		if (!hadValue) {
+			record[offset + FLAGS] |= 1L;
+			record[offset + ORDER_PREV] = lastEntry;
+
+			if (lastEntry == 0)
+				firstEntry = node;
+			else {
+				final long[] lastRecord = records[lastEntry >>> SHIFT];
+				lastRecord[(lastEntry & MASK) * FIELDS + ORDER_NEXT] = node;
+			}
+
+			lastEntry = node;
+			++entries;
+			++revision;
+		}
+
+		record[offset + EPOCH] = modified ? ++mutationEpoch : 0;
+	}
+
+	@Override
 	public boolean hasKeyOrSection(String path) {
 		if (path.indexOf('.') < 0)
 			return resolve(path, false) != 0;
@@ -180,7 +218,7 @@ public final class PackedMemoryStore extends ConfigStore {
 		return resolve(path, false) != 0;
 	}
 
-	private long findPathState(int parent, String path) {
+	private int findPathState(int parent, String path) {
 		checkPathDepth(path);
 
 		final long fingerprint = parent == 0 ? pathFingerprint(path) : relativePathFingerprint(parent, path);
@@ -195,7 +233,7 @@ public final class PackedMemoryStore extends ConfigStore {
 			final int node = index[slot];
 
 			if (node == 0)
-				return 0L;
+				return 0;
 
 			final int page = node >>> SHIFT;
 
@@ -210,8 +248,7 @@ public final class PackedMemoryStore extends ConfigStore {
 				final long flags = record[offset + FLAGS];
 
 				if ((flags & 2L) == 0L && pathEquals(node, parent, path, record, offset))
-
-					return flags << 32 | node & 0xffffffffL;
+					return node;
 			}
 
 			slot = slot + 1 & mask;
@@ -738,7 +775,7 @@ public final class PackedMemoryStore extends ConfigStore {
 
 	@Override
 	public String getComment(String path) {
-		final int node = (int) findPathState(0, path);
+		final int node = findPathState(0, path);
 		if (node == 0)
 			return null;
 		return commentAfterValues[node >>> SHIFT][node & MASK];
@@ -746,7 +783,7 @@ public final class PackedMemoryStore extends ConfigStore {
 
 	@Override
 	public List<String> getComments(String path) {
-		final int node = (int) findPathState(0, path);
+		final int node = findPathState(0, path);
 		if (node == 0)
 			return null;
 		return comments[node >>> SHIFT][node & MASK];
