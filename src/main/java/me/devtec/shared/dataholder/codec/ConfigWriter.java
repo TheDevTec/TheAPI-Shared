@@ -147,7 +147,6 @@ public final class ConfigWriter {
 			}
 
 			ValueRef ref = store.value(node);
-
 			if (ref.largeText()) {
 				out.write(' ');
 				ref.writeJson(out);
@@ -163,6 +162,25 @@ public final class ConfigWriter {
 				continue;
 			}
 
+			if (isYamlContainer(value)) {
+				String writtenValue = store.getWrittenValue(node);
+
+				if (wasWrittenAsJson(writtenValue, value)) {
+					out.write(' ');
+
+					if (ref instanceof ValueRef.Memory)
+						jsonValue(value, out, 0, null);
+					else
+						ref.writeJson(out);
+
+					after(comment, out);
+					out.write('\n');
+				} else
+					writeYamlContainerAfterKey(value, comment, out, depth, new IdentityHashMap<>());
+
+				continue;
+			}
+
 			out.write(' ');
 
 			if (ref instanceof ValueRef.Memory)
@@ -175,10 +193,227 @@ public final class ConfigWriter {
 		}
 	}
 
+	private static boolean isYamlContainer(Object value) {
+		return value instanceof Map || value instanceof Collection || value != null && value.getClass().isArray();
+	}
+
+	private static boolean wasWrittenAsJson(String writtenValue, Object value) {
+		if (writtenValue == null)
+			return false;
+
+		int length = writtenValue.length();
+		int i = 0;
+
+		while (i < length && Character.isWhitespace(writtenValue.charAt(i)))
+			++i;
+
+		if (i >= length)
+			return false;
+
+		char first = writtenValue.charAt(i);
+
+		if (value instanceof Map)
+			return first == '{';
+
+		return first == '[';
+	}
+
+	private static boolean isEmptyYamlContainer(Object value) {
+		if (value instanceof Map)
+			return ((Map<?, ?>) value).isEmpty();
+
+		if (value instanceof Collection)
+			return ((Collection<?>) value).isEmpty();
+
+		return Array.getLength(value) == 0;
+	}
+
+	private static void writeYamlContainerAfterKey(Object value, String comment, Writer out, int depth,
+			IdentityHashMap<Object, Boolean> seen) throws IOException {
+
+		if (isEmptyYamlContainer(value)) {
+			out.write(value instanceof Map ? " {}" : " []");
+			after(comment, out);
+			out.write('\n');
+			return;
+		}
+
+		after(comment, out);
+		out.write('\n');
+
+		if (value instanceof Map)
+			writeYamlMapBlock((Map<?, ?>) value, out, depth + 1, seen);
+		else
+			writeYamlSequenceBlock(value, out, depth, seen);
+	}
+
+	private static void writeYamlMapBlock(Map<?, ?> map, Writer out, int depth, IdentityHashMap<Object, Boolean> seen)
+			throws IOException {
+
+		if (depth > MAX_DEPTH)
+			throw new IOException("Config value nesting exceeds " + MAX_DEPTH);
+
+		if (seen.put(map, Boolean.TRUE) != null)
+			throw new IOException("Cyclic Config value");
+
+		try {
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				checkInterrupted();
+
+				indent(out, depth);
+				writeYamlMapEntry(entry, out, depth, seen);
+			}
+		} finally {
+			seen.remove(map);
+		}
+	}
+
+	private static void writeYamlMapEntry(Map.Entry<?, ?> entry, Writer out, int depth,
+			IdentityHashMap<Object, Boolean> seen) throws IOException {
+
+		writeYamlKey(entry.getKey(), out);
+		out.write(':');
+
+		writeYamlValueAfterMapKey(entry.getValue(), out, depth, seen);
+	}
+
+	private static void writeYamlValueAfterMapKey(Object value, Writer out, int depth,
+			IdentityHashMap<Object, Boolean> seen) throws IOException {
+
+		if (!isYamlContainer(value)) {
+			out.write(' ');
+			writeYamlScalar(value, out);
+			out.write('\n');
+			return;
+		}
+
+		if (isEmptyYamlContainer(value)) {
+			out.write(value instanceof Map ? " {}" : " []");
+			out.write('\n');
+			return;
+		}
+
+		out.write('\n');
+
+		if (value instanceof Map)
+			writeYamlMapBlock((Map<?, ?>) value, out, depth + 1, seen);
+		else
+			writeYamlSequenceBlock(value, out, depth, seen);
+	}
+
+	private static void writeYamlSequenceBlock(Object sequence, Writer out, int depth,
+			IdentityHashMap<Object, Boolean> seen) throws IOException {
+
+		if (depth > MAX_DEPTH)
+			throw new IOException("Config value nesting exceeds " + MAX_DEPTH);
+
+		if (seen.put(sequence, Boolean.TRUE) != null)
+			throw new IOException("Cyclic Config value");
+
+		try {
+			if (sequence instanceof Collection) {
+				for (Object value : (Collection<?>) sequence) {
+					checkInterrupted();
+					writeYamlSequenceItem(value, out, depth, seen);
+				}
+
+				return;
+			}
+
+			int length = Array.getLength(sequence);
+
+			for (int i = 0; i < length; ++i) {
+				checkInterrupted();
+				writeYamlSequenceItem(Array.get(sequence, i), out, depth, seen);
+			}
+		} finally {
+			seen.remove(sequence);
+		}
+	}
+
+	private static void writeYamlSequenceItem(Object value, Writer out, int depth,
+			IdentityHashMap<Object, Boolean> seen) throws IOException {
+
+		/*
+		 * Map inside of list:
+		 *
+		 * - key: subkey: value
+		 */
+		if (value instanceof Map && !((Map<?, ?>) value).isEmpty()) {
+			writeYamlMapAsSequenceItem((Map<?, ?>) value, out, depth, seen);
+			return;
+		}
+
+		indent(out, depth);
+		out.write('-');
+
+		if (!isYamlContainer(value)) {
+			out.write(' ');
+			writeYamlScalar(value, out);
+			out.write('\n');
+			return;
+		}
+
+		if (isEmptyYamlContainer(value)) {
+			out.write(value instanceof Map ? " {}" : " []");
+			out.write('\n');
+			return;
+		}
+
+		out.write('\n');
+
+		if (value instanceof Map)
+			writeYamlMapBlock((Map<?, ?>) value, out, depth + 1, seen);
+		else
+			writeYamlSequenceBlock(value, out, depth + 1, seen);
+	}
+
+	private static void writeYamlMapAsSequenceItem(Map<?, ?> map, Writer out, int depth,
+			IdentityHashMap<Object, Boolean> seen) throws IOException {
+
+		if (depth + 1 > MAX_DEPTH)
+			throw new IOException("Config value nesting exceeds " + MAX_DEPTH);
+
+		if (seen.put(map, Boolean.TRUE) != null)
+			throw new IOException("Cyclic Config value");
+
+		try {
+			boolean first = true;
+
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				checkInterrupted();
+
+				if (first) {
+					indent(out, depth);
+					out.write("- ");
+					first = false;
+				} else
+					indent(out, depth + 1);
+
+				writeYamlMapEntry(entry, out, depth + 1, seen);
+			}
+		} finally {
+			seen.remove(map);
+		}
+	}
+
+	private static void writeYamlKey(Object key, Writer out) throws IOException {
+		String value = String.valueOf(key);
+
+		if (needsQuotedKey(value))
+			quoted(value, out);
+		else
+			out.write(value);
+	}
+
+	private static void writeYamlScalar(Object value, Writer out) throws IOException {
+		jsonValue(value, out, 0, null);
+	}
+
 	private static boolean needsQuotedKey(String key) {
 		int length = key.length();
 
-		if ((length == 0) || (key.charAt(0) == ' '))
+		if (length == 0 || key.charAt(0) == ' ')
 			return true;
 
 		for (int i = 0; i < length; i++) {
@@ -455,38 +690,38 @@ public final class ConfigWriter {
 
 		if (value instanceof Character) {
 			out.write('"');
-			writeQuotedCharacter(((Character) value), out);
+			writeQuotedCharacter((Character) value, out);
 			out.write('"');
 			return;
 		}
 
 		if (value instanceof Boolean) {
-			out.write(((Boolean) value) ? TRUE : FALSE);
+			out.write((Boolean) value ? TRUE : FALSE);
 			return;
 		}
 
 		if (value instanceof Integer) {
-			out.write(Integer.toString(((Integer) value)));
+			out.write(Integer.toString((Integer) value));
 			return;
 		}
 
 		if (value instanceof Long) {
-			out.write(Long.toString(((Long) value)));
+			out.write(Long.toString((Long) value));
 			return;
 		}
 
 		if (value instanceof Short) {
-			out.write(Short.toString(((Short) value)));
+			out.write(Short.toString((Short) value));
 			return;
 		}
 
 		if (value instanceof Byte) {
-			out.write(Byte.toString(((Byte) value)));
+			out.write(Byte.toString((Byte) value));
 			return;
 		}
 
 		if (value instanceof Double) {
-			double number = ((Double) value);
+			double number = (Double) value;
 
 			if (Double.isNaN(number) || Double.isInfinite(number))
 				throw new IOException("Non-finite Config number");
@@ -496,7 +731,7 @@ public final class ConfigWriter {
 		}
 
 		if (value instanceof Float) {
-			float number = ((Float) value);
+			float number = (Float) value;
 
 			if (Float.isNaN(number) || Float.isInfinite(number))
 				throw new IOException("Non-finite Config number");

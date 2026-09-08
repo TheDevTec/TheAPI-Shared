@@ -1009,15 +1009,29 @@ public class ComponentAPI {
 
 	/** Parses an already decoded JSON array into one component tree. */
 	public static Component fromJson(Collection<?> collection) {
+		return fromJson(collection, true);
+	}
+
+	private static Component fromJson(Collection<?> collection, boolean newLines) {
 		if (collection == null || collection.isEmpty())
 			return Component.EMPTY_COMPONENT;
 
 		Component component = new Component("");
+		boolean first = true;
+
 		for (Object value : collection) {
 			Component child = fromJsonValue(value);
-			if (child != null && !child.isEmpty())
-				component.append(child);
+
+			if (child == null || child.isEmpty())
+				continue;
+
+			if (newLines && !first)
+				component.append(Component.NEW_LINE);
+
+			component.append(child);
+			first = false;
 		}
+
 		return component.isEmpty() ? Component.EMPTY_COMPONENT : component;
 	}
 
@@ -1155,7 +1169,7 @@ public class ComponentAPI {
 		if (value instanceof Map)
 			return fromJson((Map<String, Object>) value);
 		if (value instanceof Collection)
-			return fromJson((Collection<?>) value);
+			return fromJson((Collection<?>) value, false);
 		if (value instanceof Component)
 			return (Component) value;
 		return fromString(String.valueOf(value));
