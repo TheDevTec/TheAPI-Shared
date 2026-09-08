@@ -103,7 +103,7 @@ public final class CustomJsonReader implements JReader {
 			if (position >= length)
 				return "";
 
-			Object result = parseValueDirect(ROOT);
+			Object result = parseValue(ROOT);
 
 			skipWhitespace();
 
@@ -121,10 +121,7 @@ public final class CustomJsonReader implements JReader {
 
 		private Object parseValue(int mode) {
 			skipWhitespace();
-			return parseValueDirect(mode);
-		}
 
-		private Object parseValueDirect(int mode) {
 			if (position >= length)
 				throw invalid();
 
@@ -166,7 +163,7 @@ public final class CustomJsonReader implements JReader {
 				/*
 				 * Whitespace je už odstraněný: - po { - nebo po předchozí čárce
 				 */
-				Object key = parseValueDirect(MAP_KEY);
+				Object key = parseValue(MAP_KEY);
 
 				skipWhitespace();
 
@@ -235,7 +232,7 @@ public final class CustomJsonReader implements JReader {
 				/*
 				 * Whitespace je už odstraněný: - po [ - nebo po předchozí čárce
 				 */
-				result.add(parseValueDirect(ARRAY_VALUE));
+				result.add(parseValue(ARRAY_VALUE));
 
 				skipWhitespace();
 
@@ -515,7 +512,7 @@ public final class CustomJsonReader implements JReader {
 			if (position >= length)
 				return "";
 
-			Object result = parseValueDirect(ROOT);
+			Object result = parseValue(ROOT);
 
 			skipWhitespace();
 
@@ -533,10 +530,7 @@ public final class CustomJsonReader implements JReader {
 
 		private Object parseValue(int mode) {
 			skipWhitespace();
-			return parseValueDirect(mode);
-		}
 
-		private Object parseValueDirect(int mode) {
 			if (position >= length)
 				throw invalid();
 
@@ -578,7 +572,7 @@ public final class CustomJsonReader implements JReader {
 				/*
 				 * Whitespace je už odstraněný: - po { - nebo po předchozí čárce
 				 */
-				Object key = parseValueDirect(MAP_KEY);
+				Object key = parseValue(MAP_KEY);
 
 				skipWhitespace();
 
@@ -647,7 +641,7 @@ public final class CustomJsonReader implements JReader {
 				/*
 				 * Whitespace je už odstraněný: - po [ - nebo po předchozí čárce
 				 */
-				result.add(parseValueDirect(ARRAY_VALUE));
+				result.add(parseValue(ARRAY_VALUE));
 
 				skipWhitespace();
 
