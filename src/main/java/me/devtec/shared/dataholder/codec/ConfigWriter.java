@@ -123,19 +123,23 @@ public final class ConfigWriter {
 				out.write('\n');
 				for (int start = 0, end; start < text.length(); start = end) {
 					end = start;
-					while (end < text.length() && text.charAt(end) != '\n' && text.charAt(end) != '\r') end++;
+					while (end < text.length() && text.charAt(end) != '\n' && text.charAt(end) != '\r')
+						end++;
 					indent(out, depth + 1);
 					out.write(text, start, end - start);
 					out.write('\n');
-					if (end < text.length() && text.charAt(end++) == '\r'
-							&& end < text.length() && text.charAt(end) == '\n') end++;
+					if (end < text.length() && text.charAt(end++) == '\r' && end < text.length()
+							&& text.charAt(end) == '\n')
+						end++;
 				}
 			} else {
 				out.write(' ');
 				// Memory values are already resolved above. Disk composites retain
 				// their direct streaming writer instead of walking lazy collections.
-				if (ref instanceof ValueRef.Memory) jsonValue(value, out, 0, null);
-				else ref.writeJson(out);
+				if (ref instanceof ValueRef.Memory)
+					jsonValue(value, out, 0, null);
+				else
+					ref.writeJson(out);
 				after(comment, out);
 				out.write('\n');
 			}
@@ -172,19 +176,33 @@ public final class ConfigWriter {
 		int start = 0, length = value.length();
 		for (int i = 0; i < length; i++) {
 			char c = value.charAt(i);
-			if (c != 34 && c != 92 && c >= 32) continue;
+			if (c != 34 && c != 92 && c >= 32)
+				continue;
 			writeRange(value, start, i, out);
 			out.write(92);
 			switch (c) {
-			case 34: case 92: out.write(c); break;
-			case 8: out.write('b'); break;
-			case 12: out.write('f'); break;
-			case 10: out.write('n'); break;
-			case 13: out.write('r'); break;
-			case 9: out.write('t'); break;
+			case 34:
+			case 92:
+				out.write(c);
+				break;
+			case 8:
+				out.write('b');
+				break;
+			case 12:
+				out.write('f');
+				break;
+			case 10:
+				out.write('n');
+				break;
+			case 13:
+				out.write('r');
+				break;
+			case 9:
+				out.write('t');
+				break;
 			default:
 				out.write("u00");
-				out.write(Character.forDigit((c >>> 4) & 15, 16));
+				out.write(Character.forDigit(c >>> 4 & 15, 16));
 				out.write(Character.forDigit(c & 15, 16));
 			}
 			start = i + 1;
@@ -194,11 +212,14 @@ public final class ConfigWriter {
 	}
 
 	private static void writeRange(CharSequence value, int start, int end, Writer out) throws IOException {
-		if (start == end) return;
-		if (value instanceof String) out.write((String) value, start, end - start);
+		if (start == end)
+			return;
+		if (value instanceof String)
+			out.write((String) value, start, end - start);
 		else if (value instanceof me.devtec.shared.dataholder.StringContainer)
 			out.write(((me.devtec.shared.dataholder.StringContainer) value).getValueWithoutTrim(), start, end - start);
-		else out.append(value, start, end);
+		else
+			out.append(value, start, end);
 	}
 
 	public static void escaped(char[] buffer, int length, Writer out) throws IOException {
@@ -240,6 +261,7 @@ public final class ConfigWriter {
 			throws IOException {
 		if (depth > 256)
 			throw new IOException("Config value nesting exceeds 256");
+
 		if (v instanceof ValueRef) {
 			((ValueRef) v).writeJson(out);
 			return;
@@ -266,7 +288,8 @@ public final class ConfigWriter {
 			out.write(v.toString());
 			return;
 		}
-		if (seen == null) seen = new IdentityHashMap<>();
+		if (seen == null)
+			seen = new IdentityHashMap<>();
 		if (seen.put(v, Boolean.TRUE) != null)
 			throw new IOException("Cyclic Config value");
 		if (v instanceof Map) {
@@ -300,7 +323,7 @@ public final class ConfigWriter {
 			}
 			out.write(']');
 		} else
-			out.write(Json.writer().simpleWrite(v));
+			out.write(Json.writer().write(v));
 		seen.remove(v);
 	}
 }

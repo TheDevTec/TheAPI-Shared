@@ -16,8 +16,8 @@ import java.util.Set;
 import me.devtec.shared.dataholder.Config;
 import me.devtec.shared.dataholder.ConfigDocument;
 import me.devtec.shared.dataholder.StringContainer;
-import me.devtec.shared.dataholder.codec.ConfigWriter;
 import me.devtec.shared.dataholder.codec.ConfigBufferedWriter;
+import me.devtec.shared.dataholder.codec.ConfigWriter;
 import me.devtec.shared.dataholder.codec.FormatRegistry;
 import me.devtec.shared.dataholder.loaders.constructor.DataLoaderConstructor;
 import me.devtec.shared.dataholder.loaders.constructor.DataValue;
@@ -507,16 +507,17 @@ public class DataLoader implements Cloneable {
 								.onMalformedInput(CodingErrorAction.REPORT)
 								.decode(java.nio.ByteBuffer.wrap(bytes, 0, count));
 						Reader reader = text.hasArray()
-								? new CharArrayReader(text.array(), text.arrayOffset() + text.position(), text.remaining())
+								? new CharArrayReader(text.array(), text.arrayOffset() + text.position(),
+										text.remaining())
 								: new StringReader(text.toString());
 						return parse(reader, format, count);
 					}
 					count += read;
 				}
 				// File grew during the read: replay the prefix and keep streaming.
-				try (Reader reader = new InputStreamReader(new SequenceInputStream(
-						new ByteArrayInputStream(bytes), input), StandardCharsets.UTF_8.newDecoder()
-								.onMalformedInput(CodingErrorAction.REPORT))) {
+				try (Reader reader = new InputStreamReader(
+						new SequenceInputStream(new ByteArrayInputStream(bytes), input),
+						StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT))) {
 					return parse(reader, format, sourceBytes);
 				}
 			}
@@ -533,7 +534,8 @@ public class DataLoader implements Cloneable {
 		// Codecs own their input buffers. Retain only the detection prefix here.
 		PushbackReader reader = new PushbackReader(r, sample.length);
 		int start = n > 0 && sample[0] == '\uFEFF' ? 1 : 0;
-		if (n > start) reader.unread(sample, start, n - start);
+		if (n > start)
+			reader.unread(sample, start, n - start);
 		if (format == null)
 			format = FormatRegistry.detect(n > start ? new String(sample, start, n - start) : "");
 		ConfigDocument d = new ConfigDocument();
