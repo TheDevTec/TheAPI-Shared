@@ -34,7 +34,6 @@ final class AdaptiveTextBuilder {
 			disk.write(s);
 	}
 
-	@SuppressWarnings("resource")
 	private void spill() throws IOException {
 		document.storage.forceDisk();
 		disk = ((DiskNodeStore) document.storage.store()).values.textBuilder();

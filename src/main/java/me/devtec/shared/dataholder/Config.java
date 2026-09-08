@@ -992,7 +992,6 @@ public class Config implements AutoCloseable {
 		return this;
 	}
 
-	@SuppressWarnings("resource")
 	public void processAutoUpdate() {
 		if (file == null)
 			return;

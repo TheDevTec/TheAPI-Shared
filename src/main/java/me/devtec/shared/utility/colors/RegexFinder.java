@@ -8,36 +8,21 @@ import me.devtec.shared.dataholder.StringContainer;
 @Deprecated
 public class RegexFinder implements GradientFinder {
 
-	private static final String COLOR =
-			"(#[A-Fa-f0-9]{6}|§x(?:§[0-9A-Fa-f]){6})";
+	private static final String COLOR = "(#[A-Fa-f0-9]{6}|§x(?:§[0-9A-Fa-f]){6})";
 
 	private static Pattern pattern;
 
 	private static int firstLength;
 	private static int secondLength;
 
-	public static void init(
-			String prefix1,
-			String suffix1,
-			String prefix2,
-			String suffix2) {
+	@Deprecated
+	public static void init(String prefix1, String suffix1, String prefix2, String suffix2) {
 
-		firstLength =
-				prefix1.length()
-				+ suffix1.length();
+		firstLength = prefix1.length() + suffix1.length();
 
-		secondLength =
-				prefix2.length()
-				+ suffix2.length();
+		secondLength = prefix2.length() + suffix2.length();
 
-		pattern = Pattern.compile(
-				prefix1
-				+ COLOR
-				+ suffix1
-				+ "(.*?)"
-				+ prefix2
-				+ COLOR
-				+ suffix2);
+		pattern = Pattern.compile(prefix1 + COLOR + suffix1 + "(.*?)" + prefix2 + COLOR + suffix2);
 	}
 
 	private final StringContainer container;
@@ -55,15 +40,16 @@ public class RegexFinder implements GradientFinder {
 	private int endAt;
 
 	// <prefix1>#rrggbb<suffix1> text <prefix2>#rrggbb<suffix2>
+	@Deprecated
 	public RegexFinder(StringContainer container) {
 		if (pattern == null)
-			throw new IllegalStateException(
-					"RegexFinder wasn't initialized.");
+			throw new IllegalStateException("RegexFinder wasn't initialized.");
 
 		this.container = container;
 		matcher = pattern.matcher(container);
 	}
 
+	@Deprecated
 	@Override
 	public boolean find() {
 		boolean match;
@@ -89,62 +75,58 @@ public class RegexFinder implements GradientFinder {
 		firstHex = matcher.group(1);
 		secondHex = matcher.group(3);
 
-		firstHexLength =
-				firstHex.length()
-				+ firstLength;
+		firstHexLength = firstHex.length() + firstLength;
 
-		secondHexLength =
-				secondHex.length()
-				+ secondLength;
+		secondHexLength = secondHex.length() + secondLength;
 
-		startAt =
-				matcher.start()
-				+ firstHexLength;
+		startAt = matcher.start() + firstHexLength;
 
-		endAt =
-				matcher.end()
-				- secondHexLength;
+		endAt = matcher.end() - secondHexLength;
 
 		return true;
 	}
 
+	@Deprecated
 	@Override
 	public String getFirstHex() {
 		return firstHex;
 	}
 
+	@Deprecated
 	@Override
 	public int getFirstHexLength() {
 		return firstHexLength;
 	}
 
+	@Deprecated
 	@Override
 	public String getSecondHex() {
 		return secondHex;
 	}
 
+	@Deprecated
 	@Override
 	public int getSecondHexLength() {
 		return secondHexLength;
 	}
 
+	@Deprecated
 	@Override
 	public int getStart() {
 		return startAt;
 	}
 
+	@Deprecated
 	@Override
 	public int getEnd() {
 		return endAt;
 	}
 
+	@Deprecated
 	@Override
 	public void skip(int characters) {
 		int position = endAt + characters;
 
-		skipChars =
-				position < 0
-				? 0
-						: position;
+		skipChars = position < 0 ? 0 : position;
 	}
 }

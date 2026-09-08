@@ -29,7 +29,6 @@ final class AdaptiveValueBuilder {
 			list = new ArrayList<>();
 	}
 
-	@SuppressWarnings("resource")
 	void add(Object key, Object value) {
 		estimate += 40 + MemoryEstimator.estimate(key) + MemoryEstimator.estimate(value);
 		if (disk == null && estimate > Math.max(32768, ConfigMemoryPolicy.budget() / 16)) {

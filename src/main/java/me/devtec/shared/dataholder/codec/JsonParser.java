@@ -15,7 +15,6 @@ public final class JsonParser {
 	private JsonParser() {
 	}
 
-	@SuppressWarnings("resource")
 	public void parse(Reader reader, ConfigDocument document) throws IOException {
 		ConfigInput in = new ConfigInput(reader, "json");
 		in.spaces();

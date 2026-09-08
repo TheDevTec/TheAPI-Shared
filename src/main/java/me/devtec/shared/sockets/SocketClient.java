@@ -204,6 +204,7 @@ public class SocketClient {
 					new Tasker() {
 						boolean providedLogin = false;
 
+						@SuppressWarnings("resource")
 						@Override
 						public void run() {
 							socketPhaseLoop: while (socketPhase != SocketPhase.WAITING)
