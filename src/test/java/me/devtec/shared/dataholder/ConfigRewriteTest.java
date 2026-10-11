@@ -16,7 +16,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.junit.After;
@@ -102,6 +104,39 @@ public class ConfigRewriteTest {
 			try (Config r = Config.loadFromString(c.toString(DataType.JSON))) {
 				assertEquals(7, r.getInt("a.b.c"));
 			}
+		}
+	}
+
+	@Test
+	public void yamlListMapsRoundTrip() {
+		Map<String, Object> first = new LinkedHashMap<>();
+		first.put("key", "value");
+		first.put("key1", "value1");
+		Map<String, Object> nested = new LinkedHashMap<>();
+		nested.put("child", 7);
+		first.put("nested", nested);
+		first.put("items", Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4)));
+		Map<String, Object> second = new LinkedHashMap<>();
+		second.put("key:part", "other");
+		second.put("key1", "other1");
+
+		try (Config c = new Config()) {
+			c.set("rows", Arrays.asList(first, second));
+			String yaml = c.toString(DataType.YAML);
+			assertTrue(yaml.contains("- key: \"value\"\n  key1: \"value1\""));
+			try (Config loaded = Config.loadFromString(yaml)) {
+				assertEquals(Arrays.asList(first, second), loaded.getList("rows"));
+			}
+		}
+		try (Config loaded = Config.loadFromString("rows:\n- key: value\n  key1: value1\n")) {
+			assertEquals("value1", ((Map<?, ?>) loaded.getList("rows").iterator().next()).get("key1"));
+		}
+	}
+
+	@Test
+	public void yamlInlineJsonMapStaysInline() {
+		try (Config c = Config.loadFromString("inline: {\"a\": 1, \"b\": 2}\n")) {
+			assertEquals("inline: {\"a\":1,\"b\":2}\n", c.toString(DataType.YAML));
 		}
 	}
 

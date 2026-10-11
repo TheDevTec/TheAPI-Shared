@@ -374,7 +374,7 @@ public final class YamlParser {
 
 				String current = text;
 
-				int start = 2;
+				int start = Math.min(2, current.length());
 				int length = current.length();
 
 				while (start < length && current.charAt(start) <= ' ')
@@ -387,30 +387,36 @@ public final class YamlParser {
 
 				char first = token.isEmpty() ? 0 : token.charAt(0);
 
-				if (first != '\'' && first != '"' && first != '{' && first != '[' && token.indexOf(':') >= 0) {
+				if (first != '{' && first != '[' && mappingColon(token) >= 0) {
 
 					Map<Object, Object> map = new LinkedHashMap<>();
 
-					pair(map, token, level, depth + 1);
+					int entryLevel = level + 2;
+					pair(map, token, entryLevel, depth + 1);
 
-					while (line != null && indent > level) {
+					while (line != null) {
 						trivia();
 
 						if (line == null || indent <= level)
 							break;
+						if (indent != entryLevel || startsList(text))
+							throw in.error("Unexpected YAML indentation");
 
 						String entry = text;
-						int entryIndent = indent;
 
 						next();
 
-						pair(map, entry, entryIndent, depth + 1);
+						pair(map, entry, entryLevel, depth + 1);
 					}
 
 					result.add(null, map);
 				} else if (token.isEmpty() && line != null && indent > level && startsList(text))
 					result.add(null, list(indent, depth + 1));
-				else
+				else if (token.isEmpty() && line != null && indent > level) {
+					Map<Object, Object> map = new LinkedHashMap<>();
+					mapEntries(map, indent, depth + 1);
+					result.add(null, map);
+				} else
 					result.add(null, scalar(token, true).value);
 			}
 
@@ -418,7 +424,7 @@ public final class YamlParser {
 		}
 
 		void pair(Map<Object, Object> map, String entry, int level, int depth) throws IOException {
-			int colon = entry.indexOf(':');
+			int colon = mappingColon(entry);
 
 			if (colon < 0)
 				throw in.error("Expected list map key");
@@ -435,9 +441,47 @@ public final class YamlParser {
 
 			if (value.isEmpty() && line != null && indent >= level && startsList(text))
 				map.put(key, list(indent, depth + 1));
-			else
+			else if (value.isEmpty() && line != null && indent > level) {
+				Map<Object, Object> nested = new LinkedHashMap<>();
+				mapEntries(nested, indent, depth + 1);
+				map.put(key, nested);
+			} else
 				map.put(key, scalar(value, false).value);
 		}
+
+		void mapEntries(Map<Object, Object> map, int level, int depth) throws IOException {
+			if (depth > MAX_DEPTH)
+				throw in.error("Nesting exceeds " + MAX_DEPTH);
+
+			while (line != null) {
+				trivia();
+				if (line == null || indent < level)
+					return;
+				if (indent != level || startsList(text))
+					throw in.error("Unexpected YAML indentation");
+
+				String entry = text;
+				next();
+				pair(map, entry, level, depth);
+			}
+		}
+	}
+
+	private static int mappingColon(String entry) {
+		char quote = 0;
+		for (int i = 0; i < entry.length(); i++) {
+			char c = entry.charAt(i);
+			if (quote != 0) {
+				if (c == '\\' && quote == '"' && i + 1 < entry.length())
+					i++;
+				else if (c == quote)
+					quote = 0;
+			} else if (c == '\'' || c == '"')
+				quote = c;
+			else if (c == ':' && (i + 1 == entry.length() || entry.charAt(i + 1) <= ' '))
+				return i;
+		}
+		return -1;
 	}
 
 	static String unquote(String token) {
@@ -618,7 +662,7 @@ public final class YamlParser {
 	}
 
 	private static boolean startsList(String text) {
-		return text.length() >= 2 && text.charAt(0) == '-' && text.charAt(1) == ' ';
+		return text.equals("-") || text.length() >= 2 && text.charAt(0) == '-' && text.charAt(1) == ' ';
 	}
 
 	private static boolean isComment(String text) {
