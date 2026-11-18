@@ -10,7 +10,7 @@ How to include the API with Maven:
     <dependency>
         <groupId>com.github.TheDevTec</groupId>
         <artifactId>TheAPI-Shared</artifactId>
-        <version>14.0</version>
+        <version>14.1</version>
         <scope>provided</scope>
     </dependency>
 </dependencies>
@@ -23,6 +23,6 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 dependencies {
-    compileOnly "com.github.TheDevTec:TheAPI-Shared:14.0"
+    compileOnly "com.github.TheDevTec:TheAPI-Shared:14.1"
 }
 ```
