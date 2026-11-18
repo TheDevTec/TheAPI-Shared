@@ -7,7 +7,7 @@
 
     <groupId>me.devtec.theapi</groupId>
     <artifactId>TheAPI-Shared</artifactId>
-    <version>14.1</version>
+    <version>14.2</version>
     <name>TheAPI-Shared</name>
     <packaging>jar</packaging>
 
