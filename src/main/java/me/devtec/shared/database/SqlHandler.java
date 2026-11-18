@@ -33,6 +33,7 @@ public class SqlHandler implements DatabaseHandler {
 	private final String path;
 	private final DatabaseType type;
 	private int transactionDepth;
+	private boolean explicitlyClosed;
 
 	public SqlHandler(String path, DatabaseSettings settings) throws SQLException {
 		this(detect(path), path, settings);
@@ -75,16 +76,19 @@ public class SqlHandler implements DatabaseHandler {
 			return false;
 
 		try {
-			return !sql.isClosed() && sql.isValid(2);
+			return !explicitlyClosed && !sql.isClosed();
 		} catch (SQLException ignored) {
 			return false;
 		}
 	}
 
 	private synchronized Connection connection() throws SQLException {
+		if (explicitlyClosed)
+			throw new SQLException("Database handler is closed");
+
 		if (sql != null)
 			try {
-				if (!sql.isClosed() && sql.isValid(2))
+				if (!sql.isClosed())
 					return sql;
 			} catch (SQLException ignored) {
 			}
@@ -114,7 +118,7 @@ public class SqlHandler implements DatabaseHandler {
 
 		if (sql != null)
 			try {
-				if (!sql.isClosed() && sql.isValid(2))
+				if (!sql.isClosed())
 					return;
 			} catch (SQLException ignored) {
 			}
@@ -139,12 +143,14 @@ public class SqlHandler implements DatabaseHandler {
 			properties.setProperty("password", settings.getPassword());
 
 		sql = DriverManager.getConnection(path, properties);
+		explicitlyClosed = false;
 	}
 
 	@Override
 	public synchronized void close() throws SQLException {
 		if (transactionDepth != 0)
 			throw new SQLException("Cannot close during a transaction");
+		explicitlyClosed = true;
 		if (sql != null)
 			try {
 				sql.close();

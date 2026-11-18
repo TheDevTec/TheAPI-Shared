@@ -79,7 +79,7 @@ public final class JsonParser {
 			in.expect(':');
 			in.spaces();
 
-			int node = document.child(parent, key);
+			int node = childPath(document, parent, key);
 
 			if (in.peek() == '{')
 				object(in, document, node, depth + 1);
@@ -98,6 +98,16 @@ public final class JsonParser {
 
 			in.spaces();
 		}
+	}
+
+	private int childPath(ConfigDocument document, int parent, String path) {
+		int start = 0;
+		for (int i = 0; i <= path.length(); i++)
+			if (i == path.length() || path.charAt(i) == '.') {
+				parent = document.child(parent, path.substring(start, i));
+				start = i + 1;
+			}
+		return parent;
 	}
 
 	static Object value(ConfigInput in, ConfigDocument document, int depth) throws IOException {

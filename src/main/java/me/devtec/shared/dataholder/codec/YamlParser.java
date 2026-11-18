@@ -25,7 +25,7 @@ public final class YamlParser {
 	private static final int MAX_KEY_LENGTH = 1024 * 1024;
 	private static final int INLINE_LINE_LIMIT = 32768;
 
-	private static final String LINE_SEPARATOR = System.lineSeparator();
+	private static final String LINE_SEPARATOR = "\r\n";
 
 	private YamlParser() {
 	}
@@ -102,28 +102,18 @@ public final class YamlParser {
 				indent++;
 			}
 
-			int end = length;
-
-			while (end > indent && line.charAt(end - 1) <= ' ')
-				end--;
-
-			if (indent == 0 && end == length)
-				text = line;
-			else if (indent == end)
-				text = "";
-			else
-				text = line.substring(indent, end);
+			text = indent == length ? "" : line.substring(indent);
 		}
 
 		void trivia() throws IOException {
 			while (line != null) {
-				if (text.isEmpty()) {
+				if (text.trim().isEmpty()) {
 					next();
 					continue;
 				}
 
 				if (text.charAt(0) == '#') {
-					comments.add(text);
+					comments.add(text.trim());
 					next();
 					continue;
 				}
@@ -276,7 +266,8 @@ public final class YamlParser {
 					scalar.value = raw;
 				}
 
-				d.put(node, scalar.value, new NodeMetadata(raw, scalar.after, before), false);
+				d.put(node, scalar.value, new NodeMetadata(scalar.value == null ? null : raw, scalar.after, before),
+						false);
 			}
 		}
 
@@ -596,10 +587,6 @@ public final class YamlParser {
 			int rawStart = quoted ? 1 : 0;
 			int rawEnd = end;
 
-			if (!quoted)
-				while (rawEnd > rawStart && token.charAt(rawEnd - 1) <= ' ')
-					rawEnd--;
-
 			scalar.raw = rawStart == 0 && rawEnd == length ? token : token.substring(rawStart, rawEnd);
 		}
 
@@ -609,7 +596,7 @@ public final class YamlParser {
 		}
 
 		// Quoted YAML scalars are strings.
-		if (quoted)
+		if (quoted && list)
 			scalar.value = scalar.raw;
 		else
 			scalar.value = parseScalar(scalar.raw);
@@ -658,7 +645,7 @@ public final class YamlParser {
 				return number;
 		}
 
-		return start == 0 && end == text.length() ? text : text.substring(start, end);
+		return start == 0 ? text : text.substring(start);
 	}
 
 	private static boolean startsList(String text) {

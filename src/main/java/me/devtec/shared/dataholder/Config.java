@@ -5,8 +5,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
@@ -35,6 +38,8 @@ import me.devtec.shared.scheduler.Tasker;
 import me.devtec.shared.utility.ParseUtils;
 
 public class Config implements AutoCloseable {
+	public static volatile boolean SYNC_FILE_SAVES;
+
 	protected DataLoader loader;
 	protected File file;
 	protected transient boolean isSaving; // LOCK
@@ -712,6 +717,7 @@ public class Config implements AutoCloseable {
 
 		final File target = file;
 		final File parent = target.getAbsoluteFile().getParentFile();
+		Path temporary = null;
 
 		if (parent != null && !parent.isDirectory())
 			parent.mkdirs();
@@ -722,9 +728,10 @@ public class Config implements AutoCloseable {
 		try {
 			if (!builtIn && writer == null)
 				return this;
+			temporary = Files.createTempFile(parent.toPath(), target.getName() + ".", ".tmp");
 
 			if (builtIn || writer.supportsStreamingSave())
-				try (FileOutputStream fileOutput = new FileOutputStream(target, false);
+				try (FileOutputStream fileOutput = new FileOutputStream(temporary.toFile(), false);
 						BufferedOutputStream output = new BufferedOutputStream(fileOutput, 64 * 1024)) {
 
 					if (builtIn)
@@ -733,20 +740,32 @@ public class Config implements AutoCloseable {
 						writer.saveTo(this, output, false);
 				}
 			else if (writer.supportsIteratorMode())
-				LoaderWriteUtil.writeIterator(target, writer.saveAsIterator(this, false));
+				LoaderWriteUtil.writeIterator(temporary.toFile(), writer.saveAsIterator(this, false));
 			else {
 				byte[] bytes = writer.save(this, false);
 
-				try (FileOutputStream fileOutput = new FileOutputStream(target, false)) {
+				try (FileOutputStream fileOutput = new FileOutputStream(temporary.toFile(), false)) {
 					fileOutput.write(bytes);
 				}
 			}
+			try {
+				Files.move(temporary, target.toPath(), StandardCopyOption.ATOMIC_MOVE,
+						StandardCopyOption.REPLACE_EXISTING);
+			} catch (AtomicMoveNotSupportedException ignored) {
+				Files.move(temporary, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
+			temporary = null;
 
 			getDataLoader().markSavedValues();
 			markNonModified();
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		} finally {
+			if (temporary != null)
+				try {
+					Files.deleteIfExists(temporary);
+				} catch (IOException ignored) {
+				}
 			isSaving = false;
 		}
 
